@@ -99,6 +99,7 @@ public interface RowLog {
      * @throws RowLogException
      */
     RowLogMessage putMessage(byte[] rowKey, byte[] data, byte[] payload, Put put) throws RowLogException;
+    
     /**
      * Request each registered {@link RowLogMessageConsumer} to process a {@link RowLogMessage} explicitly. 
      * This method can be called independently from a {@link RowLogProcessor} and can be used for instance when a message

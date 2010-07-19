@@ -60,7 +60,7 @@ public class RowLogEndToEndTest {
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
         String zkConnectString = HBASE_PROXY.getZkConnectString();
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY, RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, zkConnectString);
-        shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog);
+        shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         consumer = new TestMessageConsumer(0);
         processor = new RowLogProcessorImpl(rowLog, shard, zkConnectString);
         rowLog.registerConsumer(consumer);
@@ -98,8 +98,6 @@ public class RowLogEndToEndTest {
         ZooKeeper zk = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
             
             public void process(WatchedEvent event) {
-                // TODO Auto-generated method stub
-                
             }
         });
         byte[] data = zk.getData("/lily/rowLog/EndToEndRowLog/EndToEndShard", false, new Stat());

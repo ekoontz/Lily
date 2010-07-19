@@ -15,6 +15,8 @@
  */
 package org.lilycms.rowlog.api;
 
+import java.util.List;
+
 /**
  * A RowLogShard manages the actual RowLogMessages on a HBase table. It needs to be registered to a RowLog.
  * 
@@ -45,11 +47,11 @@ public interface RowLogShard {
     void removeMessage(RowLogMessage message, int consumerId) throws RowLogException;
     
     /**
-     * Retrieves the next message to be processed by the indicated consumer.
+     * Retrieves the next messages to be processed by the indicated consumer.
      * 
-     * @param consumerId the id of the {@link RowLogConsumer} for which the next message should be retrieved
-     * @return the next {@link RowLogMessage} to be processed
+     * @param consumerId the id of the {@link RowLogConsumer} for which the next messages should be retrieved
+     * @return the next 100, or less {@link RowLogMessage}s to be processed
      * @throws RowLogException when an unexpected exception occurs
      */
-    RowLogMessage next(int consumerId) throws RowLogException;
+    List<RowLogMessage> next(int consumerId) throws RowLogException;
 }

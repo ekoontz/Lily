@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.easymock.IMocksControl;
@@ -76,8 +77,9 @@ public class RowLogProcessorTest {
         expectLastCall().andReturn("TestShard").anyTimes();
         
         RowLogMessage message = control.createMock(RowLogMessage.class);
+        List<RowLogMessage> messages = Arrays.asList(new RowLogMessage[] {message});
         rowLogShard.next(consumerId);
-        expectLastCall().andReturn(message).anyTimes();
+        expectLastCall().andReturn(messages).anyTimes();
         
         consumer.processMessage(message);
         expectLastCall().andReturn(Boolean.TRUE).anyTimes();

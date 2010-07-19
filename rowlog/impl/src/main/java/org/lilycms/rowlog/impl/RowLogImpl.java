@@ -22,7 +22,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -260,11 +264,11 @@ public class RowLogImpl implements RowLog {
                 boolean allDone = processMessage(message, executionState);
                 
                 if (allDone) {
-                    removeExecutionStateAndPayload(rowKey, qualifier, previousValue);
+                    return removeExecutionStateAndPayload(rowKey, qualifier, previousValue);
                 } else {
                     updateExecutionState(rowKey, qualifier, executionState, previousValue);
+                    return false;
                 }
-                return allDone;
             } catch (IOException e) {
                 throw new RowLogException("Failed to process message", e);
             }
@@ -436,13 +440,11 @@ public class RowLogImpl implements RowLog {
         return rowTable.checkAndPut(rowKey, executionStateColumnFamily, qualifier, previousValue, put);
     }
 
-    private void removeExecutionStateAndPayload(byte[] rowKey, byte[] qualifier, byte[] previousValue) throws IOException {
+    private boolean removeExecutionStateAndPayload(byte[] rowKey, byte[] qualifier, byte[] previousValue) throws IOException {
         Delete delete = new Delete(rowKey); 
         delete.deleteColumn(executionStateColumnFamily, qualifier);
         delete.deleteColumn(payloadColumnFamily, qualifier);
-        rowTable.delete(delete);
-        // TODO use checkAndDelete
-//        return rowTable.checkAndDelete(rowKey, rowLogColumnFamily, qualifier, previousValue, delete);
+        return rowTable.checkAndDelete(rowKey, executionStateColumnFamily, qualifier, previousValue, delete);
     }
 
     

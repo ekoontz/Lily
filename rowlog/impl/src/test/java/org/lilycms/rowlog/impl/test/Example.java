@@ -58,7 +58,7 @@ public class Example {
         RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, zkConnectString);
         
         // Create a shard and register it with the rowlog
-        RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog);
+        RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
         
         // Create a consumer and register it with the RowLog

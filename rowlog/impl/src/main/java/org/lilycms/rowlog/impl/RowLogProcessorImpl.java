@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -276,20 +277,22 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         public void run() {
             if ((consumerThreads.get(consumer.getId()) == null)) return;
             
-            RowLogMessage message = null;
             while (!isInterrupted()) {
                 try {
-                    message = shard.next(consumer.getId());
+                    List<RowLogMessage> messages = shard.next(consumer.getId());
                     metrics.incScanCount();
-                    if (message != null) {
-                        byte[] lock = rowLog.lockMessage(message, consumer.getId());
-                        if (lock != null) {
-                            if (consumer.processMessage(message)) {
-                                rowLog.messageDone(message, consumer.getId(), lock);
-                                metrics.incSuccessCount();
-                            } else {
-                                rowLog.unlockMessage(message, consumer.getId(), lock);
-                                metrics.incFailureCount();
+                    if (messages != null && !messages.isEmpty()) {
+                        metrics.incMessageCount();
+                        for (RowLogMessage message : messages) {
+                            byte[] lock = rowLog.lockMessage(message, consumer.getId());
+                            if (lock != null) {
+                                if (consumer.processMessage(message)) {
+                                    rowLog.messageDone(message, consumer.getId(), lock);
+                                    metrics.incSuccessCount();
+                                } else {
+                                    rowLog.unlockMessage(message, consumer.getId(), lock);
+                                    metrics.incFailureCount();
+                                }
                             }
                         }
                     } else {
@@ -313,6 +316,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
         private class ProcessorMetrics implements Updater {
             private int scanCount = 0;
+            private int messageCount = 0;
             private int successCount = 0;
             private int failureCount = 0;
             private int wakeupCount = 0;
@@ -326,12 +330,14 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
             public synchronized void doUpdates(MetricsContext unused) {
                 record.setMetric("scanCount", scanCount);
+                record.setMetric("messageCount", messageCount);
                 record.setMetric("successCount", successCount);
                 record.setMetric("failureCount", failureCount);
                 record.setMetric("wakeupCount", wakeupCount);
                 record.update();
 
                 scanCount = 0;
+                messageCount = 0;
                 successCount = 0;
                 failureCount = 0;
                 wakeupCount = 0;
@@ -339,6 +345,10 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
             synchronized void incScanCount() {
                 scanCount++;
+            }
+
+            synchronized void incMessageCount() {
+                messageCount++;
             }
 
             synchronized void incSuccessCount() {

@@ -16,6 +16,8 @@
 package org.lilycms.rowlog.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -38,10 +40,12 @@ public class RowLogShardImpl implements RowLogShard {
     private HTableInterface table;
     private final RowLog rowLog;
     private final String id;
+    private final int batchSize;
 
-    public RowLogShardImpl(String id, Configuration configuration, RowLog rowLog) throws IOException {
+    public RowLogShardImpl(String id, Configuration configuration, RowLog rowLog, int batchSize) throws IOException {
         this.id = id;
         this.rowLog = rowLog;
+        this.batchSize = batchSize;
 
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
@@ -97,22 +101,26 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    public RowLogMessage next(int consumerId) throws RowLogException {
+    public List<RowLogMessage> next(int consumerId) throws RowLogException {
         Scan scan = new Scan(Bytes.toBytes(consumerId));
         scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
         ResultScanner scanner = null;
+        List<RowLogMessage> rowLogMessages = new ArrayList<RowLogMessage>();
         try {
             scanner = table.getScanner(scan);
-            Result next = scanner.next();
-            if (next == null)
+            Result[] results = scanner.next(batchSize);
+            if (results == null)
                 return null;
-            byte[] rowKey = next.getRow();
-            int actualConsumerId = Bytes.toInt(rowKey);
-            if (consumerId != actualConsumerId)
-                return null; // There were no messages for this consumer
-            byte[] value = next.getValue(MESSAGES_CF, MESSAGE_COLUMN);
-            byte[] messageId = Bytes.tail(rowKey, rowKey.length - Bytes.SIZEOF_INT);
-            return decodeMessage(messageId, value);
+            for (Result next : results) {
+                byte[] rowKey = next.getRow();
+                int actualConsumerId = Bytes.toInt(rowKey);
+                if (consumerId != actualConsumerId)
+                    break; // There were no messages for this consumer
+                byte[] value = next.getValue(MESSAGES_CF, MESSAGE_COLUMN);
+                byte[] messageId = Bytes.tail(rowKey, rowKey.length - Bytes.SIZEOF_INT);
+                rowLogMessages.add(decodeMessage(messageId, value));
+            }
+            return rowLogMessages;
         } catch (IOException e) {
             throw new RowLogException("Failed to fetch next message from RowLogShard", e);
         } finally {

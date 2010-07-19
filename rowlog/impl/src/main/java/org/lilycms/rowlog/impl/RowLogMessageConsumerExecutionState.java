@@ -37,6 +37,10 @@ public class RowLogMessageConsumerExecutionState {
         this.messageId = messageId;
     }
     
+    public byte[] getMessageId() {
+        return messageId;
+    }
+    
     public void setState(int consumerId, boolean state) {
         states.put(consumerId, state);
     }

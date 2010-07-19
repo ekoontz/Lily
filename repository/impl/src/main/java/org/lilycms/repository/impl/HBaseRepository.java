@@ -149,7 +149,7 @@ public class HBaseRepository implements Repository {
     private void initializeMessageQueue(Configuration configuration) throws IOException {
         messageQueue = new RowLogImpl("MQ", recordTable, HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
                 HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, zkConnectString); 
-        messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue);
+        messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
         messageQueue.registerShard(messageQueueShard);
         messageQueue.registerConsumer(new DevNull());
     }
@@ -157,7 +157,7 @@ public class HBaseRepository implements Repository {
     private void initializeWal(Configuration configuration) throws IOException {
         wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, zkConnectString);
         // Work with only one shard for now
-        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal);
+        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
         wal.registerConsumer(new MessageQueueFeeder(messageQueue));
     }
