@@ -29,9 +29,7 @@ import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
-import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
@@ -1021,7 +1019,11 @@ public class HBaseRepository implements Repository {
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
         filterList.addFilter(new FirstKeyOnlyFilter());
         filterList.addFilter(new PrefixFilter(masterRecordIdBytes));
+        filterList.addFilter(new SingleColumnValueFilter(systemColumnFamilies.get(Scope.NON_VERSIONED),
+                DELETED_COLUMN_NAME, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
+        
         Scan scan = new Scan(masterRecordIdBytes, filterList);
+        scan.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
 
         Set<RecordId> recordIds = new HashSet<RecordId>();
 
