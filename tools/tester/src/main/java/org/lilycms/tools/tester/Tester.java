@@ -8,7 +8,7 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.lilycms.client.Client;
+import org.lilycms.client.LilyClient;
 import org.lilycms.client.ServerUnavailableException;
 import org.lilycms.repository.api.*;
 import org.lilycms.tools.import_.*;
@@ -75,7 +75,7 @@ public class Tester {
 
         readConfig(configNode);
 
-        Client client = new Client(zookeeperConnectString);
+        LilyClient client = new LilyClient(zookeeperConnectString);
         repository = client.getRepository();
 
         createSchema(configNode);

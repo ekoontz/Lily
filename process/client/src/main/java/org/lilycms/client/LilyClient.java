@@ -26,7 +26,7 @@ import java.util.*;
  * number of clients is limited and clients are long-running (e.g. some front-end servers), you should frequently
  * request an new Repository object in order to avoid talking to the same server all the time.
  */
-public class Client {
+public class LilyClient {
     private ZooKeeper zk;
     private List<ServerNode> servers = new ArrayList<ServerNode>();
     private Set<String> serverAddresses = new HashSet<String>();
@@ -35,7 +35,7 @@ public class Client {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public Client(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
+    public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
         zk = new ZooKeeper(zookeeperConnectString, 5000, new ZkWatcher());
         refreshServers();
     }

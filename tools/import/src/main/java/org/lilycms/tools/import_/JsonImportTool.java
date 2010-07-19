@@ -8,7 +8,7 @@ import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.MappingJsonFactory;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.lilycms.client.Client;
+import org.lilycms.client.LilyClient;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.util.io.Closer;
@@ -76,7 +76,7 @@ public class JsonImportTool {
 
         boolean schemaOnly = cmd.hasOption(schemaOnlyOption.getOpt());
 
-        Client client = new Client(zookeeperConnectString);
+        LilyClient client = new LilyClient(zookeeperConnectString);
 
         for (String arg : (List<String>)cmd.getArgList()) {
             System.out.println("----------------------------------------------------------------------");
