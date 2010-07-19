@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg4011"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="lily data model.svg"
+   inkscape:export-filename="/home/bruno/werk/daisy3/lily repository model.png"
+   inkscape:export-xdpi="64.300003"
+   inkscape:export-ydpi="64.300003">
+  <defs
+     id="defs4013">
+    <marker
+       inkscape:stockid="EmptyDiamondL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="EmptyDiamondL"
+       style="overflow:visible">
+      <path
+         id="path4734"
+         d="M 0,-7.0710768 L -7.0710894,0 L 0,7.0710589 L 7.0710462,0 L 0,-7.0710768 z "
+         style="fill-rule:evenodd;fill:#FFFFFF;stroke:#000000;stroke-width:1.0pt;marker-start:none"
+         transform="scale(0.8)" />
+    </marker>
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective4019" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1"
+     inkscape:cx="490.25416"
+     inkscape:cy="385.56405"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1680"
+     inkscape:window-height="998"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4016">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="background" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <rect
+       y="660.36218"
+       x="89"
+       height="330"
+       width="884"
+       id="rect5359"
+       style="fill:#ececec;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       style="fill:#ececec;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect5357"
+       width="884"
+       height="196"
+       x="90"
+       y="416.36218" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5320"
+       width="270"
+       height="75"
+       x="667"
+       y="878.36218" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.97031915000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5318"
+       width="208.02968"
+       height="134.02968"
+       x="721.98511"
+       y="680.34729" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5094"
+       width="200"
+       height="61"
+       x="286"
+       y="912.36218" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.97331113000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5084"
+       width="213.02669"
+       height="161.02669"
+       x="452.98666"
+       y="681.34882" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:1.00945330000000011;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5343"
+       width="184.99054"
+       height="159.99054"
+       x="114.00473"
+       y="436.36691" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="161"
+       y="461.36218"
+       id="text4021"><tspan
+         sodipodi:role="line"
+         id="tspan4023"
+         x="161"
+         y="461.36218"
+         style="font-size:16px">RECORD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="130"
+       y="485.36218"
+       id="text4025"><tspan
+         sodipodi:role="line"
+         id="tspan4027"
+         x="130"
+         y="485.36218">A record has versions</tspan><tspan
+         sodipodi:role="line"
+         x="130"
+         y="502.86218"
+         id="tspan4029">if it contains fields</tspan><tspan
+         sodipodi:role="line"
+         x="130"
+         y="520.36218"
+         id="tspan4031">that belong to the</tspan><tspan
+         sodipodi:role="line"
+         x="130"
+         y="537.86218"
+         id="tspan5339">versioned or</tspan><tspan
+         sodipodi:role="line"
+         x="130"
+         y="555.36218"
+         id="tspan5341">versioned-mutable</tspan><tspan
+         sodipodi:role="line"
+         x="130"
+         y="572.86218"
+         id="tspan4033">scope</tspan></text>
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.91960889000000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5345"
+       width="91.080391"
+       height="59.080391"
+       x="571.95984"
+       y="451.32199" />
+    <text
+       id="text4035"
+       y="474.36218"
+       x="586"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         style="font-size:16px"
+         y="474.36218"
+         x="586"
+         id="tspan4037"
+         sodipodi:role="line">FIELD</tspan></text>
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-opacity:1"
+       id="rect5329"
+       width="199"
+       height="72"
+       x="342"
+       y="522.36218" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="355"
+       y="544.36218"
+       id="text4039"><tspan
+         sodipodi:role="line"
+         id="tspan4041"
+         x="355"
+         y="544.36218"
+         style="font-size:16px">RECORD ID</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="595"
+       y="493.36218"
+       id="text4043"><tspan
+         sodipodi:role="line"
+         id="tspan4045"
+         x="595"
+         y="493.36218">* Value</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="361"
+       y="564.36218"
+       id="text4047"><tspan
+         sodipodi:role="line"
+         id="tspan4049"
+         x="361"
+         y="564.36218">* Master ID</tspan><tspan
+         sodipodi:role="line"
+         x="361"
+         y="581.86218"
+         id="tspan4051">* Optional variant props</tspan></text>
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.98403531000000000;stroke-opacity:1"
+       id="rect4087"
+       width="243.01596"
+       height="115.01597"
+       x="115.99202"
+       y="680.35419" />
+    <text
+       id="text4053"
+       y="705.36218"
+       x="129"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         style="font-size:16px"
+         y="705.36218"
+         x="129"
+         id="tspan4055"
+         sodipodi:role="line">RECORD TYPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="466"
+       y="705.36218"
+       id="text4057"><tspan
+         sodipodi:role="line"
+         id="tspan4059"
+         x="466"
+         y="705.36218"
+         style="font-size:16px">FIELD TYPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="472"
+       y="725.36218"
+       id="text4061"><tspan
+         sodipodi:role="line"
+         id="tspan4063"
+         x="472"
+         y="725.36218">* Scope</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="742.86218"
+         id="tspan4065">   - non-versioned</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="760.36218"
+         id="tspan4069">   - versioned</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="777.86218"
+         id="tspan4067">   - versioned-mutable</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="795.36218"
+         id="tspan4071">* System assigned ID</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="812.86218"
+         id="tspan4073">* Namespaced name</tspan><tspan
+         sodipodi:role="line"
+         x="472"
+         y="827.37195"
+         id="tspan4075"
+         style="font-size:11px;font-style:italic;-inkscape-font-specification:AlArabiya Italic">Immutable except for the name</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="133"
+       y="724.36218"
+       id="text4077"><tspan
+         sodipodi:role="line"
+         id="tspan4079"
+         x="133"
+         y="724.36218">* versioned, each update</tspan><tspan
+         sodipodi:role="line"
+         x="133"
+         y="741.86218"
+         id="tspan4081">   causes a new version</tspan><tspan
+         sodipodi:role="line"
+         x="133"
+         y="759.36218"
+         id="tspan4083">* can reuse other record types</tspan><tspan
+         sodipodi:role="line"
+         x="133"
+         y="776.86218"
+         id="tspan4085">   as &quot;mixins&quot;</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#EmptyDiamondL)"
+       d="m 248,800.36218 1,56 151,0 0,-89 -43,0"
+       id="path4622"
+       sodipodi:nodetypes="ccccc" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="256"
+       y="809.36218"
+       id="text5072"><tspan
+         sodipodi:role="line"
+         id="tspan5074"
+         x="256"
+         y="809.36218">1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="365"
+       y="760.36218"
+       id="text5076"><tspan
+         sodipodi:role="line"
+         id="tspan5078"
+         x="365"
+         y="760.36218">*</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="309"
+       y="848.36218"
+       id="text5080"><tspan
+         sodipodi:role="line"
+         id="tspan5082"
+         x="309"
+         y="848.36218">mixin</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="302"
+       y="937.36218"
+       id="text5086"><tspan
+         sodipodi:role="line"
+         id="tspan5088"
+         x="302"
+         y="937.36218">FIELD TYPE ENTRY</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="314"
+       y="958.36218"
+       id="text5090"><tspan
+         sodipodi:role="line"
+         id="tspan5092"
+         x="314"
+         y="958.36218">* mandatory: boolean</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#EmptyDiamondL)"
+       d="m 179,802.36218 0,138 106,0"
+       id="path5096"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 487,936.36218 88,0 0,-92"
+       id="path5282"
+       sodipodi:nodetypes="ccc" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="496"
+       y="957.36218"
+       id="text5284"><tspan
+         sodipodi:role="line"
+         id="tspan5286"
+         x="496"
+         y="957.36218">1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="590"
+       y="858.36218"
+       id="text5288"><tspan
+         sodipodi:role="line"
+         id="tspan5290"
+         x="590"
+         y="858.36218">1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="730"
+       y="703.36218"
+       id="text5292"><tspan
+         sodipodi:role="line"
+         id="tspan5294"
+         x="730"
+         y="703.36218">VALUE TYPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="737"
+       y="727.36218"
+       id="text5296"><tspan
+         sodipodi:role="line"
+         id="tspan5298"
+         x="737"
+         y="727.36218">* adds multivalue and</tspan><tspan
+         sodipodi:role="line"
+         x="737"
+         y="744.86218"
+         id="tspan5300">   hierarchical aspects to</tspan><tspan
+         sodipodi:role="line"
+         x="737"
+         y="762.36218"
+         id="tspan5316">   primitive value type</tspan><tspan
+         sodipodi:role="line"
+         x="737"
+         y="779.86218"
+         id="tspan5302">* converts values from &amp;</tspan><tspan
+         sodipodi:role="line"
+         x="737"
+         y="797.36218"
+         id="tspan5304">   to bytes</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="674"
+       y="902.36218"
+       id="text5306"><tspan
+         sodipodi:role="line"
+         id="tspan5308"
+         x="674"
+         y="902.36218">PRIMITIVE VALUE TYPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="688"
+       y="921.36218"
+       id="text5310"><tspan
+         sodipodi:role="line"
+         id="tspan5312"
+         x="688"
+         y="921.36218">* e.g. string, long, date, link, ...</tspan><tspan
+         sodipodi:role="line"
+         x="688"
+         y="938.86218"
+         id="tspan5314">* converts values from &amp; to bytes</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 667,750.36218 54,0"
+       id="path5322"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 809,813.36218 0,65"
+       id="path5324"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 204,596.36218 0,83"
+       id="path5347"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 299,558.36218 41,0"
+       id="path5349"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 594,509.36218 0,170"
+       id="path5351"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 300,471.36218 272,0"
+       id="path5353" />
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-553.60046"
+       y="77.886719"
+       id="text5361"
+       transform="matrix(0,-1,1,0,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan5363"
+         x="-553.60046"
+         y="77.886719">INSTANCE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-848.12781"
+       y="77.414062"
+       id="text5365"
+       transform="matrix(0,-1,1,0,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan5367"
+         x="-848.12781"
+         y="77.414062">SCHEMA</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="370"
+       y="384.36218"
+       id="text3047"><tspan
+         sodipodi:role="line"
+         id="tspan3049"
+         x="370"
+         y="384.36218"
+         style="font-size:28px">Lily repository model</tspan></text>
+  </g>
+</svg>

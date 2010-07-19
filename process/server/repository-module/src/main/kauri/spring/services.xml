@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<beans              xmlns = "http://www.springframework.org/schema/beans"
+                xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:kauri = "http://kauriproject.org/runtime/1.0#springext"
+            xmlns:context = "http://www.springframework.org/schema/context"
+       xsi:schemaLocation = "http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+                             http://www.springframework.org/schema/context
+                             http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                             http://kauriproject.org/runtime/1.0#springext
+                             http://www.kauriproject.org/schemas/runtime/springext.xsd">
+
+  <context:annotation-config/>
+
+  <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module" conf="confRegistry"/>
+
+  <bean class="org.kauriproject.runtime.rapi.ConfPlaceholderConfigurer">
+    <constructor-arg ref="confRegistry"/>
+  </bean>
+
+  <kauri:import-service
+      id="hbaseConfFactory"
+      service="org.lilycms.server.modules.general.HBaseConfigurationFactory"/>
+
+  <kauri:export-service
+      ref="repository"
+      service="org.lilycms.repository.api.Repository"/>
+
+  <kauri:export-service
+      ref="messageQueue"
+      service="org.lilycms.rowlog.api.RowLog"/>
+
+  <bean id="hbaseConf"
+      factory-bean="hbaseConfFactory"
+      factory-method="get"/>
+
+  <bean id="idGenerator" class="org.lilycms.repository.impl.IdGeneratorImpl"/>
+
+  <bean id="typeManager" class="org.lilycms.repository.impl.HBaseTypeManager">
+    <constructor-arg ref="idGenerator"/>
+    <constructor-arg ref="hbaseConf"/>
+  </bean>
+
+  <bean id="blobStoreAccess" class="org.lilycms.repository.impl.DFSBlobStoreAccess">
+    <constructor-arg>
+      <bean
+          class="org.apache.hadoop.fs.FileSystem"
+          factory-method="get">
+        <constructor-arg>
+          <bean class="java.net.URI">
+            <constructor-arg value="${repository:blobFileSystem}"/>
+          </bean>
+        </constructor-arg>
+        <constructor-arg ref="hbaseConf"/>
+      </bean>
+    </constructor-arg>
+  </bean>
+
+  <bean id="blobStoreAccessFactory" class="org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory">
+    <constructor-arg ref="blobStoreAccess"/>
+  </bean>
+
+  <bean id="repository" class="org.lilycms.repository.impl.HBaseRepository">
+    <constructor-arg ref="typeManager"/>
+    <constructor-arg ref="idGenerator"/>
+    <constructor-arg ref="blobStoreAccessFactory"/>
+    <constructor-arg ref="hbaseConf"/>
+  </bean>
+
+  <bean id="messageQueue" factory-bean="repository" factory-method="getMessageQueue"/>
+
+  <bean id="address" class="org.lilycms.server.modules.repository.AddressResolver">
+    <constructor-arg value="${repository:interface}"/>
+    <constructor-arg value="${repository:nameserver}"/>
+  </bean>
+
+  <bean id="avroServer" class="org.lilycms.server.modules.repository.AvroServer">
+    <constructor-arg>
+      <bean factory-bean="address" factory-method="getHostAddress"/>
+    </constructor-arg>
+    <constructor-arg ref="repository"/>
+    <constructor-arg value="${repository:port}"/>
+  </bean>
+
+  <bean class="org.lilycms.server.modules.repository.ZKPublisher">
+    <constructor-arg value="${repository:zookeeperConnectString}"/>
+    <constructor-arg>
+      <bean factory-bean="address" factory-method="getHostAddress"/>
+    </constructor-arg>
+    <constructor-arg>
+      <bean factory-bean="avroServer" factory-method="getPort"/>
+    </constructor-arg>
+  </bean>
+
+</beans>

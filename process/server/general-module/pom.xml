@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.lilycms</groupId>
+  <artifactId>lily-general-module</artifactId>
+  <version>0.1-dev</version>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>org.lilycms</groupId>
+    <artifactId>lily-server</artifactId>
+    <version>0.1-dev</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <name>Lily: Kauri: general module</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.kauriproject</groupId>
+      <artifactId>kauri-conf</artifactId>
+      <version>${version.kauri}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-core</artifactId>
+      <version>${hadoop.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- Excluding Avro here so that it would only be in the classpath of the repository module.
+               Otherwise Avro can't find the repository implementation classes in the Kauri Runtime. -->
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase</artifactId>
+      <exclusions>
+        <exclusion>
+          <!-- Excluding Avro here so that it would only be in the classpath of the repository module.
+               Otherwise Avro can't find the repository implementation classes in the Kauri Runtime. -->
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.kauriproject</groupId>
+        <artifactId>kauri-genclassloader-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

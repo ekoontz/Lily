@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<classLoading>
+  <requiredForSharingOnConflictShareHighestVersion>true</requiredForSharingOnConflictShareHighestVersion>
+  <allowedForSharingOnConflictShareHighestVersion>true</allowedForSharingOnConflictShareHighestVersion>
+</classLoading>

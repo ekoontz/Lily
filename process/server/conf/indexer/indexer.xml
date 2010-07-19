@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<indexer>
+  <confPath>indexerconf.xml</confPath>
+  <solrAddress>http://localhost:8983/solr/</solrAddress>
+</indexer>

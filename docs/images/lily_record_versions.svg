@@ -1,0 +1,703 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="lily_record_versions.svg"
+   inkscape:export-filename="/home/bruno/werk/daisy3/lily record versions.png"
+   inkscape:export-xdpi="66.139999"
+   inkscape:export-ydpi="66.139999">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective10" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1"
+     inkscape:cx="533.34995"
+     inkscape:cy="435.22948"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1680"
+     inkscape:window-height="998"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <rect
+       id="rect3738"
+       width="276"
+       height="370"
+       x="673.70563"
+       y="495.70743"
+       style="fill:#f2f2f2;fill-opacity:1" />
+    <rect
+       id="rect3614"
+       width="282"
+       height="370"
+       x="92.705627"
+       y="495.70743"
+       style="fill:#f2f2f2;fill-opacity:1" />
+    <rect
+       style="fill:#f2f2f2;fill-opacity:1"
+       y="495.70743"
+       x="385.70563"
+       height="370"
+       width="276"
+       id="rect3610" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="157.70563"
+       y="525.7074"
+       id="text2824"><tspan
+         sodipodi:role="line"
+         id="tspan2826"
+         x="157.70563"
+         y="525.7074"
+         style="font-size:14px">NONVERSIONED SCOPE</tspan></text>
+    <text
+       id="text2828"
+       y="525.7074"
+       x="455.70563"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       xml:space="preserve"><tspan
+         style="font-size:14px"
+         y="525.7074"
+         x="455.70563"
+         id="tspan2830"
+         sodipodi:role="line">VERSIONED SCOPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="707.70563"
+       y="525.7074"
+       id="text2832"><tspan
+         sodipodi:role="line"
+         id="tspan2834"
+         x="707.70563"
+         y="525.7074"
+         style="font-size:14px">VERSIONED MUTABLE SCOPE</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-173"
+       y="541.36218"
+       id="text3628"><tspan
+         sodipodi:role="line"
+         id="tspan3630"
+         x="-173"
+         y="541.36218" /></text>
+    <g
+       transform="translate(403.70563,275.01137)"
+       id="use3732">
+      <rect
+         y="278.42548"
+         x="-299.93671"
+         height="69.873413"
+         width="93.873413"
+         id="rect4003"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-296"
+         y="299.36218"
+         id="text4005"><tspan
+           sodipodi:role="line"
+           id="tspan4007"
+           x="-296"
+           y="299.36218"
+           style="font-size:14px">Record Type</tspan><tspan
+           sodipodi:role="line"
+           x="-296"
+           y="316.86218"
+           style="font-size:14px"
+           id="tspan4009">+ version</tspan></text>
+    </g>
+    <g
+       transform="translate(535.70563,31.188118)"
+       id="use3734">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         id="rect3913"
+         width="153.51999"
+         height="69.519981"
+         x="-332.75998"
+         y="522.60217" />
+      <g
+         id="g3915"
+         transform="translate(-97,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3917"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3919"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3921"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3923"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3925"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3927"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3929"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <g
+         id="use3931"
+         transform="translate(-40,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3987"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3989"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3991"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3993"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3995"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3997"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3999"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-207"
+         y="556.36218"
+         id="text3933"><tspan
+           sodipodi:role="line"
+           id="tspan3935"
+           x="-207"
+           y="556.36218"
+           style="font-size:16px">...</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-625.03796"
+       y="965.22858"
+       id="text3744"
+       transform="matrix(0,-1,1,0,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3746"
+         x="-625.03796"
+         y="965.22858"
+         style="font-size:14px">VERSION 1</tspan></text>
+    <rect
+       style="fill:#b3b3b3;fill-opacity:0.22624433999999999;stroke:none"
+       id="use3762"
+       width="584.12976"
+       height="93.129753"
+       x="390.64075"
+       y="647.64252" />
+    <g
+       transform="translate(697.70563,380.40853)"
+       id="use3764">
+      <rect
+         y="278.42548"
+         x="-299.93671"
+         height="69.873413"
+         width="93.873413"
+         id="rect3856"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-296"
+         y="299.36218"
+         id="text3858"><tspan
+           sodipodi:role="line"
+           id="tspan3860"
+           x="-296"
+           y="299.36218"
+           style="font-size:14px">Record Type</tspan><tspan
+           sodipodi:role="line"
+           x="-296"
+           y="316.86218"
+           style="font-size:14px"
+           id="tspan3862">+ version</tspan></text>
+    </g>
+    <g
+       transform="translate(829.70563,136.58527)"
+       id="use3766">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         id="rect3830"
+         width="153.51999"
+         height="69.519981"
+         x="-332.75998"
+         y="522.60217" />
+      <g
+         id="g3832"
+         transform="translate(-97,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3834"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3836"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3838"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3840"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3842"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3844"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3846"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <g
+         id="use3848"
+         transform="translate(-40,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3971"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3973"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3975"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3977"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3979"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3981"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3983"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-207"
+         y="556.36218"
+         id="text3850"><tspan
+           sodipodi:role="line"
+           id="tspan3852"
+           x="-207"
+           y="556.36218"
+           style="font-size:16px">...</tspan></text>
+    </g>
+    <g
+       transform="translate(979.70563,380.40853)"
+       id="use3768">
+      <rect
+         y="278.42548"
+         x="-299.93671"
+         height="69.873413"
+         width="93.873413"
+         id="rect3820"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-296"
+         y="299.36218"
+         id="text3822"><tspan
+           sodipodi:role="line"
+           id="tspan3824"
+           x="-296"
+           y="299.36218"
+           style="font-size:14px">Record Type</tspan><tspan
+           sodipodi:role="line"
+           x="-296"
+           y="316.86218"
+           style="font-size:14px"
+           id="tspan3826">+ version</tspan></text>
+    </g>
+    <g
+       transform="translate(1111.7056,136.58527)"
+       id="use3770">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         id="rect3792"
+         width="153.51999"
+         height="69.519981"
+         x="-332.75998"
+         y="522.60217" />
+      <g
+         id="g3794"
+         transform="translate(-97,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3796"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3798"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3800"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3802"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3804"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3806"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3808"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <g
+         id="use3810"
+         transform="translate(-40,112)"
+         style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none">
+        <rect
+           y="419.20514"
+           x="-228.15707"
+           height="48.314167"
+           width="50.314167"
+           id="rect3955"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           id="text3957"
+           y="433.36218"
+           x="-225"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:14px"
+             id="tspan3959"
+             y="433.36218"
+             x="-225"
+             sodipodi:role="line">Field</tspan></text>
+        <text
+           id="text3961"
+           y="447.36218"
+           x="-218"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="447.36218"
+             x="-218"
+             id="tspan3963"
+             sodipodi:role="line">Type</tspan></text>
+        <text
+           id="text3965"
+           y="462.36218"
+           x="-216"
+           style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           xml:space="preserve"><tspan
+             style="font-size:12px"
+             y="462.36218"
+             x="-216"
+             id="tspan3967"
+             sodipodi:role="line">Value</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="-207"
+         y="556.36218"
+         id="text3812"><tspan
+           sodipodi:role="line"
+           id="tspan3814"
+           x="-207"
+           y="556.36218"
+           style="font-size:16px">...</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-733.73328"
+       y="966.42389"
+       id="text3774"
+       transform="matrix(0,-1,1,0,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3776"
+         x="-733.73328"
+         y="966.42389"
+         style="font-size:14px">VERSION 2</tspan></text>
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3762"
+       id="use3778"
+       transform="translate(2.5599998e-6,108)"
+       width="744.09448"
+       height="1052.3622"
+       style="fill:#e6e6e6" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3764"
+       id="use3780"
+       transform="translate(2.5599998e-6,108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3766"
+       id="use3782"
+       transform="translate(2.5599998e-6,108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3768"
+       id="use3784"
+       transform="translate(2.5599998e-6,108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3770"
+       id="use3786"
+       transform="translate(2.5599998e-6,108)"
+       width="744.09448"
+       height="1052.3622" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="-838.12341"
+       y="966.31403"
+       id="text3866"
+       transform="matrix(0,-1,1,0,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3868"
+         x="-838.12341"
+         y="966.31403"
+         style="font-size:14px">VERSION 3</tspan></text>
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3762"
+       id="use3870"
+       transform="translate(-1.9999974,-108)"
+       width="744.09448"
+       height="1052.3622"
+       style="fill:#e6e6e6" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3764"
+       id="use3872"
+       transform="translate(-1.9999974,-108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3766"
+       id="use3874"
+       transform="translate(-1.9999974,-108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3768"
+       id="use3876"
+       transform="translate(-1.9999974,-108)"
+       width="744.09448"
+       height="1052.3622" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use3770"
+       id="use3878"
+       transform="translate(-1.9999974,-108)"
+       width="744.09448"
+       height="1052.3622" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="313.70563"
+       y="476.70743"
+       id="text3884"><tspan
+         sodipodi:role="line"
+         id="tspan3886"
+         x="313.70563"
+         y="476.70743"
+         style="font-size:28px">Structure of a record with versions</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="460"
+       y="877.36218"
+       id="text2931"><tspan
+         sodipodi:role="line"
+         id="tspan2933"
+         x="460"
+         y="877.36218"
+         style="font-style:italic;-inkscape-font-specification:AlArabiya Italic">Note: on the storage level, fields that do not change from one version to another</tspan><tspan
+         sodipodi:role="line"
+         x="460"
+         y="892.36218"
+         id="tspan2935"
+         style="font-style:italic;-inkscape-font-specification:AlArabiya Italic">are not duplicated.</tspan></text>
+  </g>
+</svg>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="indexer">
+    <xs:complexType>
+      <xs:all minOccurs="0">
+        <xs:element ref="cases" minOccurs="0"/>
+        <xs:element ref="formatters" minOccurs="0"/>
+        <xs:element ref="indexFields" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cases">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" minOccurs="0" name="case">
+          <xs:complexType>
+            <xs:attribute name="recordType" type="xs:string" use="required"/>
+            <xs:attribute name="vtags" type="xs:string" use="optional"/>
+            <xs:attribute name="variant" type="xs:string" use="optional"/>
+            <xs:attribute name="indexVersionless" type="xs:boolean" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="formatters">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" minOccurs="0" name="formatter">
+          <xs:complexType>
+            <xs:attribute name="class" type="xs:string" use="required"/>
+            <xs:attribute name="name" type="xs:string" use="optional"/>
+            <xs:attribute name="type" type="xs:string" use="optional"/>
+            <xs:attribute name="singleValue" type="xs:boolean" use="optional"/>
+            <xs:attribute name="multiValue" type="xs:boolean" use="optional"/>
+            <xs:attribute name="hierarchical" type="xs:boolean" use="optional"/>
+            <xs:attribute name="nonHierarchical" type="xs:boolean" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="indexFields">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" minOccurs="0" name="indexField">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="value">
+                <xs:complexType>
+                  <xs:choice>
+                    <xs:element ref="field"/>
+                    <xs:element name="deref">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element maxOccurs="unbounded" minOccurs="1" name="follow">
+                            <xs:complexType>
+                              <xs:attribute name="field" type="xs:string" use="optional"/>
+                              <xs:attribute name="variant" type="xs:string" use="optional"/>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element maxOccurs="1" minOccurs="1" ref="field"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:choice>
+                  <xs:attribute name="extractContent" type="xs:string" use="optional"/>
+                  <xs:attribute name="formatter" type="xs:string" use="optional"/>                  
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="field">
+    <xs:complexType>
+      <xs:attribute name="name" type="xs:QName" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

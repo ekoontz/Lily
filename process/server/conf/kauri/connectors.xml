@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<connectors>
+  <!--
+  <serverConnector protocols="HTTP" port="8888">
+    <parameter name="maxThread">50</parameter>
+  </serverConnector>
+  -->
+
+  <clientConnector protocols="HTTP"/>
+  <clientConnector protocols="FILE"/>
+  <clientConnector protocols="CLAP"/>
+</connectors>

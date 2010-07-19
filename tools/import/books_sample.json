@@ -1,0 +1,80 @@
+{
+  namespaces: [
+    { prefix: "b", uri: "org.lilycms.bookssample"},
+    { prefix: "vtag", uri: "org.lilycms.vtag"}
+  ],
+  fieldTypes: [
+    {
+      name: "b:title",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "b:pages",
+      valueType: { primitive: "INTEGER" },
+      scope: "versioned"
+    },
+    {
+      name: "b:language",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "b:authors",
+      valueType: { primitive: "LINK", multiValue: true },
+      scope: "versioned"
+    },
+    {
+      name: "b:name",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "b:bio",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      /* vtag fields are fields that point to specific versions. Indexing of
+         versioned records is done based on these vtags. */
+      name: "vtag:live",
+      valueType: { primitive: "LONG" },
+      scope: "non_versioned"
+    }
+  ],
+  recordTypes: [
+    {
+      name: "Book",
+      fields: [
+        {name: "b:title", mandatory: true },
+        {name: "b:pages", mandatory: false },
+        {name: "b:language", mandatory: false },
+        {name: "b:authors", mandatory: false }
+      ]
+    },
+    {
+      name: "Author",
+      fields: [
+        {name: "b:name", mandatory: true },
+        {name: "b:bio", mandatory: false }
+      ]
+    }
+  ],
+  records: [
+    {
+      type: "Author",
+      id: "mary_shelley",
+      "b:name": "Mary Shelley",
+      "b:bio": "Mary Shelley (30 August 1797 – 1 February 1851) was a British novelist, short story writer, dramatist, essayist, biographer, and travel writer, best known for her Gothic novel Frankenstein: or, The Modern Prometheus (1818). She also edited and promoted the works of her husband, the Romantic poet and philosopher Percy Bysshe Shelley.",
+      "vtag:live": "last"
+    },
+    {
+      type: "Book",
+      "b:title": "Frankenstein",
+      "b:pages": 288,
+      "b:language": "English",
+      "b:authors": ["USER.mary_shelley"],
+      "vtag:live": "last"
+    }
+  ]
+}

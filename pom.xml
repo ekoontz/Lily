@@ -1,0 +1,416 @@
+<?xml version="1.0"?>
+<!--
+/*
+ * Copyright 2010 Outerthought bvba
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <properties>
+    <hbase.version>0.21.0-r962435</hbase.version>
+    <!-- When changing the hbase version, also change the hadoop version below to match
+         what is in HBase's pom.xml -->
+
+    <!-- About version 0.20.2-with-200-826:
+
+         (see also http://markmail.org/message/lkq5gmfc4xgubbsx)
+
+         You can obtain this as follows:
+           git clone git://github.com/ryanobjc/hadoop-common.git
+           cd hadoop-common
+           (next step is possibly not necessary)
+           git checkout hadoop-0.20.2-with-200-826
+
+         To build, first install apache forrest, and make sure you have a JDK 1.5 around.
+         Then build using:
+         ant -Djava5.home=/usr/lib/jdk1.5/ -Dforrest.home=/path/to/apache-forrest-0.8 tar
+    -->
+    <hadoop.version>0.20.3-append-r956776+1240+tail</hadoop.version>
+  </properties>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.lilycms</groupId>
+  <artifactId>lily</artifactId>
+  <packaging>pom</packaging>
+  <version>0.1-dev</version>
+  <name>Lily</name>
+
+  <url>http://lilycms.org/maven-site</url>
+
+  <modules>
+    <module>repository</module>
+    <module>hbaseindex</module>
+    <module>util</module>
+    <module>testfw</module>
+    <module>indexer</module>
+    <module>linkindex</module>
+    <module>repo-util</module>
+    <module>hbase-util</module>
+    <module>repository-api-tutorial</module>
+    <module>rowlog</module>
+    <module>process/server</module>
+    <module>process/client</module>
+    <module>tools/import</module>
+    <module>tools/tester</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-util</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-repo-util</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-hbase-util</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-repository-api</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-repository-impl</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-linkindex</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-testfw</artifactId>
+        <version>0.1-dev</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-hbaseindex</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-rowlog-api</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-rowlog-impl</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-indexer</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-client</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-import</artifactId>
+        <version>0.1-dev</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase</artifactId>
+        <version>${hbase.version}</version>
+        <!-- We use the log4j binding for slf4j instead of the simple one -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase</artifactId>
+        <classifier>tests</classifier>
+        <version>${hbase.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.15</version>
+        <scope>runtime</scope>
+        <!-- jmxtools and jmxri dependencies were broken in repo -->
+        <exclusions>
+          <exclusion>
+            <groupId>com.sun.jdmk</groupId>
+            <artifactId>jmxtools</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jmx</groupId>
+            <artifactId>jmxri</artifactId>
+          </exclusion>
+        </exclusions>        
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>1.5.10</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.5.10</version>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>2.5.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymockclassextension</artifactId>
+        <version>2.5.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>1.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-core-asl</artifactId>
+        <version>1.5.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>1.5.0</version>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>1.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>3.2.1.Final</version>
+     </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <id>repository.apache.org</id>
+      <name>Apache snapshot repository</name>
+      <url>https://repository.apache.org/content/groups/snapshots-group</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>lilycms</id>
+      <name>Lily Maven repository</name>
+      <url>http://lilycms.org/maven/maven2/deploy</url>
+    </repository>
+
+    <!-- At the time of this writing, the JBoss repository served for junit -->
+    <repository>
+      <id>repository.jboss.org</id>
+      <name>JBoss Repository</name>
+      <url>http://repository.jboss.org/maven2/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+
+    <!-- The JBoss Nexus repository serves Netty -->
+    <repository>
+       <id>nexus-repository.jboss.org</id>
+       <name>JBoss Nexus Repository</name> 
+       <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+       <snapshots>
+         <enabled>false</enabled>
+       </snapshots>
+     </repository>
+
+    <repository>
+      <!-- This repository is needed for the hadoop-test jar version 0.20.2-with-200-826. -->
+      <id>temp-hadoop</id>
+      <name>Hadoop 0.20.1/2 packaging, thrift, zk</name>
+      <url>http://people.apache.org/~rawson/repo/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>central</id>
+      <name>Maven Plugin Repository</name>
+      <url>http://repo1.maven.org/maven2</url>
+      <layout>default</layout>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+    </pluginRepository>
+
+    <pluginRepository>
+      <id>lilycms-plugins</id>
+      <name>Lilycms snapshot plugin repository</name>
+      <url>http://lilycms.org/maven/maven2/deploy</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+
+  <distributionManagement>
+    <repository>
+      <id>org.lilycms.maven-deploy</id>
+      <name>Lily CMS deploy repository</name>
+      <url>scp://lilycms.org/var/www/lily/maven/maven2/deploy</url>
+    </repository>
+    <snapshotRepository>
+      <id>org.lilycms.maven-snapshot</id>
+      <name>Lily CMS dev repository</name>
+      <url>scp://lilycms.org/var/www/lily/maven/maven2/dev</url>
+    </snapshotRepository>
+    <site>
+      <id>org.lilycms.website</id>
+      <name>Lily CMS maven website</name>
+      <url>scp://lilycms.org/var/www/lily/maven-site/</url>
+    </site>
+  </distributionManagement>  
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.5</source>
+            <target>1.5</target>
+          </configuration>
+        </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <argLine>-Xmx256m ${argLine}</argLine>
+          <systemPropertyVariables>
+            <lily.test.hbase>${lily.test.hbase}</lily.test.hbase>
+            <lily.test.log>${lily.test.log}</lily.test.log>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>org.lilycms.default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <!-- This is to make sure the ${argLine} in the configuration of the surefire plugin will get substituted.
+             Otherwise the tests fail with a "java.lang.NoClassDefFoundError: null". -->
+        <argLine></argLine>
+      </properties>
+    </profile>
+    <profile>
+      <id>fast</id>
+      <properties>
+        <maven.test.skip>true</maven.test.skip>
+        <argLine></argLine>
+      </properties>
+    </profile>
+    <profile>
+      <id>connect</id>
+      <properties>
+        <lily.test.hbase>connect</lily.test.hbase>
+        <argLine></argLine>
+      </properties>
+    </profile>
+    <profile>
+      <id>log</id>
+      <properties>
+        <lily.test.log>true</lily.test.log>
+        <argLine></argLine>
+      </properties>
+    </profile>
+  </profiles>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <!-- Disabled these, Maven was failing on one of them (dependencies?) -->
+              <!--
+              <report>dependencies</report>
+              <report>project-team</report>
+              <report>mailing-list</report>
+              <report>cim</report>
+              <report>issue-tracking</report>
+              <report>license</report>
+              <report>scm</report>
+              -->
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+  
+</project>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<indexer>
+  <cases>
+    <case recordType="Book" variant="*" vtags="live" indexVersionless="true"/>
+  </cases>
+
+  <indexFields xmlns:b="org.lilycms.bookssample">
+    <indexField name="title">
+      <value>
+        <field name="b:title"/>
+      </value>
+    </indexField>
+
+    <indexField name="authors">
+      <value>
+        <deref>
+          <follow field="b:authors"/>
+          <field name="b:name"/>
+        </deref>
+      </value>
+    </indexField>
+  </indexFields>
+
+</indexer>

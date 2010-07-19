@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<indexer>
+    <!--
+  <cases>
+    <case recordType="Book" variant="*" vtags="live" indexVersionless="true"/>
+  </cases>
+
+  <indexFields xmlns:foo="foo">
+    <indexField name="title">
+      <value>
+        <field name="foo:title"/>
+      </value>
+    </indexField>
+  </indexFields>
+  -->
+
+</indexer>

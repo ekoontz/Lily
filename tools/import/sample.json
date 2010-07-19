@@ -1,0 +1,84 @@
+/*
+  This is a sample input file for the import tool.
+
+  The syntax is not limited to strict json: unquoted property names
+  and comments are allowed.
+*/
+{
+  namespaces: [
+    { prefix: "sample", uri: "org.lilycms.tools.import_.sample"}
+  ],
+  fieldTypes: [
+    {
+      name: "sample:stringfield",
+      valueType: { "primitive": "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "sample:multiValueString",
+      valueType: { "primitive": "STRING", multiValue: true },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:intfield",
+      valueType: { "primitive": "INTEGER" },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:longfield",
+      valueType: { "primitive": "LONG" },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:booleanfield",
+      valueType: { "primitive": "BOOLEAN" },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:linkfield",
+      valueType: { "primitive": "LINK" },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:datefield",
+      valueType: { "primitive": "DATE" },
+      scope: "non_versioned"
+    },
+    {
+      name: "sample:datetimefield",
+      valueType: { "primitive": "DATETIME" },
+      scope: "non_versioned"
+    }
+  ],
+  recordTypes: [
+    {
+      name: "MiscFields",
+      fields: [
+        {name: "sample:field1", mandatory: false },
+        {name: "sample:field2", mandatory: false }
+      ]
+    }
+  ],
+  records: [
+    {
+      type: "MiscFields",
+      "sample:stringfield": "My first document.",
+      "sample:multiValueString": ["first", "second", "third"],
+      "sample:intfield": 23,
+      "sample:longfield": 242,
+      "sample:datefield": "2010-07-09",
+      "sample:datetimefield": "2010-07-09T14:04:46",
+      "sample:booleanfield": true
+    },
+    {
+      type: "MiscFields",
+      id: "zoo",
+      "sample:stringfield": "A document with a user-defined ID"
+    },
+    {
+      type: "MiscFields",
+      "sample:stringfield": "A document with a link field",
+      "sample:linkfield": "USER.zoo"
+    }
+  ]
+}

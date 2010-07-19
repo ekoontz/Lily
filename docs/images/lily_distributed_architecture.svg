@@ -1,0 +1,857 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg9638"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="lily_distributed_architecture.svg"
+   inkscape:export-filename="/home/bruno/tmp/lily distributed architecture.png"
+   inkscape:export-xdpi="81.489998"
+   inkscape:export-ydpi="81.489998">
+  <defs
+     id="defs9640">
+    <marker
+       inkscape:stockid="Arrow2Lstart"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow2Lstart"
+       style="overflow:visible">
+      <path
+         id="path3843"
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         transform="scale(1.1) translate(1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow2Lend"
+       style="overflow:visible;">
+      <path
+         id="path3846"
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round;"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         transform="scale(1.1) rotate(180) translate(1,0)" />
+    </marker>
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective9646" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="840.90788"
+     inkscape:cy="456.20609"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1680"
+     inkscape:window-height="998"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata9643">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <g
+       id="g9964"
+       transform="translate(56,0)">
+      <rect
+         y="556.37726"
+         x="56.568546"
+         height="51.51778"
+         width="96.974648"
+         id="rect9652"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9648"
+         y="585.67169"
+         x="79.80204"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="585.67169"
+           x="79.80204"
+           id="tspan9650"
+           sodipodi:role="line">CLIENT</tspan></text>
+    </g>
+    <g
+       id="g9959"
+       transform="translate(56,0)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9654"
+         width="96.974648"
+         height="51.51778"
+         x="56.568546"
+         y="636.37732" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="79.80204"
+         y="665.67169"
+         id="text9656"><tspan
+           sodipodi:role="line"
+           id="tspan9658"
+           x="79.80204"
+           y="665.67169">CLIENT</tspan></text>
+    </g>
+    <g
+       id="g9954"
+       transform="translate(56,0)">
+      <rect
+         y="714.37732"
+         x="56.568546"
+         height="51.51778"
+         width="96.974648"
+         id="rect9660"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9662"
+         y="743.67169"
+         x="79.80204"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="743.67169"
+           x="79.80204"
+           id="tspan9664"
+           sodipodi:role="line">CLIENT</tspan></text>
+    </g>
+    <g
+       id="g9939"
+       transform="translate(24,0)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9666"
+         width="96.974648"
+         height="51.51778"
+         x="260.56854"
+         y="556.37726" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="273.80206"
+         y="585.67169"
+         id="text9668"><tspan
+           sodipodi:role="line"
+           id="tspan9670"
+           x="273.80206"
+           y="585.67169">LILY NODE</tspan></text>
+    </g>
+    <g
+       id="g9944"
+       transform="translate(24,0)">
+      <rect
+         y="638.37732"
+         x="260.56854"
+         height="51.51778"
+         width="96.974648"
+         id="rect9672"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9674"
+         y="667.67169"
+         x="273.80206"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="667.67169"
+           x="273.80206"
+           id="tspan9676"
+           sodipodi:role="line">LILY NODE</tspan></text>
+    </g>
+    <g
+       id="g9949"
+       transform="translate(26,0)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9678"
+         width="96.974648"
+         height="51.51778"
+         x="258.56854"
+         y="714.37732" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="271.80206"
+         y="743.67169"
+         id="text9680"><tspan
+           sodipodi:role="line"
+           id="tspan9682"
+           x="271.80206"
+           y="743.67169">LILY NODE</tspan></text>
+    </g>
+    <g
+       id="g9842"
+       transform="translate(-1.7359448,0.40103149)">
+      <rect
+         y="455.19962"
+         x="483.5787"
+         height="51.51778"
+         width="96.974648"
+         id="rect9684"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9686"
+         y="478.43311"
+         x="532.16754"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9690"
+           y="478.43311"
+           x="532.16754"
+           sodipodi:role="line">HB<tspan
+   id="tspan9696"
+   style="text-align:center;text-anchor:middle">ASE</tspan></tspan><tspan
+           id="tspan9694"
+           y="494.68311"
+           x="532.16754"
+           sodipodi:role="line"><tspan
+   id="tspan9698"
+   style="text-align:center;text-anchor:middle">REGIO</tspan>N NODE</tspan></text>
+    </g>
+    <g
+       id="g9888"
+       transform="translate(-3.756239,1.0101525)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9700"
+         width="96.974648"
+         height="51.51778"
+         x="485.599"
+         y="640.21997" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="534.18787"
+         y="663.45343"
+         id="text9702"><tspan
+           sodipodi:role="line"
+           x="534.18787"
+           y="663.45343"
+           id="tspan9704">HDFS<tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9706" /></tspan><tspan
+           sodipodi:role="line"
+           x="534.18787"
+           y="679.70343"
+           id="tspan9708">DATA NODE</tspan></text>
+    </g>
+    <g
+       id="g9866"
+       transform="translate(-0.72576904,2)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9712"
+         width="96.974648"
+         height="51.51778"
+         x="589.64471"
+         y="377.41785" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="638.23358"
+         y="400.65134"
+         id="text9714"><tspan
+           sodipodi:role="line"
+           x="638.23358"
+           y="400.65134"
+           id="tspan9716">HB<tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9718">ASE</tspan></tspan><tspan
+           sodipodi:role="line"
+           x="638.23358"
+           y="416.90134"
+           id="tspan9720">MASTER NODE</tspan></text>
+    </g>
+    <g
+       id="g9873"
+       transform="translate(4,-2)">
+      <rect
+         y="563.44843"
+         x="534.64459"
+         height="51.51778"
+         width="96.974648"
+         id="rect9724"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9726"
+         y="586.68188"
+         x="583.23346"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9728"
+           y="586.68188"
+           x="583.23346"
+           sodipodi:role="line">HDFS<tspan
+   id="tspan9730"
+   style="text-align:center;text-anchor:middle" /></tspan><tspan
+           id="tspan9732"
+           y="602.93188"
+           x="583.23346"
+           sodipodi:role="line">NAME NODE</tspan></text>
+    </g>
+    <g
+       id="g9880"
+       transform="translate(4,18)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9734"
+         width="96.974648"
+         height="51.51778"
+         x="641.0304"
+         y="563.44836" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="689.61926"
+         y="576.68188"
+         id="text9736"><tspan
+           sodipodi:role="line"
+           x="689.61926"
+           y="576.68188"
+           id="tspan9738">HDFS<tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9740" /></tspan><tspan
+           sodipodi:role="line"
+           x="689.61926"
+           y="592.93188"
+           id="tspan9742">SECONDARY</tspan><tspan
+           id="tspan9744"
+           sodipodi:role="line"
+           x="689.61926"
+           y="609.18188">NAME NODE</tspan></text>
+    </g>
+    <g
+       id="g9973"
+       transform="translate(-3.756239,-8.0203051)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9746"
+         width="96.974648"
+         height="51.51778"
+         x="485.599"
+         y="755.77832" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="534.18787"
+         y="779.01178"
+         id="text9748"><tspan
+           sodipodi:role="line"
+           x="534.18787"
+           y="779.01178"
+           id="tspan9750">SOLR</tspan><tspan
+           sodipodi:role="line"
+           x="534.18787"
+           y="795.26178"
+           id="tspan9754">NODE</tspan></text>
+    </g>
+    <g
+       id="g9909"
+       transform="translate(-3.7562256,-9.4314989)">
+      <rect
+         y="757.18951"
+         x="592.67517"
+         height="51.51778"
+         width="96.974648"
+         id="rect9758"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9760"
+         y="780.42297"
+         x="641.26404"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9762"
+           y="780.42297"
+           x="641.26404"
+           sodipodi:role="line">SOLR</tspan><tspan
+           id="tspan9764"
+           y="796.67297"
+           x="641.26404"
+           sodipodi:role="line">NODE</tspan></text>
+    </g>
+    <g
+       id="g9915"
+       transform="translate(-6.7866968,-8.8020434)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9766"
+         width="96.974648"
+         height="51.51778"
+         x="702.7818"
+         y="756.56006" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="751.37067"
+         y="779.79352"
+         id="text9768"><tspan
+           sodipodi:role="line"
+           x="751.37067"
+           y="779.79352"
+           id="tspan9770">SOLR</tspan><tspan
+           sodipodi:role="line"
+           x="751.37067"
+           y="796.04352"
+           id="tspan9772">NODE</tspan></text>
+    </g>
+    <g
+       id="g9850"
+       transform="translate(-0.50238037,0)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9774"
+         width="96.974648"
+         height="51.51778"
+         x="589.42133"
+         y="455.60065" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="638.01019"
+         y="478.83411"
+         id="text9776"><tspan
+           sodipodi:role="line"
+           x="638.01019"
+           y="478.83411"
+           id="tspan9778">HB<tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9780">ASE</tspan></tspan><tspan
+           sodipodi:role="line"
+           x="638.01019"
+           y="495.08411"
+           id="tspan9782"><tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9784">REGIO</tspan>N NODE</tspan></text>
+    </g>
+    <g
+       id="g9858"
+       transform="translate(2.3046728,-0.40100098)">
+      <rect
+         y="456.00165"
+         x="693.69043"
+         height="51.51778"
+         width="96.974648"
+         id="rect9786"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9788"
+         y="479.23511"
+         x="742.2793"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9790"
+           y="479.23511"
+           x="742.2793"
+           sodipodi:role="line">HB<tspan
+   id="tspan9792"
+   style="text-align:center;text-anchor:middle">ASE</tspan></tspan><tspan
+           id="tspan9794"
+           y="495.48511"
+           x="742.2793"
+           sodipodi:role="line"><tspan
+   id="tspan9796"
+   style="text-align:center;text-anchor:middle">REGIO</tspan>N NODE</tspan></text>
+    </g>
+    <g
+       id="g9921"
+       transform="translate(-3.7562085,-11.030457)">
+      <rect
+         y="861.61591"
+         x="485.59897"
+         height="51.51778"
+         width="96.974648"
+         id="rect9798"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9800"
+         y="884.84937"
+         x="534.18787"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9802"
+           y="884.84937"
+           x="534.18787"
+           sodipodi:role="line">ZOOKEEPER</tspan><tspan
+           id="tspan9804"
+           y="901.09937"
+           x="534.18787"
+           sodipodi:role="line">NODE</tspan></text>
+    </g>
+    <g
+       id="g9927"
+       transform="translate(-7.6699219,-8)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9806"
+         width="96.974648"
+         height="51.51778"
+         x="596.58887"
+         y="858.58545" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="645.17773"
+         y="881.81891"
+         id="text9808"><tspan
+           sodipodi:role="line"
+           x="645.17773"
+           y="881.81891"
+           id="tspan9810">ZOOKEEPER</tspan><tspan
+           sodipodi:role="line"
+           x="645.17773"
+           y="898.06891"
+           id="tspan9812">NODE</tspan></text>
+    </g>
+    <g
+       id="g9933"
+       transform="translate(-11.563308,-10.020325)">
+      <rect
+         y="860.60577"
+         x="707.55841"
+         height="51.51778"
+         width="96.974648"
+         id="rect9814"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9816"
+         y="883.83923"
+         x="756.14728"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9818"
+           y="883.83923"
+           x="756.14728"
+           sodipodi:role="line">ZOOKEEPER</tspan><tspan
+           id="tspan9820"
+           y="900.08923"
+           x="756.14728"
+           sodipodi:role="line">NODE</tspan></text>
+    </g>
+    <g
+       id="g9895"
+       transform="translate(-2.6800537,1.0101525)">
+      <rect
+         y="640.21997"
+         x="591.599"
+         height="51.51778"
+         width="96.974648"
+         id="rect9822"
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+      <text
+         id="text9824"
+         y="663.45343"
+         x="640.18787"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan9826"
+           y="663.45343"
+           x="640.18787"
+           sodipodi:role="line">HDFS<tspan
+   id="tspan9828"
+   style="text-align:center;text-anchor:middle" /></tspan><tspan
+           id="tspan9830"
+           y="679.70343"
+           x="640.18787"
+           sodipodi:role="line">DATA NODE</tspan></text>
+    </g>
+    <g
+       id="g9902"
+       transform="translate(-1.6038965,1.0101525)">
+      <rect
+         style="fill:#f2f2f2;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect9832"
+         width="96.974648"
+         height="51.51778"
+         x="697.599"
+         y="640.21997" />
+      <text
+         xml:space="preserve"
+         style="font-size:13px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         x="746.18787"
+         y="663.45343"
+         id="text9834"><tspan
+           sodipodi:role="line"
+           x="746.18787"
+           y="663.45343"
+           id="tspan9836">HDFS<tspan
+   style="text-align:center;text-anchor:middle"
+   id="tspan9838" /></tspan><tspan
+           sodipodi:role="line"
+           x="746.18787"
+           y="679.70343"
+           id="tspan9840">DATA NODE</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 209.28571,580.93361 74.46526,0"
+       id="path9979" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 357.14286,247.66591 0,-152.142857 229.28571,0"
+       id="path11049"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 381.42857,272.66591 57.85714,0 0,-42.85714 305.71429,0 0,-29.28572"
+       id="path11235"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 637.15372,229.42176 0,-30.05204"
+       id="path11421"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 527.04709,229.92684 0,-30.55712"
+       id="path11607"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 380.82751,448.11979 98.99495,0"
+       id="path11793"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 194.95944,457.21116 0,62.18275 577.30218,0 0,-27.7792"
+       id="path11979"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 159.6041,456.20101 0,112.12693 319.20821,0"
+       id="path12165"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 336.3808,457.21116 0,98.99495 141.42135,0"
+       id="path12351"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 792.96975,164.26692 35.35534,0 0,248.49753 -300.01531,0 0,-27.27412"
+       id="path12537"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 635,413.02305 0,-27.14285"
+       id="path12723"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 743.57143,412.30877 0,-26.42857"
+       id="path12909"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 779.83777,199.11718 0,65.07362 -144.45182,0"
+       id="path13095"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 606.09153,304.17305 0,12.62691 38.38579,0"
+       id="path13281"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend);marker-start:url(#Arrow2Lstart)"
+       d="m 527.85714,490.52305 0,18.57143 219.28572,0 0,-16.78571"
+       id="path13283"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 637.14286,817.00811 0,-17.0953"
+       id="path13657" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 503.56104,519.33554 0,-27.52666"
+       id="path13845"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 654.57885,519.33554 0,-27.27412"
+       id="path14033"
+       transform="translate(0,308.2677)" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="200"
+       y="823.79071"
+       id="text14242"><tspan
+         sodipodi:role="line"
+         x="200"
+         y="823.79071"
+         id="tspan14246"
+         style="font-size:10px">perform query on</tspan><tspan
+         sodipodi:role="line"
+         x="200"
+         y="836.29071"
+         id="tspan14250"
+         style="font-size:10px">any SOLR node</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="536.78571"
+       y="814.14789"
+       id="text14252"><tspan
+         sodipodi:role="line"
+         id="tspan14254"
+         x="536.78571"
+         y="814.14789"
+         style="font-size:10px">distributed query</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot14256"
+       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Bitstream Vera Sans;font-style:normal;font-weight:normal;font-size:12"><flowRegion
+         id="flowRegion14258"><rect
+           id="rect14260"
+           width="112.5"
+           height="18.214285"
+           x="178.92857"
+           y="509.09448" /></flowRegion><flowPara
+         id="flowPara14262" /></flowRoot>    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="168.92857"
+       y="564.80878"
+       id="text14264"
+       transform="translate(0,308.2677)"><tspan
+         sodipodi:role="line"
+         id="tspan14266"
+         x="168.92857"
+         y="564.80878"
+         style="font-size:10">consult available nodes</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="338.57144"
+       y="780.57648"
+       id="text14268"><tspan
+         sodipodi:role="line"
+         id="tspan14270"
+         x="338.57144"
+         y="780.57648"
+         style="font-size:10px">publish</tspan><tspan
+         sodipodi:role="line"
+         x="338.57144"
+         y="793.07648"
+         style="font-size:10px"
+         id="tspan14274">available</tspan><tspan
+         sodipodi:role="line"
+         x="338.57144"
+         y="805.57648"
+         id="tspan14272"
+         style="font-size:10px">nodes</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="211.42857"
+       y="575.57648"
+       id="text14276"><tspan
+         sodipodi:role="line"
+         id="tspan14278"
+         x="211.42857"
+         y="575.57648">CRUD ops</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 187.14286,379.09448 0,22.28572 534.28571,0 0,-16.57143"
+       id="path14280"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994000000003px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 608.57143,709.03539 0,-15.23676"
+       id="path14468" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 499.52043,401.14769 0,-15.9099"
+       id="path14470"
+       transform="translate(0,308.2677)" />
+    <text
+       xml:space="preserve"
+       style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       x="393.21429"
+       y="706.64795"
+       id="text14844"><tspan
+         sodipodi:role="line"
+         id="tspan14846"
+         x="393.21429"
+         y="706.64795">blob access</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 243.44676,272.85832 0,158.34141 39.90103,0"
+       id="path3282"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 243.44676,353.16545 39.64849,0"
+       id="path4254"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 527.80471,146.58925 0,-7.11168 216.67772,0 0,7.11168"
+       id="path3745"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 636.90118,146.58925 0,-23.23351"
+       id="path4531"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 458.60926,401.14769 0,-181.90868 267.18535,0 0,-19.11168"
+       id="path4719"
+       transform="translate(0,308.2677)"
+       sodipodi:nodetypes="cccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 611.64737,218.81516 0,-19.1929"
+       id="path4907"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 501.54074,218.81516 0,-19.69798"
+       id="path5095"
+       transform="translate(0,308.2677)" />
+  </g>
+</svg>

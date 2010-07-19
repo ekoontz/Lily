@@ -1,0 +1,316 @@
+{
+  "namespace": "org.lilycms.repository.avro",
+  "protocol": "AvroLily",
+
+  "types": [
+    {
+      "name": "AvroQName",
+      "type": "record",
+      "fields": [
+        {"name": "namespace", "type": ["string", "null"]},
+        {"name": "name", "type": "string"}
+      ]
+    },
+
+    {
+      "name": "AvroField",
+      "type": "record",
+      "fields": [
+        {"name": "name", "type": "string"},
+        {"name": "primitiveType", "type": "string"},
+        {"name": "multiValue", "type": "boolean"},
+        {"name": "hierarchical", "type": "boolean"},
+        {"name": "value", "type": "bytes"}
+      ]
+    },
+
+    {
+      "name": "AvroRecord",
+      "type": "record",
+      "fields": [
+        {"name": "id", "type": ["string", "null"]},
+        {"name": "version", "type": ["long", "null"]},
+        {"name": "recordTypeId", "type": ["string", "null"]},
+        {"name": "recordTypeVersion", "type": ["long", "null"]},
+        {"name": "scopeRecordTypeIds", "type": {"type": "map", "values": "string"}},
+        {"name": "scopeRecordTypeVersions", "type": {"type": "map", "values": "long"}},
+        {"name": "fields", "type": {"type": "array", "items": "AvroField"}},
+        {"name": "fieldsToDelete", "type": {"type": "array", "items": "string"}}
+      ]
+    },
+
+    {
+      "name": "AvroStackTraceElement",
+      "type": "record",
+      "fields": [
+        {"name": "className", "type": "string"},
+        {"name": "methodName", "type": "string"},
+        {"name": "fileName", "type": ["string", "null"]},
+        {"name": "lineNumber", "type": "int"}
+      ]
+    },
+
+    {
+      "name": "AvroExceptionCause",
+      "type": "record",
+      "fields": [
+        {"name": "message", "type": ["string", "null"]},
+        {"name": "className", "type": "string"},
+        {"name": "stackTrace", "type": {"type": "array", "items": "AvroStackTraceElement"}}
+      ]
+    },
+
+    {
+      "name": "AvroRecordException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroRecordExistsException",
+      "type": "error",
+      "fields": [
+          {"name": "record", "type": "AvroRecord"},
+          {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+     
+    {
+      "name": "AvroRecordNotFoundException",
+      "type": "error",
+      "fields": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+     
+    {
+      "name": "AvroVersionNotFoundException",
+      "type": "error",
+      "fields": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroInvalidRecordException",
+      "type": "error",
+      "fields": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "message", "type": ["string", "null"]},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroTypeException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroGenericException",
+      "type": "error",
+      "fields": [
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroValueType",
+      "type": "record",
+      "fields": [
+        {"name": "primitiveValueType", "type": "string"},
+        {"name": "multivalue", "type": "boolean"},
+        {"name": "hierarchical", "type": "boolean"}
+      ]
+    },
+
+    {
+      "name": "AvroFieldTypeEntry",
+      "type": "record",
+      "fields": [
+        {"name": "id", "type": "string"},
+        {"name": "mandatory", "type": "boolean"}
+      ]
+    },
+
+    {
+      "name": "AvroFieldType",
+      "type": "record",
+      "fields": [
+        {"name": "id",   "type": ["string", "null"]},
+        {"name": "name", "type": "AvroQName"},
+        {"name": "valueType", "type": "AvroValueType"},
+        {"name": "scope", "type": {"namespace": "org.lilycms.repository.api", "name": "Scope", "type": "enum", "symbols": ["NON_VERSIONED", "VERSIONED", "VERSIONED_MUTABLE"]}}
+      ]
+    },
+
+    {
+      "name": "AvroMixin",
+      "type": "record",
+      "fields": [
+        {"name": "recordTypeId", "type": "string"},
+        {"name": "recordTypeVersion", "type": "long"}
+      ]
+    },
+
+    {
+      "name": "AvroRecordType",
+      "type": "record",
+      "fields": [
+        {"name": "id", "type": ["string", "null"]},
+        {"name": "version", "type": ["long", "null"]},
+        {"name": "fieldTypeEntries", "type": {"type": "array", "items": "AvroFieldTypeEntry"}},
+        {"name": "mixins", "type": {"type": "array", "items": "AvroMixin"}}
+      ]
+    },
+
+    {
+      "name": "AvroFieldTypeExistsException",
+      "type": "error",
+      "fields": [
+        {"name": "fieldType", "type": "AvroFieldType"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroFieldTypeNotFoundException",
+      "type": "error",
+      "fields": [
+        {"name": "id", "type": ["string", "null"]},
+        {"name": "name", "type": ["AvroQName", "null"]},
+        {"name": "version", "type": "long"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroRecordTypeExistsException",
+      "type": "error",
+      "fields": [
+        {"name": "recordType", "type": "AvroRecordType"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroRecordTypeNotFoundException",
+      "type": "error",
+      "fields": [
+        {"name": "id", "type": "string"},
+        {"name": "version", "type": "long"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
+      "name": "AvroFieldTypeUpdateException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    }
+
+  ],
+
+  "messages": {
+    "create": {
+      "request": [{"name": "record", "type": "AvroRecord"}],
+      "response": "AvroRecord",
+      "errors": ["AvroRecordExistsException", "AvroRecordNotFoundException", "AvroInvalidRecordException",
+      "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
+      "AvroGenericException"]
+    },
+     
+    "update": {
+      "request": [{"name": "record", "type": "AvroRecord"}],
+      "response": "AvroRecord",
+      "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
+      "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
+      "AvroGenericException"]
+    },
+
+    "updateMutableFields": {
+      "request": [{"name": "record", "type": "AvroRecord"}],
+      "response": "AvroRecord",
+      "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroInvalidRecordException",
+      "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
+      "AvroGenericException"]
+    },
+
+    "read": {
+      "request": [
+        {"name": "recordId", "type": "string"},
+        {"name": "version", "type": "long"},
+        {"name": "fieldNames", "type": ["null", {"type": "array", "items": "AvroQName"}]}
+      ],
+      "response": "AvroRecord",
+      "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroRecordTypeNotFoundException",
+      "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
+     },
+
+    "delete": {
+      "request": [{"name": "recordId", "type": "string"}],
+      "response": "null",
+      "errors": ["AvroRecordException", "AvroGenericException"]
+    },
+
+    "createRecordType": {
+      "request": [{"name": "recordType", "type": "AvroRecordType"}],
+      "response": "AvroRecordType",
+      "errors": ["AvroRecordTypeExistsException", "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException",
+      "AvroTypeException", "AvroGenericException"]
+    },
+
+    "getRecordType": {
+      "request": [
+        {"name": "id", "type": "string"},
+        {"name": "version", "type": "long"}
+      ],
+      "response": "AvroRecordType",
+      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+    },
+
+    "updateRecordType": {
+      "request": [{"name": "recordType", "type": "AvroRecordType"}],
+      "response": "AvroRecordType",
+      "errors": ["AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroTypeException",
+      "AvroGenericException"]
+    },
+
+    "createFieldType": {
+      "request": [{"name": "fieldType", "type": "AvroFieldType"}],
+      "response": "AvroFieldType",
+      "errors": ["AvroFieldTypeExistsException", "AvroTypeException", "AvroGenericException"]
+    },
+
+    "updateFieldType": {
+      "request": [{"name": "fieldType", "type": "AvroFieldType"}],
+      "response": "AvroFieldType",
+      "errors": ["AvroFieldTypeNotFoundException", "AvroFieldTypeUpdateException", "AvroTypeException",
+      "AvroGenericException"]
+    },
+
+    "getFieldTypeById": {
+      "request": [{"name": "id", "type": "string"}],
+      "response": "AvroFieldType",
+      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+    },
+
+    "getFieldTypeByName": {
+      "request": [{"name": "name", "type": "AvroQName"}],
+      "response": "AvroFieldType",
+      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+    }
+ }
+}
