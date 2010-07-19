@@ -58,6 +58,7 @@ import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.util.ArgumentValidator;
 
 public class RowLogProcessorImpl implements RowLogProcessor {
+    private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
     private Map<Integer, ConsumerThread> consumerThreads = new HashMap<Integer, ConsumerThread>();
@@ -80,21 +81,47 @@ public class RowLogProcessorImpl implements RowLogProcessor {
     }
     
     public synchronized void start() {
-        for (RowLogMessageConsumer consumer : rowLog.getConsumers()) {
-            startConsumerThread(consumer);
-        }
-        startConsumerNotifyListener();
-    }
-    
-    private synchronized void startConsumerThread(RowLogMessageConsumer consumer) {
-        if (consumerThreads.get(consumer.getId()) == null) {
-            ConsumerThread consumerThread = new ConsumerThread(consumer);
-            consumerThread.start();
-            consumerThreads.put(consumer.getId(), consumerThread);
+        if (stop) {
+            stop = false;
+            for (RowLogMessageConsumer consumer : rowLog.getConsumers()) {
+                startConsumerThread(consumer);
+            }
+            startConsumerNotifyListener();
+            rowLog.setProcessor(this);
         }
     }
 
+    public synchronized void consumerRegistered(RowLogMessageConsumer consumer) {
+        startConsumerThread(consumer);
+    }
+    
+    public synchronized void consumerUnregistered(RowLogMessageConsumer consumer) {
+        stopConsumerThread(consumer.getId());
+    }
+    
+    private synchronized void startConsumerThread(RowLogMessageConsumer consumer) {
+        if (!stop) {
+            if (consumerThreads.get(consumer.getId()) == null) {
+                ConsumerThread consumerThread = new ConsumerThread(consumer);
+                consumerThread.start();
+                consumerThreads.put(consumer.getId(), consumerThread);
+            }
+        }
+    }
+    
+    private synchronized void stopConsumerThread(int consumerId) {
+        ConsumerThread consumerThread = consumerThreads.get(consumerId);
+        consumerThread.interrupt();
+        try {
+            consumerThread.join();
+        } catch (InterruptedException e) {
+        }
+        consumerThreads.remove(consumerId);
+    }
+
     public synchronized void stop() {
+        stop = true;
+        rowLog.setProcessor(null);
         stopConsumerNotifyListener();
         Collection<ConsumerThread> threads = consumerThreads.values();
         consumerThreads.clear();
@@ -363,6 +390,5 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                 wakeupCount++;
             }
         }
-
     }
 }

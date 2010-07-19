@@ -151,7 +151,6 @@ public class HBaseRepository implements Repository {
                 HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, zkConnectString); 
         messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
         messageQueue.registerShard(messageQueueShard);
-        messageQueue.registerConsumer(new DevNull());
     }
 
     private void initializeWal(Configuration configuration) throws IOException {

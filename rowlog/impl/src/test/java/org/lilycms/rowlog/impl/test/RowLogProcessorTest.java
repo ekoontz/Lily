@@ -89,6 +89,7 @@ public class RowLogProcessorTest {
         rowLog.lockMessage(message, consumerId);
         byte[] someBytes = new byte[]{1,2,3};
         expectLastCall().andReturn(someBytes).anyTimes();
+        
     }
 
     @After
@@ -97,6 +98,9 @@ public class RowLogProcessorTest {
 
     @Test
     public void testProcessor() throws Exception {
+        rowLog.setProcessor(isA(RowLogProcessor.class));
+        rowLog.setProcessor(null);
+
         control.replay();
         RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, null);
         assertFalse(processor.isRunning(consumerId));
@@ -109,6 +113,11 @@ public class RowLogProcessorTest {
     
     @Test
     public void testProcessorMultipleStartStop() throws Exception {
+        rowLog.setProcessor(isA(RowLogProcessor.class));
+        expectLastCall().times(2);
+        rowLog.setProcessor(null);
+        expectLastCall().anyTimes();
+
         control.replay();
         RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, null);
         assertFalse(processor.isRunning(consumerId));
@@ -127,6 +136,9 @@ public class RowLogProcessorTest {
     
     @Test
     public void testProcessorStopWihtoutStart() throws Exception {
+        rowLog.setProcessor(isA(RowLogProcessor.class));
+        rowLog.setProcessor(null);
+        expectLastCall().anyTimes();
         control.replay();
         RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, null);
         processor.stop();

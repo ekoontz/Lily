@@ -38,4 +38,8 @@ public interface RowLogProcessor {
      * @return true if the RowLogProcessor is executing
      */
     boolean isRunning(int consumerId);
+
+    void consumerRegistered(RowLogMessageConsumer consumer);
+
+    void consumerUnregistered(RowLogMessageConsumer consumer);
 }

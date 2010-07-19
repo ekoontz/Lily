@@ -18,6 +18,7 @@ package org.lilycms.rowlog.api;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.lilycms.rowlog.api.RowLogProcessor;
 
 /**
  * The RowLog helps managing the execution of synchronous and asynchronous actions in response to
@@ -164,4 +165,6 @@ public interface RowLog {
      * @return a list of the {@link RowLogMessageConsumer}s that are registered on the RowLog
      */
     List<RowLogMessageConsumer> getConsumers();
+
+    void setProcessor(RowLogProcessor rowLogProcessor);
 }

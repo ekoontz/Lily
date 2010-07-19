@@ -49,6 +49,7 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 
 /**
@@ -68,6 +69,7 @@ public class RowLogImpl implements RowLog {
     private ChannelFactory channelFactory;
     private final String zkConnectString;
     private final String id;
+    private RowLogProcessor rowLogProcessor;
     
     /**
      * The RowLog should be instantiated with information about the table that contains the rows the messages are 
@@ -99,9 +101,15 @@ public class RowLogImpl implements RowLog {
     
     public void registerConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
         consumers.add(rowLogMessageConsumer);
+        if (rowLogProcessor != null) {
+            rowLogProcessor.consumerRegistered(rowLogMessageConsumer);
+        }
     }
     
     public void unRegisterConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
+        if (rowLogProcessor != null) {
+            rowLogProcessor.consumerUnregistered(rowLogMessageConsumer);
+        }
         consumers.remove(rowLogMessageConsumer);
     }
     
@@ -454,5 +462,9 @@ public class RowLogImpl implements RowLog {
             throw new RowLogException("No shards registerd");
         }
         return shard;
+    }
+
+    public void setProcessor(RowLogProcessor rowLogProcessor) {
+        this.rowLogProcessor = rowLogProcessor;
     }
 }
