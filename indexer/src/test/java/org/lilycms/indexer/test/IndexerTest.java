@@ -435,8 +435,7 @@ public class IndexerTest {
             verifyResultCount("nv_deref3:tomato", 1);
             verifyResultCount("@@id:" + ClientUtils.escapeQueryChars(record3.getId().toString()), 0);
 
-            // Delete record 4 (at the time of this writing, because it is unsure if we will allow deleting master
-            // records while there are variants)
+            // Delete record 4
             log.debug("Begin test NV12");
             expectEvent(DELETE, record4.getId());
             repository.delete(record4.getId());

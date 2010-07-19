@@ -485,6 +485,7 @@ public class IndexUpdater {
                 record = repository.readWithIds(referrer, null, null);
             } catch (Exception e) {
                 // TODO handle this
+                // One case to be expected here is that the record has been deleted since we read the list of referrers
                 e.printStackTrace();
             }
 
