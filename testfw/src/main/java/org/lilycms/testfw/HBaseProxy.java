@@ -258,27 +258,32 @@ public class HBaseProxy {
      *  This method can be used in a test to avoid issue HBASE-2256 after performing a delete operation 
      *  Uses same principle as {@link #cleanTables()}
      */ 
-    public void majorCompact(String tableName, String CFName) throws Exception {
+    public void majorCompact(String tableName, String[] columnFamilies) throws Exception {
         byte[] tmpRowKey = Bytes.toBytes("HBaseProxyDummyRow");
-        byte[] CF = Bytes.toBytes(CFName);
         byte[] COL = Bytes.toBytes("DummyColumn");
         HBaseAdmin admin = new HBaseAdmin(getConf());
         HTable htable = new HTable(CONF, tableName);
         
         // Write a dummy row
-        Put put = new Put(tmpRowKey);
-        put.add(CF, COL, 1, new byte[] { 0 });
-        htable.put(put);
-        // Delete the value again
-        Delete delete = new Delete(tmpRowKey);
-        delete.deleteColumn(CF, COL);
-        htable.delete(delete);
+        for (String columnFamily : columnFamilies) {
+            byte[] CF = Bytes.toBytes(columnFamily);
+            Put put = new Put(tmpRowKey);
+            put.add(CF, COL, 1, new byte[] { 0 });
+            htable.put(put);
+            // Delete the value again
+            Delete delete = new Delete(tmpRowKey);
+            delete.deleteColumn(CF, COL);
+            htable.delete(delete);
+        }
         
         // Perform major compaction
         admin.flush(tableName);
         admin.majorCompact(tableName);
         
         // Wait for compact to finish
-        waitForCompact(tableName, CF);
+        for (String columnFamily : columnFamilies) {
+            byte[] CF = Bytes.toBytes(columnFamily);
+            waitForCompact(tableName, CF);
+        }
     }
 }

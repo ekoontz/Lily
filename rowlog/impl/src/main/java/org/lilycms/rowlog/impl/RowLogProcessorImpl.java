@@ -294,7 +294,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                         }
                     } else {
                         try {
-                            long timeout = 50;
+                            long timeout = 5000;
                             if (lastWakeup + timeout < System.currentTimeMillis()) {
                                 synchronized (this) {
                                     wait(timeout);

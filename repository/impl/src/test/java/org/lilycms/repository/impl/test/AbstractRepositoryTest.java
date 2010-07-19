@@ -647,7 +647,7 @@ public abstract class AbstractRepositoryTest {
         repository.delete(recordId);
         
      // Work around HBASE-2256
-        HBASE_PROXY.majorCompact("recordTable", "VCF");
+        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         record = repository.newRecord(recordId);
         record.setRecordType(recordType2.getId(), recordType2.getVersion());
