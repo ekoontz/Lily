@@ -307,10 +307,13 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             while (!isInterrupted()) {
                 try {
                     List<RowLogMessage> messages = shard.next(consumer.getId());
-                    metrics.incScanCount();
+                    metrics.setScannedMessages(messages != null ? messages.size() : 0);
                     if (messages != null && !messages.isEmpty()) {
-                        metrics.incMessageCount();
                         for (RowLogMessage message : messages) {
+                            if (isInterrupted())
+                                return;
+
+                            metrics.incMessageCount();
                             byte[] lock = rowLog.lockMessage(message, consumer.getId());
                             if (lock != null) {
                                 if (consumer.processMessage(message)) {
@@ -325,8 +328,8 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                     } else {
                         try {
                             long timeout = 5000;
-                            if (lastWakeup + timeout < System.currentTimeMillis()) {
-                                synchronized (this) {
+                            synchronized (this) {
+                                while (lastWakeup + timeout < System.currentTimeMillis()) {
                                     wait(timeout);
                                 }
                             }
@@ -343,6 +346,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
         private class ProcessorMetrics implements Updater {
             private int scanCount = 0;
+            private long scannedMessageCount = 0;
             private int messageCount = 0;
             private int successCount = 0;
             private int failureCount = 0;
@@ -357,6 +361,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
             public synchronized void doUpdates(MetricsContext unused) {
                 record.setMetric("scanCount", scanCount);
+                record.setMetric("messagesPerScan", scanCount > 0 ? scannedMessageCount / scanCount : 0f);
                 record.setMetric("messageCount", messageCount);
                 record.setMetric("successCount", successCount);
                 record.setMetric("failureCount", failureCount);
@@ -364,14 +369,16 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                 record.update();
 
                 scanCount = 0;
+                scannedMessageCount = 0;
                 messageCount = 0;
                 successCount = 0;
                 failureCount = 0;
                 wakeupCount = 0;
             }
 
-            synchronized void incScanCount() {
+            synchronized void setScannedMessages(int read) {
                 scanCount++;
+                scannedMessageCount += read;
             }
 
             synchronized void incMessageCount() {
