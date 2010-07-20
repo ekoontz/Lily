@@ -52,7 +52,11 @@ public class IndexUpdater {
     }
 
     public void stop() {
-        rowLog.unRegisterConsumer(indexerListener);
+        // TODO disabled this for now since otherwise interrupting the lily server node often blocks
+        //      The unregister call will interrupt and wait for the consumer thread to die, but the
+        //      consumer thread stays blocked somewhere in a sleep call in HBase. Needs further
+        //      investigation.
+        // rowLog.unRegisterConsumer(indexerListener);
     }
 
     private class IndexerListener implements RowLogMessageConsumer {
@@ -105,7 +109,16 @@ public class IndexUpdater {
     }
 
     private void handleRecordCreateUpdate(RecordId recordId, RecordEvent event) throws Exception {
-        IdRecord record = repository.readWithIds(recordId, null, null);
+        IdRecord record;
+        try {
+            record = repository.readWithIds(recordId, null, null);
+        } catch (RecordNotFoundException e) {
+            // The record has been deleted in the meantime.
+            // For now, we do nothing, when the delete event is received the record will be removed
+            // from the index.
+            // TODO: we should process all outstanding messages for the record (up to delete) in one go
+            return;
+        }
 
         // Read the vtags of the record. Note that while this algorithm is running, the record can meanwhile
         // undergo changes. However, we continuously work with the snapshot of the vtags mappings read here.
