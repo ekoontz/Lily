@@ -541,6 +541,7 @@ public class AvroConverter {
                 result = cause;
             } else {
                 result.initCause(cause);
+                result = cause;
             }
         }
 
