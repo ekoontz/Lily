@@ -39,7 +39,15 @@ public interface RowLogProcessor {
      */
     boolean isRunning(int consumerId);
 
+    /**
+     * Notifies the processor that a new {@link RowLogMessageConsumer} has been registered.
+     * The processor will start processing messages for this consumer.
+     */
     void consumerRegistered(RowLogMessageConsumer consumer);
 
+    /**
+     * Notifies the processor that a {@link RowLogMessageConsumer} has been unregistered.
+     * The processor will stop processing messages for this consumer.
+     */
     void consumerUnregistered(RowLogMessageConsumer consumer);
 }

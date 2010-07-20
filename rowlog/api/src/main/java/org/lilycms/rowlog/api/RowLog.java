@@ -166,5 +166,11 @@ public interface RowLog {
      */
     List<RowLogMessageConsumer> getConsumers();
 
+    /**
+     * This method allows a {@link RowLogProcessor} to be set on the {@link RowLog}.
+     * The RowLog can then inform the RowLogProcessor when a {@link RowLogMessageConsumer} is registered or unregistered.
+     * This will have to be changed once the Lily distributed node behaviour is implemented. See issue #52. 
+     * @param rowLogProcessor
+     */
     void setProcessor(RowLogProcessor rowLogProcessor);
 }
