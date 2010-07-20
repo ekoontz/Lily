@@ -37,6 +37,9 @@ public class HBaseRunner {
     }
 
     public void run() throws Exception {
+        TestHelper.setupConsoleLogging("INFO");
+        TestHelper.setupOtherDefaults();
+
         conf = HBaseConfiguration.create();
 
         HBaseProxy.addHBaseTestProps(conf);

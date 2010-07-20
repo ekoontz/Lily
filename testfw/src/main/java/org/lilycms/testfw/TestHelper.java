@@ -22,25 +22,23 @@ import org.apache.log4j.spi.LoggingEvent;
 import java.io.IOException;
 
 public class TestHelper {
-    /**
-     * Sets up logging such that errors are logged to the console, and info level
-     * logging is sent to a file in target directory.
-     *
-     * <p>Additionally a set of categories can be specified that will be logged
-     * as debug output to the console when a system property -Dlily.test.log is present.
-     */
-    public static void setupLogging(final String... debugCategories) throws IOException {
-        JavaLoggingToLog4jRedirector.activate();
+    private static Logger ROOT_LOGGER;
+
+    private static synchronized void init() {
+        if (ROOT_LOGGER == null) {
+            JavaLoggingToLog4jRedirector.activate();
+
+            ROOT_LOGGER = Logger.getRootLogger();
+            ROOT_LOGGER.removeAllAppenders();
+            ROOT_LOGGER.setLevel(Level.INFO);
+        }
+    }
+
+    public static void setupFileLogging() throws IOException {
+        init();
 
         final String LAYOUT = "[%t] %-5p %c - %m%n";
 
-        Logger logger = Logger.getRootLogger();
-        logger.removeAllAppenders();
-        logger.setLevel(Level.INFO);
-
-        //
-        // Log to a file
-        //
         FileAppender appender = new FileAppender();
         appender.setLayout(new PatternLayout(LAYOUT));
 
@@ -56,17 +54,20 @@ public class TestHelper {
         appender.setFile(logFileName, false, false, 0);
 
         appender.activateOptions();
-        logger.addAppender(appender);
+        ROOT_LOGGER.addAppender(appender);
+    }
 
-        //
-        // Add a console appender to show ERROR level errors on the console
-        //
+    public static void setupConsoleLogging(String defaultLevel, final String... debugCategories) {
+        init();
+
         final String CONSOLE_LAYOUT = "[%-5p][%d{ABSOLUTE}][%-10.10t][%30.30c] %m%n";
 
         ConsoleAppender consoleAppender = new ConsoleAppender();
         consoleAppender.setLayout(new PatternLayout(CONSOLE_LAYOUT));
 
         final boolean debugLoggingEnabled = System.getProperty("lily.test.log") != null;
+
+        final Level DEFAULT_LEVEL = Level.toLevel(defaultLevel);
 
         consoleAppender.addFilter(new Filter() {
             @Override
@@ -80,20 +81,34 @@ public class TestHelper {
                     }
                 }
 
-                return loggingEvent.getLevel().isGreaterOrEqual(Level.ERROR) ? Filter.ACCEPT : Filter.DENY;
+                return loggingEvent.getLevel().isGreaterOrEqual(DEFAULT_LEVEL) ? Filter.ACCEPT : Filter.DENY;
             }
         });
 
         consoleAppender.activateOptions();
-        logger.addAppender(consoleAppender);
+        ROOT_LOGGER.addAppender(consoleAppender);
 
 
-        //
-        //
-        //
         for (String debugCat : debugCategories) {
             Logger.getLogger(debugCat).setLevel(Level.DEBUG);
         }
+    }
 
+    public static void setupOtherDefaults() {
+        // The HDFS datanode clienttrace is way too chatty
+        Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.DataNode.clienttrace").setLevel(Level.WARN);
+    }
+
+    /**
+     * Sets up logging such that errors are logged to the console, and info level
+     * logging is sent to a file in target directory.
+     *
+     * <p>Additionally a set of categories can be specified that will be logged
+     * as debug output to the console when a system property -Dlily.test.log is present.
+     */
+    public static void setupLogging(final String... debugCategories) throws IOException {
+        setupFileLogging();
+        setupConsoleLogging("WARN", debugCategories);
+        setupOtherDefaults();
     }
 }
