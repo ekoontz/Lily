@@ -360,11 +360,8 @@ public class Tester {
         }
 
         public synchronized void doUpdates(MetricsContext unused) {
-            record.incrMetric("successCount", successCount);
-            successCount = 0;
-
-            record.incrMetric("failureCount", failureCount);
-            failureCount = 0;
+            record.setMetric("successCount", successCount);
+            record.setMetric("failureCount", failureCount);
 
             for (Action action : Action.values()) {
                 long duration = this.duration.get(action);
