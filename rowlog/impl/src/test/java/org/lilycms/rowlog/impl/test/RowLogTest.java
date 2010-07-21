@@ -23,7 +23,6 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.easymock.classextension.IMocksControl;

@@ -17,9 +17,6 @@ package org.lilycms.indexer.conf;
 
 import org.lilycms.repository.api.*;
 
-import java.util.Collections;
-import java.util.List;
-
 public class FieldValue extends BaseValue {
     private FieldType fieldType;
 
