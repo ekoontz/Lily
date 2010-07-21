@@ -35,7 +35,7 @@
   <parent>
     <groupId>org.lilycms</groupId>
     <artifactId>lily</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1</version>
   </parent>
 
   <modules>

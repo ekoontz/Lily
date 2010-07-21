@@ -16,10 +16,7 @@
  * limitations under the License.
  */
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <properties>
     <hbase.version>0.21.0-r962435</hbase.version>
@@ -47,7 +44,7 @@
   <groupId>org.lilycms</groupId>
   <artifactId>lily</artifactId>
   <packaging>pom</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>Lily</name>
 
   <url>http://lilycms.org/maven-site</url>
@@ -62,9 +59,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</connection>
-    <developerConnection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</developerConnection>
-    <url>http://dev.outerthought.org/svn/outerthought_lilycms</url>
+    <connection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</connection>
+    <developerConnection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</developerConnection>
+    <url>http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</url>
   </scm>
 
   <modules>
@@ -89,68 +86,68 @@
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-util</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repo-util</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-hbase-util</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repository-api</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repository-impl</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-linkindex</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-testfw</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-hbaseindex</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-rowlog-api</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-rowlog-impl</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-indexer</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-client</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-import</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
@@ -371,28 +368,28 @@
       <properties>
         <!-- This is to make sure the ${argLine} in the configuration of the surefire plugin will get substituted.
              Otherwise the tests fail with a "java.lang.NoClassDefFoundError: null". -->
-        <argLine></argLine>
+        <argLine />
       </properties>
     </profile>
     <profile>
       <id>fast</id>
       <properties>
         <maven.test.skip>true</maven.test.skip>
-        <argLine></argLine>
+        <argLine />
       </properties>
     </profile>
     <profile>
       <id>connect</id>
       <properties>
         <lily.test.hbase>connect</lily.test.hbase>
-        <argLine></argLine>
+        <argLine />
       </properties>
     </profile>
     <profile>
       <id>log</id>
       <properties>
         <lily.test.log>true</lily.test.log>
-        <argLine></argLine>
+        <argLine />
       </properties>
     </profile>
   </profiles>
