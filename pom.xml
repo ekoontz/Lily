@@ -52,6 +52,21 @@
 
   <url>http://lilycms.org/maven-site</url>
 
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>Copyright 2010 by Outerthought bvba</comments>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</connection>
+    <developerConnection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</developerConnection>
+    <url>http://dev.outerthought.org/svn/outerthought_lilycms</url>
+  </scm>
+
   <modules>
     <module>repository</module>
     <module>hbaseindex</module>
