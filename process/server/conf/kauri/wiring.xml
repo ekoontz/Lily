@@ -3,13 +3,13 @@
 
   <modules>
 
-    <artifact id="general" groupId="org.lilycms" artifactId="lily-general-module" version="0.1">
+    <artifact id="general" groupId="org.lilycms" artifactId="lily-general-module" version="0.2-SNAPSHOT">
     </artifact>
 
-    <artifact id="repository" groupId="org.lilycms" artifactId="lily-repository-module" version="0.1">
+    <artifact id="repository" groupId="org.lilycms" artifactId="lily-repository-module" version="0.2-SNAPSHOT">
     </artifact>
 
-    <artifact id="indexer" groupId="org.lilycms" artifactId="lily-indexer-module" version="0.1">
+    <artifact id="indexer" groupId="org.lilycms" artifactId="lily-indexer-module" version="0.2-SNAPSHOT">
     </artifact>
 
   </modules>
