@@ -44,7 +44,7 @@
   <groupId>org.lilycms</groupId>
   <artifactId>lily</artifactId>
   <packaging>pom</packaging>
-  <version>0.1</version>
+  <version>0.2-SNAPSHOT</version>
   <name>Lily</name>
 
   <url>http://lilycms.org/maven-site</url>
@@ -59,9 +59,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</connection>
-    <developerConnection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</developerConnection>
-    <url>http://dev.outerthought.org/svn/outerthought_lilycms/tags/RELEASE_0_1_0</url>
+    <connection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</connection>
+    <developerConnection>scm:svn:http://dev.outerthought.org/svn/outerthought_lilycms/trunk</developerConnection>
+    <url>http://dev.outerthought.org/svn/outerthought_lilycms</url>
   </scm>
 
   <modules>
@@ -86,68 +86,68 @@
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-util</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repo-util</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-hbase-util</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repository-api</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-repository-impl</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-linkindex</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-testfw</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-hbaseindex</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-rowlog-api</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-rowlog-impl</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-indexer</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-client</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-import</artifactId>
-        <version>0.1</version>
+        <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
