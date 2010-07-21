@@ -47,7 +47,7 @@
   <version>0.2-SNAPSHOT</version>
   <name>Lily</name>
 
-  <url>http://lilycms.org/maven-site</url>
+  <url>http://lilycms.org/</url>
 
   <licenses>
     <license>
@@ -246,7 +246,7 @@
     <repository>
       <id>repository.apache.org</id>
       <name>Apache snapshot repository</name>
-      <url>https://repository.apache.org/content/groups/snapshots-group</url>
+      <url>https://repository.apache.org/content/groups/snapshots-group/</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
@@ -255,7 +255,7 @@
     <repository>
       <id>lilycms</id>
       <name>Lily Maven repository</name>
-      <url>http://lilycms.org/maven/maven2/deploy</url>
+      <url>http://lilycms.org/maven/maven2/deploy/</url>
     </repository>
 
     <!-- At the time of this writing, the JBoss repository served for junit -->
@@ -297,7 +297,7 @@
     <pluginRepository>
       <id>central</id>
       <name>Maven Plugin Repository</name>
-      <url>http://repo1.maven.org/maven2</url>
+      <url>http://repo1.maven.org/maven2/</url>
       <layout>default</layout>
       <snapshots>
         <enabled>false</enabled>
@@ -310,7 +310,7 @@
     <pluginRepository>
       <id>lilycms-plugins</id>
       <name>Lilycms snapshot plugin repository</name>
-      <url>http://lilycms.org/maven/maven2/deploy</url>
+      <url>http://lilycms.org/maven/maven2/deploy/</url>
     </pluginRepository>
   </pluginRepositories>
 
@@ -329,7 +329,7 @@
     <site>
       <id>org.lilycms.website</id>
       <name>Lily CMS maven website</name>
-      <url>scp://lilycms.org/var/www/lily/maven-site/</url>
+      <url>scp://lilycms.org/var/www/lily/maven-site/${project.version}/</url>
     </site>
   </distributionManagement>  
 
@@ -342,6 +342,23 @@
             <source>1.5</source>
             <target>1.5</target>
           </configuration>
+        </plugin>
+        <plugin>
+          <!-- 
+               I had quite some trouble getting 'mvn site-deploy' to work, either it hanged,
+               it gaven an arrayindexoutofboudnsexception, or the index.html files of the
+               subprojects are empty.
+
+               See these for some more info:
+
+               http://www.mail-archive.com/users@maven.apache.org/msg109240.html
+               http://jira.codehaus.org/browse/MSITE-456
+
+               Finally settled on explicitly configuring to use the old versions of the plugins,
+               which now still gives the empty index.html's...
+          -->
+          <artifactId>maven-site-plugin</artifactId>
+          <version>2.0.1</version>
         </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -405,11 +422,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.1.2</version>
+        <configuration>
+          <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+          <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
+        </configuration>
         <reportSets>
           <reportSet>
             <reports>
-              <!-- Disabled these, Maven was failing on one of them (dependencies?) -->
-              <!--
               <report>dependencies</report>
               <report>project-team</report>
               <report>mailing-list</report>
@@ -417,7 +437,6 @@
               <report>issue-tracking</report>
               <report>license</report>
               <report>scm</report>
-              -->
             </reports>
           </reportSet>
         </reportSets>
