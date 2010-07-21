@@ -24,13 +24,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
   <artifactId>lily-repo-util</artifactId>
-  <version>0.1-dev</version>
   <name>Lily: Repository related utility classes</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
     <artifactId>lily</artifactId>
-    <version>0.1-dev</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
 
   <build>

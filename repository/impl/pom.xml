@@ -24,13 +24,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
   <artifactId>lily-repository-impl</artifactId>
-  <version>0.1-dev</version>
   <name>Lily: Repository IMPL</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
     <artifactId>lily-repository</artifactId>
-    <version>0.1-dev</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
 
   <dependencies>

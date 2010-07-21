@@ -25,13 +25,12 @@
   <groupId>org.lilycms</groupId>
   <artifactId>lily-repository</artifactId>
   <packaging>pom</packaging>
-  <version>0.1-dev</version>
   <name>Lily: Repository</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
     <artifactId>lily</artifactId>
-    <version>0.1-dev</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
 
   <modules>

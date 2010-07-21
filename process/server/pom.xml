@@ -28,7 +28,6 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
   <artifactId>lily-server</artifactId>
-  <version>0.1-dev</version>
   <packaging>pom</packaging>
 
   <name>Lily: server process (Kauri modules)</name>
@@ -36,7 +35,7 @@
   <parent>
     <groupId>org.lilycms</groupId>
     <artifactId>lily</artifactId>
-    <version>0.1-dev</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
 
   <modules>
