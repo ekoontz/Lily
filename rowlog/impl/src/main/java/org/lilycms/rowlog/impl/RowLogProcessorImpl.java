@@ -314,6 +314,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                                 return;
 
                             metrics.incMessageCount();
+
                             byte[] lock = rowLog.lockMessage(message, consumer.getId());
                             if (lock != null) {
                                 if (consumer.processMessage(message)) {
@@ -328,8 +329,8 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                     } else {
                         try {
                             long timeout = 5000;
-                            synchronized (this) {
-                                while (lastWakeup + timeout < System.currentTimeMillis()) {
+                            if (lastWakeup + timeout < System.currentTimeMillis()) {
+                                synchronized (this) {
                                     wait(timeout);
                                 }
                             }
