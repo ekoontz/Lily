@@ -344,21 +344,8 @@
           </configuration>
         </plugin>
         <plugin>
-          <!-- 
-               I had quite some trouble getting 'mvn site-deploy' to work, either it hanged,
-               it gaven an arrayindexoutofboudnsexception, or the index.html files of the
-               subprojects are empty.
-
-               See these for some more info:
-
-               http://www.mail-archive.com/users@maven.apache.org/msg109240.html
-               http://jira.codehaus.org/browse/MSITE-456
-
-               Finally settled on explicitly configuring to use the old versions of the plugins,
-               which now still gives the empty index.html's...
-          -->
           <artifactId>maven-site-plugin</artifactId>
-          <version>2.0.1</version>
+          <version>2.1.1</version>
         </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -422,7 +409,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>2.1.2</version>
+        <version>2.2</version>
         <configuration>
           <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
           <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
@@ -430,10 +417,9 @@
         <reportSets>
           <reportSet>
             <reports>
+              <report>index</report>
               <report>dependencies</report>
-              <report>project-team</report>
               <report>mailing-list</report>
-              <report>cim</report>
               <report>issue-tracking</report>
               <report>license</report>
               <report>scm</report>
