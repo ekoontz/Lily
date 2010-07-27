@@ -67,6 +67,13 @@ public interface RowLog {
      * @param shard a {@link RowLogShard} 
      */
     void registerShard(RowLogShard shard);
+    
+    /**
+     * Unregisters a shard from the RowLog.
+     * @param shard a {@link RowLogShard} 
+     */
+    void unRegisterShard(RowLogShard shard);
+    
     /**
      * Registers a consumer on the RowLog.
      * @param rowLogMessageConsumer a {@link RowLogMessageConsumer}

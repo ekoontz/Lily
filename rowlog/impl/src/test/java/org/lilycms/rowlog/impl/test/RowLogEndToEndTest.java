@@ -15,9 +15,11 @@
  */
 package org.lilycms.rowlog.impl.test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -26,6 +28,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -51,20 +54,24 @@ public class RowLogEndToEndTest {
     private static TestMessageConsumer consumer;
     private static RowLogShard shard;
     private static RowLogProcessor processor;
+    private static HTableInterface rowTable;
+    private static Configuration configuration;
+    private static String zkConnectString;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        Configuration configuration = HBASE_PROXY.getConf();
-        HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
-        String zkConnectString = HBASE_PROXY.getZkConnectString();
+        configuration = HBASE_PROXY.getConf();
+        rowTable = RowLogTableUtil.getRowTable(configuration);
+        zkConnectString = HBASE_PROXY.getZkConnectString();
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY, RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, zkConnectString);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         consumer = new TestMessageConsumer(0);
         processor = new RowLogProcessorImpl(rowLog, shard, zkConnectString);
         rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
+        
     }
 
     @AfterClass
@@ -74,6 +81,7 @@ public class RowLogEndToEndTest {
 
     @Before
     public void setUp() throws Exception {
+        
     }
 
     @After
@@ -86,48 +94,59 @@ public class RowLogEndToEndTest {
         consumer.expectMessage(message);
         consumer.expectMessages(1);
         processor.start();
-        if (!consumer.waitUntilMessagesConsumed(20000)) {
+        if (!consumer.waitUntilMessagesConsumed(120000)) {
             fail("Messages not consumed within timeout");
         }
         processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
     
     @Test
     public void testProcessorPublishesHost() throws Exception {
         processor.start();
-        ZooKeeper zk = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
-            
-            public void process(WatchedEvent event) {
-            }
-        });
-        byte[] data = zk.getData("/lily/rowLog/EndToEndRowLog/EndToEndShard", false, new Stat());
-        assertNotNull(data);
-        processor.stop();
+        final Semaphore semaphore = new Semaphore(0);
+        ZooKeeper zooKeeper = null;
         try {
-            zk.getData("/lily/rowLog/EndToEndRowLog/EndToEndShard", false, new Stat());
-            fail("The host in Zookeeper should have been deleted");
-        } catch (KeeperException expected) {
+            zooKeeper = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
+                
+                public void process(WatchedEvent event) {
+                    if (KeeperState.SyncConnected.equals(event.getState())) {
+                        semaphore.release();
+                    }
+                }
+            });
+            semaphore.acquire();
+            byte[] data = zooKeeper.getData("/lily/rowLog/EndToEndRowLog/EndToEndShard", false, new Stat());
+            assertNotNull(data);
+        } finally {
+            if (zooKeeper != null) {
+                zooKeeper.close();
+            }
         }
+        processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
     
     @Test
     public void testSingleMessageProcessorStartsFirst() throws Exception {
         processor.start();
-        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
+        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         consumer.expectMessage(message);
         consumer.expectMessages(1);
-        if (!consumer.waitUntilMessagesConsumed(20000)) {
+        if (!consumer.waitUntilMessagesConsumed(120000)) {
             fail("Messages not consumed within timeout");
         }
         processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
 
     @Test
     public void testMultipleMessagesSameRow() throws Exception {
         RowLogMessage message; 
+        consumer.expectMessages(10);
         for (int i = 0; i < 10; i++) {
-            byte[] rowKey = Bytes.toBytes("row2");
-            message = rowLog.putMessage(rowKey, null, null, null);
+            byte[] rowKey = Bytes.toBytes("row3");
+            message = rowLog.putMessage(rowKey, null, "aPayload".getBytes(), null);
             consumer.expectMessage(message);
         }
         processor.start();
@@ -135,6 +154,7 @@ public class RowLogEndToEndTest {
             fail("Messages not consumed within timeout");
         }
         processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
 
     @Test
@@ -142,7 +162,7 @@ public class RowLogEndToEndTest {
         RowLogMessage message; 
         consumer.expectMessages(25);
         for (long seqnr = 0L; seqnr < 5; seqnr++) {
-            for (int rownr = 0; rownr < 5; rownr++) {
+            for (int rownr = 10; rownr < 15; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row"+rownr), data, null, null);
@@ -154,6 +174,7 @@ public class RowLogEndToEndTest {
             fail("Messages not consumed within timeout");
         }
         processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
     
     @Test
@@ -164,7 +185,7 @@ public class RowLogEndToEndTest {
         consumer2.expectMessages(10);
         RowLogMessage message; 
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
-            for (int rownr = 0; rownr < 5; rownr++) {
+            for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row"+rownr), data, null, null);
@@ -180,6 +201,7 @@ public class RowLogEndToEndTest {
             fail("Messages not consumed within timeout");
         }
         processor.stop();
+        assertHostAndPortRemovedFromZK();
     }
 
     
@@ -233,5 +255,30 @@ public class RowLogEndToEndTest {
             return expectedMessages.isEmpty();
         }
 
+    }
+    
+    private void assertHostAndPortRemovedFromZK() throws Exception{
+        final Semaphore semaphore = new Semaphore(0);
+        ZooKeeper zooKeeper = null;
+        try {
+            zooKeeper = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
+                
+                public void process(WatchedEvent event) {
+                    if (KeeperState.SyncConnected.equals(event.getState())) {
+                        semaphore.release();
+                    }
+                }
+            });
+            semaphore.acquire();
+            try {
+                zooKeeper.getData("/lily/rowLog/EndToEndRowLog/EndToEndShard", false, new Stat());
+                fail("The host in Zookeeper should have been deleted");
+            } catch (KeeperException expected) {
+            }
+        } finally {
+            if (zooKeeper != null) {
+                zooKeeper.close();
+            }
+        }
     }
 }

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.metrics.MetricsContext;
@@ -36,6 +37,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -45,6 +47,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -121,8 +124,8 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
     public synchronized void stop() {
         stop = true;
-        rowLog.setProcessor(null);
         stopConsumerNotifyListener();
+        rowLog.setProcessor(null);
         Collection<ConsumerThread> threads = consumerThreads.values();
         consumerThreads.clear();
         for (Thread thread : threads) {
@@ -183,41 +186,52 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         String rowLogPath = lilyPath + "/rowLog";
         String rowLogIdPath = rowLogPath + "/" + rowLog.getId();
         String shardIdPath = rowLogIdPath + "/" + shard.getId();
-        ZooKeeper zk;
+        ZooKeeper zookeeper;
+        final Semaphore semaphore = new Semaphore(0);
         try {
-            zk = new ZooKeeper(zkConnectString, 5000, new Watcher() {
+            zookeeper = new ZooKeeper(zkConnectString, 5000, new Watcher() {
                 public void process(WatchedEvent event) {
+                    if (KeeperState.SyncConnected.equals(event.getState())) {
+                        semaphore.release();
+                    }
                 }
             });
         } catch (IOException e) {
             return;
         }
         try { 
+            semaphore.acquire();
             try {
-                zk.create(lilyPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zookeeper.create(lilyPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
             }
             try {
-                zk.create(rowLogPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zookeeper.create(rowLogPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
             }
             try {
-                zk.create(rowLogIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zookeeper.create(rowLogIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
             }
             try {
-                zk.create(shardIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zookeeper.create(shardIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
             }
             
-            zk.setData(shardIdPath, Bytes.toBytes(hostname + ":" + port), -1);
-            zk.close();
+            zookeeper.setData(shardIdPath, Bytes.toBytes(hostname + ":" + port), -1);
         } catch (InterruptedException e) {
         } catch (KeeperException e) {
+        } finally {
+            try {
+                if (zookeeper != null) {
+                    zookeeper.close();
+                }
+            } catch (InterruptedException e) {
+            }
         }
     }
     
@@ -228,22 +242,26 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         String rowLogPath = lilyPath + "/rowLog";
         String rowLogIdPath = rowLogPath + "/" + rowLog.getId();
         String shardIdPath = rowLogIdPath + "/" + shard.getId();
-        ZooKeeper zk;
+        ZooKeeper zookeeper = null;
+        final Semaphore semaphore = new Semaphore(0);
         try {
-            zk = new ZooKeeper(zkConnectString, 5000, new Watcher() {
+            zookeeper = new ZooKeeper(zkConnectString, 5000, new Watcher() {
                 public void process(WatchedEvent event) {
+                    if (KeeperState.SyncConnected.equals(event.getState())) {
+                        semaphore.release();
+                    }
                 }
             });
+            semaphore.acquire(); // Wait for asynchronous zookeeper session establishment
+            zookeeper.delete(shardIdPath, -1);
         } catch (IOException e) {
-            return;
-        }
-        try { 
-            zk.delete(shardIdPath, -1);
         } catch (InterruptedException e) {
         } catch (KeeperException e) {
         } finally {
             try {
-                zk.close();
+                if (zookeeper != null) {
+                    zookeeper.close();
+                }
             } catch (InterruptedException e) {
             }
         }
@@ -271,6 +289,11 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             
             return buffer.readBytes(1);
         }
+        
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+            // Ignore and rely on the automatic retries
+        }
     }
     
     private class ConsumersNotifyHandler extends SimpleChannelHandler {
@@ -282,6 +305,11 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                 consumerThread.wakeup();
             }
             e.getChannel().close();
+        }
+        
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+            // Ignore and rely on the automatic retries
         }
     }
     
@@ -296,7 +324,6 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         }
         
         public synchronized void wakeup() {
-            lastWakeup = System.currentTimeMillis();
             metrics.incWakeupCount();
             this.notify();
         }
@@ -329,7 +356,8 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                     } else {
                         try {
                             long timeout = 5000;
-                            if (lastWakeup + timeout < System.currentTimeMillis()) {
+                            long now = System.currentTimeMillis();
+                            if (lastWakeup + timeout < now) {
                                 synchronized (this) {
                                     wait(timeout);
                                 }

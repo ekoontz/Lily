@@ -129,12 +129,13 @@ public class HBaseRepository implements Repository {
         recordTypeVersionColumnNames.put(Scope.VERSIONED, VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
         recordTypeVersionColumnNames.put(Scope.VERSIONED_MUTABLE, VERSIONED_MUTABLE_RECORDTYPEVERSION_COLUMN_NAME);
 
+        zkConnectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
+
         // Initialize Wal and Message Queue
         initializeMessageQueue(configuration);
         initializeWal(configuration);
 
         // Start Message Queue Processor
-        zkConnectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
         messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, zkConnectString);
         messageQueueProcessor.start();
 
@@ -154,7 +155,7 @@ public class HBaseRepository implements Repository {
     }
 
     private void initializeWal(Configuration configuration) throws IOException {
-        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, zkConnectString);
+        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, null);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
