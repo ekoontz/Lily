@@ -1017,11 +1017,10 @@ public class HBaseRepository implements Repository {
     public Set<RecordId> getVariants(RecordId recordId) throws RepositoryException {
         byte[] masterRecordIdBytes = recordId.getMaster().toBytes();
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        filterList.addFilter(new FirstKeyOnlyFilter());
         filterList.addFilter(new PrefixFilter(masterRecordIdBytes));
         filterList.addFilter(new SingleColumnValueFilter(systemColumnFamilies.get(Scope.NON_VERSIONED),
                 DELETED_COLUMN_NAME, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
-        
+
         Scan scan = new Scan(masterRecordIdBytes, filterList);
         scan.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
 
