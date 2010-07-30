@@ -86,6 +86,8 @@ public abstract class AbstractTypeManager implements TypeManager {
         registerPrimitiveValueType(new StringValueType());
         registerPrimitiveValueType(new IntegerValueType());
         registerPrimitiveValueType(new LongValueType());
+        registerPrimitiveValueType(new DoubleValueType());
+        registerPrimitiveValueType(new DecimalValueType());
         registerPrimitiveValueType(new BooleanValueType());
         registerPrimitiveValueType(new DateValueType());
         registerPrimitiveValueType(new DateTimeValueType());

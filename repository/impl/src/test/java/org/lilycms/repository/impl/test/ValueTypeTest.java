@@ -17,6 +17,7 @@ package org.lilycms.repository.impl.test;
 
 import static org.junit.Assert.assertEquals;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.util.Bytes;
@@ -89,6 +90,16 @@ public class ValueTypeTest {
     @Test
     public void testLongType() throws Exception {
         runValueTypeTests("longRecordTypeId", "LONG", Long.MIN_VALUE, Long.valueOf(0), Long.MAX_VALUE);
+    }
+    
+    @Test
+    public void testDoubleType() throws Exception {
+        runValueTypeTests("doubleRecordTypeId", "DOUBLE", Double.MIN_VALUE, Double.valueOf(0), Double.MAX_VALUE);
+    }
+    
+    @Test
+    public void testDecimalType() throws Exception {
+        runValueTypeTests("decimalRecordTypeId", "DECIMAL", BigDecimal.valueOf(Double.MIN_EXPONENT), BigDecimal.ZERO, BigDecimal.valueOf(Long.MAX_VALUE));
     }
 
     @Test

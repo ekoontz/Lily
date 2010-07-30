@@ -325,6 +325,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         
         public synchronized void wakeup() {
             metrics.incWakeupCount();
+            lastWakeup = System.currentTimeMillis();
             this.notify();
         }
         

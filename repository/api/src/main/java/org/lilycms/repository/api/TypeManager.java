@@ -153,6 +153,8 @@ public interface TypeManager {
      * <tr><td>STRING</td>   <td>java.lang.String</td></tr>
      * <tr><td>INTEGER</td>  <td>java.lang.Integer</td></tr>
      * <tr><td>LONG</td>     <td>java.lang.Long</td></tr>
+     * <tr><td>DOUBLE</td>   <td>java.lang.Double</td></tr>
+     * <tr><td>DECIMAL</td>   <td>java.math.BigDecimal</td></tr>
      * <tr><td>BOOLEAN</td>  <td>java.lang.Boolean</td></tr>
      * <tr><td>DATE</td>     <td>org.joda.time.LocalDate</td></tr>
      * <tr><td>DATETIME</td> <td>org.joda.time.DateTime</td></tr>
