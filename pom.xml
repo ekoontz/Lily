@@ -305,17 +305,17 @@
     <repository>
       <id>org.lilycms.maven-deploy</id>
       <name>Lily CMS deploy repository</name>
-      <url>scp://lilycms.org/var/www/lily/maven/maven2/deploy</url>
+      <url>scp://lilycms.org/var/www/lilycms.org/maven/maven2/deploy</url>
     </repository>
     <snapshotRepository>
       <id>org.lilycms.maven-snapshot</id>
       <name>Lily CMS dev repository</name>
-      <url>scp://lilycms.org/var/www/lily/maven/maven2/dev</url>
+      <url>scp://lilycms.org/var/www/lilycms.org/maven/maven2/dev</url>
     </snapshotRepository>
     <site>
       <id>org.lilycms.website</id>
       <name>Lily CMS maven website</name>
-      <url>scp://lilycms.org/var/www/lily/maven-site/${project.version}/</url>
+      <url>scp://lilycms.org/var/www/lilycms.org/maven-site/${project.version}/</url>
     </site>
   </distributionManagement>  
 
