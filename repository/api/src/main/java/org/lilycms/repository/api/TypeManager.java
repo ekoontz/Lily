@@ -160,6 +160,7 @@ public interface TypeManager {
      * <tr><td>DATETIME</td> <td>org.joda.time.DateTime</td></tr>
      * <tr><td>BLOB</td>     <td>org.lilycms.repository.api.Blob</td></tr>
      * <tr><td>LINK</td>     <td>org.lilycms.repository.api.Link</td></tr>
+     * <tr><td>URI</td>      <td>java.net.URI</td></tr>
      * </tbody>
      * </table>
      *

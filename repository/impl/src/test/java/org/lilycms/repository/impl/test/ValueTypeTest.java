@@ -18,6 +18,7 @@ package org.lilycms.repository.impl.test;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.util.Bytes;
@@ -122,6 +123,11 @@ public class ValueTypeTest {
         runValueTypeTests("linkRecordTypeId", "LINK", new Link(idGenerator.newRecordId()), new Link(idGenerator.newRecordId()), new Link(idGenerator.newRecordId()));
     }
 
+    @Test
+    public void testUriType() throws Exception {
+        runValueTypeTests("uriRecordTypeId", "URI", URI.create("http://foo.com/bar"), URI.create("file://foo/com/bar.txt"), URI.create("https://site/index.html"));
+    }
+    
     @Test
     public void testBlobType() throws Exception {
         Blob blob1 = new Blob(Bytes.toBytes("aKey"), "text/html", Long.MAX_VALUE, null);

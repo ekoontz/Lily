@@ -93,5 +93,6 @@ public abstract class AbstractTypeManager implements TypeManager {
         registerPrimitiveValueType(new DateTimeValueType());
         registerPrimitiveValueType(new LinkValueType(idGenerator));
         registerPrimitiveValueType(new BlobValueType());
+        registerPrimitiveValueType(new UriValueType());
     }
 }
