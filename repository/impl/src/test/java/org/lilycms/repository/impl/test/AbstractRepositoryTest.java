@@ -107,17 +107,6 @@ public abstract class AbstractRepositoryTest {
     }
 
     @Test
-    public void testRecordUpdateWithoutRecordType() throws Exception {
-        Record record = createDefaultRecord();
-        Record updateRecord = repository.newRecord(record.getId());
-        try {
-            record = repository.update(updateRecord);
-            fail();
-        } catch (InvalidRecordException expected) {
-        }
-    }
-
-    @Test
     public void testEmptyRecordCreate() throws Exception {
         Record record = repository.newRecord();
         record.setRecordType(recordType1.getId(), null);
@@ -237,6 +226,27 @@ public abstract class AbstractRepositoryTest {
 
         Record updatedRecord = repository.update(updateRecord);
 
+        assertEquals(Long.valueOf(2), updatedRecord.getVersion());
+        assertEquals("value2", updatedRecord.getField(fieldType1.getName()));
+        assertEquals(789, updatedRecord.getField(fieldType2.getName()));
+        assertEquals(false, updatedRecord.getField(fieldType3.getName()));
+
+        assertEquals(updatedRecord, repository.read(record.getId()));
+    }
+    
+    @Test
+    public void testUpdateWithoutRecordType() throws Exception {
+        Record record = createDefaultRecord();
+        Record updateRecord = repository.newRecord(record.getId());
+        updateRecord.setField(fieldType1.getName(), "value2");
+        updateRecord.setField(fieldType2.getName(), 789);
+        updateRecord.setField(fieldType3.getName(), false);
+
+        Record updatedRecord = repository.update(updateRecord);
+
+        assertEquals(record.getRecordTypeId(), updatedRecord.getRecordTypeId());
+        assertEquals(Long.valueOf(2), updatedRecord.getRecordTypeVersion());
+        
         assertEquals(Long.valueOf(2), updatedRecord.getVersion());
         assertEquals("value2", updatedRecord.getField(fieldType1.getName()));
         assertEquals(789, updatedRecord.getField(fieldType2.getName()));

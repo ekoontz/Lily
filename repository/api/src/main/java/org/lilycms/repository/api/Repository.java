@@ -72,6 +72,9 @@ public interface Repository {
      *
      * <p>If the record contains any changed versioned fields, a new version will be created. The number of this
      * version will be available on the returned Record object.
+     * 
+     * <p>If no RecordType is given, the same RecordType will be used as for the original Record. The latest version of that RecordType
+     * will be taken. A given version number is ignored.  
      *
      * @throws RecordNotFoundException
      *             if the record does not exist

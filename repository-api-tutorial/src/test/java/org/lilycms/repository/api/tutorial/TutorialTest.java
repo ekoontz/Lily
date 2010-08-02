@@ -237,7 +237,6 @@ public class TutorialTest {
         // (2)
         RecordId id = repository.getIdGenerator().newRecordId("lily-definitive-guide-3rd-edition");
         Record record = repository.newRecord(id);
-        record.setRecordType("Book", null); // TODO should not be necessary (r29)
         record.setField(new QName(NS, "description"), blob);
         record = repository.update(record);
 

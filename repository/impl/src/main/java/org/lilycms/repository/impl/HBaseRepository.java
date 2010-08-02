@@ -376,9 +376,6 @@ public class HBaseRepository implements Repository {
     private void checkUpdatePreconditions(Record record) throws InvalidRecordException, RecordNotFoundException,
             RecordException {
         ArgumentValidator.notNull(record, "record");
-        if (record.getRecordTypeId() == null) {
-            throw new InvalidRecordException(record, "The recordType cannot be null for a record to be updated.");
-        }
     }
 
     // Calculates the changes that are to be made on the record-row and puts
@@ -387,7 +384,12 @@ public class HBaseRepository implements Repository {
             RecordEvent recordEvent) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
             RecordException, TypeException {
         String recordTypeId = record.getRecordTypeId();
-        Long recordTypeVersion = record.getRecordTypeVersion();
+        Long recordTypeVersion = null;
+        if (recordTypeId == null) {
+            recordTypeId = originalRecord.getRecordTypeId();
+        } else {
+            recordTypeVersion = record.getRecordTypeVersion();
+        }
 
         RecordType recordType = typeManager.getRecordType(recordTypeId, recordTypeVersion);
 
