@@ -206,6 +206,26 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         recordType.setVersion(Long.valueOf(1));
         assertEquals(recordType, typeManager.getRecordType(recordType.getId(), null));
     }
+    
+    @Test
+    public void testMixinLatestVersion() throws Exception {
+        String id = "testMixinLatestVersion";
+        RecordType mixinType = typeManager.newRecordType(id+"MIX");
+        mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
+        mixinType = typeManager.createRecordType(mixinType);
+
+        mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
+        mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
+        mixinType = typeManager.updateRecordType(mixinType);
+        
+        RecordType recordType = typeManager.newRecordType(id+"RT");
+        recordType.addMixin(mixinType.getId());
+        assertEquals(Long.valueOf(1), typeManager.createRecordType(recordType).getVersion());
+        recordType.setVersion(Long.valueOf(1));
+        
+        recordType.addMixin(mixinType.getId(), 2L); // Assert latest version of the Mixin RecordType got filled in
+        assertEquals(recordType, typeManager.getRecordType(recordType.getId(), null));
+    }
 
     @Test
     public void testMixinUpdate() throws Exception {

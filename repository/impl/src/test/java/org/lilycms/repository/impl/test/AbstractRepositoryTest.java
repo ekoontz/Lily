@@ -845,10 +845,10 @@ public abstract class AbstractRepositoryTest {
     */
 
     @Test
-    public void testMixin() throws Exception {
+    public void testMixinLatestVersion() throws Exception {
         RecordType recordType4 = typeManager.newRecordType("RT4");
         recordType4.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType6.getId(), false));
-        recordType4.addMixin(recordType1.getId(), recordType1.getVersion());
+        recordType4.addMixin(recordType1.getId()); // In fact recordType1B should be taken as Mixin
         recordType4 = typeManager.createRecordType(recordType4);
 
         Record record = repository.newRecord(idGenerator.newRecordId());
@@ -856,6 +856,7 @@ public abstract class AbstractRepositoryTest {
         record.setField(fieldType1.getName(), "foo");
         record.setField(fieldType2.getName(), 555);
         record.setField(fieldType3.getName(), true);
+        record.setField(fieldType1B.getName(), "fromLatestMixinRecordTypeVersion");
         record.setField(fieldType6.getName(), "bar");
         record = repository.create(record);
 
@@ -864,6 +865,7 @@ public abstract class AbstractRepositoryTest {
         assertEquals("foo", readRecord.getField(fieldType1.getName()));
         assertEquals(555, readRecord.getField(fieldType2.getName()));
         assertEquals(true, readRecord.getField(fieldType3.getName()));
+        assertEquals("fromLatestMixinRecordTypeVersion", readRecord.getField(fieldType1B.getName()));
         assertEquals("bar", readRecord.getField(fieldType6.getName()));
     }
 

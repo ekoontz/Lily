@@ -75,8 +75,11 @@ public class RecordTypeImpl implements RecordType {
 
     public void addMixin(String recordTypeId, Long recordTypeVersion) {
         ArgumentValidator.notNull(recordTypeId, "recordTypeId");
-        ArgumentValidator.notNull(recordTypeVersion, "recordTypeVersion");
         mixins.put(recordTypeId, recordTypeVersion);
+    }
+    
+    public void addMixin(String recordTypeId) {
+        addMixin(recordTypeId, null);
     }
     
     public void removeMixin(String recordTypeId) {

@@ -18,6 +18,8 @@ package org.lilycms.repository.api;
 import java.util.Collection;
 import java.util.Map;
 
+import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
+
 /**
  * A record type describes the schema to be followed by a {@link Record}.
  *
@@ -61,10 +63,25 @@ public interface RecordType {
     
     Collection<FieldTypeEntry> getFieldTypeEntries();
     
+    /**
+     * Adds a mixin to the record type.
+     * When no version is given, the latest recordType version will be filled in.
+     */
     void addMixin(String recordTypeId, Long recordTypeVersion);
+
+    /**
+     * Same as {@link #addMixin(String, Long)} but with null for the recordTypeVersion.
+     */
+    void addMixin(String recordTypeId);
     
+    /**
+     * Removes a mixin from the recordType.
+     */
     void removeMixin(String recordTypeId);
     
+    /**
+     * Returns a map of the recordTypeIds and versions of the mixins of the RecordType.
+     */
     Map<String, Long> getMixins();
     
     RecordType clone();

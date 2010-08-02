@@ -158,7 +158,7 @@
       "type": "record",
       "fields": [
         {"name": "recordTypeId", "type": "string"},
-        {"name": "recordTypeVersion", "type": "long"}
+        {"name": "recordTypeVersion", "type": ["long", "null"]}
       ]
     },
 
