@@ -46,40 +46,42 @@ public abstract class AbstractTypeManagerRecordTypeTest {
 
     @Test
     public void testCreateEmpty() throws Exception {
-        String id = "testCreateEmpty";
-        RecordType recordType = typeManager.newRecordType(id);
-        assertEquals(Long.valueOf(1), typeManager.createRecordType(recordType).getVersion());
-        
-        recordType.setVersion(Long.valueOf(1));
-        RecordType recordType2 = typeManager.getRecordType(id, null);
+        QName name = new QName("testNS", "testCreateEmpty");
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(Long.valueOf(1), recordType.getVersion());
+        RecordType recordType2 = typeManager.getRecordTypeByName(name, null);
         assertEquals(recordType, recordType2);
     }
 
     @Test
     public void testCreate() throws Exception {
-        String id = "testCreate";
-        RecordType recordType = typeManager.newRecordType(id);
+        QName name = new QName("testNS", "testCreate");
+        RecordType recordType = typeManager.newRecordType(name);
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
-        assertEquals(Long.valueOf(1), typeManager.createRecordType(recordType).getVersion());
+        RecordType createdRecordType = typeManager.createRecordType(recordType);
+        assertEquals(Long.valueOf(1), createdRecordType.getVersion());
         
         recordType.setVersion(Long.valueOf(1));
-        assertEquals(recordType, typeManager.getRecordType(id, null));
+        recordType.setId(createdRecordType.getId());
+        assertEquals(recordType, typeManager.getRecordTypeById(createdRecordType.getId(), null));
     }
 
     @Test
     public void testUpdate() throws Exception {
-        String id = "testUpdate";
-        RecordType recordType = typeManager.newRecordType(id);
-        RecordType recordTypeV1 = typeManager.createRecordType(recordType);
-        assertEquals(Long.valueOf(1), recordTypeV1.getVersion());
-        assertEquals(Long.valueOf(1), typeManager.updateRecordType(recordType).getVersion());
+        QName name = new QName(null, "testUpdate");
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(Long.valueOf(1), recordType.getVersion());
+        RecordType recordTypeV1 = typeManager.getRecordTypeByName(name, null);
+        assertEquals(Long.valueOf(1), typeManager.updateRecordType(recordTypeV1).getVersion());
         
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), true));
         RecordType recordTypeV2 = typeManager.updateRecordType(recordType);
         assertEquals(Long.valueOf(2), recordTypeV2.getVersion());
-        assertEquals(Long.valueOf(2), typeManager.updateRecordType(recordType).getVersion());
+        assertEquals(Long.valueOf(2), typeManager.updateRecordType(recordTypeV2).getVersion());
         
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), true));
         RecordType recordTypeV3 = typeManager.updateRecordType(recordType);
@@ -92,27 +94,27 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         assertEquals(Long.valueOf(4), typeManager.updateRecordType(recordType).getVersion());
         
         recordType.setVersion(Long.valueOf(4));
-        assertEquals(recordType, typeManager.getRecordType(id, null));
+        assertEquals(recordType, typeManager.getRecordTypeByName(name, null));
         
         // Read old versions
-        assertEquals(recordTypeV1, typeManager.getRecordType(id,Long.valueOf(1)));
-        assertEquals(recordTypeV2, typeManager.getRecordType(id,Long.valueOf(2)));
-        assertEquals(recordTypeV3, typeManager.getRecordType(id,Long.valueOf(3)));
-        assertEquals(recordTypeV4, typeManager.getRecordType(id,Long.valueOf(4)));
+        assertEquals(recordTypeV1, typeManager.getRecordTypeByName(name,Long.valueOf(1)));
+        assertEquals(recordTypeV2, typeManager.getRecordTypeByName(name,Long.valueOf(2)));
+        assertEquals(recordTypeV3, typeManager.getRecordTypeByName(name,Long.valueOf(3)));
+        assertEquals(recordTypeV4, typeManager.getRecordTypeByName(name,Long.valueOf(4)));
     }
 
     @Test
     public void testReadNonExistingRecordTypeFails() throws Exception {
-        String id = "testReadNonExistingRecordTypeFails";
+        QName name = new QName("testNS", "testReadNonExistingRecordTypeFails");
         try {
-            typeManager.getRecordType(id, null);
+            typeManager.getRecordTypeByName(name, null);
             fail();
         } catch (RecordTypeNotFoundException expected) {
         }
         
-        typeManager.createRecordType(typeManager.newRecordType(id));
+        typeManager.createRecordType(typeManager.newRecordType(name));
         try {
-            typeManager.getRecordType(id, Long.valueOf(2));
+            typeManager.getRecordTypeByName(name, Long.valueOf(2));
             fail();
         } catch (RecordTypeNotFoundException expected) {
         }
@@ -120,8 +122,14 @@ public abstract class AbstractTypeManagerRecordTypeTest {
 
     @Test
     public void testUpdateNonExistingRecordTypeFails() throws Exception {
-        String id = "testUpdateNonExistingRecordTypeFails";
-        RecordType recordType = typeManager.newRecordType(id);
+        QName name = new QName("testNS", "testUpdateNonExistingRecordTypeFails");
+        RecordType recordType = typeManager.newRecordType(name);
+        try {
+            typeManager.updateRecordType(recordType);
+            fail();
+        } catch (RecordTypeNotFoundException expected) {
+        }
+        recordType.setId(UUID.randomUUID().toString());
         try {
             typeManager.updateRecordType(recordType);
             fail();
@@ -131,8 +139,8 @@ public abstract class AbstractTypeManagerRecordTypeTest {
 
     @Test
     public void testFieldTypeExistsOnCreate() throws Exception {
-        String id = "testUpdateNonExistingRecordTypeFails";
-        RecordType recordType = typeManager.newRecordType(id);
+        QName name = new QName("testNS", "testUpdateNonExistingRecordTypeFails");
+        RecordType recordType = typeManager.newRecordType(name);
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(UUID.randomUUID().toString(), false));
         try {
             typeManager.createRecordType(recordType);
@@ -142,10 +150,10 @@ public abstract class AbstractTypeManagerRecordTypeTest {
     }
 
     @Test
-    public void testFieldGroupExistsOnUpdate() throws Exception {
-        String id = "testFieldGroupExistsOnUpdate";
-        RecordType recordType = typeManager.newRecordType(id);
-        typeManager.createRecordType(recordType);
+    public void testFieldTypeExistsOnUpdate() throws Exception {
+        QName name = new QName("testNS", "testFieldGroupExistsOnUpdate");
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
         
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(UUID.randomUUID().toString(), false));
         try {
@@ -157,122 +165,129 @@ public abstract class AbstractTypeManagerRecordTypeTest {
 
     @Test
     public void testRemove() throws Exception {
-        String id = "testRemove";
-        RecordType recordType = typeManager.newRecordType(id);
+        QName name = new QName("testNS", "testRemove");
+        RecordType recordType = typeManager.newRecordType(name);
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
-        typeManager.createRecordType(recordType);
+        recordType = typeManager.createRecordType(recordType);
         
         recordType.removeFieldTypeEntry(fieldType1.getId());
         recordType.removeFieldTypeEntry(fieldType2.getId());
         recordType.removeFieldTypeEntry(fieldType3.getId());
         typeManager.updateRecordType(recordType);
         
-        RecordType readRecordType = typeManager.getRecordType(id, null);
+        RecordType readRecordType = typeManager.getRecordTypeByName(name, null);
         assertTrue(readRecordType.getFieldTypeEntries().isEmpty());
     }
 
     @Test
     public void testRemoveLeavesOlderVersionsUntouched() throws Exception {
-        String id = "testRemoveLeavesOlderVersionsUntouched";
-        RecordType recordType = typeManager.newRecordType(id);
+        QName name = new QName("testNS", "testRemoveLeavesOlderVersionsUntouched");
+        RecordType recordType = typeManager.newRecordType(name);
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
-        typeManager.createRecordType(recordType);
+        recordType = typeManager.createRecordType(recordType);
         
         recordType.removeFieldTypeEntry(fieldType1.getId());
         recordType.removeFieldTypeEntry(fieldType2.getId());
         recordType.removeFieldTypeEntry(fieldType3.getId());
         typeManager.updateRecordType(recordType);
         
-        RecordType readRecordType = typeManager.getRecordType(id, Long.valueOf(1));
+        RecordType readRecordType = typeManager.getRecordTypeByName(name, Long.valueOf(1));
         assertEquals(3, readRecordType.getFieldTypeEntries().size());
     }
 
     @Test
     public void testMixin() throws Exception {
-        String id = "testMixin";
-        RecordType mixinType = typeManager.newRecordType(id+"MIX");
+        QName mixinName = new QName("mixinNS", "testMixin");
+        RecordType mixinType = typeManager.newRecordType(mixinName);
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType = typeManager.createRecordType(mixinType);
-        
-        RecordType recordType = typeManager.newRecordType(id+"RT");
+
+        QName recordName = new QName("recordNS", "testMixin");
+        RecordType recordType = typeManager.newRecordType(recordName);
         recordType.addMixin(mixinType.getId(), mixinType.getVersion());
-        assertEquals(Long.valueOf(1), typeManager.createRecordType(recordType).getVersion());
-        recordType.setVersion(Long.valueOf(1));
-        assertEquals(recordType, typeManager.getRecordType(recordType.getId(), null));
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(Long.valueOf(1), recordType.getVersion());
+        assertEquals(recordType, typeManager.getRecordTypeById(recordType.getId(), null));
     }
     
     @Test
     public void testMixinLatestVersion() throws Exception {
-        String id = "testMixinLatestVersion";
-        RecordType mixinType = typeManager.newRecordType(id+"MIX");
+        QName mixinName = new QName("mixinNS", "testMixinLatestVersion");
+        RecordType mixinType = typeManager.newRecordType(mixinName);
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType = typeManager.createRecordType(mixinType);
 
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType = typeManager.updateRecordType(mixinType);
-        
-        RecordType recordType = typeManager.newRecordType(id+"RT");
+
+        QName recordName = new QName("recordNS", "testMixinLatestVersion");
+        RecordType recordType = typeManager.newRecordType(recordName);
         recordType.addMixin(mixinType.getId());
-        assertEquals(Long.valueOf(1), typeManager.createRecordType(recordType).getVersion());
-        recordType.setVersion(Long.valueOf(1));
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(Long.valueOf(1), recordType.getVersion());
         
         recordType.addMixin(mixinType.getId(), 2L); // Assert latest version of the Mixin RecordType got filled in
-        assertEquals(recordType, typeManager.getRecordType(recordType.getId(), null));
+        assertEquals(recordType, typeManager.getRecordTypeById(recordType.getId(), null));
     }
 
     @Test
     public void testMixinUpdate() throws Exception {
-        String id = "testMixinUpdate";
-        RecordType mixinType1 = typeManager.newRecordType(id+"MIX");
+        QName mixinName = new QName("mixinNS", "testMixinUpdate");
+        RecordType mixinType1 = typeManager.newRecordType(mixinName);
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType1 = typeManager.createRecordType(mixinType1);
-        RecordType mixinType2 = typeManager.newRecordType(id+"MIX2");
+        QName mixinName2 = new QName("mixinNS", "testMixinUpdate2");
+        RecordType mixinType2 = typeManager.newRecordType(mixinName2);
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType2 = typeManager.createRecordType(mixinType2);
         
-        RecordType recordType = typeManager.newRecordType(id+"RT");
+        QName recordName = new QName("recordNS", "testMixinUpdate");
+        RecordType recordType = typeManager.newRecordType(recordName);
         recordType.addMixin(mixinType1.getId(), mixinType1.getVersion());
-        typeManager.createRecordType(recordType);
+        recordType = typeManager.createRecordType(recordType);
         
         recordType.addMixin(mixinType2.getId(), mixinType2.getVersion());
-        assertEquals(Long.valueOf(2), typeManager.updateRecordType(recordType).getVersion());
-        recordType.setVersion(Long.valueOf(2));
-        assertEquals(recordType, typeManager.getRecordType(recordType.getId(), null));
+        recordType = typeManager.updateRecordType(recordType);
+        assertEquals(Long.valueOf(2), recordType.getVersion());
+        assertEquals(recordType, typeManager.getRecordTypeById(recordType.getId(), null));
     }
 
     @Test
     public void testMixinRemove() throws Exception {
-        String id = "testMixinRemove";
-        RecordType mixinType1 = typeManager.newRecordType(id+"MIX");
+        QName mixinName = new QName("mixinNS", "testMixinRemove");
+        RecordType mixinType1 = typeManager.newRecordType(mixinName);
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType1 = typeManager.createRecordType(mixinType1);
-        RecordType mixinType2 = typeManager.newRecordType(id+"MIX2");
+        QName mixinName2 = new QName("mixinNS", "testMixinRemove2");
+        RecordType mixinType2 = typeManager.newRecordType(mixinName2);
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType2 = typeManager.createRecordType(mixinType2);
         
-        RecordType recordType = typeManager.newRecordType(id+"RT");
+        QName recordName = new QName("recordNS", "testMixinRemove");
+        RecordType recordType = typeManager.newRecordType(recordName);
         recordType.addMixin(mixinType1.getId(), mixinType1.getVersion());
-        typeManager.createRecordType(recordType);
+        recordType = typeManager.createRecordType(recordType);
         
         recordType.addMixin(mixinType2.getId(), mixinType2.getVersion());
         recordType.removeMixin(mixinType1.getId());
-        assertEquals(Long.valueOf(2), typeManager.updateRecordType(recordType).getVersion());
-        RecordType readRecordType = typeManager.getRecordType(recordType.getId(), null);
+        recordType = typeManager.updateRecordType(recordType);
+        assertEquals(Long.valueOf(2), recordType.getVersion());
+        RecordType readRecordType = typeManager.getRecordTypeById(recordType.getId(), null);
         Map<String, Long> mixins = readRecordType.getMixins();
         assertEquals(1, mixins.size());
         assertEquals(Long.valueOf(1), mixins.get(mixinType2.getId()));

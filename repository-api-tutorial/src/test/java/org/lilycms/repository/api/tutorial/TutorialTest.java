@@ -86,7 +86,7 @@ public class TutorialTest {
         title = typeManager.createFieldType(title);
 
         // (4)
-        RecordType book = typeManager.newRecordType("Book");
+        RecordType book = typeManager.newRecordType(new QName(NS, "Book"));
         book.addFieldTypeEntry(title.getId(), true);
 
         // (5)
@@ -126,7 +126,7 @@ public class TutorialTest {
         FieldType reviewStatus = typeManager.newFieldType(stringValueType, new QName(NS, "review_status"), Scope.VERSIONED_MUTABLE);
         reviewStatus = typeManager.createFieldType(reviewStatus);
 
-        RecordType book = typeManager.getRecordType("Book", null);
+        RecordType book = typeManager.getRecordTypeByName(new QName(NS, "Book"), null);
 
         // The order in which fields are added does not matter
         book.addFieldTypeEntry(description.getId(), false);
@@ -149,7 +149,7 @@ public class TutorialTest {
         Record record = repository.newRecord();
 
         // (2)
-        record.setRecordType("Book", null);
+        record.setRecordType(new QName(NS, "Book"));
 
         // (3)
         record.setField(new QName(NS, "title"), "Lily, the definitive guide, 3rd edition");
@@ -165,7 +165,7 @@ public class TutorialTest {
     public void createRecordUserSpecifiedId() throws Exception {
         RecordId id = repository.getIdGenerator().newRecordId("lily-definitive-guide-3rd-edition");
         Record record = repository.newRecord(id);
-        record.setRecordType("Book", null);
+        record.setRecordType(new QName(NS, "Book"));
         record.setField(new QName(NS, "title"), "Lily, the definitive guide, 3rd edition");
         record = repository.create(record);
 
@@ -176,7 +176,6 @@ public class TutorialTest {
     public void updateRecord() throws Exception {
         RecordId id = repository.getIdGenerator().newRecordId("lily-definitive-guide-3rd-edition");
         Record record = repository.newRecord(id);
-        record.setRecordType("Book", null); // TODO should not be necessary (r29)
         record.setField(new QName(NS, "title"), "Lily, the definitive guide, third edition");
         record.setField(new QName(NS, "pages"), Long.valueOf(912));
         record.setField(new QName(NS, "manager"), "Manager M");
@@ -274,14 +273,14 @@ public class TutorialTest {
 
         // (4)
         Record enRecord = repository.newRecord(enId);
-        enRecord.setRecordType("Book", null);
+        enRecord.setRecordType(new QName(NS, "Book"));
         enRecord.setField(new QName(NS, "title"), "Car maintenance");
         enRecord = repository.create(enRecord);
 
         // (5)
         RecordId nlId = idGenerator.newRecordId(enRecord.getId().getMaster(), Collections.singletonMap("language", "nl"));
         Record nlRecord = repository.newRecord(nlId);
-        nlRecord.setRecordType("Book", null);
+        nlRecord.setRecordType(new QName(NS, "Book"));
         nlRecord.setField(new QName(NS, "title"), "Wagen onderhoud");
         nlRecord = repository.create(nlRecord);
 
@@ -296,13 +295,13 @@ public class TutorialTest {
     public void linkField() throws Exception {
         // (1)
         Record record1 = repository.newRecord();
-        record1.setRecordType("Book", null);
+        record1.setRecordType(new QName(NS, "Book"));
         record1.setField(new QName(NS, "title"), "Fishing 1");
         record1 = repository.create(record1);
 
         // (2)
         Record record2 = repository.newRecord();
-        record2.setRecordType("Book", null);
+        record2.setRecordType(new QName(NS, "Book"));
         record2.setField(new QName(NS, "title"), "Fishing 2");
         record2.setField(new QName(NS, "sequel_to"), new Link(record1.getId()));
         record2 = repository.create(record2);

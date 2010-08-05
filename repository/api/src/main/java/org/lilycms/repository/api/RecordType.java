@@ -18,8 +18,6 @@ package org.lilycms.repository.api;
 import java.util.Collection;
 import java.util.Map;
 
-import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
-
 /**
  * A record type describes the schema to be followed by a {@link Record}.
  *
@@ -41,7 +39,25 @@ import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
  * to the mixin record types are also to specific versions.
  */
 public interface RecordType {
+    /**
+     * Sets the id.
+     *
+     * <p>Even though IDs are system-generated, you might need to set them on the record type e.g. to construct
+     * a record type to pass to the {@link TypeManager#updateRecordType(RecordType)}.
+     */
+    void setId(String id);
+
+    /**
+     * The id is unique, immutable and system-generated.
+     */
     String getId();
+    
+    void setName(QName name);
+
+    /**
+     * The name is unique, user-provided but can be changed after initial creation of the record type.
+     */
+    QName getName();
 
     void setVersion(Long version);
     

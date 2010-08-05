@@ -93,7 +93,7 @@
           containing all the above fields (as not mandatory).
 
   */
-  "recordTypeName": "TesterRecordType",
+  "recordTypeName": "tester:TesterRecordType",
 
   "scenario": {
     /* The number of record creations to be done upon each iteration. Should be > 0 */

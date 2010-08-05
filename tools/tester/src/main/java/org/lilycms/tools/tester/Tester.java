@@ -194,7 +194,7 @@ public class Tester {
 
         // Record type
         String recordTypeName = JsonUtil.getString(configNode, "recordTypeName");
-        recordType = repository.getTypeManager().newRecordType(recordTypeName);
+        recordType = repository.getTypeManager().newRecordType(new QName(null, recordTypeName));
         for (Field field : fields) {
             recordType.addFieldTypeEntry(field.fieldType.getId(), false);
         }
@@ -207,7 +207,7 @@ public class Tester {
         while (true) {
             for (int i = 0; i < createCount; i++) {
                 Record record = repository.newRecord();
-                record.setRecordType(recordType.getId());
+                record.setRecordType(recordType.getName());
                 for (Field field : fields) {
                     record.setField(field.fieldType.getName(), field.generateValue());
                 }

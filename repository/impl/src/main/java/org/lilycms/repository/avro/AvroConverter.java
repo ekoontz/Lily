@@ -54,17 +54,19 @@ public class AvroConverter {
             record.setVersion(avroRecord.version);
         }
         // Record Types
-        if (avroRecord.recordTypeId != null) {
-            record.setRecordType(avroRecord.recordTypeId.toString(), avroRecord.version);
+        QName recordTypeName = null;
+        if (avroRecord.recordTypeName != null) {
+            recordTypeName = convert(avroRecord.recordTypeName);
         }
-        
-        Map<Utf8, Utf8> scopeRecordTypeIds = avroRecord.scopeRecordTypeIds;
-        if (scopeRecordTypeIds != null) {
+        record.setRecordType(recordTypeName, avroRecord.recordTypeVersion);
+         
+        Map<Utf8, AvroQName> scopeRecordTypeNames = avroRecord.scopeRecordTypeNames;
+        if (scopeRecordTypeNames != null) {
             for (Scope scope : Scope.values()) {
                 Utf8 key = new Utf8(scope.name());
-                Utf8 recordTypeId = scopeRecordTypeIds.get(key);
-                if (recordTypeId != null) {
-                    record.setRecordType(scope, recordTypeId.toString(), avroRecord.scopeRecordTypeVersions.get(key));
+                AvroQName scopeRecordTypeName = scopeRecordTypeNames.get(key);
+                if (scopeRecordTypeName != null) {
+                    record.setRecordType(scope, convert(scopeRecordTypeName), avroRecord.scopeRecordTypeVersions.get(key));
                 }
             }
         }
@@ -102,18 +104,18 @@ public class AvroConverter {
             avroRecord.version = record.getVersion();
         } else { avroRecord.version = null; }
         // Record types
-        if (record.getRecordTypeId() != null) {
-            avroRecord.recordTypeId = new Utf8(record.getRecordTypeId());
-        } else { avroRecord.recordTypeId = null;}
+        if (record.getRecordTypeName() != null) {
+            avroRecord.recordTypeName = convert(record.getRecordTypeName());
+        }
         if (record.getRecordTypeVersion() != null) {
             avroRecord.recordTypeVersion = record.getRecordTypeVersion();
         }
-        avroRecord.scopeRecordTypeIds = new HashMap<Utf8, Utf8>();
+        avroRecord.scopeRecordTypeNames = new HashMap<Utf8, AvroQName>();
         avroRecord.scopeRecordTypeVersions = new HashMap<Utf8, Long>();
         for (Scope scope : Scope.values()) {
-            String recordTypeId = record.getRecordTypeId(scope);
-            if (recordTypeId != null) {
-                avroRecord.scopeRecordTypeIds.put(new Utf8(scope.name()), new Utf8(recordTypeId));
+            QName recordTypeName = record.getRecordTypeName(scope);
+            if (recordTypeName != null) {
+                avroRecord.scopeRecordTypeNames.put(new Utf8(scope.name()), convert(recordTypeName));
                 Long version = record.getRecordTypeVersion(scope);
                 if (version != null) {
                     avroRecord.scopeRecordTypeVersions.put(new Utf8(scope.name()), version);
@@ -208,7 +210,8 @@ public class AvroConverter {
 
     public RecordType convert(AvroRecordType avroRecordType) {
         String recordTypeId = convert(avroRecordType.id);
-        RecordType recordType = typeManager.newRecordType(recordTypeId);
+        QName recordTypeName = convert(avroRecordType.name);
+        RecordType recordType = typeManager.newRecordType(recordTypeId, recordTypeName);
         recordType.setVersion(avroRecordType.version);
         GenericArray<AvroFieldTypeEntry> fieldTypeEntries = avroRecordType.fieldTypeEntries;
         if (fieldTypeEntries != null) {
@@ -227,7 +230,10 @@ public class AvroConverter {
 
     public AvroRecordType convert(RecordType recordType) {
         AvroRecordType avroRecordType = new AvroRecordType();
-        avroRecordType.id = new Utf8(recordType.getId());
+        if (recordType.getId() != null) {
+            avroRecordType.id = new Utf8(recordType.getId());
+        }
+        avroRecordType.name = convert(recordType.getName());
         Long version = recordType.getVersion();
         if (version != null) {
             avroRecordType.version = version;
@@ -346,7 +352,10 @@ public class AvroConverter {
 
     public AvroRecordTypeNotFoundException convert(RecordTypeNotFoundException exception) {
         AvroRecordTypeNotFoundException avroException = new AvroRecordTypeNotFoundException();
-        avroException.id = new Utf8(exception.getId());
+        if (exception.getId() != null)
+            avroException.id = new Utf8(exception.getId());
+        if (exception.getName() != null)
+            avroException.name = convert(exception.getName());
         Long version = exception.getVersion();
         if (version != null) {
             avroException.version = version;
@@ -388,7 +397,12 @@ public class AvroConverter {
     }
 
     public RecordTypeNotFoundException convert(AvroRecordTypeNotFoundException avroException) {
-        RecordTypeNotFoundException exception = new RecordTypeNotFoundException(convert(avroException.id), avroException.version);
+        RecordTypeNotFoundException exception;
+        if (avroException.id != null) {
+            exception = new RecordTypeNotFoundException(convert(avroException.id), avroException.version);
+        } else {
+            exception = new RecordTypeNotFoundException(convert(avroException.name), avroException.version);
+        }
         restoreCauses(avroException.remoteCauses, exception);
         return exception;
     }

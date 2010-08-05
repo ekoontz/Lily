@@ -168,14 +168,14 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecordType getRecordType(Utf8 id, long avroVersion)
+    public AvroRecordType getRecordTypeById(Utf8 id, long avroVersion)
             throws AvroRecordTypeNotFoundException, AvroTypeException {
         try {
             Long version = null;
             if (avroVersion != -1) {
                 version = avroVersion;
             }
-            return converter.convert(typeManager.getRecordType(id.toString(), version));
+            return converter.convert(typeManager.getRecordTypeById(id.toString(), version));
         } catch (RecordTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (TypeException e) {
@@ -183,6 +183,22 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
+    public AvroRecordType getRecordTypeByName(AvroQName name, long avroVersion) throws AvroRecordTypeNotFoundException,
+            AvroTypeException {
+        try {
+            Long version = null;
+            if (avroVersion != -1) {
+                version = avroVersion;
+            }
+            return converter.convert(typeManager.getRecordTypeByName(converter.convert(name), version));
+        } catch (RecordTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (TypeException e) {
+            throw converter.convert(e);
+        }
+    }
+    
+    
     public AvroRecordType updateRecordType(AvroRecordType recordType)
             throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroTypeException {
 

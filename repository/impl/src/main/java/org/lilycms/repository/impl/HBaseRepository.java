@@ -308,7 +308,7 @@ public class HBaseRepository implements Repository {
 
     private void checkCreatePreconditions(Record record) throws InvalidRecordException {
         ArgumentValidator.notNull(record, "record");
-        if (record.getRecordTypeId() == null) {
+        if (record.getRecordTypeName() == null) {
             throw new InvalidRecordException(record, "The recordType cannot be null for a record to be created.");
         }
         if (record.getFields().isEmpty()) {
@@ -330,8 +330,6 @@ public class HBaseRepository implements Repository {
             if (rowLock == null)
                 throw new RecordException("Failed to lock row while updating record <" + recordId
                         + "> in HBase table", null);
-
-            checkUpdatePreconditions(record);
 
             Record originalRecord = read(newRecord.getId(), null, null, new ReadContext(false));
 
@@ -373,25 +371,21 @@ public class HBaseRepository implements Repository {
         return newRecord;
     }
 
-    private void checkUpdatePreconditions(Record record) throws InvalidRecordException, RecordNotFoundException,
-            RecordException {
-        ArgumentValidator.notNull(record, "record");
-    }
-
     // Calculates the changes that are to be made on the record-row and puts
     // this information on the Put object and the RecordEvent
     private boolean calculateRecordChanges(Record record, Record originalRecord, Long version, Put put,
             RecordEvent recordEvent) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
             RecordException, TypeException {
-        String recordTypeId = record.getRecordTypeId();
+        QName recordTypeName = record.getRecordTypeName();
         Long recordTypeVersion = null;
-        if (recordTypeId == null) {
-            recordTypeId = originalRecord.getRecordTypeId();
+        if (recordTypeName == null) {
+            recordTypeName = originalRecord.getRecordTypeName();
         } else {
             recordTypeVersion = record.getRecordTypeVersion();
         }
 
-        RecordType recordType = typeManager.getRecordType(recordTypeId, recordTypeVersion);
+        RecordType recordType = typeManager.getRecordTypeByName(recordTypeName, recordTypeVersion);
+        
 
         // Check which fields have changed
         Set<Scope> changedScopes = calculateChangedFields(record, originalRecord, recordType, version, put, recordEvent);
@@ -406,17 +400,17 @@ public class HBaseRepository implements Repository {
         boolean fieldsHaveChanged = !changedScopes.isEmpty();
         if (fieldsHaveChanged) {
             recordTypeVersion = recordType.getVersion();
-            if (!recordTypeId.equals(originalRecord.getRecordTypeId())
+            if (!recordTypeName.equals(originalRecord.getRecordTypeName())
                     || !recordTypeVersion.equals(originalRecord.getRecordTypeVersion())) {
                 recordEvent.setRecordTypeChanged(true);
                 put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME, Bytes
-                        .toBytes(recordTypeId));
+                        .toBytes(recordType.getId()));
                 put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEVERSION_COLUMN_NAME,
                         Bytes.toBytes(recordTypeVersion));
             }
             // Always set the record type on the record since the requested
             // record type could have been given without a version number
-            record.setRecordType(recordTypeId, recordTypeVersion);
+            record.setRecordType(recordTypeName, recordTypeVersion);
             if (version != null) {
                 put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME, Bytes
                         .toBytes(version));
@@ -455,7 +449,7 @@ public class HBaseRepository implements Repository {
                         .toBytes(recordType.getVersion()));
 
             }
-            record.setRecordType(scope, recordType.getId(), recordType.getVersion());
+            record.setRecordType(scope, recordType.getName(), recordType.getVersion());
         }
         return changedScopes;
     }
@@ -547,7 +541,6 @@ public class HBaseRepository implements Repository {
                 throw new RecordException("Failed to lock row while updating record <" + recordId
                         + "> in HBase table", null);
 
-            checkUpdatePreconditions(record);
             Long version = record.getVersion();
             if (version == null) {
                 throw new InvalidRecordException(record,
@@ -584,7 +577,7 @@ public class HBaseRepository implements Repository {
 
             Scope scope = Scope.VERSIONED_MUTABLE;
             if (!changedScopes.isEmpty() || deleted) {
-                RecordType recordType = typeManager.getRecordType(record.getRecordTypeId(), record
+                RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record
                         .getRecordTypeVersion());
                 // Update the mutable record type
                 put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), version, Bytes
@@ -599,7 +592,7 @@ public class HBaseRepository implements Repository {
                     throw new RecordException("Exception occurred while putting updated record <" + recordId
                             + "> on HBase table", null);
                 }
-                newRecord.setRecordType(scope, recordType.getId(), recordType.getVersion());
+                newRecord.setRecordType(scope, recordType.getName(), recordType.getVersion());
                 if (walMessage != null) {
                     try {
                         wal.processMessage(walMessage);
@@ -743,7 +736,8 @@ public class HBaseRepository implements Repository {
             // Set the recordType explicitly in case only versioned fields were
             // extracted
             Pair<String, Long> recordTypePair = extractRecordType(Scope.NON_VERSIONED, result, null, record);
-            record.setRecordType(recordTypePair.getV1(), recordTypePair.getV2());
+            RecordType recordType = typeManager.getRecordTypeById(recordTypePair.getV1(), recordTypePair.getV2());
+            record.setRecordType(recordType.getName(), recordType.getVersion());
         }
         return record;
     }
@@ -944,7 +938,8 @@ public class HBaseRepository implements Repository {
                 record.setField(field.getV1(), field.getV2());
             }
             Pair<String, Long> recordTypePair = extractRecordType(scope, result, version, record);
-            record.setRecordType(scope, recordTypePair.getV1(), recordTypePair.getV2());
+            RecordType recordType = typeManager.getRecordTypeById(recordTypePair.getV1(), recordTypePair.getV2());
+            record.setRecordType(scope, recordType.getName(), recordType.getVersion());
             retrieved = true;
         }
         return retrieved;

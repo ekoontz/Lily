@@ -30,9 +30,9 @@
       "fields": [
         {"name": "id", "type": ["string", "null"]},
         {"name": "version", "type": ["long", "null"]},
-        {"name": "recordTypeId", "type": ["string", "null"]},
+        {"name": "recordTypeName", "type": ["AvroQName", "null"]},
         {"name": "recordTypeVersion", "type": ["long", "null"]},
-        {"name": "scopeRecordTypeIds", "type": {"type": "map", "values": "string"}},
+        {"name": "scopeRecordTypeNames", "type": {"type": "map", "values": ["AvroQName", "null"]}},
         {"name": "scopeRecordTypeVersions", "type": {"type": "map", "values": "long"}},
         {"name": "fields", "type": {"type": "array", "items": "AvroField"}},
         {"name": "fieldsToDelete", "type": {"type": "array", "items": "string"}}
@@ -167,6 +167,7 @@
       "type": "record",
       "fields": [
         {"name": "id", "type": ["string", "null"]},
+        {"name": "name", "type": "AvroQName"},
         {"name": "version", "type": ["long", "null"]},
         {"name": "fieldTypeEntries", "type": {"type": "array", "items": "AvroFieldTypeEntry"}},
         {"name": "mixins", "type": {"type": "array", "items": "AvroMixin"}}
@@ -206,7 +207,8 @@
       "name": "AvroRecordTypeNotFoundException",
       "type": "error",
       "fields": [
-        {"name": "id", "type": "string"},
+        {"name": "id", "type": ["string", "null"]},
+        {"name": "name", "type": ["AvroQName", "null"]},
         {"name": "version", "type": "long"},
         {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
       ]
@@ -272,9 +274,18 @@
       "AvroTypeException", "AvroGenericException"]
     },
 
-    "getRecordType": {
+    "getRecordTypeById": {
       "request": [
         {"name": "id", "type": "string"},
+        {"name": "version", "type": "long"}
+      ],
+      "response": "AvroRecordType",
+      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+    },
+    
+    "getRecordTypeByName": {
+      "request": [
+        {"name": "name", "type": "AvroQName"},
         {"name": "version", "type": "long"}
       ],
       "response": "AvroRecordType",

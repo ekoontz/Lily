@@ -20,13 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.lilycms.repository.api.FieldTypeEntry;
+import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.RecordType;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.util.ArgumentValidator;
 
 public class RecordTypeImpl implements RecordType {
     
-    private final String id;
+    private String id;
+    private QName name;
     private Long version;
     private Map<String, Long> mixins = new HashMap<String, Long>();
     private Map<String, FieldTypeEntry> fieldTypeEntries = new HashMap<String, FieldTypeEntry>();
@@ -35,12 +37,25 @@ public class RecordTypeImpl implements RecordType {
      * This constructor should not be called directly.
      * @use {@link TypeManager#newRecordType} instead
      */
-    public RecordTypeImpl(String id) {
+    public RecordTypeImpl(String id, QName name) {
+        this.id = id;
+        this.name = name;
+    }
+    
+    public void setId(String id) {
         this.id = id;
     }
     
     public String getId() {
         return id;
+    }
+    
+    public void setName(QName name) {
+        this.name = name;
+    }
+    
+    public QName getName() {
+        return name;
     }
 
     public Long getVersion() {
@@ -91,7 +106,7 @@ public class RecordTypeImpl implements RecordType {
     }
 
     public RecordType clone() {
-        RecordTypeImpl clone = new RecordTypeImpl(this.id);
+        RecordTypeImpl clone = new RecordTypeImpl(this.id, this.name);
         clone.version = this.version;
         clone.fieldTypeEntries.putAll(fieldTypeEntries);
         clone.mixins.putAll(mixins);
@@ -105,6 +120,7 @@ public class RecordTypeImpl implements RecordType {
         result = prime * result + ((fieldTypeEntries == null) ? 0 : fieldTypeEntries.hashCode());
         result = prime * result + ((id == null) ? 0 : id.hashCode());
         result = prime * result + ((mixins == null) ? 0 : mixins.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
@@ -133,6 +149,11 @@ public class RecordTypeImpl implements RecordType {
                 return false;
         } else if (!mixins.equals(other.mixins))
             return false;
+        if (name == null) {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
         if (version == null) {
             if (other.version != null)
                 return false;
@@ -143,9 +164,8 @@ public class RecordTypeImpl implements RecordType {
 
     @Override
     public String toString() {
-        return "RecordTypeImpl [id=" + id + ", version=" + version + ", fieldTypeEntries=" + fieldTypeEntries.values()
-                        + ", mixins=" + mixins + "]";
+        return "RecordTypeImpl [name=" + name + ", id=" + id + ", version=" + version + ", fieldTypeEntries="
+                + fieldTypeEntries + ", mixins=" + mixins + "]";
     }
-
 
 }

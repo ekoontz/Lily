@@ -130,7 +130,7 @@ public class LinkIndexTest {
                 new QName("ns", "link3"), Scope.VERSIONED_MUTABLE);
         versionedMutableFt = typeManager.createFieldType(versionedMutableFt);
 
-        RecordType recordType = typeManager.newRecordType("MyRecordType");
+        RecordType recordType = typeManager.newRecordType(new QName("ns", "MyRecordType"));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(nonVersionedFt.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(versionedFt.getId(), false));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(versionedMutableFt.getId(), false));
@@ -141,7 +141,7 @@ public class LinkIndexTest {
         //
         {
             Record record = repository.newRecord();
-            record.setRecordType(recordType.getId());
+            record.setRecordType(recordType.getName());
             record.setField(nonVersionedFt.getName(), new Link(ids.newRecordId("foo1")));
             record = repository.create(record);
 

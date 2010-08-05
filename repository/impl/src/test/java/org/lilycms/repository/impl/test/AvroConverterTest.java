@@ -211,14 +211,19 @@ public class AvroConverterTest {
     
     @Test
     public void testEmptyRecordType() {
-        RecordType recordType = new RecordTypeImpl("recordTypeId");
-        typeManager.newRecordType("recordTypeId");
+        QName name = new QName("aNamespace", "aName");
+        RecordType recordType = new RecordTypeImpl("recordTypeId", name);
+        typeManager.newRecordType("recordTypeId", name);
         expectLastCall().andReturn(recordType);
 
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroRecordType avroRecordType = new AvroRecordType();
         avroRecordType.id = new Utf8("recordTypeId");
+        AvroQName avroQName = new AvroQName();
+        avroQName.namespace = new Utf8("aNamespace");
+        avroQName.name = new Utf8("aName");
+        avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
         avroRecordType.mixins = new GenericData.Array<AvroMixin>(0, Schema.createArray(AvroMixin.SCHEMA$));
@@ -229,8 +234,9 @@ public class AvroConverterTest {
     
     @Test
     public void testRecordTypeVersion() {
-        RecordType recordType = new RecordTypeImpl("recordTypeId");
-        typeManager.newRecordType("recordTypeId");
+        QName name = new QName("aNamespace", "aName");
+        RecordType recordType = new RecordTypeImpl("recordTypeId", name);
+        typeManager.newRecordType("recordTypeId", name);
         expectLastCall().andReturn(recordType);
 
         control.replay();
@@ -238,6 +244,10 @@ public class AvroConverterTest {
         recordType.setVersion(1L);
         AvroRecordType avroRecordType = new AvroRecordType();
         avroRecordType.id = new Utf8("recordTypeId");
+        AvroQName avroQName = new AvroQName();
+        avroQName.namespace = new Utf8("aNamespace");
+        avroQName.name = new Utf8("aName");
+        avroRecordType.name = avroQName ;
         avroRecordType.version = 1L;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
@@ -249,9 +259,11 @@ public class AvroConverterTest {
     
     @Test
     public void testRecordTypeFieldTypeEntries() {
-        RecordType recordType = new RecordTypeImpl("recordTypeId");
-        typeManager.newRecordType("recordTypeId");
+        QName name = new QName("aNamespace", "aName");
+        RecordType recordType = new RecordTypeImpl("recordTypeId", name);
+        typeManager.newRecordType("recordTypeId", name);
         expectLastCall().andReturn(recordType);
+        
         FieldTypeEntryImpl fieldTypeEntry1 = new FieldTypeEntryImpl("field1", true);
         FieldTypeEntryImpl fieldTypeEntry2 = new FieldTypeEntryImpl("field2", false);
         typeManager.newFieldTypeEntry("field1", true);
@@ -265,6 +277,10 @@ public class AvroConverterTest {
         recordType.addFieldTypeEntry(fieldTypeEntry2);
         AvroRecordType avroRecordType = new AvroRecordType();
         avroRecordType.id = new Utf8("recordTypeId");
+        AvroQName avroQName = new AvroQName();
+        avroQName.namespace = new Utf8("aNamespace");
+        avroQName.name = new Utf8("aName");
+        avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
         AvroFieldTypeEntry avroFieldTypeEntry = new AvroFieldTypeEntry();
@@ -293,8 +309,9 @@ public class AvroConverterTest {
     
     @Test
     public void testRecordTypeMixins() {
-        RecordType recordType = new RecordTypeImpl("recordTypeId");
-        typeManager.newRecordType("recordTypeId");
+        QName name = new QName("aNamespace", "aName");
+        RecordType recordType = new RecordTypeImpl("recordTypeId", name);
+        typeManager.newRecordType("recordTypeId", name);
         expectLastCall().andReturn(recordType);
         
         control.replay();
@@ -303,6 +320,10 @@ public class AvroConverterTest {
         recordType.addMixin("mixinId2", 2L);
         AvroRecordType avroRecordType = new AvroRecordType();
         avroRecordType.id = new Utf8("recordTypeId");
+        AvroQName avroQName = new AvroQName();
+        avroQName.namespace = new Utf8("aNamespace");
+        avroQName.name = new Utf8("aName");
+        avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
         avroRecordType.mixins = new GenericData.Array<AvroMixin>(0, Schema.createArray(AvroMixin.SCHEMA$));
@@ -336,9 +357,12 @@ public class AvroConverterTest {
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         Record record = new RecordImpl();
-        record.setRecordType("recordTypeId", null);
+        record.setRecordType(new QName("ns","recordTypeName"), null);
         AvroRecord avroRecord = new AvroRecord();
-        avroRecord.recordTypeId = new Utf8("recordTypeId");
+        AvroQName avroQName = new AvroQName();
+        avroQName.namespace = new Utf8("ns");
+        avroQName.name = new Utf8("recordTypeName");
+        avroRecord.recordTypeName = avroQName;
 
         assertEquals(record, converter.convert(avroRecord));
         // A bit of converting back and forth since avro can't compare maps
@@ -370,9 +394,9 @@ public class AvroConverterTest {
         RecordId recordId = repository.getIdGenerator().newRecordId();
         record.setId(recordId);
         // Scope.NON_VERSIONED recordType and master record type are the same
-        record.setRecordType(Scope.NON_VERSIONED, "nvrt", 1L);
-        record.setRecordType(Scope.VERSIONED, "vrt", 2L);
-        record.setRecordType(Scope.VERSIONED_MUTABLE, "vmrt", 3L);
+        record.setRecordType(Scope.NON_VERSIONED, new QName("ns", "nvrt"), 1L);
+        record.setRecordType(Scope.VERSIONED, new QName("ns", "vrt"), 2L);
+        record.setRecordType(Scope.VERSIONED_MUTABLE, new QName("ns", "vmrt"), 3L);
         QName fieldName = new QName("ns", "aName");
         record.setField(fieldName, "aValue");
         QName fieldName2 = new QName(null, "aName2");

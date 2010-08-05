@@ -140,12 +140,12 @@ public class BlobStoreTest {
         QName fieldName = new QName("test", "ablob");
         FieldType fieldType = typeManager.newFieldType(typeManager.getValueType("BLOB", false, false), fieldName, Scope.VERSIONED);
         fieldType = typeManager.createFieldType(fieldType);
-        RecordType recordType = typeManager.newRecordType("testCreateRecordWithBlobRT");
+        RecordType recordType = typeManager.newRecordType(new QName(null, "testCreateRecordWithBlobRT"));
         FieldTypeEntry fieldTypeEntry = typeManager.newFieldTypeEntry(fieldType.getId(), true);
         recordType.addFieldTypeEntry(fieldTypeEntry);
         recordType = typeManager.createRecordType(recordType);
         Record record = repository.newRecord();
-        record.setRecordType(recordType.getId(), null);
+        record.setRecordType(recordType.getName(), null);
 
         byte[] bytes = Bytes.toBytes("someBytes");
         Blob blob = new Blob("aMimetype", (long)bytes.length, "testCreate");

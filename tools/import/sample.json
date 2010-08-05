@@ -52,16 +52,16 @@
   ],
   recordTypes: [
     {
-      name: "MiscFields",
+      name: "sample:MiscFields",
       fields: [
-        {name: "sample:field1", mandatory: false },
-        {name: "sample:field2", mandatory: false }
+        {name: "sample:stringfield", mandatory: false },
+        {name: "sample:intfield", mandatory: false }
       ]
     }
   ],
   records: [
     {
-      type: "MiscFields",
+      type: "sample:MiscFields",
       "sample:stringfield": "My first document.",
       "sample:multiValueString": ["first", "second", "third"],
       "sample:intfield": 23,
@@ -71,12 +71,12 @@
       "sample:booleanfield": true
     },
     {
-      type: "MiscFields",
+      type: "sample:MiscFields",
       id: "zoo",
       "sample:stringfield": "A document with a user-defined ID"
     },
     {
-      type: "MiscFields",
+      type: "sample:MiscFields",
       "sample:stringfield": "A document with a link field",
       "sample:linkfield": "USER.zoo"
     }

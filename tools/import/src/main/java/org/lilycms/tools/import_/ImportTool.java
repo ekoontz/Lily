@@ -70,7 +70,7 @@ public class ImportTool {
     public RecordType importRecordType(RecordType newRecordType) throws RepositoryException {
         RecordType oldRecordType = null;
         try {
-            oldRecordType = typeManager.getRecordType(newRecordType.getId(), null);
+            oldRecordType = typeManager.getRecordTypeByName(newRecordType.getName(), null);
         } catch (RecordTypeNotFoundException e) {
             // ok
         }
@@ -107,7 +107,7 @@ public class ImportTool {
             return oldRecordType;
         } else {
             RecordType createdRecordType = typeManager.createRecordType(newRecordType);
-            importListener.created(EntityType.RECORD_TYPE, null, createdRecordType.getId());
+            importListener.created(EntityType.RECORD_TYPE, createdRecordType.getName().toString(), createdRecordType.getId());
             return createdRecordType;
         }
     }
@@ -166,7 +166,7 @@ public class ImportTool {
                     }
 
                     if (!vtagsUpdate.getFields().isEmpty()) {
-                        vtagsUpdate.setRecordType(updatedRecord.getRecordTypeId(), updatedRecord.getRecordTypeVersion());
+                        vtagsUpdate.setRecordType(updatedRecord.getRecordTypeName(), updatedRecord.getRecordTypeVersion());
                         updatedRecord = repository.update(vtagsUpdate);
                     }
                 }

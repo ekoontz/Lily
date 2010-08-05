@@ -67,7 +67,7 @@ public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeMa
         }
     }
 
-    public RecordType getRecordType(String id, Long version) throws RecordTypeNotFoundException, TypeException {
+    public RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException {
         try {
             long avroVersion;
             if (version == null) {
@@ -75,7 +75,7 @@ public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeMa
             } else {
                 avroVersion = version;
             }
-            return converter.convert(lilyProxy.getRecordType(new Utf8(id), avroVersion));
+            return converter.convert(lilyProxy.getRecordTypeById(new Utf8(id), avroVersion));
         } catch (AvroRecordTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroTypeException e) {
@@ -87,6 +87,27 @@ public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeMa
         }
     }
 
+    public RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException {
+        try {
+            long avroVersion;
+            if (version == null) {
+                avroVersion = -1;
+            } else {
+                avroVersion = version;
+            }
+            return converter.convert(lilyProxy.getRecordTypeByName(converter.convert(name), avroVersion));
+        } catch (AvroRecordTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroTypeException e) {
+            throw converter.convert(e);
+        } catch (AvroGenericException e) {
+            throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
+    }
+
+    
     public RecordType updateRecordType(RecordType recordType) throws RecordTypeNotFoundException,
             FieldTypeNotFoundException, TypeException {
 

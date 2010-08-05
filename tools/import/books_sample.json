@@ -44,7 +44,7 @@
   ],
   recordTypes: [
     {
-      name: "Book",
+      name: "b:Book",
       fields: [
         {name: "b:title", mandatory: true },
         {name: "b:pages", mandatory: false },
@@ -53,7 +53,7 @@
       ]
     },
     {
-      name: "Author",
+      name: "b:Author",
       fields: [
         {name: "b:name", mandatory: true },
         {name: "b:bio", mandatory: false }
@@ -62,14 +62,14 @@
   ],
   records: [
     {
-      type: "Author",
+      type: "b:Author",
       id: "mary_shelley",
       "b:name": "Mary Shelley",
       "b:bio": "Mary Shelley (30 August 1797 – 1 February 1851) was a British novelist, short story writer, dramatist, essayist, biographer, and travel writer, best known for her Gothic novel Frankenstein: or, The Modern Prometheus (1818). She also edited and promoted the works of her husband, the Romantic poet and philosopher Percy Bysshe Shelley.",
       "vtag:live": "last"
     },
     {
-      type: "Book",
+      type: "b:Book",
       "b:title": "Frankenstein",
       "b:pages": 288,
       "b:language": "English",

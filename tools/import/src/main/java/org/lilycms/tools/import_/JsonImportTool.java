@@ -240,7 +240,8 @@ public class JsonImportTool {
 
     public RecordType importRecordType(JsonNode node) throws RepositoryException, ImportException {
         String name = getString(node, "name");
-        RecordType recordType = typeManager.newRecordType(name);
+        QName qname = parseQName(name);
+        RecordType recordType = typeManager.newRecordType(qname);
 
         JsonNode fields = getNode(node, "fields");
         for (int j = 0; j < fields.size(); j++) {
@@ -270,7 +271,7 @@ public class JsonImportTool {
         }
 
         String type = getString(node, "type");
-        record.setRecordType(type);
+        record.setRecordType(parseQName(type));
 
         Iterator<String> it = node.getFieldNames();
         while (it.hasNext()) {

@@ -34,9 +34,17 @@ public abstract class AbstractTypeManager implements TypeManager {
     protected Map<String, PrimitiveValueType> primitiveValueTypes = new HashMap<String, PrimitiveValueType>();
     protected IdGenerator idGenerator;
 
-    public RecordType newRecordType(String recordTypeId) {
-        ArgumentValidator.notNull(recordTypeId, "recordTypeId");
-        return new RecordTypeImpl(recordTypeId);
+    public RecordType newRecordType(QName name) {
+        return new RecordTypeImpl(null, name);
+    }
+    
+    public RecordType newRecordType(String recordTypeId, QName name) {
+        ArgumentValidator.notNull(name, "name");
+        return new RecordTypeImpl(recordTypeId, name);
+    }
+
+    public FieldType newFieldType(ValueType valueType, QName name, Scope scope) {
+        return newFieldType(null, valueType, name, scope);
     }
 
     public FieldTypeEntry newFieldTypeEntry(String fieldTypeId, boolean mandatory) {
@@ -45,9 +53,6 @@ public abstract class AbstractTypeManager implements TypeManager {
         return new FieldTypeEntryImpl(fieldTypeId, mandatory);
     }
 
-    public FieldType newFieldType(ValueType valueType, QName name, Scope scope) {
-        return newFieldType(null, valueType, name, scope);
-    }
 
     public FieldType newFieldType(String id, ValueType valueType, QName name,
             Scope scope) {

@@ -110,7 +110,7 @@ public class PrintUtil {
     }
 
     private static void printRecordType(Record record, Scope scope, PrintStream out) {
-        out.println("  Record type = " + record.getRecordTypeId(scope) + ", version " + record.getRecordTypeVersion(scope));
+        out.println("  Record type = " + record.getRecordTypeName(scope) + ", version " + record.getRecordTypeVersion(scope));
     }
 
     public static void print(RecordType recordType, Repository repository) {

@@ -28,8 +28,15 @@ public interface TypeManager {
      *
      * <p>This is only a factory method, nothing is created in the repository.
      */
-    RecordType newRecordType(String recordTypeId);
+    RecordType newRecordType(QName name);
 
+    /**
+     * Instantiates a new RecordType object.
+     *
+     * <p>This is only a factory method, nothing is created in the repository.
+     */
+    RecordType newRecordType(String recordTypeId, QName name);
+    
     /**
      * Creates a RecordType in the repository.
      *
@@ -49,7 +56,17 @@ public interface TypeManager {
      * @throws RecordTypeNotFoundException when the recordType does not exist
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
-    RecordType getRecordType(String id, Long version) throws RecordTypeNotFoundException, TypeException;
+    RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException;
+    
+    /**
+     * Gets a RecordType from the repository.
+     *
+     * @param version the version of the record type to return, or null for the latest version.
+     *
+     * @throws RecordTypeNotFoundException when the recordType does not exist
+     * @throws RepositoryException when an unexpected exception occurs on the repository
+     */
+    RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException;
 
     /**
      * Updates an existing record type.

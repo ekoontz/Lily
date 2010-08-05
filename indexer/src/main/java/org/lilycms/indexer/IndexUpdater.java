@@ -24,8 +24,6 @@ import org.lilycms.indexer.conf.IndexField;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.repository.api.*;
-import org.lilycms.repository.api.FieldTypeNotFoundException;
-import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.rowlog.api.RowLog;
@@ -147,7 +145,8 @@ public class IndexUpdater {
         //  The indexing of all versions is determined by the record type of the non-versioned scope.
         //  This makes that the indexing behavior of all versions is equal, and can be changed (the
         //  record type of the versioned scope is immutable).
-        IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeId(), record.getId().getVariantProperties());
+        RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
+        IndexCase indexCase = indexer.getConf().getIndexCase(recordType.getId(), record.getId().getVariantProperties());
 
         if (indexCase == null) {
             // The record should not be indexed
@@ -272,7 +271,7 @@ public class IndexUpdater {
     }
 
     private void updateDenormalizedData(RecordId recordId, RecordEvent event,
-            Map<Scope, Set<FieldType>> updatedFieldsByScope, Map<Long, Set<String>> vtagsByVersion) {
+            Map<Scope, Set<FieldType>> updatedFieldsByScope, Map<Long, Set<String>> vtagsByVersion) throws Exception {
 
         // This algorithm is designed to first collect all the reindex-work, and then to perform it.
         // Otherwise the same document would be indexed multiple times if it would become invalid
@@ -517,7 +516,8 @@ public class IndexUpdater {
                 e.printStackTrace();
             }
 
-            IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeId(), record.getId().getVariantProperties());
+            RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
+            IndexCase indexCase = indexer.getConf().getIndexCase(recordType.getId(), record.getId().getVariantProperties());
             if (indexCase == null) {
                 continue nextReferrer;
             }

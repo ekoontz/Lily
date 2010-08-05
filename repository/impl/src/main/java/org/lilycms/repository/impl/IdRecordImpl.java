@@ -16,7 +16,6 @@
 package org.lilycms.repository.impl;
 
 import org.lilycms.repository.api.*;
-import org.lilycms.repository.api.FieldNotFoundException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -82,29 +81,29 @@ public class IdRecordImpl implements IdRecord {
     public Long getVersion() {
         return record.getVersion();
     }
-
-    public void setRecordType(String id, Long version) {
-        record.setRecordType(id, version);
+    
+    public void setRecordType(QName name, Long version) {
+        record.setRecordType(name, version);
     }
 
-    public void setRecordType(String id) {
-        record.setRecordType(id);
+    public void setRecordType(QName name) {
+        record.setRecordType(name);
     }
 
-    public String getRecordTypeId() {
-        return record.getRecordTypeId();
+    public QName getRecordTypeName() {
+        return record.getRecordTypeName();
     }
 
     public Long getRecordTypeVersion() {
         return record.getRecordTypeVersion();
     }
 
-    public void setRecordType(Scope scope, String id, Long version) {
-        record.setRecordType(scope, id, version);
+    public void setRecordType(Scope scope, QName name, Long version) {
+        record.setRecordType(scope, name, version);
     }
 
-    public String getRecordTypeId(Scope scope) {
-        return record.getRecordTypeId(scope);
+    public QName getRecordTypeName(Scope scope) {
+        return record.getRecordTypeName(scope);
     }
 
     public Long getRecordTypeVersion(Scope scope) {
@@ -155,4 +154,6 @@ public class IdRecordImpl implements IdRecord {
     public boolean softEquals(Object obj) {
         throw new UnsupportedOperationException("IdRecordImpl does not support softEquals.");
     }
+
+    
 }

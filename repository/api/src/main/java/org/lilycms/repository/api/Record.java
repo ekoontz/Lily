@@ -66,35 +66,44 @@ public interface Record {
 
     /**
      * Sets the record type and record type version.
-     *
+     * 
      * <p>This actually sets the record type of the non-versioned scope, which is considered to be the primary
      * record type. Upon save, the record types of the other scopes will also be set to this record type (if there
      * are any fields changed in those scopes, thus if a new version will be created).
-     *
+     * 
      * @param version version number, or null if you want the repository to pick the last version available when
-     *                storing the record.
+     *                storing the record.  
      */
-    void setRecordType(String id, Long version);
-
+    void setRecordType(QName name, Long version);
+    
     /**
-     * Shortcut for setRecordType(id, null).
+     * Shortcut for setRecordType(name, null)
      */
-    void setRecordType(String id);
+    void setRecordType(QName name);
 
     /**
      * Returns the record type of the non-versioned scope.
      */
-    String getRecordTypeId();
+    QName getRecordTypeName();
 
     /**
      * Returns the record type version of the non-versioned scope.
      */
     Long getRecordTypeVersion();
     
-    void setRecordType(Scope scope, String id, Long version);
+    /**
+     * Sets the record type of a specific scope
+     */
+    void setRecordType(Scope scope, QName name, Long version);
     
-    String getRecordTypeId(Scope scope);
+    /**
+     * Returns the record type of a specific scope
+     */
+    QName getRecordTypeName(Scope scope);
     
+    /**
+     * Returns the record type version of a specific scope
+     */
     Long getRecordTypeVersion(Scope scope);
 
     /**

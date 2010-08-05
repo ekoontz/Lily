@@ -21,15 +21,27 @@ package org.lilycms.repository.api;
 public class RecordTypeNotFoundException extends RepositoryException {
 
     private final String id;
+    private final QName name;
     private final Long version;
 
     public RecordTypeNotFoundException(String id, Long version) {
         this.id = id;
+        this.name = null;
+        this.version = version;
+    }
+    
+    public RecordTypeNotFoundException(QName name, Long version) {
+        this.id = null;
+        this.name = name;
         this.version = version;
     }
     
     public String getId() {
         return id;
+    }
+    
+    public QName getName() {
+        return name;
     }
     
     public Long getVersion() {
@@ -40,7 +52,7 @@ public class RecordTypeNotFoundException extends RepositoryException {
     public String getMessage() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("RecordType <");
-        stringBuilder.append(id);
+        stringBuilder.append(id != null ? id : name);
         stringBuilder.append("> ");
         if (version != null) {
             stringBuilder.append("version: <");

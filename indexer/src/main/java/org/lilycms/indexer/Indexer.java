@@ -29,10 +29,6 @@ import org.lilycms.indexer.conf.IndexCase;
 import org.lilycms.indexer.conf.IndexField;
 import org.lilycms.indexer.conf.IndexerConf;
 import org.lilycms.repository.api.*;
-import org.lilycms.repository.api.FieldTypeNotFoundException;
-import org.lilycms.repository.api.RecordNotFoundException;
-import org.lilycms.repository.api.RecordTypeNotFoundException;
-import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.util.repo.VersionTag;
 
 import java.io.IOException;
@@ -76,7 +72,8 @@ public class Indexer {
         IdRecord record = repository.readWithIds(recordId, null, null);
         Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
 
-        IndexCase indexCase = conf.getIndexCase(record.getRecordTypeId(), record.getId().getVariantProperties());
+        RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
+        IndexCase indexCase = conf.getIndexCase(recordType.getId(), record.getId().getVariantProperties());
         if (indexCase == null) {
             return;
         }

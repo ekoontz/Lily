@@ -142,28 +142,28 @@ public class ValueTypeTest {
         runValueTypeTests("xyRecordTypeId", "XY", new XYCoordinates(-1, 1), new XYCoordinates(Integer.MIN_VALUE, Integer.MAX_VALUE), new XYCoordinates(666, 777));
     }
 
-    private void runValueTypeTests(String recordTypeId, String primitiveValueType, Object value1, Object value2, Object value3) throws Exception {
-        testType(recordTypeId, primitiveValueType, false, false, value1);
-        testType(recordTypeId, primitiveValueType, true, false, Arrays.asList(new Object[] { value1,
+    private void runValueTypeTests(String name, String primitiveValueType, Object value1, Object value2, Object value3) throws Exception {
+        testType(name, primitiveValueType, false, false, value1);
+        testType(name, primitiveValueType, true, false, Arrays.asList(new Object[] { value1,
                         value2 }));
-        testType(recordTypeId, primitiveValueType, false, true, new HierarchyPath(new Object[] { value1,
+        testType(name, primitiveValueType, false, true, new HierarchyPath(new Object[] { value1,
                         value2 }));
-        testType(recordTypeId, primitiveValueType, true, true, Arrays.asList(new HierarchyPath[] {
+        testType(name, primitiveValueType, true, true, Arrays.asList(new HierarchyPath[] {
                 new HierarchyPath(new Object[] { value1, value2 }),
                 new HierarchyPath(new Object[] { value1, value3 }) }));
     }
     
-    private void testType(String recordTypeId, String valueTypeString, boolean multivalue, boolean hierarchical,
+    private void testType(String name, String valueTypeString, boolean multivalue, boolean hierarchical,
                     Object fieldValue) throws Exception {
-        QName name = new QName(null, valueTypeString+"FieldId"+multivalue+hierarchical);
+        QName fieldTypeName = new QName(null, valueTypeString+"FieldId"+multivalue+hierarchical);
         FieldType fieldType = typeManager.createFieldType(typeManager.newFieldType(typeManager.getValueType(
-                        valueTypeString, multivalue, hierarchical), name, Scope.VERSIONED));
-        RecordType recordType = typeManager.newRecordType(recordTypeId+"RecordTypeId"+multivalue+hierarchical);
+                        valueTypeString, multivalue, hierarchical), fieldTypeName, Scope.VERSIONED));
+        RecordType recordType = typeManager.newRecordType(new QName(null, name+"RecordTypeId"+multivalue+hierarchical));
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType.getId(), true));
-        typeManager.createRecordType(recordType);
+        recordType = typeManager.createRecordType(recordType);
 
         Record record = repository.newRecord(idGenerator.newRecordId());
-        record.setRecordType(recordType.getId(), recordType.getVersion());
+        record.setRecordType(recordType.getName(), recordType.getVersion());
         record.setField(fieldType.getName(), fieldValue);
         repository.create(record);
 
