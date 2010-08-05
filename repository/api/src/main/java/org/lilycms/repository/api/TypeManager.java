@@ -91,6 +91,10 @@ public interface TypeManager {
     RecordType updateRecordType(RecordType recordType) throws  RecordTypeNotFoundException, FieldTypeNotFoundException,
             TypeException;
 
+    /**
+     * Get the list of all record types that exist in the repository. This returns the latest version of
+     * each record type. 
+     */
     List<RecordType> getRecordTypes();
     
     /**
@@ -162,7 +166,10 @@ public interface TypeManager {
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
     FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException, TypeException;
-    
+
+    /**
+     * Gets the list of all field types that exist in the repository.
+     */
     List<FieldType> getFieldTypes();
 
     /**
