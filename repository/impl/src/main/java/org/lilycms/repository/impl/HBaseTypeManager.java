@@ -193,7 +193,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         if (recordType == null) {
             throw new RecordTypeNotFoundException(name, 1L); 
         }
-        if (version != null && version != recordType.getVersion()) {
+        if (version != null && !version.equals(recordType.getVersion())) {
             recordType = getRecordTypeById(recordType.getId(), version);
         }
         // TODO the below is a temporary fix, should probably be fixed in getFieldTypeFromCache
