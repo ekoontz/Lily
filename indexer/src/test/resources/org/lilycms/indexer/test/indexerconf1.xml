@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<indexer>
+<indexer xmlns:ns="org.lilycms.indexer.test" xmlns:ns2="org.lilycms.indexer.test.2">
 
   <cases>
-    <case recordType="NVRecordType1" variant="*" vtags="live" indexVersionless="true"/>
-    <case recordType="VRecordType1" variant="*" vtags="live,preview,last" indexVersionless="true"/>
+    <case recordType="ns:NVRecordType1" variant="*" vtags="live" indexVersionless="true"/>
+    <case recordType="ns2:VRecordType1" variant="*" vtags="live,preview,last" indexVersionless="true"/>
   </cases>
 
   <formatters>
@@ -17,7 +17,7 @@
     <formatter name="year" class="org.lilycms.indexer.test.DateYearFormatter"/>
   </formatters>
 
-  <indexFields xmlns:ns="org.lilycms.indexer.test" xmlns:ns2="org.lilycms.indexer.test.2">
+  <indexFields>
 
     <!--
        | These fields are about non-versioned things (nv_ prefix)

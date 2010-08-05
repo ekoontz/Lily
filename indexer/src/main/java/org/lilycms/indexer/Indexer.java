@@ -72,8 +72,7 @@ public class Indexer {
         IdRecord record = repository.readWithIds(recordId, null, null);
         Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
 
-        RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
-        IndexCase indexCase = conf.getIndexCase(recordType.getId(), record.getId().getVariantProperties());
+        IndexCase indexCase = conf.getIndexCase(record.getRecordTypeName(), record.getId().getVariantProperties());
         if (indexCase == null) {
             return;
         }

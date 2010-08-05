@@ -15,6 +15,8 @@
  */
 package org.lilycms.indexer.conf;
 
+import org.lilycms.repository.api.QName;
+
 import java.util.*;
 
 // TODO for safety should consider making some of the returned lists immutable
@@ -46,7 +48,7 @@ public class IndexerConf {
     /**
      * @return null if there is no matching IndexCase
      */
-    public IndexCase getIndexCase(String recordTypeName, Map<String, String> varProps) {
+    public IndexCase getIndexCase(QName recordTypeName, Map<String, String> varProps) {
         for (IndexCase indexCase : indexCases) {
             if (indexCase.match(recordTypeName, varProps)) {
                 return indexCase;

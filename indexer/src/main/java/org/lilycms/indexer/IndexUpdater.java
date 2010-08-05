@@ -145,8 +145,7 @@ public class IndexUpdater {
         //  The indexing of all versions is determined by the record type of the non-versioned scope.
         //  This makes that the indexing behavior of all versions is equal, and can be changed (the
         //  record type of the versioned scope is immutable).
-        RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
-        IndexCase indexCase = indexer.getConf().getIndexCase(recordType.getId(), record.getId().getVariantProperties());
+        IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeName(), record.getId().getVariantProperties());
 
         if (indexCase == null) {
             // The record should not be indexed
@@ -271,7 +270,7 @@ public class IndexUpdater {
     }
 
     private void updateDenormalizedData(RecordId recordId, RecordEvent event,
-            Map<Scope, Set<FieldType>> updatedFieldsByScope, Map<Long, Set<String>> vtagsByVersion) throws Exception {
+            Map<Scope, Set<FieldType>> updatedFieldsByScope, Map<Long, Set<String>> vtagsByVersion) {
 
         // This algorithm is designed to first collect all the reindex-work, and then to perform it.
         // Otherwise the same document would be indexed multiple times if it would become invalid
@@ -516,8 +515,7 @@ public class IndexUpdater {
                 e.printStackTrace();
             }
 
-            RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record.getRecordTypeVersion());
-            IndexCase indexCase = indexer.getConf().getIndexCase(recordType.getId(), record.getId().getVariantProperties());
+            IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeName(), record.getId().getVariantProperties());
             if (indexCase == null) {
                 continue nextReferrer;
             }

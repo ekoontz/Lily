@@ -716,7 +716,12 @@ public class HBaseRepository implements Repository {
             idToQNameMapping.put(fieldType.getId(), fieldType.getName());
         }
 
-        return new IdRecordImpl(record, idToQNameMapping);
+        Map<Scope, String> recordTypeIds = new HashMap<Scope, String>();
+        for (Map.Entry<Scope, RecordType> entry : readContext.getRecordTypes().entrySet()) {
+            recordTypeIds.put(entry.getKey(), entry.getValue().getId());
+        }
+
+        return new IdRecordImpl(record, idToQNameMapping, recordTypeIds);
     }
 
     private Record read(RecordId recordId, Long requestedVersion, List<FieldType> fields, ReadContext readContext)
@@ -738,6 +743,7 @@ public class HBaseRepository implements Repository {
             Pair<String, Long> recordTypePair = extractRecordType(Scope.NON_VERSIONED, result, null, record);
             RecordType recordType = typeManager.getRecordTypeById(recordTypePair.getV1(), recordTypePair.getV2());
             record.setRecordType(recordType.getName(), recordType.getVersion());
+            readContext.setRecordTypeId(Scope.NON_VERSIONED, recordType);
         }
         return record;
     }
@@ -940,6 +946,7 @@ public class HBaseRepository implements Repository {
             Pair<String, Long> recordTypePair = extractRecordType(scope, result, version, record);
             RecordType recordType = typeManager.getRecordTypeById(recordTypePair.getV1(), recordTypePair.getV2());
             record.setRecordType(scope, recordType.getName(), recordType.getVersion());
+            context.setRecordTypeId(scope, recordType);
             retrieved = true;
         }
         return retrieved;
@@ -1042,10 +1049,12 @@ public class HBaseRepository implements Repository {
 
     private static class ReadContext {
         private Map<String, FieldType> fieldTypes;
+        private Map<Scope, RecordType> recordTypes;
 
-        public ReadContext(boolean collectFieldTypes) {
-            if (collectFieldTypes) {
+        public ReadContext(boolean collectIds) {
+            if (collectIds) {
                 this.fieldTypes = new HashMap<String, FieldType>();
+                this.recordTypes = new HashMap<Scope, RecordType>();
             }
         }
 
@@ -1053,6 +1062,16 @@ public class HBaseRepository implements Repository {
             if (fieldTypes != null) {
                 this.fieldTypes.put(fieldType.getId(), fieldType);
             }
+        }
+
+        public void setRecordTypeId(Scope scope, RecordType recordType) {
+            if (recordTypes != null) {
+                recordTypes.put(scope, recordType);
+            }
+        }
+
+        public Map<Scope, RecordType> getRecordTypes() {
+            return recordTypes;
         }
 
         public Map<String, FieldType> getFieldTypes() {

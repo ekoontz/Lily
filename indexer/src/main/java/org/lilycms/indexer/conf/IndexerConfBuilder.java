@@ -90,8 +90,7 @@ public class IndexerConfBuilder {
     private void buildCases() throws Exception {
         List<Element> cases = INDEX_CASES.get().evalAsNativeElementList(doc);
         for (Element caseEl : cases) {
-            // TODO will need resolving of the QName
-            String recordType = DocumentHelper.getAttribute(caseEl, "recordType", true);
+            QName recordType = parseQName(DocumentHelper.getAttribute(caseEl, "recordType", true), caseEl);
             String vtagsSpec = DocumentHelper.getAttribute(caseEl, "vtags", false);
             boolean indexVersionless = DocumentHelper.getBooleanAttribute(caseEl, "indexVersionless", false);
 

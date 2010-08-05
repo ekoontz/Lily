@@ -15,11 +15,13 @@
  */
 package org.lilycms.indexer.conf;
 
+import org.lilycms.repository.api.QName;
+
 import java.util.Map;
 import java.util.Set;
 
 public class IndexCase {
-    private final String recordTypeName; // TODO will need to include namespace
+    private final QName recordTypeName;
     /**
      * The variant properties the record should have. Evaluation rules: a key named
      * "*" (star symbol) is a wildcard meaning that any variant dimensions not specified
@@ -31,7 +33,7 @@ public class IndexCase {
     private final Set<String> vtags;
     private final boolean indexVersionless;
 
-    public IndexCase(String recordTypeName, Map<String, String> variantPropsPattern, Set<String> vtags,
+    public IndexCase(QName recordTypeName, Map<String, String> variantPropsPattern, Set<String> vtags,
             boolean indexVersionless) {
         this.recordTypeName = recordTypeName;
         this.variantPropsPattern = variantPropsPattern;
@@ -39,7 +41,7 @@ public class IndexCase {
         this.indexVersionless = indexVersionless;
     }
 
-    public boolean match(String recordTypeName, Map<String, String> varProps) {
+    public boolean match(QName recordTypeName, Map<String, String> varProps) {
         if (!this.recordTypeName.equals(recordTypeName))
             return false;
 

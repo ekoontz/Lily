@@ -20,7 +20,7 @@ import org.lilycms.repository.api.FieldNotFoundException;
 import java.util.Map;
 
 /**
- * <b>EXPERT:</b> A record in which the fields are also identified by ID instead of only by QName.
+ * <b>EXPERT:</b> A record in which the fields and record types are also identified by ID instead of only by QName.
  *
  * <p>In a normal Record, fields are only loaded with their QName. On the storage level, fields are identified
  * by ID. After a Record is read, the QNames of field types in the repository can change, making it impossible
@@ -32,6 +32,10 @@ import java.util.Map;
  * methods defined in this interface is not guaranteed and might produce incorrect results.
  */
 public interface IdRecord extends Record {
+    String getRecordTypeId();
+
+    String getRecordTypeId(Scope scope);
+
     Object getField(String fieldId) throws FieldNotFoundException;
 
     boolean hasField(String fieldId);

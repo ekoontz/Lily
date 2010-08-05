@@ -24,10 +24,12 @@ import java.util.Map;
 public class IdRecordImpl implements IdRecord {
     private Record record;
     private Map<String, QName> mapping;
+    private Map<Scope, String> recordTypeIds;
 
-    public IdRecordImpl(Record record, Map<String, QName> idToQNameMapping) {
+    public IdRecordImpl(Record record, Map<String, QName> idToQNameMapping, Map<Scope, String> recordTypeIds) {
         this.record = record;
         this.mapping = idToQNameMapping;
+        this.recordTypeIds = recordTypeIds;
     }
 
     public Object getField(String fieldId) throws FieldNotFoundException {
@@ -60,6 +62,14 @@ public class IdRecordImpl implements IdRecord {
         }
 
         return fieldsById;
+    }
+
+    public String getRecordTypeId() {
+        return recordTypeIds.get(Scope.NON_VERSIONED);
+    }
+
+    public String getRecordTypeId(Scope scope) {
+        return recordTypeIds.get(scope);
     }
 
     public Record getRecord() {
