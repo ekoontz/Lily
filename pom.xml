@@ -20,10 +20,11 @@
 
   <properties>
     <hbase.version>0.89.0-r980101</hbase.version>
-    <!-- When changing the hbase version, also change the hadoop version below to match
+    <!-- When changing the hbase version, also change the hadoop and zookeeper version below to match
          what is in HBase's pom.xml -->
 
     <hadoop.version>0.20.3-append-r964955-1240</hadoop.version>
+    <zookeeper.version>3.3.1</zookeeper.version>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -59,6 +60,7 @@
     <module>linkindex</module>
     <module>repo-util</module>
     <module>hbase-util</module>
+    <module>zk-util</module>
     <module>repository-api-tutorial</module>
     <module>rowlog</module>
     <module>process/server</module>
@@ -134,6 +136,11 @@
         <groupId>org.lilycms</groupId>
         <artifactId>lily-import</artifactId>
         <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>${zookeeper.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
