@@ -19,17 +19,19 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Test;
 import org.lilycms.repository.api.FieldType;
+import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
-import org.lilycms.repository.api.FieldTypeNotFoundException;
-import org.lilycms.repository.api.RecordTypeNotFoundException;
+import org.lilycms.repository.api.ValueType;
 
 public abstract class AbstractTypeManagerRecordTypeTest {
 
@@ -278,8 +280,8 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         mixinType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
         mixinType2 = typeManager.createRecordType(mixinType2);
         
-        QName recordName = new QName("recordNS", "testMixinRemove");
-        RecordType recordType = typeManager.newRecordType(recordName);
+        QName recordTypeName = new QName("recordNS", "testMixinRemove");
+        RecordType recordType = typeManager.newRecordType(recordTypeName);
         recordType.addMixin(mixinType1.getId(), mixinType1.getVersion());
         recordType = typeManager.createRecordType(recordType);
         
@@ -291,6 +293,20 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         Map<String, Long> mixins = readRecordType.getMixins();
         assertEquals(1, mixins.size());
         assertEquals(Long.valueOf(1), mixins.get(mixinType2.getId()));
+    }
+    
+    @Test
+    public void testGetRecordTypes() throws Exception {
+        RecordType recordType = typeManager.createRecordType(typeManager.newRecordType(new QName("NS", "getRecordTypes")));
+        List<RecordType> recordTypes = typeManager.getRecordTypes();
+        assertTrue(recordTypes.contains(recordType));
+    }
+    
+    @Test
+    public void testGetFieldTypes() throws Exception {
+        FieldType fieldType = typeManager.createFieldType(typeManager.newFieldType(typeManager.getValueType("STRING", false, false), new QName("NS", "getFieldTypes"), Scope.NON_VERSIONED));
+        List<FieldType> fieldTypes = typeManager.getFieldTypes();
+        assertTrue(fieldTypes.contains(fieldType));
     }
 
 }

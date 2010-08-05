@@ -322,6 +322,16 @@
       "request": [{"name": "name", "type": "AvroQName"}],
       "response": "AvroFieldType",
       "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+    },
+    
+    "getFieldTypes": {
+      "request": [],
+      "response": {"type": "array", "items": "AvroFieldType"}
+    }, 
+    
+    "getRecordTypes": {
+      "request": [],
+      "response": {"type": "array", "items": "AvroRecordType"}
     }
  }
 }

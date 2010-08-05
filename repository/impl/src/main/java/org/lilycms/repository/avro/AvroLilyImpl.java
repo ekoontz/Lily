@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.avro.generic.GenericArray;
+import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
 
@@ -245,5 +246,13 @@ public class AvroLilyImpl implements AvroLily {
         } catch (TypeException e) {
             throw converter.convert(e);
         }
+    }
+
+    public GenericArray<AvroFieldType> getFieldTypes() {
+        return converter.convertFieldTypes(typeManager.getFieldTypes());
+    }
+
+    public GenericArray<AvroRecordType> getRecordTypes() {
+        return converter.convertRecordTypes(typeManager.getRecordTypes());
     }
 }

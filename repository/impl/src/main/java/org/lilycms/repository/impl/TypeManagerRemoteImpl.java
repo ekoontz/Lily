@@ -18,17 +18,13 @@ package org.lilycms.repository.impl;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.List;
 
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
-import org.lilycms.repository.api.FieldTypeExistsException;
-import org.lilycms.repository.api.FieldTypeNotFoundException;
-import org.lilycms.repository.api.FieldTypeUpdateException;
-import org.lilycms.repository.api.RecordTypeExistsException;
-import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.avro.*;
 
 public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeManager {
@@ -184,6 +180,22 @@ public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeMa
             throw converter.convert(e);
         } catch (AvroGenericException e) {
             throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
+    }
+
+    public List<FieldType> getFieldTypes() {
+        try {
+            return converter.convertAvroFieldTypes(lilyProxy.getFieldTypes());
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
+    }
+
+    public List<RecordType> getRecordTypes() {
+        try {
+            return converter.convertAvroRecordTypes(lilyProxy.getRecordTypes());
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
         }

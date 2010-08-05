@@ -16,8 +16,10 @@
 package org.lilycms.repository.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
@@ -31,11 +33,6 @@ import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.repository.api.*;
-import org.lilycms.repository.api.FieldTypeExistsException;
-import org.lilycms.repository.api.FieldTypeNotFoundException;
-import org.lilycms.repository.api.FieldTypeUpdateException;
-import org.lilycms.repository.api.RecordTypeExistsException;
-import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
@@ -156,6 +153,64 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return newRecordType;
     }
 
+    public RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException {
+        ArgumentValidator.notNull(id, "recordTypeId");
+        Get get = new Get(idToBytes(id));
+        if (version != null) {
+            get.setMaxVersions();
+        }
+        Result result;
+        try {
+            if (!typeTable.exists(get)) {
+                throw new RecordTypeNotFoundException(id, null);
+            }
+            result = typeTable.get(get);
+        } catch (IOException e) {
+            throw new TypeException("Exception occurred while retrieving recordType <" + id
+                            + "> from HBase table", e);
+        }
+        NavigableMap<byte[], byte[]> nonVersionableColumnFamily = result.getFamilyMap(NON_VERSIONED_COLUMN_FAMILY);
+        QName name;
+        name = decodeName(nonVersionableColumnFamily.get(RECORDTYPE_NAME_COLUMN_NAME));
+        RecordType recordType = newRecordType(id, name);
+        Long currentVersion = Bytes.toLong(result.getValue(NON_VERSIONED_COLUMN_FAMILY, CURRENT_VERSION_COLUMN_NAME));
+        if (version != null) {
+            if (currentVersion < version) {
+                throw new RecordTypeNotFoundException(id, version);
+            }
+            recordType.setVersion(version);
+        } else {
+            recordType.setVersion(currentVersion);
+        }
+        extractFieldTypeEntries(result, version, recordType);
+        extractMixins(result, version, recordType);
+        return recordType;
+    }
+
+    public RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException {
+        ArgumentValidator.notNull(name, "name");
+        RecordType recordType = getRecordTypeFromCache(name);
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(name, 1L); 
+        }
+        if (version != null && version != recordType.getVersion()) {
+            recordType = getRecordTypeById(recordType.getId(), version);
+        }
+        // TODO the below is a temporary fix, should probably be fixed in getFieldTypeFromCache
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(name, 1L); 
+        }
+        return recordType;
+    }
+
+    public List<RecordType> getRecordTypes() {
+        List<RecordType> recordTypes = new ArrayList<RecordType>();
+        for (RecordType recordType : recordTypeNameCache.values()) {
+            recordTypes.add(recordType.clone());
+        }
+        return recordTypes;
+    }
+
     private Long putMixinOnRecordType(Long recordTypeVersion, Put put, String mixinId, Long mixinVersion)
                     throws RecordTypeNotFoundException, TypeException {
         Long newMixinVersion = getRecordTypeById(mixinId, mixinVersion).getVersion();
@@ -222,40 +277,6 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return changed;
     }
 
-    public RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException {
-        ArgumentValidator.notNull(id, "recordTypeId");
-        Get get = new Get(idToBytes(id));
-        if (version != null) {
-            get.setMaxVersions();
-        }
-        Result result;
-        try {
-            if (!typeTable.exists(get)) {
-                throw new RecordTypeNotFoundException(id, null);
-            }
-            result = typeTable.get(get);
-        } catch (IOException e) {
-            throw new TypeException("Exception occurred while retrieving recordType <" + id
-                            + "> from HBase table", e);
-        }
-        NavigableMap<byte[], byte[]> nonVersionableColumnFamily = result.getFamilyMap(NON_VERSIONED_COLUMN_FAMILY);
-        QName name;
-        name = decodeName(nonVersionableColumnFamily.get(RECORDTYPE_NAME_COLUMN_NAME));
-        RecordType recordType = newRecordType(id, name);
-        Long currentVersion = Bytes.toLong(result.getValue(NON_VERSIONED_COLUMN_FAMILY, CURRENT_VERSION_COLUMN_NAME));
-        if (version != null) {
-            if (currentVersion < version) {
-                throw new RecordTypeNotFoundException(id, version);
-            }
-            recordType.setVersion(version);
-        } else {
-            recordType.setVersion(currentVersion);
-        }
-        extractFieldTypeEntries(result, version, recordType);
-        extractMixins(result, version, recordType);
-        return recordType;
-    }
-    
     private void extractFieldTypeEntries(Result result, Long version, RecordType recordType) {
         if (version != null) {
             NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> allVersionsMap = result.getMap();
@@ -332,6 +353,16 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return new FieldTypeEntryImpl(fieldTypeId, mandatory);
     }
 
+    private RecordType getRecordTypeFromCache(QName name) {
+        RecordType recordType = recordTypeNameCache.get(name);
+        if (recordType == null) {
+            // TODO reinitialize the cache
+            return null;
+        } else {
+            return recordType.clone();
+        }
+    }
+
     public FieldType createFieldType(FieldType fieldType) throws FieldTypeExistsException, TypeException {
         ArgumentValidator.notNull(fieldType, "fieldType");
 
@@ -362,28 +393,6 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         newFieldType.setId(uuid.toString());
         updateFieldTypeNameCache(newFieldType, null);
         return newFieldType;
-    }
-
-    private byte[] idToBytes(UUID id) {
-        byte[] rowId;
-        rowId = new byte[16];
-        Bytes.putLong(rowId, 0, id.getMostSignificantBits());
-        Bytes.putLong(rowId, 8, id.getLeastSignificantBits());
-        return rowId;
-    }
-
-    private byte[] idToBytes(String id) {
-        UUID uuid = UUID.fromString(id);
-        byte[] rowId;
-        rowId = new byte[16];
-        Bytes.putLong(rowId, 0, uuid.getMostSignificantBits());
-        Bytes.putLong(rowId, 8, uuid.getLeastSignificantBits());
-        return rowId;
-    }
-    
-    private String idFromBytes(byte[] bytes) {
-        UUID uuid = new UUID(Bytes.toLong(bytes, 0, 8), Bytes.toLong(bytes, 8, 8));
-        return uuid.toString();
     }
 
     public FieldType updateFieldType(FieldType fieldType) throws FieldTypeNotFoundException, FieldTypeUpdateException,
@@ -434,73 +443,24 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return new FieldTypeImpl(id, valueType, name, scope);
     }
     
-    private byte[] encodeName(QName qname) {
-        byte[] encodedName = new byte[0];
-        String name = qname.getName();
-        String namespace = qname.getNamespace();
-        
-        if (namespace == null) {
-            encodedName = Bytes.add(encodedName, Bytes.toBytes(0));
-        } else {
-            encodedName = Bytes.add(encodedName, Bytes.toBytes(namespace.length()));
-            encodedName = Bytes.add(encodedName, Bytes.toBytes(namespace));
+    public FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException {
+        ArgumentValidator.notNull(name, "name");
+        FieldType fieldType = getFieldTypeFromCache(name);
+        // TODO the below is a temporary fix, should probably be fixed in getFieldTypeFromCache
+        if (fieldType == null) {
+            throw new FieldTypeNotFoundException(name, 1L);
         }
-        encodedName = Bytes.add(encodedName, Bytes.toBytes(name.length()));
-        encodedName = Bytes.add(encodedName, Bytes.toBytes(name));
-        return encodedName;
+        return fieldType;
     }
     
-    private QName decodeName(byte[] bytes) {
-        int offset = 0;
-        String namespace = null;
-        int namespaceLength = Bytes.toInt(bytes);
-        offset = offset + Bytes.SIZEOF_INT;
-        if (namespaceLength > 0) {
-            namespace = Bytes.toString(bytes,offset,namespaceLength);
+    public List<FieldType> getFieldTypes() {
+        List<FieldType> fieldTypes = new ArrayList<FieldType>();
+        for (FieldType fieldType : fieldTypeNameCache.values()) {
+            fieldTypes.add(fieldType.clone());
         }
-        offset = offset + namespaceLength;
-        int nameLength = Bytes.toInt(bytes, offset, Bytes.SIZEOF_INT);
-        offset = offset + Bytes.SIZEOF_INT;
-        String name = Bytes.toString(bytes, offset, nameLength);
-        return new QName(namespace, name);
-    }
-    
-    // RecordType name cache
-    private void updateRecordTypeNameCache(RecordType recordType, QName oldName) {
-        recordTypeNameCache.remove(oldName);
-        recordTypeNameCache.put(recordType.getName(), recordType);
-    }
-    
-    private RecordType getRecordTypeFromCache(QName name) {
-        RecordType recordType = recordTypeNameCache.get(name);
-        if (recordType == null) {
-            // TODO reinitialize the cache
-            return null;
-        } else {
-            return recordType.clone();
-        }
-    }
-    
-    private void initializeRecordTypeNameCache() throws IOException, RecordTypeNotFoundException, TypeException {
-        recordTypeNameCache.clear();
-        ResultScanner scanner = typeTable.getScanner(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME);
-        try {
-            for (Result result : scanner) {
-                RecordType recordType = getRecordTypeById(idFromBytes(result.getRow()), null);
-                QName name = decodeName(result.getValue(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME));
-                recordTypeNameCache.put(name, recordType);
-            }
-        } finally {
-            Closer.close(scanner);
-        }
+        return fieldTypes;
     }
 
-    // FieldType name cache
-    private void updateFieldTypeNameCache(FieldType fieldType, QName oldName) {
-        fieldTypeNameCache.remove(oldName);
-        fieldTypeNameCache.put(fieldType.getName(), fieldType);
-    }
-    
     private FieldType getFieldTypeFromCache(QName name) {
         FieldType fieldType = fieldTypeNameCache.get(name);
         if (fieldType == null) {
@@ -523,31 +483,83 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         }
     }
     
-
-    public RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException {
-        ArgumentValidator.notNull(name, "name");
-        RecordType recordType = getRecordTypeFromCache(name);
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(name, 1L); 
+    private void initializeRecordTypeNameCache() throws IOException, RecordTypeNotFoundException, TypeException {
+        recordTypeNameCache.clear();
+        ResultScanner scanner = typeTable.getScanner(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME);
+        try {
+            for (Result result : scanner) {
+                RecordType recordType = getRecordTypeById(idFromBytes(result.getRow()), null);
+                QName name = decodeName(result.getValue(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME));
+                recordTypeNameCache.put(name, recordType);
+            }
+        } finally {
+            Closer.close(scanner);
         }
-        if (version != null && version != recordType.getVersion()) {
-            recordType = getRecordTypeById(recordType.getId(), version);
-        }
-        // TODO the below is a temporary fix, should probably be fixed in getFieldTypeFromCache
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(name, 1L); 
-        }
-        return recordType;
     }
-    
-    public FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException {
-        ArgumentValidator.notNull(name, "name");
-        FieldType fieldType = getFieldTypeFromCache(name);
-        // TODO the below is a temporary fix, should probably be fixed in getFieldTypeFromCache
-        if (fieldType == null) {
-            throw new FieldTypeNotFoundException(name, 1L);
+
+    // FieldType name cache
+    private void updateFieldTypeNameCache(FieldType fieldType, QName oldName) {
+        fieldTypeNameCache.remove(oldName);
+        fieldTypeNameCache.put(fieldType.getName(), fieldType);
+    }
+
+    // RecordType name cache
+    private void updateRecordTypeNameCache(RecordType recordType, QName oldName) {
+        recordTypeNameCache.remove(oldName);
+        recordTypeNameCache.put(recordType.getName(), recordType);
+    }
+
+    private byte[] encodeName(QName qname) {
+        byte[] encodedName = new byte[0];
+        String name = qname.getName();
+        String namespace = qname.getNamespace();
+        
+        if (namespace == null) {
+            encodedName = Bytes.add(encodedName, Bytes.toBytes(0));
+        } else {
+            encodedName = Bytes.add(encodedName, Bytes.toBytes(namespace.length()));
+            encodedName = Bytes.add(encodedName, Bytes.toBytes(namespace));
         }
-        return fieldType;
+        encodedName = Bytes.add(encodedName, Bytes.toBytes(name.length()));
+        encodedName = Bytes.add(encodedName, Bytes.toBytes(name));
+        return encodedName;
+    }
+
+    private QName decodeName(byte[] bytes) {
+        int offset = 0;
+        String namespace = null;
+        int namespaceLength = Bytes.toInt(bytes);
+        offset = offset + Bytes.SIZEOF_INT;
+        if (namespaceLength > 0) {
+            namespace = Bytes.toString(bytes,offset,namespaceLength);
+        }
+        offset = offset + namespaceLength;
+        int nameLength = Bytes.toInt(bytes, offset, Bytes.SIZEOF_INT);
+        offset = offset + Bytes.SIZEOF_INT;
+        String name = Bytes.toString(bytes, offset, nameLength);
+        return new QName(namespace, name);
+    }
+
+    private byte[] idToBytes(UUID id) {
+        byte[] rowId;
+        rowId = new byte[16];
+        Bytes.putLong(rowId, 0, id.getMostSignificantBits());
+        Bytes.putLong(rowId, 8, id.getLeastSignificantBits());
+        return rowId;
+    }
+
+    private byte[] idToBytes(String id) {
+        UUID uuid = UUID.fromString(id);
+        byte[] rowId;
+        rowId = new byte[16];
+        Bytes.putLong(rowId, 0, uuid.getMostSignificantBits());
+        Bytes.putLong(rowId, 8, uuid.getLeastSignificantBits());
+        return rowId;
+    }
+
+    private String idFromBytes(byte[] bytes) {
+        UUID uuid = new UUID(Bytes.toLong(bytes, 0, 8), Bytes.toLong(bytes, 8, 8));
+        return uuid.toString();
     }
 
 }
