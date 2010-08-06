@@ -200,10 +200,10 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         if (recordType == null) {
             throw new RecordTypeNotFoundException(name, 1L); 
         }
-        return recordType;
+        return recordType.clone();
     }
 
-    public List<RecordType> getRecordTypes() {
+    public Collection<RecordType> getRecordTypes() {
         List<RecordType> recordTypes = new ArrayList<RecordType>();
         for (RecordType recordType : recordTypeNameCache.values()) {
             recordTypes.add(recordType.clone());
@@ -450,7 +450,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         if (fieldType == null) {
             throw new FieldTypeNotFoundException(name, 1L);
         }
-        return fieldType;
+        return fieldType.clone();
     }
     
     public List<FieldType> getFieldTypes() {

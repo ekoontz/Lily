@@ -326,12 +326,15 @@
     
     "getFieldTypes": {
       "request": [],
-      "response": {"type": "array", "items": "AvroFieldType"}
+      "response": {"type": "array", "items": "AvroFieldType"},
+      "errors": ["AvroTypeException"]
+      
     }, 
     
     "getRecordTypes": {
       "request": [],
-      "response": {"type": "array", "items": "AvroRecordType"}
+      "response": {"type": "array", "items": "AvroRecordType"},
+      "errors": ["AvroTypeException"]
     }
  }
 }

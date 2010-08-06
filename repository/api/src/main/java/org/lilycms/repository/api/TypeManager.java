@@ -15,7 +15,7 @@
  */
 package org.lilycms.repository.api;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * TypeManager provides access to the repository schema. This is where {@link RecordType}s and {@link FieldType}s
@@ -95,7 +95,7 @@ public interface TypeManager {
      * Get the list of all record types that exist in the repository. This returns the latest version of
      * each record type. 
      */
-    List<RecordType> getRecordTypes();
+    Collection<RecordType> getRecordTypes() throws TypeException;
     
     /**
      * Instantiates a new FieldTypeEntry object.
@@ -170,7 +170,7 @@ public interface TypeManager {
     /**
      * Gets the list of all field types that exist in the repository.
      */
-    List<FieldType> getFieldTypes();
+    Collection<FieldType> getFieldTypes() throws TypeException;
 
     /**
      * Provides {@link ValueType} instances. These are used to set to value type of {@link FieldType}s.

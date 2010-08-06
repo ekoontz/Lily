@@ -593,7 +593,7 @@ public class AvroConverter {
         return recordTypes;
     }
 
-    public GenericArray<AvroFieldType> convertFieldTypes(List<FieldType> fieldTypes) {
+    public GenericArray<AvroFieldType> convertFieldTypes(Collection<FieldType> fieldTypes) {
         GenericArray<AvroFieldType> avroFieldTypes = new GenericData.Array<AvroFieldType>(fieldTypes.size(), Schema.createArray(AvroFieldType.SCHEMA$));
         for (FieldType fieldType : fieldTypes) {
             avroFieldTypes.add(convert(fieldType));
@@ -601,7 +601,7 @@ public class AvroConverter {
         return avroFieldTypes;
     }
 
-    public GenericArray<AvroRecordType> convertRecordTypes(List<RecordType> recordTypes) {
+    public GenericArray<AvroRecordType> convertRecordTypes(Collection<RecordType> recordTypes) {
         GenericArray<AvroRecordType> avroRecordTypes = new GenericData.Array<AvroRecordType>(recordTypes.size(), Schema.createArray(AvroRecordType.SCHEMA$));
         for (RecordType recordType : recordTypes) {
             avroRecordTypes.add(convert(recordType));

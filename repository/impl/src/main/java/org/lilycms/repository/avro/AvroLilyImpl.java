@@ -19,9 +19,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.avro.generic.GenericArray;
-import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
-import org.lilycms.repository.api.*;
+import org.lilycms.repository.api.FieldTypeExistsException;
+import org.lilycms.repository.api.FieldTypeNotFoundException;
+import org.lilycms.repository.api.FieldTypeUpdateException;
+import org.lilycms.repository.api.InvalidRecordException;
+import org.lilycms.repository.api.QName;
+import org.lilycms.repository.api.RecordException;
+import org.lilycms.repository.api.RecordExistsException;
+import org.lilycms.repository.api.RecordNotFoundException;
+import org.lilycms.repository.api.RecordTypeExistsException;
+import org.lilycms.repository.api.RecordTypeNotFoundException;
+import org.lilycms.repository.api.Repository;
+import org.lilycms.repository.api.TypeException;
+import org.lilycms.repository.api.TypeManager;
+import org.lilycms.repository.api.VersionNotFoundException;
 
 public class AvroLilyImpl implements AvroLily {
 
@@ -248,11 +260,19 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public GenericArray<AvroFieldType> getFieldTypes() {
-        return converter.convertFieldTypes(typeManager.getFieldTypes());
+    public GenericArray<AvroFieldType> getFieldTypes() throws AvroTypeException {
+        try {
+            return converter.convertFieldTypes(typeManager.getFieldTypes());
+        } catch (TypeException e) {
+            throw converter.convert(e);
+        }
     }
 
-    public GenericArray<AvroRecordType> getRecordTypes() {
-        return converter.convertRecordTypes(typeManager.getRecordTypes());
+    public GenericArray<AvroRecordType> getRecordTypes() throws AvroTypeException {
+        try {
+            return converter.convertRecordTypes(typeManager.getRecordTypes());
+        } catch (TypeException e) {
+            throw converter.convert(e);
+        }
     }
 }
