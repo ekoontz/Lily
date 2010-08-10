@@ -693,6 +693,13 @@ public class HBaseRepository implements Repository {
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
         ReadContext readContext = new ReadContext(false);
 
+        List<FieldType> fields = getFieldTypesFromNames(fieldNames);
+
+        return read(recordId, version, fields, readContext);
+    }
+
+    private List<FieldType> getFieldTypesFromNames(List<QName> fieldNames) throws FieldTypeNotFoundException,
+            TypeException {
         List<FieldType> fields = null;
         if (fieldNames != null) {
             fields = new ArrayList<FieldType>();
@@ -700,14 +707,11 @@ public class HBaseRepository implements Repository {
                 fields.add(typeManager.getFieldTypeByName(fieldName));
             }
         }
-
-        return read(recordId, version, fields, readContext);
+        return fields;
     }
-
-    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
-        ReadContext readContext = new ReadContext(true);
-
+    
+    private List<FieldType> getFieldTypesFromIds(List<String> fieldIds) throws FieldTypeNotFoundException,
+            TypeException {
         List<FieldType> fields = null;
         if (fieldIds != null) {
             fields = new ArrayList<FieldType>(fieldIds.size());
@@ -715,6 +719,37 @@ public class HBaseRepository implements Repository {
                 fields.add(typeManager.getFieldTypeById(fieldId));
             }
         }
+        return fields;
+    }
+    
+    public List<Record> readRecords(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws FieldTypeNotFoundException, TypeException, RecordNotFoundException, RecordException, VersionNotFoundException, RecordTypeNotFoundException {
+        ArgumentValidator.notNull(recordId, "recordId");
+        ArgumentValidator.notNull(fromVersion, "fromVersion");
+        ArgumentValidator.notNull(toVersion, "toVersion");
+        if (fromVersion > toVersion) {
+            throw new IllegalArgumentException("fromVersion <" + fromVersion + "> must be smaller or equal to toVersion <" + toVersion + ">");
+        }
+
+        List<FieldType> fields = getFieldTypesFromNames(fieldNames);
+
+        Result result = getRow(recordId, true, fields);
+        if (fromVersion < 1L)
+            fromVersion = 1L;
+        Long latestVersion = getLatestVersion(result);
+        if (latestVersion < toVersion)
+            toVersion = latestVersion;
+        List<Record> records = new ArrayList<Record>();
+        for (long version = fromVersion; version <= toVersion; version++) {
+            records.add(getRecordFromRowResult(recordId, version, new ReadContext(false), result));
+        }
+        return records;
+    }
+    
+    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException,
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+        ReadContext readContext = new ReadContext(true);
+
+        List<FieldType> fields = getFieldTypesFromIds(fieldIds);
 
         Record record = read(recordId, version, fields, readContext);
 
@@ -730,18 +765,32 @@ public class HBaseRepository implements Repository {
 
         return new IdRecordImpl(record, idToQNameMapping, recordTypeIds);
     }
-
+    
     private Record read(RecordId recordId, Long requestedVersion, List<FieldType> fields, ReadContext readContext)
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException,
             RecordException, VersionNotFoundException, TypeException {
         ArgumentValidator.notNull(recordId, "recordId");
 
-        Result result = getRow(recordId, requestedVersion, fields);
+        Result result = getRow(recordId, (requestedVersion != null), fields);
 
+        Long latestVersion = getLatestVersion(result);
+        if (requestedVersion == null) {
+            requestedVersion = getLatestVersion(result);
+        } else {
+            if (latestVersion == null || latestVersion < requestedVersion || requestedVersion == 0L) {
+                Record record = newRecord(recordId);
+                record.setVersion(requestedVersion);
+                throw new VersionNotFoundException(record);
+            }
+        }
+        return getRecordFromRowResult(recordId, requestedVersion, readContext, result);
+    }
+
+    private Record getRecordFromRowResult(RecordId recordId, Long requestedVersion, ReadContext readContext,
+            Result result) throws VersionNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException,
+            RecordException, TypeException {
         Record record = newRecord(recordId);
-
-        // Set retrieved version on the record
-        extractVersion(requestedVersion, result, record);
+        record.setVersion(requestedVersion);
 
         // Extract the actual fields from the retrieved data
         if (extractFields(result, record.getVersion(), record, readContext)) {
@@ -755,26 +804,18 @@ public class HBaseRepository implements Repository {
         return record;
     }
 
-    private void extractVersion(Long requestedVersion, Result result, Record record) throws VersionNotFoundException {
-        byte[] latestVersionBytes = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED),
-                CURRENT_VERSION_COLUMN_NAME);
+    private Long getLatestVersion(Result result) {
+        byte[] latestVersionBytes = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
         Long latestVersion = latestVersionBytes != null ? Bytes.toLong(latestVersionBytes) : null;
-        if (requestedVersion != null) {
-            record.setVersion(requestedVersion);
-            if (latestVersion == null || latestVersion < requestedVersion) {
-                throw new VersionNotFoundException(record);
-            }
-        } else {
-            record.setVersion(latestVersion);
-        }
+        return latestVersion;
     }
 
     // Retrieves the row from the table and check if it exists and has not been flagged as deleted
-    private Result getRow(RecordId recordId, Long requestedVersion, List<FieldType> fields)
+    private Result getRow(RecordId recordId, boolean multipleVersions, List<FieldType> fields)
             throws RecordNotFoundException, RecordException {
         Result result;
         Get get = new Get(recordId.toBytes());
-        if (requestedVersion != null) {
+        if (multipleVersions) {
             get.setMaxVersions();
         }
         // Add the columns for the fields to get
@@ -904,8 +945,8 @@ public class HBaseRepository implements Repository {
         if (fields != null) {
             for (FieldType field : fields) {
                 get.addColumn(columnFamilies.get(field.getScope()), Bytes.toBytes(field.getId()));
+                added = true;
             }
-            added = true;
         }
         if (added) {
             // Add system columns explicitly to get since we're not retrieving

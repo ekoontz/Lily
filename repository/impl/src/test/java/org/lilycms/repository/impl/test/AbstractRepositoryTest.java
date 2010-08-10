@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -161,6 +162,16 @@ public abstract class AbstractRepositoryTest {
 
         assertEquals(createdRecord, repository.read(createdRecord.getId()));
         control.verify();
+    }
+    
+    @Test
+    public void testCreateNoVersions() throws Exception {
+        Record record = repository.newRecord();
+        record.setRecordType(recordType1.getName(), recordType1.getVersion());
+        record.setField(fieldType1.getName(), "value1");
+        
+        record = repository.create(record);
+        assertEquals(null, record.getVersion());
     }
 
     private Record createDefaultRecord() throws Exception {
@@ -389,9 +400,71 @@ public abstract class AbstractRepositoryTest {
 
         record.setField(fieldType1.getName(), "value2");
         record.setField(lastVTag.getName(), 2L);
-        assertEquals(record, repository.read(record.getId(), Long.valueOf(1)));
+        assertEquals(record, repository.read(record.getId(), 1L));
+        
+        try {
+            repository.read(record.getId(), 0L);
+            fail();
+        } catch (VersionNotFoundException expected) {
+        }
     }
 
+    @Test
+    public void testReadAllVersions() throws Exception {
+        Record record = createDefaultRecord();
+        Record updateRecord = record.clone();
+        updateRecord.setField(fieldType1.getName(), "value2");
+        updateRecord.setField(fieldType2.getName(), 789);
+        updateRecord.setField(fieldType3.getName(), false);
+
+        repository.update(updateRecord);
+        
+        List<Record> list = repository.readRecords(record.getId(), 1L, 2L, null);
+        assertEquals(2, list.size());
+        assertTrue(list.contains(repository.read(record.getId(), 1L)));
+        assertTrue(list.contains(repository.read(record.getId(), 2L)));
+    }
+
+    @Test
+    public void testReadVersionsWideBoundaries() throws Exception {
+        Record record = createDefaultRecord();
+        Record updateRecord = record.clone();
+        updateRecord.setField(fieldType1.getName(), "value2");
+        updateRecord.setField(fieldType2.getName(), 789);
+        updateRecord.setField(fieldType3.getName(), false);
+
+        repository.update(updateRecord);
+        
+        List<Record> list = repository.readRecords(record.getId(), 0L, 5L, null);
+        assertEquals(2, list.size());
+        assertTrue(list.contains(repository.read(record.getId(), 1L)));
+        assertTrue(list.contains(repository.read(record.getId(), 2L)));
+    }
+    
+    @Test
+    public void testReadVersionsNarrowBoundaries() throws Exception {
+        Record record = createDefaultRecord();
+
+        Record updateRecord = record.clone();
+        updateRecord.setField(fieldType1.getName(), "value2");
+        updateRecord.setField(fieldType2.getName(), 789);
+        updateRecord.setField(fieldType3.getName(), false);
+        repository.update(updateRecord);
+
+        updateRecord = record.clone();
+        updateRecord.setField(fieldType2.getName(), 790);
+        repository.update(updateRecord);
+        
+        updateRecord = record.clone();
+        updateRecord.setField(fieldType2.getName(), 791);
+        repository.update(updateRecord);
+
+        List<Record> list = repository.readRecords(record.getId(), 2L, 3L, null);
+        assertEquals(2, list.size());
+        assertTrue(list.contains(repository.read(record.getId(), 2L)));
+        assertTrue(list.contains(repository.read(record.getId(), 3L)));
+    }
+    
     @Test
     public void testReadNonExistingRecord() throws Exception {
         try {
@@ -1019,8 +1092,8 @@ public abstract class AbstractRepositoryTest {
         record = repository.update(record);
         // The record still has a version even though there are no longer any versioned fields on it
         assertEquals(Long.valueOf(4), record.getField(lastVTag.getName())); 
-        
-        
     }
+    
+    
 
 }

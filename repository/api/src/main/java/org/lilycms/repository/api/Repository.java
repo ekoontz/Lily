@@ -124,8 +124,18 @@ public interface Repository {
 
     /**
      * Reads a specific version of a record limited to a subset of the fields.
+     * 
+     * <p>If the given list of fields is empty, all fields will be read.
      */
     Record read(RecordId recordId, Long version, List<QName> fieldNames) throws RecordNotFoundException,
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+
+    /**
+     * Reads all versions of a record between fromVersion and toVersion (both included), limited to a subset of the fields.
+     * 
+     * <p>If the given list of fields is empty, all fields will be read.
+     */
+    List<Record> readRecords(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws RecordNotFoundException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
 
     /**

@@ -608,5 +608,20 @@ public class AvroConverter {
         }
         return avroRecordTypes;
     }
+    
+    public List<Record> convertAvroRecords(GenericArray<AvroRecord> avroRecords) {
+        List<Record> records = new ArrayList<Record>();
+        for(AvroRecord avroRecord : avroRecords) {
+            records.add(convert(avroRecord));
+        }
+        return records;
+    }
 
+    public GenericArray<AvroRecord> convertRecords(Collection<Record> records) throws AvroFieldTypeNotFoundException, AvroTypeException {
+        GenericArray<AvroRecord> avroRecords = new GenericData.Array<AvroRecord>(records.size(), Schema.createArray(AvroRecord.SCHEMA$));
+        for (Record record: records) {
+            avroRecords.add(convert(record));
+        }
+        return avroRecords;
+    }
 }
