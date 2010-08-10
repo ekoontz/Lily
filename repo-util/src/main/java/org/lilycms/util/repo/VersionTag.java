@@ -19,6 +19,7 @@ import org.apache.commons.logging.LogFactory;
 import org.lilycms.repository.api.*;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Version tag related utilities.
@@ -30,6 +31,11 @@ public class VersionTag {
      */
     public static final String NAMESPACE = "org.lilycms.vtag";
 
+    /**
+     * Name for the field type that serves as last version tag.
+     */
+    public static final String LAST = "last";
+    
     /**
      * A dummy tag used for documents which have no versions, and thus no tagged versions.
      */
@@ -130,12 +136,21 @@ public class VersionTag {
      * Returns true if the given FieldType is a version tag.
      */
     public static boolean isVersionTag(FieldType fieldType) {
-        return (fieldType.getName().getNamespace().equals(NAMESPACE)
+        String namespace = fieldType.getName().getNamespace();
+        return (namespace != null && namespace.equals(NAMESPACE)
                 && fieldType.getScope() == Scope.NON_VERSIONED
                 && fieldType.getValueType().isPrimitive()
                 && fieldType.getValueType().getPrimitive().getName().equals("LONG"));
     }
 
+    /**
+     * Returns true if the given FieldType is the last-version tag.
+     */
+    public static boolean isLastVersionTag(FieldType fieldType) {
+        return (isVersionTag(fieldType)
+                && fieldType.getName().getName().equals(LAST));
+    }
+    
     /**
      * Inverts a map containing version by tag to a map containing tags by version. It does not matter if the
      * tags are identified by name or by ID.
@@ -173,7 +188,7 @@ public class VersionTag {
         }
         return result;
     }
-
+    
     /**
      * Resolves a vtag to a version number for some record.
      *
@@ -266,5 +281,48 @@ public class VersionTag {
 
             return repository.readWithIds(recordId, version, fieldIds);
         }
+    }
+
+    
+    /**
+     * Returns true if the Record contains a field that serves as the last version tag.
+     */
+    public static boolean hasLastVTag(Record record, TypeManager typeManager) throws FieldTypeNotFoundException, TypeException {
+        for (QName name : record.getFields().keySet()) {
+            if (isLastVersionTag(typeManager.getFieldTypeByName(name)))
+                return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Returns true if the RecordType or one of its mixins has FieldType defined that serves as last version tag.
+     */
+    public static boolean hasLastVTag(RecordType recordType, TypeManager typeManager) throws FieldTypeNotFoundException, RecordTypeNotFoundException, TypeException {
+        Collection<FieldTypeEntry> fieldTypeEntries = recordType.getFieldTypeEntries();
+        for (FieldTypeEntry fieldTypeEntry : fieldTypeEntries) {
+            if (isLastVersionTag(typeManager.getFieldTypeById(fieldTypeEntry.getFieldTypeId())))
+                    return true;
+        }
+        Map<String, Long> mixins = recordType.getMixins();
+        for (Entry<String, Long> entry : mixins.entrySet()) {
+            if (hasLastVTag(typeManager.getRecordTypeById(entry.getKey(), entry.getValue()), typeManager))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Creates the FieldType to serve as last version tag. 
+     */
+    public static FieldType createLastVTagType(TypeManager typeManager) throws FieldTypeExistsException, TypeException {
+        return typeManager.createFieldType(typeManager.newFieldType(typeManager.getValueType("LONG", false, false), qname(LAST), Scope.NON_VERSIONED));
+    }
+    
+    /**
+     * Returns the FieldType that serves as last version tag if it exists.
+     */
+    public static FieldType getLastVTagType(TypeManager typeManager) throws FieldTypeNotFoundException, TypeException {
+        return typeManager.getFieldTypeByName(qname(LAST));
     }
 }

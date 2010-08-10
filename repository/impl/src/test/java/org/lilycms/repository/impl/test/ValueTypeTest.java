@@ -74,11 +74,6 @@ public class ValueTypeTest {
     }
     
     @Test
-    public void testDummy() {
-        
-    }
-
-    @Test
     public void testStringType() throws Exception {
         runValueTypeTests("stringRecordTypeId", "STRING", "foo", "bar", "pub");
     }

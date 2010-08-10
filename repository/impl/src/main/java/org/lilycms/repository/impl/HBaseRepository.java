@@ -58,6 +58,7 @@ import org.lilycms.repository.api.ValueType;
 import org.lilycms.repository.api.VersionNotFoundException;
 import org.lilycms.repository.impl.lock.RowLocker;
 import org.lilycms.util.repo.RecordEvent;
+import org.lilycms.util.repo.VersionTag;
 import org.lilycms.util.repo.RecordEvent.Type;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
@@ -399,7 +400,8 @@ public class HBaseRepository implements Repository {
 
         boolean fieldsHaveChanged = !changedScopes.isEmpty();
         if (fieldsHaveChanged) {
-            recordTypeVersion = recordType.getVersion();
+         // The provided recordTypeVersion could have been null, so the latest version of the recordType was taken and we need to know which version that is
+            recordTypeVersion = recordType.getVersion(); 
             if (!recordTypeName.equals(originalRecord.getRecordTypeName())
                     || !recordTypeVersion.equals(originalRecord.getRecordTypeVersion())) {
                 recordEvent.setRecordTypeChanged(true);
@@ -412,8 +414,13 @@ public class HBaseRepository implements Repository {
             // record type could have been given without a version number
             record.setRecordType(recordTypeName, recordTypeVersion);
             if (version != null) {
-                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME, Bytes
-                        .toBytes(version));
+                byte[] versionBytes = Bytes.toBytes(version);
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME, versionBytes);
+                if (VersionTag.hasLastVTag(recordType, typeManager) || VersionTag.hasLastVTag(record, typeManager) || VersionTag.hasLastVTag(originalRecord, typeManager)) {
+                    FieldType lastVTagType = VersionTag.getLastVTagType(typeManager);
+                    put.add(columnFamilies.get(Scope.NON_VERSIONED), Bytes.toBytes(lastVTagType.getId()), encodeFieldValue(lastVTagType, version));
+                    record.setField(lastVTagType.getName(), version);
+                }
             }
 
         }
