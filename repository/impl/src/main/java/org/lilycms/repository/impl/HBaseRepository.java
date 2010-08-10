@@ -722,7 +722,7 @@ public class HBaseRepository implements Repository {
         return fields;
     }
     
-    public List<Record> readRecords(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws FieldTypeNotFoundException, TypeException, RecordNotFoundException, RecordException, VersionNotFoundException, RecordTypeNotFoundException {
+    public List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws FieldTypeNotFoundException, TypeException, RecordNotFoundException, RecordException, VersionNotFoundException, RecordTypeNotFoundException {
         ArgumentValidator.notNull(recordId, "recordId");
         ArgumentValidator.notNull(fromVersion, "fromVersion");
         ArgumentValidator.notNull(toVersion, "toVersion");

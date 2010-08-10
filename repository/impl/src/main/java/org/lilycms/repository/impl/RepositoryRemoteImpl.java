@@ -159,7 +159,7 @@ public class RepositoryRemoteImpl implements Repository {
         }
     }
     
-    public List<Record> readRecords(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames)
+    public List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames)
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
             VersionNotFoundException, TypeException {
         try {
@@ -182,7 +182,7 @@ public class RepositoryRemoteImpl implements Repository {
                     avroFieldNames.add(converter.convert(fieldName));
                 }
             }
-            return converter.convertAvroRecords(lilyProxy.readRecords(new Utf8(recordId.toString()), avroFromVersion, avroToVersion, avroFieldNames));
+            return converter.convertAvroRecords(lilyProxy.readVersions(new Utf8(recordId.toString()), avroFromVersion, avroToVersion, avroFieldNames));
         } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroVersionNotFoundException e) {

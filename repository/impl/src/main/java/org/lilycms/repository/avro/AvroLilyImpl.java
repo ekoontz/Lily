@@ -109,7 +109,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
     
-    public GenericArray<AvroRecord> readRecords(Utf8 recordId, long avroFromVersion, long avroToVersion, GenericArray<AvroQName> avroFieldNames)
+    public GenericArray<AvroRecord> readVersions(Utf8 recordId, long avroFromVersion, long avroToVersion, GenericArray<AvroQName> avroFieldNames)
             throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordNotFoundException,
             AvroVersionNotFoundException, AvroRecordException, AvroTypeException {
         List<QName> fieldNames = null;
@@ -128,7 +128,7 @@ public class AvroLilyImpl implements AvroLily {
             if (avroToVersion != -1) {
                 toVersion = avroToVersion;
             }
-            return converter.convertRecords(repository.readRecords(repository.getIdGenerator().fromString(recordId.toString()),
+            return converter.convertRecords(repository.readVersions(repository.getIdGenerator().fromString(recordId.toString()),
                     fromVersion, toVersion, fieldNames));
         } catch (RecordNotFoundException e) {
             throw converter.convert(e);

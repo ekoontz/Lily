@@ -135,7 +135,7 @@ public interface Repository {
      * 
      * <p>If the given list of fields is empty, all fields will be read.
      */
-    List<Record> readRecords(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws RecordNotFoundException,
+    List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws RecordNotFoundException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
 
     /**

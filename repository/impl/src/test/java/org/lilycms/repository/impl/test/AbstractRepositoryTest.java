@@ -419,7 +419,7 @@ public abstract class AbstractRepositoryTest {
 
         repository.update(updateRecord);
         
-        List<Record> list = repository.readRecords(record.getId(), 1L, 2L, null);
+        List<Record> list = repository.readVersions(record.getId(), 1L, 2L, null);
         assertEquals(2, list.size());
         assertTrue(list.contains(repository.read(record.getId(), 1L)));
         assertTrue(list.contains(repository.read(record.getId(), 2L)));
@@ -435,7 +435,7 @@ public abstract class AbstractRepositoryTest {
 
         repository.update(updateRecord);
         
-        List<Record> list = repository.readRecords(record.getId(), 0L, 5L, null);
+        List<Record> list = repository.readVersions(record.getId(), 0L, 5L, null);
         assertEquals(2, list.size());
         assertTrue(list.contains(repository.read(record.getId(), 1L)));
         assertTrue(list.contains(repository.read(record.getId(), 2L)));
@@ -459,7 +459,7 @@ public abstract class AbstractRepositoryTest {
         updateRecord.setField(fieldType2.getName(), 791);
         repository.update(updateRecord);
 
-        List<Record> list = repository.readRecords(record.getId(), 2L, 3L, null);
+        List<Record> list = repository.readVersions(record.getId(), 2L, 3L, null);
         assertEquals(2, list.size());
         assertTrue(list.contains(repository.read(record.getId(), 2L)));
         assertTrue(list.contains(repository.read(record.getId(), 3L)));

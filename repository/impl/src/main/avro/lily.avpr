@@ -261,7 +261,7 @@
       "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
      },
      
-    "readRecords": {
+    "readVersions": {
       "request": [
         {"name": "recordId", "type": "string"},
         {"name": "fromVersion", "type": "long"},
