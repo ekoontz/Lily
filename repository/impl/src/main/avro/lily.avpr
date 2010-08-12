@@ -235,18 +235,12 @@
     },
      
     "update": {
-      "request": [{"name": "record", "type": "AvroRecord"}],
+      "request": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "updateVersion", "type": "boolean"}],
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
       "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException"]
-    },
-
-    "updateMutableFields": {
-      "request": [{"name": "record", "type": "AvroRecord"}],
-      "response": "AvroRecord",
-      "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroInvalidRecordException",
-      "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
       "AvroGenericException"]
     },
 

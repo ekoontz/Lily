@@ -201,11 +201,15 @@ public class RepositoryRemoteImpl implements Repository {
             throw converter.convert(e);
         }
     }
+    
+    public Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
+        return update(record, false);
+    }
 
-    public Record update(Record record) throws RecordNotFoundException, InvalidRecordException,
+    public Record update(Record record, boolean updateVersion) throws RecordNotFoundException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
         try {
-            return converter.convert(lilyProxy.update(converter.convert(record)));
+            return converter.convert(lilyProxy.update(converter.convert(record), updateVersion));
         } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroInvalidRecordException e) {
@@ -227,31 +231,6 @@ public class RepositoryRemoteImpl implements Repository {
         }
     }
     
-    public Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, TypeException, RecordException, VersionNotFoundException {
-        try {
-            return converter.convert(lilyProxy.updateMutableFields(converter.convert(record)));
-        } catch (AvroRecordNotFoundException e) {
-            throw converter.convert(e);
-        } catch (AvroInvalidRecordException e) {
-            throw converter.convert(e);
-        } catch (AvroRecordTypeNotFoundException e) {
-            throw converter.convert(e);
-        } catch (AvroFieldTypeNotFoundException e) {
-            throw converter.convert(e);
-        } catch (AvroRecordException e) {
-            throw converter.convert(e);
-        } catch (AvroTypeException e) {
-            throw converter.convert(e);
-        } catch (AvroVersionNotFoundException e) {
-            throw converter.convert(e);
-        } catch (AvroGenericException e) {
-            throw converter.convert(e);
-        } catch (AvroRemoteException e) {
-            throw converter.convert(e);
-        }
-    }
-
     public void registerBlobStoreAccess(BlobStoreAccess blobStoreAccess) {
         throw new NotImplementedException();
     }

@@ -76,6 +76,8 @@ public interface Repository {
      * <p>If no RecordType is given, the same RecordType will be used as for the original Record. The latest version of that RecordType
      * will be taken. A given version number is ignored.  
      *
+     * @param updateVersion if true, the version indicated in the record will be updated (i.e. only the mutable fields will be updated)
+     *          otherwise, a new version of the record will be created (if it contains versioned fields)
      * @throws RecordNotFoundException
      *             if the record does not exist
      * @throws InvalidRecordException
@@ -85,6 +87,12 @@ public interface Repository {
      * @throws FieldTypeNotFoundException
      * @throws RecordTypeNotFoundException
      */
+    Record update(Record record, boolean updateVersion) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
+    FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+    
+    /**
+     * Shortcut for update(record, false)
+     */
     Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
             FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
 
@@ -93,8 +101,8 @@ public interface Repository {
      *
      * <p><b>TODO</b>: this is being considered for redesign.
      */
-    Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+//    Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
+//            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
 
     /**
      * Reads a record fully. All the fields of the record will be read.

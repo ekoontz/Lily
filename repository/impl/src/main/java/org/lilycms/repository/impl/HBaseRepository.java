@@ -317,7 +317,19 @@ public class HBaseRepository implements Repository {
         }
     }
 
-    public Record update(Record record) throws RecordNotFoundException, InvalidRecordException,
+    public Record update(Record record, boolean updateVersion) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+        if (updateVersion) {
+            return updateMutableFields(record);
+        } else {
+            return updateRecord(record);
+        }
+    }
+    
+    public Record update(Record record) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+        return update(record, false);
+    }
+    
+    private Record updateRecord(Record record) throws RecordNotFoundException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
         Record newRecord = record.clone();
 
@@ -533,7 +545,7 @@ public class HBaseRepository implements Repository {
         return changedScopes;
     }
 
-    public Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
+    private Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
 
         Record newRecord = record.clone();

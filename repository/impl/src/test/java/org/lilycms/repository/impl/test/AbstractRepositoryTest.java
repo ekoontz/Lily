@@ -840,7 +840,7 @@ public abstract class AbstractRepositoryTest {
         mutableRecord.setRecordType(recordType2.getName(), recordType2.getVersion());
         mutableRecord.setField(fieldType6.getName(), "value3");
         mutableRecord.setVersion(1L);
-        mutableRecord = repository.updateMutableFields(mutableRecord);
+        mutableRecord = repository.update(mutableRecord, true);
         
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -871,7 +871,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
         
-        assertEquals(Long.valueOf(1), repository.updateMutableFields(updateMutableRecord).getVersion());
+        assertEquals(Long.valueOf(1), repository.update(updateMutableRecord, true).getVersion());
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -926,7 +926,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
-        repository.updateMutableFields(deleteRecord);
+        repository.update(deleteRecord, true);
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -967,7 +967,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
-        repository.updateMutableFields(deleteMutableFieldRecord);
+        repository.update(deleteMutableFieldRecord, true);
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 // Due to HBase-1485 the field does not get updated at version 1 (marking it as deleted) when (more or less)

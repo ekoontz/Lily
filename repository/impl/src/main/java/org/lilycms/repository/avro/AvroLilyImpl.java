@@ -46,7 +46,7 @@ public class AvroLilyImpl implements AvroLily {
         this.typeManager = repository.getTypeManager();
         this.converter = converter;
     }
-    
+
     public AvroRecord create(AvroRecord record) throws AvroRecordExistsException, AvroRecordNotFoundException,
             AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
             AvroRecordException, AvroTypeException {
@@ -93,7 +93,8 @@ public class AvroLilyImpl implements AvroLily {
             if (avroVersion != -1) {
                 version = avroVersion;
             }
-            return converter.convert(repository.read(repository.getIdGenerator().fromString(recordId.toString()), version, fieldNames));
+            return converter.convert(repository.read(repository.getIdGenerator().fromString(recordId.toString()),
+                    version, fieldNames));
         } catch (RecordNotFoundException e) {
             throw converter.convert(e);
         } catch (RecordTypeNotFoundException e) {
@@ -108,10 +109,11 @@ public class AvroLilyImpl implements AvroLily {
             throw converter.convert(e);
         }
     }
-    
-    public GenericArray<AvroRecord> readVersions(Utf8 recordId, long avroFromVersion, long avroToVersion, GenericArray<AvroQName> avroFieldNames)
-            throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordNotFoundException,
-            AvroVersionNotFoundException, AvroRecordException, AvroTypeException {
+
+    public GenericArray<AvroRecord> readVersions(Utf8 recordId, long avroFromVersion, long avroToVersion,
+            GenericArray<AvroQName> avroFieldNames) throws AvroRecordTypeNotFoundException,
+            AvroFieldTypeNotFoundException, AvroRecordNotFoundException, AvroVersionNotFoundException,
+            AvroRecordException, AvroTypeException {
         List<QName> fieldNames = null;
         if (avroFieldNames != null) {
             fieldNames = new ArrayList<QName>();
@@ -128,8 +130,8 @@ public class AvroLilyImpl implements AvroLily {
             if (avroToVersion != -1) {
                 toVersion = avroToVersion;
             }
-            return converter.convertRecords(repository.readVersions(repository.getIdGenerator().fromString(recordId.toString()),
-                    fromVersion, toVersion, fieldNames));
+            return converter.convertRecords(repository.readVersions(repository.getIdGenerator().fromString(
+                    recordId.toString()), fromVersion, toVersion, fieldNames));
         } catch (RecordNotFoundException e) {
             throw converter.convert(e);
         } catch (RecordTypeNotFoundException e) {
@@ -167,14 +169,14 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecord updateMutableFields(AvroRecord record) throws AvroRecordNotFoundException,
+    public AvroRecord update(AvroRecord record, boolean updateVersion) throws AvroRecordNotFoundException,
             AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
             AvroVersionNotFoundException, AvroRecordException, AvroTypeException {
         try {
-            return converter.convert(repository.updateMutableFields(converter.convert(record)));
-        } catch (InvalidRecordException e) {
-            throw converter.convert(e);
+            return converter.convert(repository.update(converter.convert(record), updateVersion));
         } catch (RecordNotFoundException e) {
+            throw converter.convert(e);
+        } catch (InvalidRecordException e) {
             throw converter.convert(e);
         } catch (RecordTypeNotFoundException e) {
             throw converter.convert(e);
@@ -189,8 +191,8 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroFieldType createFieldType(AvroFieldType avroFieldType)
-            throws AvroFieldTypeExistsException, AvroTypeException {
+    public AvroFieldType createFieldType(AvroFieldType avroFieldType) throws AvroFieldTypeExistsException,
+            AvroTypeException {
 
         try {
             return converter.convert(typeManager.createFieldType(converter.convert(avroFieldType)));
@@ -217,8 +219,8 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecordType getRecordTypeById(Utf8 id, long avroVersion)
-            throws AvroRecordTypeNotFoundException, AvroTypeException {
+    public AvroRecordType getRecordTypeById(Utf8 id, long avroVersion) throws AvroRecordTypeNotFoundException,
+            AvroTypeException {
         try {
             Long version = null;
             if (avroVersion != -1) {
@@ -246,10 +248,9 @@ public class AvroLilyImpl implements AvroLily {
             throw converter.convert(e);
         }
     }
-    
-    
-    public AvroRecordType updateRecordType(AvroRecordType recordType)
-            throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroTypeException {
+
+    public AvroRecordType updateRecordType(AvroRecordType recordType) throws AvroRecordTypeNotFoundException,
+            AvroFieldTypeNotFoundException, AvroTypeException {
 
         try {
             return converter.convert(typeManager.updateRecordType(converter.convert(recordType)));
@@ -262,8 +263,8 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroFieldType updateFieldType(AvroFieldType fieldType)
-            throws AvroFieldTypeNotFoundException, AvroFieldTypeUpdateException, AvroTypeException {
+    public AvroFieldType updateFieldType(AvroFieldType fieldType) throws AvroFieldTypeNotFoundException,
+            AvroFieldTypeUpdateException, AvroTypeException {
 
         try {
             return converter.convert(typeManager.updateFieldType(converter.convert(fieldType)));
