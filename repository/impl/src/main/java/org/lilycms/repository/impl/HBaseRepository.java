@@ -535,6 +535,7 @@ public class HBaseRepository implements Repository {
 
     public Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+
         Record newRecord = record.clone();
 
         RecordId recordId = record.getId();
