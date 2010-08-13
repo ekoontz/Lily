@@ -84,11 +84,10 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             RecordTypeNotFoundException, FieldTypeNotFoundException, TypeException {
         ArgumentValidator.notNull(recordType, "recordType");
         RecordType newRecordType = recordType.clone();
-        UUID uuid = UUID.randomUUID();
-        byte[] rowId;
-        rowId = idToBytes(uuid);
         Long recordTypeVersion = Long.valueOf(1);
         try {
+            UUID uuid = getValidUUID();
+            byte[] rowId = idToBytes(uuid);
             // Take a counter on a row with the name as key
             byte[] nameBytes = encodeName(recordType.getName());
             long concurrentCounter = getTypeTable().incrementColumnValue(nameBytes, NON_VERSIONED_COLUMN_FAMILY,
@@ -116,13 +115,13 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
                     .toBytes(concurrentCounter), put)) {
                 throw new TypeException("Concurrent create occurred for recordType <" + recordType.getName() + ">");
             }
+            newRecordType.setId(uuid.toString());
+            newRecordType.setVersion(recordTypeVersion);
+            updateRecordTypeNameCache(newRecordType.clone(), null);
         } catch (IOException e) {
             throw new TypeException("Exception occurred while creating recordType <" + recordType.getName()
                     + "> on HBase", e);
         }
-        newRecordType.setId(uuid.toString());
-        newRecordType.setVersion(recordTypeVersion);
-        updateRecordTypeNameCache(newRecordType.clone(), null);
         return newRecordType;
     }
 
@@ -405,11 +404,10 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         ArgumentValidator.notNull(fieldType, "fieldType");
 
         FieldType newFieldType;
-        UUID uuid = UUID.randomUUID();
-        byte[] rowId;
-        rowId = idToBytes(uuid);
         Long version = Long.valueOf(1);
         try {
+            UUID uuid = getValidUUID(); 
+            byte[] rowId = idToBytes(uuid);
             // Take a counter on a row with the name as key
             byte[] nameBytes = encodeName(fieldType.getName());
             long concurrentCounter = getTypeTable().incrementColumnValue(nameBytes, NON_VERSIONED_COLUMN_FAMILY,
@@ -427,13 +425,13 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
                     .toBytes(concurrentCounter), put)) {
                 throw new TypeException("Concurrent create occurred for fieldType <" + fieldType.getName() + ">");
             }
+            newFieldType = fieldType.clone();
+            newFieldType.setId(uuid.toString());
+            updateFieldTypeNameCache(newFieldType, null);
         } catch (IOException e) {
             throw new TypeException("Exception occurred while creating fieldType <" + fieldType.getName()
                     + "> version: <" + version + "> on HBase", e);
         }
-        newFieldType = fieldType.clone();
-        newFieldType.setId(uuid.toString());
-        updateFieldTypeNameCache(newFieldType, null);
         return newFieldType;
     }
 
@@ -622,6 +620,23 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
     private String idFromBytes(byte[] bytes) {
         UUID uuid = new UUID(Bytes.toLong(bytes, 0, 8), Bytes.toLong(bytes, 8, 8));
         return uuid.toString();
+    }
+    
+    /**
+     * Generates a uuid and checks if it's not already in use
+     */
+    private UUID getValidUUID() throws IOException {
+        UUID uuid = UUID.randomUUID();
+        byte[] rowId = idToBytes(uuid);
+     // The chance it would already exist is small
+        if (typeTable.exists(new Get(rowId))) 
+            return getValidUUID();
+     // The chance a same uuid is generated after doing the exists check is even smaller
+     // If it would still happen, the incrementColumnValue would return a number bigger than 1
+        if (1L != typeTable.incrementColumnValue(rowId, NON_VERSIONED_COLUMN_FAMILY, CONCURRENT_COUNTER_COLUMN_NAME, 1L)) {
+            return getValidUUID();
+        }
+        return uuid;
     }
     
     protected HTableInterface getTypeTable() {
