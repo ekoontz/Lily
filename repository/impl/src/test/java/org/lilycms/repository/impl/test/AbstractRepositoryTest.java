@@ -852,7 +852,6 @@ public abstract class AbstractRepositoryTest {
         
     }
 
-    
     @Test
     public void testUpdateMutableFieldWithNewRecordType() throws Exception {
         Record record = createDefaultRecord();
