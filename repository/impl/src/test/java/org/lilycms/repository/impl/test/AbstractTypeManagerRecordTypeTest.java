@@ -28,8 +28,10 @@ import org.lilycms.repository.api.FieldType;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.RecordTypeExistsException;
 import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.api.Scope;
+import org.lilycms.repository.api.TypeException;
 import org.lilycms.repository.api.TypeManager;
 
 public abstract class AbstractTypeManagerRecordTypeTest {
@@ -68,6 +70,20 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         recordType.setVersion(Long.valueOf(1));
         recordType.setId(createdRecordType.getId());
         assertEquals(recordType, typeManager.getRecordTypeById(createdRecordType.getId(), null));
+    }
+    
+    @Test
+    public void testCreateSameNameFails() throws Exception {
+        QName name = new QName(null, "testCreateSameNameFails");
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
+        
+        recordType = typeManager.newRecordType(name);
+        try {
+            typeManager.createRecordType(recordType);
+            fail();
+        } catch (RecordTypeExistsException expected) {
+        }
     }
 
     @Test
@@ -307,5 +323,38 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         Collection<FieldType> fieldTypes = typeManager.getFieldTypes();
         assertTrue(fieldTypes.contains(fieldType));
     }
+    
+    @Test
+    public void testUpdateName() throws Exception {
+        QName name = new QName(null, "testUpdateName");
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(name, recordType.getName());
+        
+        QName name2 = new QName(null, "testUpdateName2");
+        recordType.setName(name2);
+        recordType = typeManager.updateRecordType(recordType);
+        recordType = typeManager.getRecordTypeById(recordType.getId(), null);
+        assertEquals(name2, recordType.getName());
+    }
 
+    @Test
+    public void testUpdateNameToExistingNameFails() throws Exception {
+        QName name = new QName(null, "testUpdateNameToExistingNameFails");
+        QName name2 = new QName(null, "testUpdateNameToExistingNameFails2");
+
+        RecordType recordType = typeManager.newRecordType(name);
+        recordType = typeManager.createRecordType(recordType);
+        assertEquals(name, recordType.getName());
+
+        RecordType recordType2 = typeManager.newRecordType(name2);
+        recordType2 = typeManager.createRecordType(recordType2);
+
+        recordType.setName(name2);
+        try {
+            recordType = typeManager.updateRecordType(recordType);
+            fail();
+        } catch (TypeException expected){
+        }
+    }
 }

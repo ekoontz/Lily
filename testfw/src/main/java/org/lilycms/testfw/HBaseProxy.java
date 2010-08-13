@@ -156,7 +156,7 @@ public class HBaseProxy {
         }
     }
 
-    private void cleanTables() throws Exception {
+    public void cleanTables() throws Exception {
         System.out.println("------------------------ Resetting HBase tables ------------------------");
         
         StringBuilder truncateReport = new StringBuilder();

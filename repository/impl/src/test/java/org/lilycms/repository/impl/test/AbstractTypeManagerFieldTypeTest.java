@@ -114,5 +114,25 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         } catch (FieldTypeUpdateException e) {
         }
     }
+    
+    @Test
+    public void testUpdateToAnExistingNameFails() throws Exception {
+        QName name1 = new QName(null, "testUpdateToAnExistingNameFails1");
+        ValueType valueType = typeManager.getValueType("STRING", false, false);
+        FieldType fieldType = typeManager.newFieldType(valueType , name1, Scope.VERSIONED);
+        fieldType = typeManager.createFieldType(fieldType);
+        
+        QName name2 = new QName(null, "testUpdateToAnExistingNameFails2");
+        ValueType valueType2 = typeManager.getValueType("STRING", false, false);
+        FieldType fieldType2 = typeManager.newFieldType(valueType2 , name2, Scope.VERSIONED);
+        fieldType2 = typeManager.createFieldType(fieldType2);
+        
+        fieldType.setName(name2);
+        try {
+            typeManager.updateFieldType(fieldType);
+            fail("Updating to a fieldType with an existing name is not allowed.");
+        } catch (FieldTypeUpdateException e) {
+        }
+    }
 
 }
