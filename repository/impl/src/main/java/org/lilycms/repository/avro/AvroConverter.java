@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -329,6 +330,13 @@ public class AvroConverter {
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
+    
+    public AvroRepositoryException convert(RepositoryException exception) {
+        AvroRepositoryException avroException = new AvroRepositoryException();
+        avroException.message = new Utf8(exception.getMessage());
+        avroException.remoteCauses = buildCauses(exception);
+        return avroException;
+    }
 
     public AvroFieldTypeExistsException convert(FieldTypeExistsException exception) {
         AvroFieldTypeExistsException avroFieldTypeExistsException = new AvroFieldTypeExistsException();
@@ -386,6 +394,12 @@ public class AvroConverter {
 
     public TypeException convert(AvroTypeException avroException) {
         TypeException exception = new TypeException(convert(avroException.message));
+        restoreCauses(avroException.remoteCauses, exception);
+        return exception;
+    }
+    
+    public RepositoryException convert(AvroRepositoryException avroException) {
+        RepositoryException exception = new RepositoryException(convert(avroException.message));
         restoreCauses(avroException.remoteCauses, exception);
         return exception;
     }
@@ -623,5 +637,22 @@ public class AvroConverter {
             avroRecords.add(convert(record));
         }
         return avroRecords;
+    }
+    
+    public Set<RecordId> convertAvroRecordIds(GenericArray<Utf8> avroRecordIds) {
+        Set<RecordId> recordIds = new HashSet<RecordId>();
+        IdGenerator idGenerator = repository.getIdGenerator();
+        for (Utf8 avroRecordId : avroRecordIds) {
+            recordIds.add(idGenerator.fromString(convert(avroRecordId)));
+        }
+        return recordIds;
+    }
+    
+    public GenericArray<Utf8> convert(Set<RecordId> recordIds) {
+        GenericArray<Utf8> avroRecordIds = new GenericData.Array<Utf8>(recordIds.size(), Schema.createArray(Schema.create(Schema.Type.STRING)));
+        for (RecordId recordId: recordIds) {
+            avroRecordIds.add(convert(recordId.toString()));
+        }
+        return avroRecordIds;
     }
 }

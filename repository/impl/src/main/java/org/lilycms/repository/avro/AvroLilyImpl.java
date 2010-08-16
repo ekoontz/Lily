@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.avro.generic.GenericArray;
+import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.FieldTypeExistsException;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
@@ -31,6 +32,7 @@ import org.lilycms.repository.api.RecordNotFoundException;
 import org.lilycms.repository.api.RecordTypeExistsException;
 import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.api.Repository;
+import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.repository.api.TypeException;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
@@ -309,6 +311,15 @@ public class AvroLilyImpl implements AvroLily {
         try {
             return converter.convertRecordTypes(typeManager.getRecordTypes());
         } catch (TypeException e) {
+            throw converter.convert(e);
+        }
+    }
+
+    public GenericArray<Utf8> getVariants(Utf8 recordId) throws AvroRemoteException, AvroRepositoryException,
+            AvroGenericException {
+        try {
+            return converter.convert(repository.getVariants(repository.getIdGenerator().fromString(converter.convert(recordId))));
+        } catch (RepositoryException e) {
             throw converter.convert(e);
         }
     }

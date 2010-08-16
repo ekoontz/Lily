@@ -71,11 +71,6 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    public void testCreateVariant() throws Exception {
-        // TODO Avro side not implemented yet
-    }
-    
-    @Test
     public void testIdRecord() throws Exception {
         // TODO Avro side not implemented yet
     }

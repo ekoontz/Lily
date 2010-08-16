@@ -114,6 +114,15 @@
         {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
       ]
     },
+    
+    {
+      "name": "AvroRepositoryException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
 
     {
       "name": "AvroGenericException",
@@ -271,6 +280,12 @@
       "request": [{"name": "recordId", "type": "string"}],
       "response": "null",
       "errors": ["AvroRecordException", "AvroGenericException"]
+    },
+    
+    "getVariants": {
+      "request": [{"name": "recordId", "type": "string"}],
+      "response": {"type": "array", "items": "string"},
+      "errors": ["AvroRepositoryException", "AvroGenericException"]
     },
 
     "createRecordType": {

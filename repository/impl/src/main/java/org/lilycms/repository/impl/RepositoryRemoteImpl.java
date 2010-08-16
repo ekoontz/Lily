@@ -31,8 +31,39 @@ import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang.NotImplementedException;
-import org.lilycms.repository.api.*;
-import org.lilycms.repository.avro.*;
+import org.lilycms.repository.api.Blob;
+import org.lilycms.repository.api.BlobException;
+import org.lilycms.repository.api.BlobNotFoundException;
+import org.lilycms.repository.api.BlobStoreAccess;
+import org.lilycms.repository.api.FieldTypeNotFoundException;
+import org.lilycms.repository.api.IdGenerator;
+import org.lilycms.repository.api.IdRecord;
+import org.lilycms.repository.api.InvalidRecordException;
+import org.lilycms.repository.api.QName;
+import org.lilycms.repository.api.Record;
+import org.lilycms.repository.api.RecordException;
+import org.lilycms.repository.api.RecordExistsException;
+import org.lilycms.repository.api.RecordId;
+import org.lilycms.repository.api.RecordNotFoundException;
+import org.lilycms.repository.api.RecordTypeNotFoundException;
+import org.lilycms.repository.api.Repository;
+import org.lilycms.repository.api.RepositoryException;
+import org.lilycms.repository.api.TypeException;
+import org.lilycms.repository.api.TypeManager;
+import org.lilycms.repository.api.VersionNotFoundException;
+import org.lilycms.repository.avro.AvroConverter;
+import org.lilycms.repository.avro.AvroFieldTypeNotFoundException;
+import org.lilycms.repository.avro.AvroGenericException;
+import org.lilycms.repository.avro.AvroInvalidRecordException;
+import org.lilycms.repository.avro.AvroLily;
+import org.lilycms.repository.avro.AvroQName;
+import org.lilycms.repository.avro.AvroRecordException;
+import org.lilycms.repository.avro.AvroRecordExistsException;
+import org.lilycms.repository.avro.AvroRecordNotFoundException;
+import org.lilycms.repository.avro.AvroRecordTypeNotFoundException;
+import org.lilycms.repository.avro.AvroRepositoryException;
+import org.lilycms.repository.avro.AvroTypeException;
+import org.lilycms.repository.avro.AvroVersionNotFoundException;
 import org.lilycms.util.ArgumentValidator;
 
 public class RepositoryRemoteImpl implements Repository {
@@ -231,10 +262,25 @@ public class RepositoryRemoteImpl implements Repository {
         }
     }
     
+    public Set<RecordId> getVariants(RecordId recordId) throws RepositoryException {
+        try {
+            return converter.convertAvroRecordIds(lilyProxy.getVariants(converter.convert(recordId.toString())));
+        } catch (AvroRepositoryException e) {
+            throw converter.convert(e);
+        } catch (AvroGenericException e) {
+            throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
+    }
+    
+    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) {
+        throw new NotImplementedException();
+    }
+
     public void registerBlobStoreAccess(BlobStoreAccess blobStoreAccess) {
         throw new NotImplementedException();
     }
-    
     
     public void delete(Blob blob) throws BlobNotFoundException, BlobException {
         throw new NotImplementedException();
@@ -247,15 +293,5 @@ public class RepositoryRemoteImpl implements Repository {
     public OutputStream getOutputStream(Blob blob) throws BlobException {
         throw new NotImplementedException();
     }
-
-    public Set<RecordId> getVariants(RecordId recordId) throws RepositoryException {
-        throw new NotImplementedException();
-    }
-
-    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) {
-        throw new NotImplementedException();
-    }
-
-    
 }
 
