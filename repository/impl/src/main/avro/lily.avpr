@@ -40,6 +40,16 @@
     },
     
     {
+      "name": "AvroIdRecord",
+      "type": "record",
+      "fields": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "idToQNameMapping", "type": {"type": "map", "values": ["AvroQName", "null"]}},
+        {"name": "scopeRecordTypeIds", "type": {"type": "map", "values": ["string", "null"]}}
+      ]
+    },
+    
+    {
       "name": "AvroBlob",
       "type": "record",
       "fields": [
@@ -320,6 +330,17 @@
       "request": [{"name": "recordId", "type": "string"}],
       "response": {"type": "array", "items": "string"},
       "errors": ["AvroRepositoryException", "AvroGenericException"]
+    },
+    
+    "readWithIds": {
+      "request": [
+        {"name": "recordId", "type": "string"},
+        {"name": "version", "type": "long"},
+        {"name": "fieldIds", "type": ["null", {"type": "array", "items": "string"}]}
+      ],
+      "response": "AvroIdRecord",
+      "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroRecordTypeNotFoundException",
+                 "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
     },
 
     "createRecordType": {

@@ -30,7 +30,6 @@ import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.avro.util.Utf8;
-import org.apache.commons.lang.NotImplementedException;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
@@ -133,7 +132,7 @@ public class RemoteRepository implements Repository {
 
     public void delete(RecordId recordId) throws RecordException {
         try {
-            lilyProxy.delete(new Utf8(recordId.toString()));
+            lilyProxy.delete(converter.convert(recordId));
         } catch (AvroRecordException e) {
             throw converter.convert(e);
         } catch (AvroGenericException e) {
@@ -163,12 +162,6 @@ public class RemoteRepository implements Repository {
             RecordTypeNotFoundException, FieldTypeNotFoundException, VersionNotFoundException, RecordException,
             TypeException {
         try {
-            long avroVersion;
-            if (version == null) {
-                avroVersion = -1L;
-            } else {
-                avroVersion = version;
-            }
             GenericArray<AvroQName> avroFieldNames = null;
             if (fieldNames != null) {
                 avroFieldNames = new GenericData.Array<AvroQName>(fieldNames.size(), Schema.createArray(AvroQName.SCHEMA$));
@@ -176,7 +169,7 @@ public class RemoteRepository implements Repository {
                     avroFieldNames.add(converter.convert(fieldName));
                 }
             }
-            return converter.convert(lilyProxy.read(new Utf8(recordId.toString()), avroVersion, avroFieldNames));
+            return converter.convert(lilyProxy.read(converter.convert(recordId), converter.convertVersion(version), avroFieldNames));
         } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroVersionNotFoundException e) {
@@ -200,18 +193,6 @@ public class RemoteRepository implements Repository {
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
             VersionNotFoundException, TypeException {
         try {
-            long avroFromVersion;
-            if (fromVersion == null) {
-                avroFromVersion = -1L;
-            } else {
-                avroFromVersion = fromVersion;
-            }
-            long avroToVersion;
-            if (toVersion == null) {
-                avroToVersion = -1L;
-            } else {
-                avroToVersion = toVersion;
-            }
             GenericArray<AvroQName> avroFieldNames = null;
             if (fieldNames != null) {
                 avroFieldNames = new GenericData.Array<AvroQName>(fieldNames.size(), Schema.createArray(AvroQName.SCHEMA$));
@@ -219,7 +200,7 @@ public class RemoteRepository implements Repository {
                     avroFieldNames.add(converter.convert(fieldName));
                 }
             }
-            return converter.convertAvroRecords(lilyProxy.readVersions(new Utf8(recordId.toString()), avroFromVersion, avroToVersion, avroFieldNames));
+            return converter.convertAvroRecords(lilyProxy.readVersions(converter.convert(recordId), converter.convertVersion(fromVersion), converter.convertVersion(toVersion), avroFieldNames));
         } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroVersionNotFoundException e) {
@@ -270,7 +251,7 @@ public class RemoteRepository implements Repository {
     
     public Set<RecordId> getVariants(RecordId recordId) throws RepositoryException {
         try {
-            return converter.convertAvroRecordIds(lilyProxy.getVariants(converter.convert(recordId.toString())));
+            return converter.convertAvroRecordIds(lilyProxy.getVariants(converter.convert(recordId)));
         } catch (AvroRepositoryException e) {
             throw converter.convert(e);
         } catch (AvroGenericException e) {
@@ -280,8 +261,33 @@ public class RemoteRepository implements Repository {
         }
     }
     
-    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) {
-        throw new NotImplementedException();
+    public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException, VersionNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
+        try {
+            GenericArray<Utf8> avroFieldIds = null;
+            if (fieldIds != null) {
+                avroFieldIds = new GenericData.Array<Utf8>(fieldIds.size(), Schema.createArray(Schema.create(Schema.Type.STRING)));
+                for (String fieldId : fieldIds) {
+                    avroFieldIds.add(converter.convert(fieldId));
+                }
+            }
+            return converter.convert(lilyProxy.readWithIds(converter.convert(recordId), converter.convertVersion(version), avroFieldIds));
+        } catch (AvroRecordNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroVersionNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroFieldTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordException e) {
+            throw converter.convert(e);
+        } catch (AvroTypeException e) {
+            throw converter.convert(e);
+        } catch (AvroGenericException e) {
+            throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
     }
 
     public void registerBlobStoreAccess(BlobStoreAccess blobStoreAccess) {

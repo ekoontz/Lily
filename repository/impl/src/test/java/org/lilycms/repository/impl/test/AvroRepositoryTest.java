@@ -21,7 +21,6 @@ import java.net.InetSocketAddress;
 import org.apache.avro.ipc.HttpServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.lilycms.repository.api.BlobStoreAccessFactory;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.avro.AvroConverter;
@@ -68,10 +67,5 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         serverRepository.stop();
         HBASE_PROXY.stop();
-    }
-
-    @Test
-    public void testIdRecord() throws Exception {
-        // TODO Avro side not implemented yet
     }
 }

@@ -31,6 +31,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
+import org.lilycms.repository.impl.IdRecordImpl;
 
 public class AvroConverter {
 
@@ -49,7 +50,7 @@ public class AvroConverter {
         Record record = repository.newRecord();
         // Id
         if (avroRecord.id != null) {
-            record.setId(repository.getIdGenerator().fromString(avroRecord.id.toString()));
+            record.setId(convertAvroRecordId(avroRecord.id));
         }
         if (avroRecord.version != null) {
             record.setVersion(avroRecord.version);
@@ -92,6 +93,25 @@ public class AvroConverter {
             record.addFieldsToDelete(fieldsToDelete);
         }
         return record;
+    }
+    
+    public IdRecord convert(AvroIdRecord avroIdRecord) {
+        Map<String, QName> idToQNameMapping = null;
+        if (avroIdRecord.idToQNameMapping != null) {
+            idToQNameMapping = new HashMap<String, QName>();
+            for (Entry<Utf8, AvroQName> idEntry : avroIdRecord.idToQNameMapping.entrySet()) {
+                idToQNameMapping.put(convert(idEntry.getKey()), convert(idEntry.getValue()));
+            }
+        }
+        Map<Scope, String> recordTypeIds = null;
+        if (avroIdRecord.scopeRecordTypeIds == null) {
+            recordTypeIds = new HashMap<Scope, String>();
+            Map<Utf8, Utf8> avroRecordTypeIds = avroIdRecord.scopeRecordTypeIds;
+            for (Scope scope : Scope.values()) {
+                recordTypeIds.put(scope, convert(avroRecordTypeIds.get(convert(scope.name()))));
+            }
+        }
+        return new IdRecordImpl(convert(avroIdRecord.record), idToQNameMapping, recordTypeIds);
     }
     
     public AvroRecord convert(Record record) throws AvroFieldTypeNotFoundException, AvroTypeException {
@@ -161,6 +181,28 @@ public class AvroConverter {
             avroRecord.fieldsToDelete.add(new Utf8(encodeQName(fieldToDelete)));
         }
         return avroRecord; 
+    }
+    
+    public AvroIdRecord convert(IdRecord idRecord) throws AvroFieldTypeNotFoundException, AvroTypeException {
+        AvroIdRecord avroIdRecord = new AvroIdRecord();
+        avroIdRecord.record = convert(idRecord.getRecord());
+     // Fields
+        Map<String, QName> fields = idRecord.getFieldIdToNameMapping();
+        if (fields != null) {
+            avroIdRecord.idToQNameMapping = new HashMap<Utf8, AvroQName>();
+            for (Entry<String, QName> fieldEntry : fields.entrySet()) {
+                avroIdRecord.idToQNameMapping.put(convert(fieldEntry.getKey()), convert(fieldEntry.getValue()));
+            }
+        }
+     // Record types
+        avroIdRecord.scopeRecordTypeIds = new HashMap<Utf8, Utf8>();
+        for (Scope scope : Scope.values()) {
+            String recordTypeId = idRecord.getRecordTypeId(scope);
+            if (recordTypeId != null) {
+                avroIdRecord.scopeRecordTypeIds.put(convert(scope.name()), convert(recordTypeId));
+            }
+        }
+        return avroIdRecord;
     }
 
     // The key of a map can only be a string in avro
@@ -511,6 +553,14 @@ public class AvroConverter {
         return exception;
     }
     
+    public Utf8 convert(RecordId recordId) {
+        return convert(recordId.toString());
+    }
+    
+    public RecordId convertAvroRecordId(Utf8 recordId) {
+        return repository.getIdGenerator().fromString(convert(recordId));
+    }
+    
     public String convert(Utf8 utf8) {
         if (utf8 == null) return null;
         return utf8.toString();
@@ -519,6 +569,18 @@ public class AvroConverter {
     public Utf8 convert(String string) {
         if (string == null) return null;
         return new Utf8(string);
+    }
+    
+    public Long convertAvroVersion(long avroVersion) {
+        if (avroVersion == -1)
+            return null;
+        return avroVersion;
+    }
+    
+    public long convertVersion(Long version) {
+        if (version == null)
+            return -1;
+        return version;
     }
 
     private GenericArray<AvroExceptionCause> buildCauses(Throwable throwable) {

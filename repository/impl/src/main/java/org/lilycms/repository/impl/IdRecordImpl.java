@@ -63,6 +63,10 @@ public class IdRecordImpl implements IdRecord {
 
         return fieldsById;
     }
+    
+    public Map<String, QName> getFieldIdToNameMapping() {
+        return mapping;
+    }
 
     public String getRecordTypeId() {
         return recordTypeIds.get(Scope.NON_VERSIONED);
