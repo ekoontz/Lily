@@ -40,9 +40,9 @@ import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseBlobStoreAccess;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.InlineBlobStoreAccess;
-import org.lilycms.repository.impl.RepositoryRemoteImpl;
+import org.lilycms.repository.impl.RemoteRepository;
+import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
-import org.lilycms.repository.impl.TypeManagerRemoteImpl;
 
 /**
  * Provides remote repository implementations.
@@ -87,13 +87,13 @@ public class LilyClient {
     private void constructRepository(ServerNode server) throws IOException {
         AvroConverter remoteConverter = new AvroConverter();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
-        TypeManager typeManager = new TypeManagerRemoteImpl(parseAddressAndPort(server.lilyAddressAndPort),
+        TypeManager typeManager = new RemoteTypeManager(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, idGenerator);
         
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = setupBlobStoreAccess();
         
-        Repository repository = new RepositoryRemoteImpl(parseAddressAndPort(server.lilyAddressAndPort),
-                remoteConverter, (TypeManagerRemoteImpl)typeManager, idGenerator, blobStoreAccessFactory);
+        Repository repository = new RemoteRepository(parseAddressAndPort(server.lilyAddressAndPort),
+                remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         
         registerBlobStoreAccess(repository);
         

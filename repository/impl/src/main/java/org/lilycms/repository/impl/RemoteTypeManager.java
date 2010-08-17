@@ -27,12 +27,12 @@ import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.avro.*;
 
-public class TypeManagerRemoteImpl extends AbstractTypeManager implements TypeManager {
+public class RemoteTypeManager extends AbstractTypeManager implements TypeManager {
 
     private AvroLily lilyProxy;
     private AvroConverter converter;
 
-    public TypeManagerRemoteImpl(InetSocketAddress address, AvroConverter converter, IdGenerator idGenerator)
+    public RemoteTypeManager(InetSocketAddress address, AvroConverter converter, IdGenerator idGenerator)
             throws IOException {
         this.converter = converter;
         //TODO idGenerator should not be available or used in the remote implementation

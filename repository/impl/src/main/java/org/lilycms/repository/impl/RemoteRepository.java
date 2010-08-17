@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
@@ -32,13 +31,6 @@ import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang.NotImplementedException;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
@@ -77,14 +69,14 @@ import org.lilycms.repository.avro.AvroTypeException;
 import org.lilycms.repository.avro.AvroVersionNotFoundException;
 import org.lilycms.util.ArgumentValidator;
 
-public class RepositoryRemoteImpl implements Repository {
+public class RemoteRepository implements Repository {
     private AvroLily lilyProxy;
     private final AvroConverter converter;
     private IdGenerator idGenerator;
     private final TypeManager typeManager;
     private BlobStoreAccessRegistry blobStoreAccessRegistry;
 
-    public RepositoryRemoteImpl(InetSocketAddress address, AvroConverter converter, TypeManagerRemoteImpl typeManager, IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory)
+    public RemoteRepository(InetSocketAddress address, AvroConverter converter, RemoteTypeManager typeManager, IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory)
             throws IOException {
         this.converter = converter;
         this.typeManager = typeManager;

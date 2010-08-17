@@ -35,9 +35,9 @@ import org.lilycms.repository.impl.HBaseRepository;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.InlineBlobStoreAccess;
-import org.lilycms.repository.impl.RepositoryRemoteImpl;
+import org.lilycms.repository.impl.RemoteRepository;
+import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
-import org.lilycms.repository.impl.TypeManagerRemoteImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 
@@ -70,10 +70,10 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
                         serverConverter), 0);
         AvroConverter remoteConverter = new AvroConverter();
-        typeManager = new TypeManagerRemoteImpl(new InetSocketAddress(lilyServer.getPort()),
+        typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, idGenerator);
-        repository = new RepositoryRemoteImpl(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
-                (TypeManagerRemoteImpl)typeManager, idGenerator, blobStoreAccessFactory);
+        repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
+                (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         repository.registerBlobStoreAccess(dfsBlobStoreAccess);
         repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
         repository.registerBlobStoreAccess(inlineBlobStoreAccess);
