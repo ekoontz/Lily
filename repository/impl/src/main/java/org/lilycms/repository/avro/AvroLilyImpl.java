@@ -21,6 +21,8 @@ import java.util.List;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
+import org.lilycms.repository.api.BlobException;
+import org.lilycms.repository.api.BlobNotFoundException;
 import org.lilycms.repository.api.FieldTypeExistsException;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.FieldTypeUpdateException;
@@ -322,5 +324,16 @@ public class AvroLilyImpl implements AvroLily {
         } catch (RepositoryException e) {
             throw converter.convert(e);
         }
+    }
+
+    public Void deleteBlob(AvroBlob avroBlob) throws AvroRemoteException, AvroBlobNotFoundException, AvroBlobException {
+        try {
+            repository.delete(converter.convert(avroBlob));
+        } catch (BlobNotFoundException e) {
+            throw converter.convert(e);
+        } catch (BlobException e) {
+            throw converter.convert(e);
+        }
+        return null;
     }
 }

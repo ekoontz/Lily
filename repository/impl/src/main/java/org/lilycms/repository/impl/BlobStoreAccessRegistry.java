@@ -39,7 +39,7 @@ public class BlobStoreAccessRegistry {
         registry.put(blobStoreAccess.getId(), blobStoreAccess);
     }
     
-    public void setBlobStoreOutputStreamFactory(BlobStoreAccessFactory blobStoreAccessFactory) {
+    public void setBlobStoreAccessFactory(BlobStoreAccessFactory blobStoreAccessFactory) {
         this.blobStoreAccessFactory = blobStoreAccessFactory;
     }
 

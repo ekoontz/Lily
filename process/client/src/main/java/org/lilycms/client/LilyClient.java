@@ -15,22 +15,34 @@
  */
 package org.lilycms.client;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.lilycms.repository.api.BlobStoreAccess;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.avro.AvroConverter;
+import org.lilycms.repository.impl.DFSBlobStoreAccess;
+import org.lilycms.repository.impl.HBaseBlobStoreAccess;
 import org.lilycms.repository.impl.IdGeneratorImpl;
+import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.RepositoryRemoteImpl;
+import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.repository.impl.TypeManagerRemoteImpl;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.*;
 
 /**
  * Provides remote repository implementations.
@@ -49,6 +61,9 @@ public class LilyClient {
     private String nodesPath = lilyPath + "/repositoryNodes";
 
     private Log log = LogFactory.getLog(getClass());
+    private BlobStoreAccess dfsBlobStoreAccess;
+    private BlobStoreAccess hbaseBlobStoreAccess;
+    private BlobStoreAccess inlineBlobStoreAccess;
 
     public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
         zk = new ZooKeeper(zookeeperConnectString, 5000, new ZkWatcher());
@@ -74,10 +89,38 @@ public class LilyClient {
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager typeManager = new TypeManagerRemoteImpl(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, idGenerator);
+        
+        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = setupBlobStoreAccess();
+        
         Repository repository = new RepositoryRemoteImpl(parseAddressAndPort(server.lilyAddressAndPort),
-                remoteConverter, (TypeManagerRemoteImpl)typeManager, idGenerator);
+                remoteConverter, (TypeManagerRemoteImpl)typeManager, idGenerator, blobStoreAccessFactory);
+        
+        registerBlobStoreAccess(repository);
+        
         remoteConverter.setRepository(repository);
         server.repository = repository;
+    }
+
+    private void registerBlobStoreAccess(Repository repository) {
+        if (dfsBlobStoreAccess != null) {
+            repository.registerBlobStoreAccess(dfsBlobStoreAccess);
+        }
+        repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
+        repository.registerBlobStoreAccess(inlineBlobStoreAccess);
+    }
+
+    private SizeBasedBlobStoreAccessFactory setupBlobStoreAccess() throws IOException {
+        Configuration configuration = HBaseConfiguration.create();
+        FileSystem.get(configuration);
+        
+        dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(configuration));
+        hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
+        inlineBlobStoreAccess = new InlineBlobStoreAccess();
+        BlobStoreAccess defaultBlobStoreAccess = dfsBlobStoreAccess == null ? hbaseBlobStoreAccess : dfsBlobStoreAccess;
+        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(defaultBlobStoreAccess);
+        blobStoreAccessFactory.addBlobStoreAccess(5000, inlineBlobStoreAccess);
+        blobStoreAccessFactory.addBlobStoreAccess(200000, hbaseBlobStoreAccess);
+        return blobStoreAccessFactory;
     }
 
     private InetSocketAddress parseAddressAndPort(String addressAndPort) {

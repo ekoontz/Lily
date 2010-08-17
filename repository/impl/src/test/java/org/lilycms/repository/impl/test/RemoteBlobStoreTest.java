@@ -19,25 +19,31 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
-import org.lilycms.repository.api.BlobStoreAccessFactory;
+import org.lilycms.repository.api.BlobStoreAccess;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.avro.AvroConverter;
 import org.lilycms.repository.avro.AvroLily;
 import org.lilycms.repository.avro.AvroLilyImpl;
 import org.lilycms.repository.avro.LilySpecificResponder;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
+import org.lilycms.repository.impl.HBaseBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
+import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.RepositoryRemoteImpl;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.repository.impl.TypeManagerRemoteImpl;
+import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 
-public class AvroRepositoryTest extends AbstractRepositoryTest {
+public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
+
+    private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static HBaseRepository serverRepository;
 
     @BeforeClass
@@ -46,9 +52,17 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
-        BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(HBASE_PROXY.getConf());
+        BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
+        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
+        blobStoreAccessFactory.addBlobStoreAccess(50, inlineBlobStoreAccess);
+        blobStoreAccessFactory.addBlobStoreAccess(1024, hbaseBlobStoreAccess);
+        
         serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
+        serverRepository.registerBlobStoreAccess(dfsBlobStoreAccess);
+        serverRepository.registerBlobStoreAccess(hbaseBlobStoreAccess);
+        serverRepository.registerBlobStoreAccess(inlineBlobStoreAccess);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
@@ -60,8 +74,10 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
                 remoteConverter, idGenerator);
         repository = new RepositoryRemoteImpl(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (TypeManagerRemoteImpl)typeManager, idGenerator, blobStoreAccessFactory);
+        repository.registerBlobStoreAccess(dfsBlobStoreAccess);
+        repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
+        repository.registerBlobStoreAccess(inlineBlobStoreAccess);
         remoteConverter.setRepository(repository);
-        setupTypes();
     }
 
     @AfterClass
@@ -70,8 +86,13 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.stop();
     }
 
-    @Test
-    public void testIdRecord() throws Exception {
-        // TODO Avro side not implemented yet
+    @Before
+    public void setUp() throws Exception {
     }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
+    
 }

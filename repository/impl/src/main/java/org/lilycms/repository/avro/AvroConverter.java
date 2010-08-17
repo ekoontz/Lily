@@ -655,4 +655,24 @@ public class AvroConverter {
         }
         return avroRecordIds;
     }
+    
+    public Blob convert(AvroBlob avroBlob) {
+        byte[] value = null;
+        if (avroBlob.value != null)
+            value = avroBlob.value.array();
+        String mimetype = convert(avroBlob.mimetype);
+        Long size = avroBlob.size;
+        String name = convert(avroBlob.name);
+        return new Blob(value, mimetype, size, name);
+    }
+
+    public AvroBlob convert(Blob blob) {
+        AvroBlob avroBlob = new AvroBlob();
+        if (blob.getValue() != null) 
+            avroBlob.value = ByteBuffer.wrap(blob.getValue());
+        avroBlob.mimetype = convert(blob.getMimetype());
+        avroBlob.size = blob.getSize();
+        avroBlob.name = convert(blob.getName());
+        return avroBlob;
+    }
 }

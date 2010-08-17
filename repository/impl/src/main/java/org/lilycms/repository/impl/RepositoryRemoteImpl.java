@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
@@ -31,10 +32,18 @@ import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang.NotImplementedException;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
 import org.lilycms.repository.api.BlobStoreAccess;
+import org.lilycms.repository.api.BlobStoreAccessFactory;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.IdGenerator;
 import org.lilycms.repository.api.IdRecord;
@@ -51,6 +60,8 @@ import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.repository.api.TypeException;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
+import org.lilycms.repository.avro.AvroBlobException;
+import org.lilycms.repository.avro.AvroBlobNotFoundException;
 import org.lilycms.repository.avro.AvroConverter;
 import org.lilycms.repository.avro.AvroFieldTypeNotFoundException;
 import org.lilycms.repository.avro.AvroGenericException;
@@ -71,13 +82,16 @@ public class RepositoryRemoteImpl implements Repository {
     private final AvroConverter converter;
     private IdGenerator idGenerator;
     private final TypeManager typeManager;
+    private BlobStoreAccessRegistry blobStoreAccessRegistry;
 
-    public RepositoryRemoteImpl(InetSocketAddress address, AvroConverter converter, TypeManagerRemoteImpl typeManager, IdGenerator idGenerator)
+    public RepositoryRemoteImpl(InetSocketAddress address, AvroConverter converter, TypeManagerRemoteImpl typeManager, IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory)
             throws IOException {
         this.converter = converter;
         this.typeManager = typeManager;
-        //TODO idGenerator should not be available or used in the remote implementation
         this.idGenerator = idGenerator;
+        blobStoreAccessRegistry = new BlobStoreAccessRegistry();
+        blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
+
         HttpTransceiver client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
 
         lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
@@ -279,19 +293,29 @@ public class RepositoryRemoteImpl implements Repository {
     }
 
     public void registerBlobStoreAccess(BlobStoreAccess blobStoreAccess) {
-        throw new NotImplementedException();
+        blobStoreAccessRegistry.register(blobStoreAccess);
     }
     
     public void delete(Blob blob) throws BlobNotFoundException, BlobException {
-        throw new NotImplementedException();
+        try {
+            lilyProxy.deleteBlob(converter.convert(blob));
+        } catch (AvroBlobNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroBlobException e) {
+            throw converter.convert(e);
+        } catch (AvroGenericException e) {
+            throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        }
     }
     
     public InputStream getInputStream(Blob blob) throws BlobNotFoundException, BlobException {
-        throw new NotImplementedException();
+        return blobStoreAccessRegistry.getInputStream(blob);
     }
     
     public OutputStream getOutputStream(Blob blob) throws BlobException {
-        throw new NotImplementedException();
+        return blobStoreAccessRegistry.getOutputStream(blob);
     }
 }
 

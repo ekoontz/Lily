@@ -38,6 +38,17 @@
         {"name": "fieldsToDelete", "type": {"type": "array", "items": "string"}}
       ]
     },
+    
+    {
+      "name": "AvroBlob",
+      "type": "record",
+      "fields": [
+        {"name": "mimetype", "type": ["string", "null"]},
+        {"name": "size", "type": "long"},
+        {"name": "name", "type": ["string", "null"]},
+        {"name": "value", "type": ["bytes", "null"]}
+      ]
+    },
 
     {
       "name": "AvroStackTraceElement",
@@ -116,6 +127,23 @@
     },
     
     {
+      "name": "AvroBlobNotFoundException",
+      "type": "error",
+      "fields": [
+        {"name": "blob", "type": "AvroBlob"}
+      ]
+    },
+    
+    {
+      "name": "AvroBlobException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+    
+    {
       "name": "AvroRepositoryException",
       "type": "error",
       "fields": [
@@ -182,7 +210,7 @@
         {"name": "mixins", "type": {"type": "array", "items": "AvroMixin"}}
       ]
     },
-
+    
     {
       "name": "AvroFieldTypeExistsException",
       "type": "error",
@@ -280,6 +308,12 @@
       "request": [{"name": "recordId", "type": "string"}],
       "response": "null",
       "errors": ["AvroRecordException", "AvroGenericException"]
+    },
+    
+    "deleteBlob": {
+      "request": [{"name": "blob", "type": "AvroBlob"}],
+      "response": "null",
+      "errors": ["AvroBlobNotFoundException", "AvroBlobException", "AvroGenericException"]
     },
     
     "getVariants": {

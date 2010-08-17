@@ -64,8 +64,8 @@ public class ValueTypeTest {
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
-        BlobStoreAccessFactory blobStoreOutputStreamFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreOutputStreamFactory , HBASE_PROXY.getConf());
+        BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
     }
 
     @After

@@ -110,11 +110,11 @@ public class HBaseRepository implements Repository {
     private String zkConnectString;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
-            BlobStoreAccessFactory blobStoreOutputStreamFactory, Configuration configuration) throws IOException {
+            BlobStoreAccessFactory blobStoreAccessFactory, Configuration configuration) throws IOException {
         this.typeManager = typeManager;
         this.idGenerator = idGenerator;
         blobStoreAccessRegistry = new BlobStoreAccessRegistry();
-        blobStoreAccessRegistry.setBlobStoreOutputStreamFactory(blobStoreOutputStreamFactory);
+        blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
         recordTable = HBaseTableUtil.getRecordTable(configuration);
 
         columnFamilies.put(Scope.NON_VERSIONED, HBaseTableUtil.NON_VERSIONED_COLUMN_FAMILY);

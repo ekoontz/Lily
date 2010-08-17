@@ -37,9 +37,9 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
-        BlobStoreAccessFactory blobStoreOutputStreamFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
+        BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreOutputStreamFactory , HBASE_PROXY.getConf());
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
         setupTypes();
     }
 
