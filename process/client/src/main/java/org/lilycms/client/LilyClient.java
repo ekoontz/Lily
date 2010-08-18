@@ -17,6 +17,7 @@ package org.lilycms.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,10 +29,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 import org.lilycms.repository.api.BlobStoreAccess;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.TypeManager;
@@ -59,13 +62,16 @@ public class LilyClient {
     private Set<String> serverAddresses = new HashSet<String>();
     private String lilyPath = "/lily";
     private String nodesPath = lilyPath + "/repositoryNodes";
+    private String dfsUriPath = lilyPath + "/dfsUri";
 
     private Log log = LogFactory.getLog(getClass());
     private BlobStoreAccess dfsBlobStoreAccess;
     private BlobStoreAccess hbaseBlobStoreAccess;
     private BlobStoreAccess inlineBlobStoreAccess;
+    private final String zookeeperConnectString;
 
     public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
+        this.zookeeperConnectString = zookeeperConnectString;
         zk = new ZooKeeper(zookeeperConnectString, 5000, new ZkWatcher());
         refreshServers();
     }
@@ -95,23 +101,17 @@ public class LilyClient {
         Repository repository = new RemoteRepository(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         
-        registerBlobStoreAccess(repository);
-        
         remoteConverter.setRepository(repository);
         server.repository = repository;
     }
 
-    private void registerBlobStoreAccess(Repository repository) {
-        if (dfsBlobStoreAccess != null) {
-            repository.registerBlobStoreAccess(dfsBlobStoreAccess);
-        }
-        repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
-        repository.registerBlobStoreAccess(inlineBlobStoreAccess);
-    }
-
     private SizeBasedBlobStoreAccessFactory setupBlobStoreAccess() throws IOException {
         Configuration configuration = HBaseConfiguration.create();
-        FileSystem.get(configuration);
+        Pair<String,String> quorumsAndPorts = extractQuorumsAndPorts(zookeeperConnectString);
+        configuration.set("hbase.zookeeper.quorum", quorumsAndPorts.getFirst());
+        configuration.set("hbase.zookeeper.property.clientPort", quorumsAndPorts.getSecond());
+        
+        FileSystem.get(getDfsUri(), configuration);
         
         dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(configuration));
         hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
@@ -121,6 +121,32 @@ public class LilyClient {
         blobStoreAccessFactory.addBlobStoreAccess(5000, inlineBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(200000, hbaseBlobStoreAccess);
         return blobStoreAccessFactory;
+    }
+    
+    private Pair<String, String> extractQuorumsAndPorts(String zookeeperConnectString) {
+        StringBuilder quorumBuilder = new StringBuilder();
+        StringBuilder portBuilder = new StringBuilder();
+        
+        String[] hostsAndPorts = zookeeperConnectString.split(",");
+        boolean firstTime = true;
+        for (String hostAndPort : hostsAndPorts) {
+            String[] splitHostAndPort = hostAndPort.split(":");
+            if (!firstTime) {
+                quorumBuilder.append(",");
+                portBuilder.append(",");
+            }
+            quorumBuilder.append(splitHostAndPort[0]);
+            portBuilder.append(splitHostAndPort[1]);
+        }
+        return new Pair<String, String>(quorumBuilder.toString(), portBuilder.toString());
+    }
+    
+    private URI getDfsUri()  {
+        try {
+            return new URI(new String(zk.getData(dfsUriPath, false, new Stat())));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get DFS URI information from Zookeeper", e);
+        }
     }
 
     private InetSocketAddress parseAddressAndPort(String addressAndPort) {

@@ -15,11 +15,17 @@
  */
 package org.lilycms.server.modules.repository;
 
-import org.apache.zookeeper.*;
+import java.io.IOException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.IOException;
+
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 
 /**
  * Publishes this Lily repository node to Zookeeper.
@@ -34,11 +40,14 @@ public class ZKPublisher {
     private ZooKeeper zk;
     private String lilyPath = "/lily";
     private String nodesPath = lilyPath + "/repositoryNodes";
+    private String dfsUriPath = lilyPath + "/dfsUri";
+    private final String dfsUri;
 
-    public ZKPublisher(String zkConnectString, String hostAddress, int port) {
+    public ZKPublisher(String zkConnectString, String hostAddress, int port, String dfsUri) {
         this.zkConnectString = zkConnectString;
         this.hostAddress = hostAddress;
         this.port = port;
+        this.dfsUri = dfsUri;
     }
 
     @PostConstruct
@@ -59,6 +68,8 @@ public class ZKPublisher {
         String repoAddressAndPort = hostAddress + ":" + port;
 
         zk.create(nodesPath + "/" + repoAddressAndPort, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        
+        zk.create(dfsUriPath, dfsUri.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
 
     @PreDestroy

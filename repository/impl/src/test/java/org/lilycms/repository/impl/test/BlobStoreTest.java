@@ -49,9 +49,6 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
         factory.addBlobStoreAccess(50, inlineBlobStoreAccess);
         factory.addBlobStoreAccess(1024, hbaseBlobStoreAccess);
         repository = new HBaseRepository(typeManager, idGenerator, factory, HBASE_PROXY.getConf());
-        repository.registerBlobStoreAccess(dfsBlobStoreAccess);
-        repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
-        repository.registerBlobStoreAccess(inlineBlobStoreAccess);
     }
 
     @AfterClass

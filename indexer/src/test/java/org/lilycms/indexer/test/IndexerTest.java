@@ -111,7 +111,6 @@ public class IndexerTest {
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, HBASE_PROXY.getConf());
-        repository.registerBlobStoreAccess(dfsBlobStoreAccess);
 
         solrServer = SOLR_TEST_UTIL.getSolrServer();
 

@@ -60,9 +60,6 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         blobStoreAccessFactory.addBlobStoreAccess(1024, hbaseBlobStoreAccess);
         
         serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
-        serverRepository.registerBlobStoreAccess(dfsBlobStoreAccess);
-        serverRepository.registerBlobStoreAccess(hbaseBlobStoreAccess);
-        serverRepository.registerBlobStoreAccess(inlineBlobStoreAccess);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);

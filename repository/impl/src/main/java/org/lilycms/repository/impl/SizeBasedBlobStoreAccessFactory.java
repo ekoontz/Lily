@@ -15,6 +15,7 @@
  */
 package org.lilycms.repository.impl;
 
+import java.util.Collection;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -26,24 +27,27 @@ import org.lilycms.util.ArgumentValidator;
 public class SizeBasedBlobStoreAccessFactory implements BlobStoreAccessFactory {
 
     private final SortedMap<Long, BlobStoreAccess> blobStoreAccesses = new TreeMap<Long, BlobStoreAccess>();
-    private final BlobStoreAccess defaultBlobStoreAccess;
     
     public SizeBasedBlobStoreAccessFactory(BlobStoreAccess defaultBlobStoreAccess) {
         ArgumentValidator.notNull(defaultBlobStoreAccess, "defaultBlobStoreAccess");
-        this.defaultBlobStoreAccess = defaultBlobStoreAccess;
+        blobStoreAccesses.put(Long.MAX_VALUE, defaultBlobStoreAccess);
     }
 
     public void addBlobStoreAccess(long upperLimit, BlobStoreAccess blobStoreAccess) {
         blobStoreAccesses.put(upperLimit, blobStoreAccess);
     }
     
-    public BlobStoreAccess getBlobStoreAccess(Blob blob) {
+    public BlobStoreAccess get(Blob blob) {
         Long size = blob.getSize();
         for (Long upperLimit: blobStoreAccesses.keySet()) {
             if (size <= upperLimit) {
                  return blobStoreAccesses.get(upperLimit);
             }
         }
-        return defaultBlobStoreAccess;
+        return blobStoreAccesses.get(Long.MAX_VALUE);
+    }
+    
+    public Collection<BlobStoreAccess> getAll() {
+        return blobStoreAccesses.values();
     }
 }

@@ -41,10 +41,13 @@ public class BlobStoreAccessRegistry {
     
     public void setBlobStoreAccessFactory(BlobStoreAccessFactory blobStoreAccessFactory) {
         this.blobStoreAccessFactory = blobStoreAccessFactory;
+        for (BlobStoreAccess blobStoreAccess : blobStoreAccessFactory.getAll()) {
+            register(blobStoreAccess);
+        }
     }
 
     public OutputStream getOutputStream(Blob blob) throws BlobException {
-        BlobStoreAccess blobStoreAccess = blobStoreAccessFactory.getBlobStoreAccess(blob);
+        BlobStoreAccess blobStoreAccess = blobStoreAccessFactory.get(blob);
         return new BlobOutputStream(blobStoreAccess.getOutputStream(blob), blobStoreAccess.getId(), blob);
     }
 
