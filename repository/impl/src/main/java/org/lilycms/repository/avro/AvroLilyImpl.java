@@ -139,11 +139,11 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecord update(AvroRecord record, boolean updateVersion) throws AvroRecordNotFoundException,
+    public AvroRecord update(AvroRecord record, boolean updateVersion, boolean useLatestRecordType) throws AvroRecordNotFoundException,
             AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
             AvroVersionNotFoundException, AvroRecordException, AvroTypeException {
         try {
-            return converter.convert(repository.update(converter.convert(record), updateVersion));
+            return converter.convert(repository.update(converter.convert(record), updateVersion, useLatestRecordType));
         } catch (RecordNotFoundException e) {
             throw converter.convert(e);
         } catch (InvalidRecordException e) {

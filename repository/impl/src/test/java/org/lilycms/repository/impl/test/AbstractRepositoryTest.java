@@ -409,8 +409,11 @@ public abstract class AbstractRepositoryTest {
         updateRecord.setField(fieldType2.getName(), 789);
         updateRecord.setField(fieldType3.getName(), false);
 
+        // This update will use the latest version of the RecordType
+        // I.e. version2 of recordType1 instead of version 1
         repository.update(updateRecord);
 
+        record.setRecordType(recordType1B.getName(), recordType1B.getVersion());
         record.setField(fieldType1.getName(), "value2");
         record.setField(lastVTag.getName(), 2L);
         assertEquals(record, repository.read(record.getId(), 1L));
@@ -853,7 +856,7 @@ public abstract class AbstractRepositoryTest {
         mutableRecord.setRecordType(recordType2.getName(), recordType2.getVersion());
         mutableRecord.setField(fieldType6.getName(), "value3");
         mutableRecord.setVersion(1L);
-        mutableRecord = repository.update(mutableRecord, true);
+        mutableRecord = repository.update(mutableRecord, true, false);
         
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -883,7 +886,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
         
-        assertEquals(Long.valueOf(1), repository.update(updateMutableRecord, true).getVersion());
+        assertEquals(Long.valueOf(1), repository.update(updateMutableRecord, true, false).getVersion());
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -938,7 +941,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
-        repository.update(deleteRecord, true);
+        repository.update(deleteRecord, true, false);
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
@@ -979,7 +982,7 @@ public abstract class AbstractRepositoryTest {
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
-        repository.update(deleteMutableFieldRecord, true);
+        repository.update(deleteMutableFieldRecord, true, false);
 
         HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 // Due to HBase-1485 the field does not get updated at version 1 (marking it as deleted) when (more or less)
@@ -1170,13 +1173,13 @@ public abstract class AbstractRepositoryTest {
         record.setRecordType(recordType3.getName(), 2L);
         record.setField(fieldType2.getName(), 567);
         try {
-            repository.update(record);
+            repository.update(record, false, false);
             fail();
         } catch (InvalidRecordException expected) {
         }
         
         record.setField(fieldType1.getName(), "abc");
-        repository.update(record);
+        repository.update(record, false, false);
     }
 
     @Test
@@ -1191,13 +1194,13 @@ public abstract class AbstractRepositoryTest {
         record = repository.newRecord(record.getId());
         record.setRecordType(recordType3.getName(), 2L);
         record.setField(fieldType1.getName(), "abc");
-        repository.update(record); // record version 1
+        repository.update(record, false, false); // record version 1
         
         // Mutable field3 mandatory
         record.setRecordType(recordType3.getName(), 3L);
         record.setField(fieldType1.getName(), "efg");
         try {
-            repository.update(record);
+            repository.update(record, false, false);
             fail();
         } catch (InvalidRecordException expected) {
         }
@@ -1206,7 +1209,7 @@ public abstract class AbstractRepositoryTest {
         record = repository.newRecord(record.getId());
         record.setRecordType(recordType3.getName(), 2L);
         record.setField(fieldType3.getName(), true);
-        repository.update(record); // record version 2
+        repository.update(record, false, false); // record version 2
         
         // Mutable field update of record version 1 with field3 mandatory
         // Field3 already exists, but in record version 2 not version 1 
@@ -1215,11 +1218,11 @@ public abstract class AbstractRepositoryTest {
         record.setField(fieldType6.getName(), "zzz");
         record.setVersion(1L);
         try {
-            repository.update(record, true);
+            repository.update(record, true, false);
             fail();
         } catch (InvalidRecordException expected) {
         }
         record.setField(fieldType3.getName(), false);
-        repository.update(record, true);
+        repository.update(record, true, false);
     }
 }

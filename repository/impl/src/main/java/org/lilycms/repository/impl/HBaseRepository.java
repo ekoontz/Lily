@@ -225,7 +225,7 @@ public class HBaseRepository implements Repository {
             put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, Bytes.toBytes(false));
             RecordEvent recordEvent = new RecordEvent();
             recordEvent.setType(Type.CREATE);
-            calculateRecordChanges(newRecord, dummyOriginalRecord, 1L, put, recordEvent);
+            calculateRecordChanges(newRecord, dummyOriginalRecord, 1L, put, recordEvent, false);
             // Make sure the record type changed flag stays false for a newly
             // created record
             recordEvent.setRecordTypeChanged(false);
@@ -317,19 +317,19 @@ public class HBaseRepository implements Repository {
         }
     }
 
-    public Record update(Record record, boolean updateVersion) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+    public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
         if (updateVersion) {
-            return updateMutableFields(record);
+            return updateMutableFields(record, useLatestRecordType);
         } else {
-            return updateRecord(record);
+            return updateRecord(record, useLatestRecordType);
         }
     }
     
     public Record update(Record record) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
-        return update(record, false);
+        return update(record, false, true);
     }
     
-    private Record updateRecord(Record record) throws RecordNotFoundException, InvalidRecordException,
+    private Record updateRecord(Record record, boolean useLatestRecordType) throws RecordNotFoundException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
         Record newRecord = record.clone();
 
@@ -345,7 +345,7 @@ public class HBaseRepository implements Repository {
             RecordEvent recordEvent = new RecordEvent();
             recordEvent.setType(Type.UPDATE);
             long newVersion = originalRecord.getVersion() == null ? 1 : originalRecord.getVersion() + 1;
-            if (calculateRecordChanges(newRecord, originalRecord, newVersion, put, recordEvent)) {
+            if (calculateRecordChanges(newRecord, originalRecord, newVersion, put, recordEvent, useLatestRecordType)) {
                 putMessageOnWalAndProcess(recordId, rowLock, put, recordEvent);
             }
         } catch (RowLogException e) {
@@ -382,14 +382,14 @@ public class HBaseRepository implements Repository {
     // Calculates the changes that are to be made on the record-row and puts
     // this information on the Put object and the RecordEvent
     private boolean calculateRecordChanges(Record record, Record originalRecord, Long version, Put put,
-            RecordEvent recordEvent) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
+            RecordEvent recordEvent, boolean useLatestRecordType) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
             RecordException, TypeException, InvalidRecordException {
         QName recordTypeName = record.getRecordTypeName();
         Long recordTypeVersion = null;
         if (recordTypeName == null) {
             recordTypeName = originalRecord.getRecordTypeName();
         } else {
-            recordTypeVersion = record.getRecordTypeVersion();
+            recordTypeVersion = useLatestRecordType ? null : record.getRecordTypeVersion();
         }
 
         RecordType recordType = typeManager.getRecordTypeByName(recordTypeName, recordTypeVersion);
@@ -557,7 +557,7 @@ public class HBaseRepository implements Repository {
         return changedScopes;
     }
 
-    private Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
+    private Record updateMutableFields(Record record, boolean latestRecordType) throws InvalidRecordException, RecordNotFoundException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
 
         Record newRecord = record.clone();
@@ -594,9 +594,8 @@ public class HBaseRepository implements Repository {
                     put, recordEvent);
 
             if (!changedScopes.isEmpty() || deleted) {
-                RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record
-                        .getRecordTypeVersion());
-
+                Long recordTypeVersion = latestRecordType ? null : record.getRecordTypeVersion();
+                RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), recordTypeVersion);
                 
                 // Update the mutable record type
                 Scope scope = Scope.VERSIONED_MUTABLE;

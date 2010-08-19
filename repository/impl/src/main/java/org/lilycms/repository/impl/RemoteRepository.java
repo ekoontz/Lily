@@ -221,13 +221,13 @@ public class RemoteRepository implements Repository {
     }
     
     public Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
-        return update(record, false);
+        return update(record, false, true);
     }
 
-    public Record update(Record record, boolean updateVersion) throws RecordNotFoundException, InvalidRecordException,
+    public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws RecordNotFoundException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
         try {
-            return converter.convert(lilyProxy.update(converter.convert(record), updateVersion));
+            return converter.convert(lilyProxy.update(converter.convert(record), updateVersion, useLatestRecordType));
         } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroInvalidRecordException e) {

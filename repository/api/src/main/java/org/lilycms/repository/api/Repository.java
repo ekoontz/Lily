@@ -78,6 +78,8 @@ public interface Repository {
      *
      * @param updateVersion if true, the version indicated in the record will be updated (i.e. only the mutable fields will be updated)
      *          otherwise, a new version of the record will be created (if it contains versioned fields)
+     * @param useLatestRecordType if true, the RecordType version given in the Record will be ignored and the latest available RecordType will 
+     *        be used while updating the Record          
      * @throws RecordNotFoundException
      *             if the record does not exist
      * @throws InvalidRecordException
@@ -87,11 +89,11 @@ public interface Repository {
      * @throws FieldTypeNotFoundException
      * @throws RecordTypeNotFoundException
      */
-    Record update(Record record, boolean updateVersion) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
+    Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
     FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
     
     /**
-     * Shortcut for update(record, false)
+     * Shortcut for update(record, false, true)
      */
     Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
             FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;

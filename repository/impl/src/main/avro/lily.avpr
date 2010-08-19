@@ -284,7 +284,8 @@
     "update": {
       "request": [
         {"name": "record", "type": "AvroRecord"},
-        {"name": "updateVersion", "type": "boolean"}],
+        {"name": "updateVersion", "type": "boolean"},
+        {"name": "useLatestRecordType", "type": "boolean"}],
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
       "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
