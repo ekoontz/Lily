@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,9 @@ import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
 import org.lilycms.repository.api.BlobStoreAccess;
 import org.lilycms.repository.api.BlobStoreAccessFactory;
+import org.lilycms.repository.api.FieldNotFoundException;
 import org.lilycms.repository.api.FieldType;
+import org.lilycms.repository.api.FieldTypeEntry;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.IdGenerator;
 import org.lilycms.repository.api.IdRecord;
@@ -191,6 +194,8 @@ public class HBaseRepository implements Repository {
     public Record create(Record record) throws RecordExistsException, RecordNotFoundException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
 
+        checkCreatePreconditions(record);
+
         Record newRecord = record.clone();
 
         RecordId recordId = newRecord.getId();
@@ -202,14 +207,15 @@ public class HBaseRepository implements Repository {
         byte[] rowId = recordId.toBytes();
         RowLock rowLock = null;
         RowLogMessage walMessage;
+
         try {
+
             // Take HBase RowLock
             rowLock = recordTable.lockRow(rowId);
             if (rowLock == null)
                 throw new RecordException("Failed to lock row while creating record <" + recordId
                         + "> in HBase table", null);
 
-            checkCreatePreconditions(record);
 
             // Check if a previous incarnation of the record existed and clear data if needed
             reincarnateRecord(newRecord, rowId, rowLock);
@@ -259,13 +265,7 @@ public class HBaseRepository implements Repository {
             throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
                     e);
         } finally {
-            if (customRowLock != null) {
-                try {
-                    rowLocker.unlockRow(customRowLock);
-                } catch (IOException e) {
-                    // Ignore for now
-                }
-            }
+            unlockRow(customRowLock);
         }
         return newRecord;
     }
@@ -334,15 +334,10 @@ public class HBaseRepository implements Repository {
         Record newRecord = record.clone();
 
         RecordId recordId = record.getId();
-        byte[] rowId = recordId.toBytes();
         org.lilycms.repository.impl.lock.RowLock rowLock = null;
-        RowLogMessage walMessage;
         try {
             // Take Custom Lock
-            rowLock = rowLocker.lockRow(rowId);
-            if (rowLock == null)
-                throw new RecordException("Failed to lock row while updating record <" + recordId
-                        + "> in HBase table", null);
+            rowLock = lockRow(recordId);
 
             Record originalRecord = read(newRecord.getId(), null, null, new ReadContext(false));
 
@@ -351,19 +346,7 @@ public class HBaseRepository implements Repository {
             recordEvent.setType(Type.UPDATE);
             long newVersion = originalRecord.getVersion() == null ? 1 : originalRecord.getVersion() + 1;
             if (calculateRecordChanges(newRecord, originalRecord, newVersion, put, recordEvent)) {
-                walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
-                if (!rowLocker.put(put, rowLock)) {
-                    throw new RecordException("Exception occurred while putting updated record <" + recordId
-                            + "> on HBase table", null);
-                }
-
-                if (walMessage != null) {
-                    try {
-                        wal.processMessage(walMessage);
-                    } catch (RowLogException e) {
-                        // Processing the message failed, it will be retried later.
-                    }
-                }
+                putMessageOnWalAndProcess(recordId, rowLock, put, recordEvent);
             }
         } catch (RowLogException e) {
             throw new RecordException("Exception occurred while putting updated record <" + recordId
@@ -373,22 +356,34 @@ public class HBaseRepository implements Repository {
             throw new RecordException("Exception occurred while updating record <" + recordId + "> on HBase table",
                     e);
         } finally {
-            if (rowLock != null) {
-                try {
-                    rowLocker.unlockRow(rowLock);
-                } catch (IOException e) {
-                    // Ignore for now
-                }
-            }
+            unlockRow(rowLock);
         }
         return newRecord;
+    }
+
+    private void putMessageOnWalAndProcess(RecordId recordId, org.lilycms.repository.impl.lock.RowLock rowLock,
+            Put put, RecordEvent recordEvent) throws RowLogException, IOException, RecordException {
+        RowLogMessage walMessage;
+        walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+        if (!rowLocker.put(put, rowLock)) {
+            throw new RecordException("Exception occurred while putting updated record <" + recordId
+                    + "> on HBase table", null);
+        }
+
+        if (walMessage != null) {
+            try {
+                wal.processMessage(walMessage);
+            } catch (RowLogException e) {
+                // Processing the message failed, it will be retried later.
+            }
+        }
     }
 
     // Calculates the changes that are to be made on the record-row and puts
     // this information on the Put object and the RecordEvent
     private boolean calculateRecordChanges(Record record, Record originalRecord, Long version, Put put,
             RecordEvent recordEvent) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
-            RecordException, TypeException {
+            RecordException, TypeException, InvalidRecordException {
         QName recordTypeName = record.getRecordTypeName();
         Long recordTypeVersion = null;
         if (recordTypeName == null) {
@@ -399,7 +394,6 @@ public class HBaseRepository implements Repository {
 
         RecordType recordType = typeManager.getRecordTypeByName(recordTypeName, recordTypeVersion);
         
-
         // Check which fields have changed
         Set<Scope> changedScopes = calculateChangedFields(record, originalRecord, recordType, version, put, recordEvent);
 
@@ -434,6 +428,7 @@ public class HBaseRepository implements Repository {
                     record.setField(lastVTagType.getName(), version);
                 }
             }
+            validateRecord(record, originalRecord, recordType);
 
         }
         // Always set the version on the record. If no fields were changed this
@@ -449,12 +444,40 @@ public class HBaseRepository implements Repository {
         record.getFieldsToDelete().clear();
         return fieldsHaveChanged;
     }
+    
+    private void validateRecord(Record record, Record originalRecord, RecordType recordType) throws FieldTypeNotFoundException, TypeException, InvalidRecordException {
+        // Check mandatory fields
+        Collection<FieldTypeEntry> fieldTypeEntries = recordType.getFieldTypeEntries();
+        List<QName> fieldsToDelete = record.getFieldsToDelete();
+        for (FieldTypeEntry fieldTypeEntry : fieldTypeEntries) {
+            if (fieldTypeEntry.isMandatory()) {
+                FieldType fieldType = typeManager.getFieldTypeById(fieldTypeEntry.getFieldTypeId());
+                QName fieldName = fieldType.getName();
+                if (fieldsToDelete.contains(fieldName)) {
+                    throw new InvalidRecordException(record, "Field: <"+fieldName+"> is mandatory.");
+                }
+                try {
+                    record.getField(fieldName); 
+                } catch (FieldNotFoundException notFoundOnNewRecord) {
+                    try {
+                        originalRecord.getField(fieldName);
+                    } catch (FieldNotFoundException notFoundOnOriginalRecord) {
+                        throw new InvalidRecordException(record, "Field: <"+fieldName+"> is mandatory.");
+                    }
+                }
+            }
+        }
+    }
 
     private Set<Scope> calculateChangedFields(Record record, Record originalRecord, RecordType recordType,
             Long version, Put put, RecordEvent recordEvent) throws FieldTypeNotFoundException,
             RecordTypeNotFoundException, RecordException, TypeException {
-        Set<Scope> changedScopes = calculateUpdateAndDeleteFields(record.getFields(), record.getFieldsToDelete(),
-                originalRecord.getFields(), version, put, recordEvent);
+        Map<QName, Object> originalFields = originalRecord.getFields();
+        Set<Scope> changedScopes = new HashSet<Scope>();
+        // Update fields
+        changedScopes.addAll(calculateUpdateFields(record.getFields(), originalFields, version, put, recordEvent));
+        // Delete fields
+        changedScopes.addAll(calculateDeleteFields(record.getFieldsToDelete(), originalFields, version, put, recordEvent));
         for (Scope scope : changedScopes) {
             if (Scope.NON_VERSIONED.equals(scope)) {
                 put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), Bytes.toBytes(recordType
@@ -470,17 +493,6 @@ public class HBaseRepository implements Repository {
             }
             record.setRecordType(scope, recordType.getName(), recordType.getVersion());
         }
-        return changedScopes;
-    }
-
-    private Set<Scope> calculateUpdateAndDeleteFields(Map<QName, Object> fields, List<QName> fieldsToDelete,
-            Map<QName, Object> originalFields, Long version, Put put, RecordEvent recordEvent)
-            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException {
-        // Update fields
-        Set<Scope> changedScopes = new HashSet<Scope>();
-        changedScopes.addAll(calculateUpdateFields(fields, originalFields, version, put, recordEvent));
-        // Delete fields
-        changedScopes.addAll(calculateDeleteFields(fieldsToDelete, originalFields, version, put, recordEvent));
         return changedScopes;
     }
 
@@ -551,22 +563,18 @@ public class HBaseRepository implements Repository {
         Record newRecord = record.clone();
 
         RecordId recordId = record.getId();
-        byte[] rowId = recordId.toBytes();
         org.lilycms.repository.impl.lock.RowLock rowLock = null;
-        RowLogMessage walMessage;
+        
+        Long version = record.getVersion();
+        if (version == null) {
+            throw new InvalidRecordException(record,
+                    "The version of the record cannot be null to update mutable fields");
+        }
+
         try {
             // Take Custom Lock
-            rowLock = rowLocker.lockRow(rowId);
-            if (rowLock == null)
-                throw new RecordException("Failed to lock row while updating record <" + recordId
-                        + "> in HBase table", null);
-
-            Long version = record.getVersion();
-            if (version == null) {
-                throw new InvalidRecordException(record,
-                        "The version of the record cannot be null to update mutable fields");
-            }
-
+            rowLock = lockRow(recordId);
+            
             Record originalRecord = read(record.getId(), version, null, new ReadContext(false));
 
             // Update the mutable fields
@@ -581,25 +589,21 @@ public class HBaseRepository implements Repository {
 
             // Delete mutable fields and copy values to the next version if
             // needed
-            Record originalNextRecord = null;
-            try {
-                originalNextRecord = read(record.getId(), version + 1, null, new ReadContext(false));
-            } catch (RecordNotFoundException exception) {
-                // There is no next record
-            }
             List<QName> fieldsToDelete = filterMutableFieldsToDelete(record.getFieldsToDelete());
-            Map<QName, Object> originalNextFields = new HashMap<QName, Object>();
-            if (originalNextRecord != null) {
-                originalNextFields.putAll(filterMutableFields(originalNextRecord.getFields()));
-            }
-            boolean deleted = calculateDeleteMutableFields(fieldsToDelete, originalFields, originalNextFields, version,
+            boolean deleted = calculateDeleteMutableFields(fieldsToDelete, originalFields, record.getId(), version,
                     put, recordEvent);
 
-            Scope scope = Scope.VERSIONED_MUTABLE;
             if (!changedScopes.isEmpty() || deleted) {
                 RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), record
                         .getRecordTypeVersion());
+
+                
                 // Update the mutable record type
+                Scope scope = Scope.VERSIONED_MUTABLE;
+                newRecord.setRecordType(scope, recordType.getName(), recordType.getVersion());
+                
+                validateRecord(record, originalRecord, recordType);
+
                 put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), version, Bytes
                         .toBytes(recordType.getId()));
                 put.add(systemColumnFamilies.get(scope), recordTypeVersionColumnNames.get(scope), version, Bytes
@@ -607,19 +611,7 @@ public class HBaseRepository implements Repository {
 
                 recordEvent.setVersionUpdated(version);
 
-                walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
-                if (!rowLocker.put(put, rowLock)) {
-                    throw new RecordException("Exception occurred while putting updated record <" + recordId
-                            + "> on HBase table", null);
-                }
-                newRecord.setRecordType(scope, recordType.getName(), recordType.getVersion());
-                if (walMessage != null) {
-                    try {
-                        wal.processMessage(walMessage);
-                    } catch (RowLogException e) {
-                        // Processing the message failed, it will be retried later
-                    }
-                }
+                putMessageOnWalAndProcess(recordId, rowLock, put, recordEvent);
             }
         } catch (RowLogException e) {
             throw new RecordException("Exception occurred while putting updated record <" + record.getId()
@@ -628,13 +620,7 @@ public class HBaseRepository implements Repository {
             throw new RecordException("Exception occurred while updating record <" + recordId + "> in HBase table",
                     e);
         } finally {
-            if (rowLock != null) {
-                try {
-                    rowLocker.unlockRow(rowLock);
-                } catch (IOException e) {
-                    // Ignore for now
-                }
-            }
+            unlockRow(rowLock);
         }
         return newRecord;
     }
@@ -664,9 +650,12 @@ public class HBaseRepository implements Repository {
     }
 
     private boolean calculateDeleteMutableFields(List<QName> fieldsToDelete, Map<QName, Object> originalFields,
-            Map<QName, Object> originalNextFields, Long version, Put put, RecordEvent recordEvent)
-            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException {
+            RecordId recordId, Long version, Put put, RecordEvent recordEvent)
+            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
         boolean changed = false;
+        
+        Map<QName, Object> originalNextFields = null;
+        
         for (QName fieldToDelete : fieldsToDelete) {
             Object originalValue = originalFields.get(fieldToDelete);
             if (originalValue != null) {
@@ -674,8 +663,13 @@ public class HBaseRepository implements Repository {
                 byte[] fieldIdBytes = Bytes.toBytes(fieldType.getId());
                 put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version,
                         new byte[] { EncodingUtil.DELETE_FLAG });
-                // Copy original value to the next record if that record had the
-                // same value
+                // Postpone the read of the next version of the record as long as possible
+                if (originalNextFields == null) 
+                    originalNextFields = getOriginalNextFields(recordId, version);
+                // If the original value is the same as for the next version
+                // this means that the cell at the next version does not contain any value yet,
+                // and the record relies on what is in the previous cell's version.
+                // The original value needs to be copied into it. Otherwise we loose that value.
                 if (originalValue.equals(originalNextFields.get(fieldToDelete))) {
                     byte[] encodedValue = encodeFieldValue(fieldType, originalValue);
                     put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version + 1, encodedValue);
@@ -685,6 +679,20 @@ public class HBaseRepository implements Repository {
             }
         }
         return changed;
+    }
+
+    private Map<QName, Object> getOriginalNextFields(RecordId recordId, Long version)
+            throws RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException {
+        Map<QName, Object> originalNextFields = new HashMap<QName, Object>();
+        try {
+            Record originalNextRecord = read(recordId, version + 1, null, new ReadContext(false));
+            originalNextFields = new HashMap<QName, Object>();
+            originalNextFields.putAll(filterMutableFields(originalNextRecord.getFields()));
+        } catch (RecordNotFoundException exception) {
+            // There is no next record
+        }
+        return originalNextFields;
     }
 
     public Record read(RecordId recordId) throws RecordNotFoundException, RecordTypeNotFoundException,
@@ -1020,10 +1028,7 @@ public class HBaseRepository implements Repository {
         byte[] rowId = recordId.toBytes();
         try {
             // Take Custom Lock
-            rowLock = rowLocker.lockRow(rowId);
-            if (rowLock == null)
-                throw new RecordException("Failed to lock row while updating record <" + recordId
-                        + "> in HBase table", null);
+            rowLock = lockRow(recordId);
 
             if (recordExists(rowId, null)) { // Check if the record exists in the first place 
                 Put put = new Put(rowId);
@@ -1053,14 +1058,27 @@ public class HBaseRepository implements Repository {
             throw new RecordException("Exception occurred while deleting record <" + recordId + "> on HBase table",
                     e);
         } finally {
-            if (rowLock != null) {
-                try {
-                    rowLocker.unlockRow(rowLock);
-                } catch (IOException e) {
-                    // Ignore for now
-                }
+            unlockRow(rowLock);
+        }
+    }
+
+    private void unlockRow(org.lilycms.repository.impl.lock.RowLock rowLock) {
+        if (rowLock != null) {
+            try {
+                rowLocker.unlockRow(rowLock);
+            } catch (IOException e) {
+                // Ignore for now
             }
         }
+    }
+
+    private org.lilycms.repository.impl.lock.RowLock lockRow(RecordId recordId) throws IOException,
+            RecordException {
+        org.lilycms.repository.impl.lock.RowLock rowLock;
+        rowLock = rowLocker.lockRow(recordId.toBytes());
+        if (rowLock == null)
+            throw new RecordException("Failed to lock row for record <" + recordId + ">", null);
+        return rowLock;
     }
 
     public void registerBlobStoreAccess(BlobStoreAccess blobStoreAccess) {

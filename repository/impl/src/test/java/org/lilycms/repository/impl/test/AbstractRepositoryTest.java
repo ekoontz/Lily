@@ -69,6 +69,7 @@ public abstract class AbstractRepositoryTest {
     private static RecordType recordType1;
     private static RecordType recordType1B;
     private static RecordType recordType2;
+    private static RecordType recordType3;
 
     @Before
     public void setUp() throws Exception {
@@ -104,11 +105,11 @@ public abstract class AbstractRepositoryTest {
         recordType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
         recordType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
         recordType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
-        recordType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(lastVTag.getId(), true));
+        recordType1.addFieldTypeEntry(typeManager.newFieldTypeEntry(lastVTag.getId(), false));
         recordType1 = typeManager.createRecordType(recordType1);
 
         recordType1B = recordType1.clone();
-        recordType1B.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1B.getId(), true));
+        recordType1B.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1B.getId(), false));
         recordType1B = typeManager.updateRecordType(recordType1B);
 
         recordType2 = typeManager.newRecordType(new QName("test", "RT2"));
@@ -117,6 +118,18 @@ public abstract class AbstractRepositoryTest {
         recordType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType5.getId(), false));
         recordType2.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType6.getId(), false));
         recordType2 = typeManager.createRecordType(recordType2);
+        
+        recordType3 = typeManager.newRecordType(new QName("test", "RT3"));
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), false));
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType2.getId(), false));
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), false));
+        recordType3 = typeManager.createRecordType(recordType3);
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType1.getId(), true));
+        recordType3 = typeManager.updateRecordType(recordType3);
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType3.getId(), true));
+        recordType3 = typeManager.updateRecordType(recordType3);
+        recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType6.getId(), false));
+        recordType3 = typeManager.updateRecordType(recordType3);
     }
 
     @Test
@@ -1125,6 +1138,88 @@ public abstract class AbstractRepositoryTest {
         assertEquals(Long.valueOf(4), record.getField(lastVTag.getName())); 
     }
     
+    @Test
+    public void testValidateCreate() throws Exception {
+        Record record = repository.newRecord();
+        record.setRecordType(recordType3.getName(), 1L);
+        record.setField(fieldType2.getName(), 123);
+        repository.create(record);
+        
+        record = repository.newRecord();
+        record.setRecordType(recordType3.getName(), 2L);
+        record.setField(fieldType2.getName(), 123);
+        try {
+            repository.create(record);
+            fail();
+        } catch (InvalidRecordException expected) {
+        }
+        
+        record = repository.newRecord();
+        record.setRecordType(recordType3.getName(), 2L);
+        record.setField(fieldType1.getName(), "abc");
+        record.setField(fieldType2.getName(), 123);
+    }
     
+    @Test
+    public void testValidateUpdate() throws Exception {
+        Record record = repository.newRecord();
+        record.setRecordType(recordType3.getName(), 1L);
+        record.setField(fieldType2.getName(), 123);
+        record = repository.create(record);
+        
+        record.setRecordType(recordType3.getName(), 2L);
+        record.setField(fieldType2.getName(), 567);
+        try {
+            repository.update(record);
+            fail();
+        } catch (InvalidRecordException expected) {
+        }
+        
+        record.setField(fieldType1.getName(), "abc");
+        repository.update(record);
+    }
 
+    @Test
+    public void testValidateMutableUpdate() throws Exception {
+        // Nothing mandatory
+        Record record = repository.newRecord();
+        record.setRecordType(recordType3.getName(), 1L);
+        record.setField(fieldType2.getName(), 123);
+        record = repository.create(record);
+        
+        // Non-versioned field1 mandatory
+        record = repository.newRecord(record.getId());
+        record.setRecordType(recordType3.getName(), 2L);
+        record.setField(fieldType1.getName(), "abc");
+        repository.update(record); // record version 1
+        
+        // Mutable field3 mandatory
+        record.setRecordType(recordType3.getName(), 3L);
+        record.setField(fieldType1.getName(), "efg");
+        try {
+            repository.update(record);
+            fail();
+        } catch (InvalidRecordException expected) {
+        }
+        
+        // Mutable field3 not mandatory
+        record = repository.newRecord(record.getId());
+        record.setRecordType(recordType3.getName(), 2L);
+        record.setField(fieldType3.getName(), true);
+        repository.update(record); // record version 2
+        
+        // Mutable field update of record version 1 with field3 mandatory
+        // Field3 already exists, but in record version 2 not version 1 
+        record = repository.newRecord(record.getId());
+        record.setRecordType(recordType3.getName(), 4L);
+        record.setField(fieldType6.getName(), "zzz");
+        record.setVersion(1L);
+        try {
+            repository.update(record, true);
+            fail();
+        } catch (InvalidRecordException expected) {
+        }
+        record.setField(fieldType3.getName(), false);
+        repository.update(record, true);
+    }
 }
