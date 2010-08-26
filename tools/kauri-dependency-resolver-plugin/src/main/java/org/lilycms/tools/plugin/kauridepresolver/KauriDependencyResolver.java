@@ -110,13 +110,7 @@ public class KauriDependencyResolver extends AbstractMojo {
         Set<Artifact> moduleArtifacts = getModuleArtifactsFromKauriConfig();
 
         for (Artifact moduleArtifact : moduleArtifacts) {
-            if (moduleArtifact.getGroupId().equals(projectGroupId) &&
-                    moduleArtifact.getArtifactId().equals(projectArtifactId) &&
-                    moduleArtifact.getVersion().equals(projectVersion)) {
-                // Current project's artifact is not yet deployed, therefore do not treat it
-            } else {
-                getClassPathArtifacts(moduleArtifact);
-            }
+            getClassPathArtifacts(moduleArtifact);
         }
     }
 
@@ -186,13 +180,19 @@ public class KauriDependencyResolver extends AbstractMojo {
                 classifier = null;
 
             Artifact artifact = artifactFactory.createArtifactWithClassifier(groupId, artifactId, version, "jar", classifier);
-            if (!artifacts.contains(artifact)) {
-                try {
-                    resolver.resolve(artifact, remoteRepositories, localRepository);
-                } catch (Exception e) {
-                    throw new MojoExecutionException("Error resolving artifact listed in " + sourceDescr + ": " + artifact, e);
+            if (artifact.getGroupId().equals(projectGroupId) &&
+                    artifact.getArtifactId().equals(projectArtifactId) &&
+                    artifact.getVersion().equals(projectVersion)) {
+                // Current project's artifact is not yet deployed, therefore do not treat it
+            } else {
+                if (!artifacts.contains(artifact)) {
+                    try {
+                        resolver.resolve(artifact, remoteRepositories, localRepository);
+                    } catch (Exception e) {
+                        throw new MojoExecutionException("Error resolving artifact listed in " + sourceDescr + ": " + artifact, e);
+                    }
+                    artifacts.add(artifact);
                 }
-                artifacts.add(artifact);
             }
         }
 
