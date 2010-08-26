@@ -20,42 +20,27 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
-  <artifactId>lily-repository-module</artifactId>
-  <packaging>jar</packaging>
+  <artifactId>kauri-dependency-resolver-plugin</artifactId>
+  <packaging>maven-plugin</packaging>
+  <name>Lily: Maven plugin for resolving all the dependencies of a Kauri project</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
-    <artifactId>lily-server</artifactId>
+    <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
-    <relativePath>../</relativePath>
   </parent>
-
-  <name>Lily: Kauri: repository module</name>
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-repository-impl</artifactId>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${version.maven}</version>
     </dependency>
-
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-zk-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${version.maven}</version>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.kauriproject</groupId>
-        <artifactId>kauri-genclassloader-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>

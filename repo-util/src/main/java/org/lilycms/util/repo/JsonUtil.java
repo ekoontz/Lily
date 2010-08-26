@@ -16,6 +16,10 @@
 package org.lilycms.util.repo;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
+
+import java.io.IOException;
 
 public class JsonUtil {
     public static JsonNode getNode(JsonNode node, String prop) throws JsonFormatException {
@@ -23,6 +27,26 @@ public class JsonUtil {
             throw new JsonFormatException("Missing required property: " + prop);
         }
         return node.get(prop);
+    }
+
+    public static JsonNode getArray(JsonNode node, String prop) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            throw new JsonFormatException("Missing required property: " + prop);
+        }
+        if (!node.get(prop).isArray()) {
+            throw new JsonFormatException("Not an array property: " + prop);
+        }
+        return (ArrayNode)node.get(prop);
+    }
+
+    public static ObjectNode getObject(JsonNode node, String prop) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            throw new JsonFormatException("Missing required property: " + prop);
+        }
+        if (!node.get(prop).isObject()) {
+            throw new JsonFormatException("Not an object property: " + prop);
+        }
+        return (ObjectNode)node.get(prop);
     }
 
     public static String getString(JsonNode node, String prop) throws JsonFormatException {
@@ -83,5 +107,26 @@ public class JsonUtil {
             throw new JsonFormatException("Not an integer property: " + prop);
         }
         return node.get(prop).getIntValue();
+    }
+
+    public static long getLong(JsonNode node, String prop) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            throw new JsonFormatException("Missing required property: " + prop);
+        }
+        if (!node.get(prop).isLong() && !node.get(prop).isInt()) {
+            throw new JsonFormatException("Not an long property: " + prop);
+        }
+        return node.get(prop).getLongValue();
+    }
+
+    public static byte[] getBinary(JsonNode node, String prop) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            throw new JsonFormatException("Missing required property: " + prop);
+        }
+        try {
+            return node.get(prop).getBinaryValue();
+        } catch (IOException e) {
+            throw new JsonFormatException("Error reading binary data in property " + prop, e);
+        }
     }
 }

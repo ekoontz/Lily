@@ -12,6 +12,18 @@
     <artifact id="indexer" groupId="org.lilycms" artifactId="lily-indexer-module" version="0.2-SNAPSHOT">
     </artifact>
 
+    <artifact id="template" groupId="org.kauriproject" artifactId="kauri-template-service-impl">
+    </artifact>
+
+    <artifact id="representation" groupId="org.kauriproject" artifactId="kauri-representationbuilder-impl">
+    </artifact>
+
+    <artifact id="routing" groupId="org.kauriproject" artifactId="kauri-routing-impl">
+    </artifact>
+
+    <artifact id="rest" groupId="org.lilycms" artifactId="lily-rest-module" version="0.2-SNAPSHOT">
+      <mount name="main" path="" canonical=""/>      
+    </artifact>
   </modules>
 
 </wiring>

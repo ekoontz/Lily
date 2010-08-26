@@ -26,6 +26,8 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.lilycms.util.zookeeper.ZkPathCreationException;
+import org.lilycms.util.zookeeper.ZkUtil;
 
 /**
  * Publishes this Lily repository node to Zookeeper.
@@ -51,25 +53,18 @@ public class ZKPublisher {
     }
 
     @PostConstruct
-    public void start() throws IOException, InterruptedException, KeeperException {
+    public void start() throws IOException, InterruptedException, KeeperException, ZkPathCreationException {
         zk = new ZooKeeper(zkConnectString, 5000, new ZkWatcher());
-        try {
-            zk.create(lilyPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        } catch (KeeperException.NodeExistsException e) {
-            // ignore
-        }
 
-        try {
-            zk.create(nodesPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        } catch (KeeperException.NodeExistsException e) {
-            // ignore
-        }
-
+        ZkUtil.createPath(zk, nodesPath);
         String repoAddressAndPort = hostAddress + ":" + port;
-
         zk.create(nodesPath + "/" + repoAddressAndPort, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-        
-        zk.create(dfsUriPath, dfsUri.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+
+        // The below serves as a stop-gap solution for the blob configuration: we store the information in ZK
+        // that clients need to know how to access the blob store locations, but the actual setup of the
+        // BlobStoreAccessFactory is currently hardcoded
+        ZkUtil.createPath(zk, dfsUriPath);
+        zk.setData(dfsUriPath, dfsUri.getBytes(), -1);
     }
 
     @PreDestroy
