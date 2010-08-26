@@ -52,6 +52,27 @@ public class KauriDependencyResolver extends AbstractMojo {
     protected String kauriVersion;
 
     /**
+     * @parameter expression="${project.groupId}"
+     * @required
+     * @readonly
+     */
+    private String projectGroupId;
+
+    /**
+     * @parameter expression="${project.artifactId}"
+     * @required
+     * @readonly
+     */
+    private String projectArtifactId;
+
+    /**
+     * @parameter expression="${project.version}"
+     * @required
+     * @readonly
+     */
+    private String projectVersion;
+
+    /**
      * Maven Artifact Factory component.
      *
      * @component
@@ -89,7 +110,13 @@ public class KauriDependencyResolver extends AbstractMojo {
         Set<Artifact> moduleArtifacts = getModuleArtifactsFromKauriConfig();
 
         for (Artifact moduleArtifact : moduleArtifacts) {
-            getClassPathArtifacts(moduleArtifact);
+            if (moduleArtifact.getGroupId().equals(projectGroupId) &&
+                    moduleArtifact.getArtifactId().equals(projectArtifactId) &&
+                    moduleArtifact.getVersion().equals(projectVersion)) {
+                // Current project's artifact is not yet deployed, therefore do not treat it
+            } else {
+                getClassPathArtifacts(moduleArtifact);
+            }
         }
     }
 
