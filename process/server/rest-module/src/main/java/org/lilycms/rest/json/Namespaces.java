@@ -49,4 +49,8 @@ public class Namespaces {
     public Map<String, String> getNsToPrefixMapping() {
         return nsToPrefix;
     }
+
+    public boolean isEmpty() {
+        return prefixToNs.isEmpty();
+    }
 }

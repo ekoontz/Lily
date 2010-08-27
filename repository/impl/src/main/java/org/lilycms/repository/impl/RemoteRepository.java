@@ -105,13 +105,11 @@ public class RemoteRepository implements Repository {
         return idGenerator;
     }
     
-    public Record create(Record record) throws RecordExistsException, RecordNotFoundException, InvalidRecordException,
+    public Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
         try {
             return converter.convert(lilyProxy.create(converter.convert(record)));
         } catch (AvroRecordExistsException e) {
-            throw converter.convert(e);
-        } catch (AvroRecordNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroInvalidRecordException e) {
             throw converter.convert(e);
@@ -130,9 +128,11 @@ public class RemoteRepository implements Repository {
         }
     }
 
-    public void delete(RecordId recordId) throws RecordException {
+    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException {
         try {
             lilyProxy.delete(converter.convert(recordId));
+        } catch (AvroRecordNotFoundException e) {
+            throw converter.convert(e);
         } catch (AvroRecordException e) {
             throw converter.convert(e);
         } catch (AvroGenericException e) {

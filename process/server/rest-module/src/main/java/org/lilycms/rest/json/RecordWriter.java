@@ -18,7 +18,10 @@ public class RecordWriter {
         Namespaces namespaces = new Namespaces();
 
         recordNode.put("id", record.getId().toString());
-        recordNode.put("type", typeToJson(record.getRecordTypeName(), record.getRecordTypeVersion(), namespaces));
+
+        if (record.getRecordTypeName() != null) {
+            recordNode.put("type", typeToJson(record.getRecordTypeName(), record.getRecordTypeVersion(), namespaces));
+        }
 
         QName versionedTypeName = record.getRecordTypeName(Scope.VERSIONED);
         if (versionedTypeName != null) {
@@ -53,7 +56,9 @@ public class RecordWriter {
             recordNode.put("version", record.getVersion());
         }
 
-        recordNode.put("namespaces", NamespacesConverter.toJson(namespaces));
+        if (!namespaces.isEmpty()) {
+            recordNode.put("namespaces", NamespacesConverter.toJson(namespaces));
+        }
 
         return recordNode;
     }

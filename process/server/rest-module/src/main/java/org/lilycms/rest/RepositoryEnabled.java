@@ -3,7 +3,7 @@ package org.lilycms.rest;
 import org.lilycms.repository.api.Repository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class BaseRepositoryResource {
+public class RepositoryEnabled {
     protected Repository repository;
 
     @Autowired

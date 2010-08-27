@@ -7,6 +7,8 @@ import org.joda.time.LocalDate;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.JsonUtil;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -46,8 +48,9 @@ public class RecordReader {
             record.setId(repository.getIdGenerator().newRecordId(id));
         }
 
-        String type = getString(recordNode, "type");
-        record.setRecordType(QNameConverter.fromJson(type, namespaces));
+        String type = getString(recordNode, "type", null);
+        if (type != null)
+            record.setRecordType(QNameConverter.fromJson(type, namespaces));
 
         ObjectNode fields = getObject(recordNode, "fields");
         Iterator<Map.Entry<String, JsonNode>> it = fields.getFields();
@@ -115,6 +118,25 @@ public class RecordReader {
                 throw new JsonFormatException("Expected long value for " + prop);
 
             return node.getLongValue();
+        } else if (primitive.equals("DOUBLE")) {
+            if (!node.isNumber())
+                throw new JsonFormatException("Expected double value for " + prop);
+
+            return node.getDoubleValue();
+        } else if (primitive.equals("DECIMAL")) {
+            if (!node.isNumber())
+                throw new JsonFormatException("Expected decimal value for " + prop);
+
+            return node.getDecimalValue();
+        } else if (primitive.equals("URI")) {
+            if (!node.isTextual())
+                throw new JsonFormatException("Expected URI (string) value for " + prop);
+
+            try {
+                return new URI(node.getTextValue());
+            } catch (URISyntaxException e) {
+                throw new JsonFormatException("Invalid URI in property " + prop + ": " + node.getTextValue());
+            }
         } else if (primitive.equals("BOOLEAN")) {
             if (!node.isBoolean())
                 throw new JsonFormatException("Expected boolean value for " + prop);

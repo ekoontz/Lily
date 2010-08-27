@@ -2,7 +2,6 @@ package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.import_.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -12,8 +11,7 @@ import java.net.URI;
 import static javax.ws.rs.core.Response.Status.*;
 
 @Path("/schema/fieldType/{name}")
-public class FieldTypeResource {
-    private Repository repository;
+public class FieldTypeResource extends RepositoryEnabled {
 
     @GET
     @Produces("application/json")
@@ -31,16 +29,17 @@ public class FieldTypeResource {
     @PUT
     @Produces("application/json")
     @Consumes("application/json")
-    public Response put(@PathParam("id") String id, FieldType fieldType) {
+    public Response put(@PathParam("name") String name, FieldType fieldType, @Context UriInfo uriInfo) {
         // Since the name can be updated, in this case we allow that the name in the submitted field type
         // is different from the name in the URI.
+        QName qname = ResourceClassUtil.parseQName(name, uriInfo.getQueryParameters());
 
         ImportResult<FieldType> result;
         try {
             result = FieldTypeImport.importFieldType(fieldType, ImportMode.CREATE_OR_UPDATE, IdentificationMode.NAME,
                     repository.getTypeManager());
         } catch (RepositoryException e) {
-            throw new ResourceException("Error creating or updating field type with id " + id, e,
+            throw new ResourceException("Error creating or updating field type named " + qname, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }
 
@@ -64,8 +63,4 @@ public class FieldTypeResource {
         return response;
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

@@ -3,7 +3,6 @@ package org.lilycms.rest;
 import org.apache.commons.io.IOUtils;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.io.Closer;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -17,8 +16,7 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 @Path("/record/{id}/version/{version:\\d+}/field/{fieldName}/data")
-public class BlobByVersionAndFieldResource {
-    private Repository repository;
+public class BlobByVersionAndFieldResource extends RepositoryEnabled {
 
     @GET
     @Produces("*/*")
@@ -80,8 +78,4 @@ public class BlobByVersionAndFieldResource {
         }
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

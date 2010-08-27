@@ -1,8 +1,6 @@
 package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
-import org.lilycms.rest.json.RecordTypeWriter;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -17,8 +15,7 @@ import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 @Path("/schema/recordTypeById")
-public class RecordTypeByIdCollectionResource {
-    private Repository repository;
+public class RecordTypeByIdCollectionResource extends RepositoryEnabled {
 
     @POST
     @Consumes("application/json")
@@ -44,8 +41,4 @@ public class RecordTypeByIdCollectionResource {
         return Response.created(uri).entity(recordType).build();
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

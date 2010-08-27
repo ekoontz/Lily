@@ -57,7 +57,7 @@ public interface Repository {
      * @throws FieldTypeNotFoundException
      * @throws RecordTypeNotFoundException
      */
-    Record create(Record record) throws RecordExistsException, RecordNotFoundException, InvalidRecordException,
+    Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException;
 
     /**
@@ -165,7 +165,7 @@ public interface Repository {
      * @param recordId
      *            id of the record to delete
      */
-    void delete(RecordId recordId) throws RecordException;
+    void delete(RecordId recordId) throws RecordException, RecordNotFoundException;
 
     /**
      * Returns the IdGenerator service.

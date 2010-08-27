@@ -2,27 +2,29 @@ package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.import_.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.*;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
 import java.net.URI;
+import java.util.List;
 
 import static javax.ws.rs.core.Response.Status.*;
 
 @Path("/record/{id}")
-public class RecordResource {
-    private Repository repository;
+public class RecordResource extends RepositoryEnabled {
 
     @GET
     @Produces("application/json")
-    public Record get(@PathParam("id") String id) {
+    public Record get(@PathParam("id") String id, @Context UriInfo uriInfo) {
         RecordId recordId = repository.getIdGenerator().fromString(id);
+        List<QName> fieldQNames = ResourceClassUtil.parseFieldList(uriInfo);
         Record record;
         try {
-            record = repository.read(recordId);
+            record = repository.read(recordId, fieldQNames);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (RepositoryException e) {
@@ -52,6 +54,7 @@ public class RecordResource {
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }
 
+        // TODO record we respond with should be full record or be limited to user-specified field list
         record = result.getEntity();
         Response response;
 
@@ -72,8 +75,44 @@ public class RecordResource {
         return response;
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
+    @POST
+    @Produces("application/json")
+    @Consumes("application/json")
+    public Record post(@PathParam("id") String id, PostAction<Record> postAction) {
+        if (!postAction.getAction().equals("update")) {
+            throw new ResourceException("Unsupported POST action: " + postAction.getAction(), BAD_REQUEST.getStatusCode());
+        }
+
+        RecordId recordId = repository.getIdGenerator().fromString(id);
+        Record record = postAction.getEntity();
+
+        if (record.getId() != null && !record.getId().equals(recordId)) {
+            throw new ResourceException("Record id in submitted record does not match record id in URI.",
+                    BAD_REQUEST.getStatusCode());
+        }
+
+        record.setId(recordId);
+
+        try {
+            // TODO record we respond with should be full record or be limited to user-specified field list
+            return repository.update(record);
+        } catch (RecordNotFoundException e) {
+            throw new ResourceException(e, NOT_FOUND.getStatusCode());
+        } catch (RepositoryException e) {
+            throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
+        }
+    }
+
+    @DELETE
+    public Response delete(@PathParam("id") String id) {
+        RecordId recordId = repository.getIdGenerator().fromString(id);
+        try {
+            repository.delete(recordId);
+        } catch (RecordNotFoundException e) {
+            // ignore: delete is idempotent!
+        } catch (RepositoryException e) {
+            throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
+        }
+        return Response.status(OK.getStatusCode()).build();
     }
 }

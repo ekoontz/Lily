@@ -51,14 +51,12 @@ public class AvroLilyImpl implements AvroLily {
         this.converter = converter;
     }
 
-    public AvroRecord create(AvroRecord record) throws AvroRecordExistsException, AvroRecordNotFoundException,
+    public AvroRecord create(AvroRecord record) throws AvroRecordExistsException,
             AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
             AvroRecordException, AvroTypeException {
         try {
             return converter.convert(repository.create(converter.convert(record)));
         } catch (RecordExistsException e) {
-            throw converter.convert(e);
-        } catch (RecordNotFoundException e) {
             throw converter.convert(e);
         } catch (InvalidRecordException e) {
             throw converter.convert(e);
@@ -73,10 +71,13 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public Void delete(Utf8 recordId) throws AvroRecordException {
+    public Void delete(Utf8 recordId) throws AvroRecordException, AvroTypeException, AvroFieldTypeNotFoundException,
+            AvroRecordNotFoundException {
         try {
             repository.delete(converter.convertAvroRecordId(recordId));
         } catch (RecordException e) {
+            throw converter.convert(e);
+        } catch (RecordNotFoundException e) {
             throw converter.convert(e);
         }
         return null;

@@ -4,13 +4,13 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.PostAction;
+import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.rest.json.FieldTypeReader;
 import org.lilycms.rest.json.JsonFormatException;
 import org.lilycms.rest.json.RecordReader;
 import org.lilycms.rest.json.RecordTypeReader;
 import org.lilycms.util.repo.JsonUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -29,8 +29,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 @Provider
-public class PostActionMessageBodyReader implements MessageBodyReader<PostAction> {
-    private Repository repository;
+public class PostActionMessageBodyReader extends RepositoryEnabled implements MessageBodyReader<PostAction> {
 
     private static Set<Type> SUPPORTED_TYPES;
     static {
@@ -92,8 +91,4 @@ public class PostActionMessageBodyReader implements MessageBodyReader<PostAction
         return new PostAction(action, entity);
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

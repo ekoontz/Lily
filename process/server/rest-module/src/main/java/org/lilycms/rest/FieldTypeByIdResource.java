@@ -2,7 +2,6 @@ package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.import_.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -13,8 +12,7 @@ import java.net.URI;
 import static javax.ws.rs.core.Response.Status.*;
 
 @Path("/schema/fieldTypeById/{id}")
-public class FieldTypeByIdResource {
-    private Repository repository;
+public class FieldTypeByIdResource extends RepositoryEnabled {
 
     @GET
     @Produces("application/json")
@@ -73,8 +71,4 @@ public class FieldTypeByIdResource {
         return response;
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }    
 }

@@ -52,16 +52,18 @@ public class RecordImport {
                     }
 
                     // Handle record type
-                    if (newRecord.getRecordTypeName() != null && !newRecord.getRecordTypeName().equals(oldRecord.getRecordTypeName())) {
-                        updated = true;
-                    } else if (newRecord.getRecordTypeVersion() != null && !newRecord.getRecordTypeVersion().equals(oldRecord.getRecordTypeVersion())) {
-                        updated = true;
-                    } else if (newRecord.getRecordTypeVersion() == null) {
-                        // when the version type is null, this means a request to update the record to the last version
-                        // of the record type, so check if the old record already is at this version
-                        long lastVersion = repository.getTypeManager().getRecordTypeByName(newRecord.getRecordTypeName(), null).getVersion();
-                        if (oldRecord.getRecordTypeVersion() != lastVersion) {
+                    if (newRecord.getRecordTypeName() != null) {
+                        if (!newRecord.getRecordTypeName().equals(oldRecord.getRecordTypeName())) {
                             updated = true;
+                        } else if (newRecord.getRecordTypeVersion() != null && !newRecord.getRecordTypeVersion().equals(oldRecord.getRecordTypeVersion())) {
+                            updated = true;
+                        } else if (newRecord.getRecordTypeVersion() == null) {
+                            // when the version type is null, this means a request to update the record to the last version
+                            // of the record type, so check if the old record already is at this version
+                            long lastVersion = repository.getTypeManager().getRecordTypeByName(newRecord.getRecordTypeName(), null).getVersion();
+                            if (oldRecord.getRecordTypeVersion() != lastVersion) {
+                                updated = true;
+                            }
                         }
                     }
 

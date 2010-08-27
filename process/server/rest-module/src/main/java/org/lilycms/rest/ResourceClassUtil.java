@@ -3,6 +3,10 @@ package org.lilycms.rest;
 import org.lilycms.repository.api.QName;
 
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriInfo;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
@@ -22,5 +26,22 @@ public class ResourceClassUtil {
         }
 
         return new QName(uri, localName);
+    }
+
+    public static List<QName> parseFieldList(UriInfo uriInfo) {
+        String fields = uriInfo.getQueryParameters().getFirst("fields");
+        List<QName> fieldQNames = null;
+        if (fields != null) {
+            fieldQNames = new ArrayList<QName>();
+            String[] fieldParts = fields.split(",");
+            for (String field : fieldParts) {
+                field = field.trim();
+                if (field.length() == 0)
+                    continue;
+
+                fieldQNames.add(ResourceClassUtil.parseQName(field, uriInfo.getQueryParameters()));
+            }
+        }
+        return fieldQNames;
     }
 }

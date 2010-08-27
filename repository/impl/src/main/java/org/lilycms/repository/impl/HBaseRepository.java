@@ -191,7 +191,7 @@ public class HBaseRepository implements Repository {
         return new RecordImpl(recordId);
     }
 
-    public Record create(Record record) throws RecordExistsException, RecordNotFoundException, InvalidRecordException,
+    public Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
 
         checkCreatePreconditions(record);
@@ -841,7 +841,10 @@ public class HBaseRepository implements Repository {
         // Add the columns for the fields to get
         addFieldsToGet(get, fields);
         try {
-            if (!recordTable.exists(new Get(recordId.toBytes()))) {
+            // Test existence of record by testing presence of record type column, which is present in any record
+            Get existsTestGet = new Get(recordId.toBytes());
+            existsTestGet.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME);
+            if (!recordTable.exists(existsTestGet)) {
                 throw new RecordNotFoundException(newRecord(recordId));
             }
             
@@ -1020,7 +1023,7 @@ public class HBaseRepository implements Repository {
         return retrieved;
     }
 
-    public void delete(RecordId recordId) throws RecordException {
+    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException {
         ArgumentValidator.notNull(recordId, "recordId");
         
         org.lilycms.repository.impl.lock.RowLock rowLock = null;
@@ -1048,6 +1051,8 @@ public class HBaseRepository implements Repository {
                         // Processing the message failed, it will be retried later.
                     }
                 }
+            } else {
+                throw new RecordNotFoundException(newRecord(recordId));
             }
         } catch (RowLogException e) {
             throw new RecordException("Exception occurred while deleting record <" + recordId

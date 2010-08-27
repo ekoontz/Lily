@@ -778,7 +778,11 @@ public abstract class AbstractRepositoryTest {
             fail();
         } catch (RecordNotFoundException expected) {
         }
-        repository.delete(record.getId()); // Deleting a record twice does not throw an exception
+        try {
+            repository.delete(record.getId());
+            fail();
+        } catch (RecordNotFoundException expected) {
+        }
     }
     
     @Test

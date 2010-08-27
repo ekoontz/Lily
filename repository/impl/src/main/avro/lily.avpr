@@ -276,7 +276,7 @@
     "create": {
       "request": [{"name": "record", "type": "AvroRecord"}],
       "response": "AvroRecord",
-      "errors": ["AvroRecordExistsException", "AvroRecordNotFoundException", "AvroInvalidRecordException",
+      "errors": ["AvroRecordExistsException", "AvroInvalidRecordException",
       "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
       "AvroGenericException"]
     },
@@ -318,7 +318,7 @@
     "delete": {
       "request": [{"name": "recordId", "type": "string"}],
       "response": "null",
-      "errors": ["AvroRecordException", "AvroGenericException"]
+      "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroGenericException"]
     },
     
     "deleteBlob": {

@@ -1,9 +1,9 @@
 package org.lilycms.rest.providers.json;
 
 import org.lilycms.repository.api.*;
+import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.rest.json.RecordWriter;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -17,8 +17,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 @Provider
-public class RecordMessageBodyWriter implements MessageBodyWriter<Record> {
-    private Repository repository;
+public class RecordMessageBodyWriter extends RepositoryEnabled implements MessageBodyWriter<Record> {
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return Record.class.isAssignableFrom(type) && mediaType.equals(MediaType.APPLICATION_JSON_TYPE);
@@ -39,9 +38,5 @@ public class RecordMessageBodyWriter implements MessageBodyWriter<Record> {
         }
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }
 

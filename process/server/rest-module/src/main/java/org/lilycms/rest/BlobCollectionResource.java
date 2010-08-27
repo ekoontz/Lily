@@ -1,11 +1,10 @@
 package org.lilycms.rest;
 
 import org.apache.commons.io.IOUtils;
+import org.codehaus.jackson.Base64Variants;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
-import org.lilycms.repository.api.Repository;
 import org.lilycms.util.io.Closer;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -23,8 +22,7 @@ import java.net.URI;
 import static javax.ws.rs.core.Response.Status.*;
 
 @Path("/blob")
-public class BlobCollectionResource {
-    private Repository repository;
+public class BlobCollectionResource extends RepositoryEnabled {
 
     @POST
     @Consumes("*/*")
@@ -53,14 +51,10 @@ public class BlobCollectionResource {
             Closer.close(os);
         }
 
-
-        // TODO what URI to return?
-        URI uri = UriBuilder.fromUri("/foobar").build();
+        // TODO the URI we point to in the location header does currently not exist.
+        String value = Base64Variants.MODIFIED_FOR_URL.encode(blob.getValue());
+        URI uri = UriBuilder.fromUri("/blob/" + value).build();
         return Response.created(uri).entity(blob).build();
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

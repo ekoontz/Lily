@@ -9,7 +9,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 @Path("/record/{id}/field/{fieldName}/data")
-public class BlobByFieldResource extends BaseRepositoryResource {
+public class BlobByFieldResource extends RepositoryEnabled {
 
     @GET
     @Produces("*/*")

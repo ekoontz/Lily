@@ -3,12 +3,12 @@ package org.lilycms.rest.providers.json;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
+import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.rest.json.FieldTypeReader;
 import org.lilycms.rest.json.JsonFormatException;
 import org.lilycms.rest.json.RecordReader;
 import org.lilycms.rest.json.RecordTypeReader;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -23,8 +23,7 @@ import java.lang.reflect.Type;
 import static javax.ws.rs.core.Response.Status.*;
 
 @Provider
-public class EntityMessageBodyReader implements MessageBodyReader<Object> {
-    private Repository repository;
+public class EntityMessageBodyReader extends RepositoryEnabled implements MessageBodyReader<Object> {
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return mediaType.equals(MediaType.APPLICATION_JSON_TYPE) &&
@@ -60,8 +59,4 @@ public class EntityMessageBodyReader implements MessageBodyReader<Object> {
         }
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }
