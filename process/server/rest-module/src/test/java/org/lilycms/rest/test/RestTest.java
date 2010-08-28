@@ -66,6 +66,17 @@ public class RestTest {
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", body);
         assertStatus(Status.SUCCESS_CREATED, response);
+
+
+        // Update the field type name
+//        body = json("{name: 'b$title2', valueType: { primitive: 'STRING' }, " +
+//                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'b' } }");
+//        response = put(BASE_URI + "/schema/fieldTypeById/" + titleFieldId, body);
+//
+//        assertStatus(Status.SUCCESS_OK, response);
+//
+//        response = get(BASE_URI + "/schema/fieldType/b$title2?ns.b=org.lilycms.resttest");
+//        assertStatus(Status.SUCCESS_OK, response);
     }
 
     @Test
@@ -134,16 +145,6 @@ public class RestTest {
         body = json("{ action: 'update', record: { type: 'b$book', fields: { 'b$title' : 'Faster Fishing (new)' }, namespaces : { 'org.lilycms.resttest': 'b' } } }");
         response = post(BASE_URI + "/record/USER.non_existing_record", body);
         assertStatus(Status.CLIENT_ERROR_NOT_FOUND, response);
-
-        // Update the field type name
-        body = json("{name: 'b$title2', valueType: { primitive: 'STRING' }, " +
-                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'b' } }");
-        response = put(BASE_URI + "/schema/fieldTypeById/" + titleFieldId, body);
-
-        assertStatus(Status.SUCCESS_OK, response);
-
-        response = get(BASE_URI + "/schema/fieldType/b$title2?ns.b=org.lilycms.resttest");
-        assertStatus(Status.SUCCESS_OK, response);
 
         // Delete the record
         response = delete(BASE_URI + "/record/USER.faster_fishing");
@@ -254,15 +255,15 @@ public class RestTest {
 
     @Test
     public void testVariantCollection() throws Exception {
-        String body = json("{ type: 'b$book', fields: { 'b$title2' : 'Hunting' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
+        String body = json("{ type: 'b$book', fields: { 'b$title' : 'Hunting' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
         Response response = put(BASE_URI + "/record/USER.hunting.lang=en", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
-        body = json("{ type: 'b$book', fields: { 'b$title2' : 'Jagen' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
+        body = json("{ type: 'b$book', fields: { 'b$title' : 'Jagen' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
         response = put(BASE_URI + "/record/USER.hunting.lang=nl", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
-        body = json("{ type: 'b$book', fields: { 'b$title2' : 'La chasse' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
+        body = json("{ type: 'b$book', fields: { 'b$title' : 'La chasse' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
         response = put(BASE_URI + "/record/USER.hunting.lang=fr", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
@@ -294,11 +295,11 @@ public class RestTest {
         response = post(BASE_URI + "/schema/fieldTypeById", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
-        body = json("{ type: 'b$book', fields: { 'b$title2' : 'Title version 1' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
+        body = json("{ type: 'b$book', fields: { 'b$title' : 'Title version 1' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
         response = put(BASE_URI + "/record/USER.vtagtest", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
-        body = json("{ type: 'b$book', fields: { 'b$title2' : 'Title version 2', 'v$active': 1, 'v$last': 2 }, " +
+        body = json("{ type: 'b$book', fields: { 'b$title' : 'Title version 2', 'v$active': 1, 'v$last': 2 }, " +
                 "namespaces : { 'org.lilycms.resttest': 'b', 'org.lilycms.vtag': 'v' } }");
         response = put(BASE_URI + "/record/USER.vtagtest", body);
         assertStatus(Status.SUCCESS_OK, response);

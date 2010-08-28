@@ -53,7 +53,7 @@ public class RecordTypeResource extends RepositoryEnabled {
         ImportResultType resultType = result.getResultType();
         switch (resultType) {
             case CREATED:
-                URI uri = UriBuilder.fromResource(RecordTypeByIdResource.class).build(recordType.getId());
+                URI uri = UriBuilder.fromResource(RecordTypeByIdAndVersionResource.class).build(recordType.getId(), recordType.getVersion());
                 response = Response.created(uri).entity(recordType).build();
                 break;
             case UPDATED:

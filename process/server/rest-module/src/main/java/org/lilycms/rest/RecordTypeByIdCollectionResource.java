@@ -37,7 +37,7 @@ public class RecordTypeByIdCollectionResource extends RepositoryEnabled {
             throw new ResourceException("Error creating record type.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
 
-        URI uri = UriBuilder.fromResource(RecordTypeByIdResource.class).build(recordType.getId());
+        URI uri = UriBuilder.fromResource(RecordTypeByIdAndVersionResource.class).build(recordType.getId(), recordType.getVersion());
         return Response.created(uri).entity(recordType).build();
     }
 
