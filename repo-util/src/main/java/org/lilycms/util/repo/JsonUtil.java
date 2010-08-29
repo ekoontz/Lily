@@ -139,7 +139,7 @@ public class JsonUtil {
         return node.get(prop).getLongValue();
     }
 
-    public static long getLong(JsonNode node, String prop, long defaultValue) throws JsonFormatException {
+    public static Long getLong(JsonNode node, String prop, Long defaultValue) throws JsonFormatException {
         if (node.get(prop) == null) {
             return defaultValue;
         }

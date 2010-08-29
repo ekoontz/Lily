@@ -293,6 +293,68 @@ public class RestTest {
     }
 
     /**
+     * Test creation a record that uses the non-latest version of a record type.
+     */
+    @Test
+    public void testVersionRecordType() throws Exception {
+        // Create two field types
+        String body = json("{action: 'create', fieldType: {name: 'n$vrt_field1', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        Response response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        body = json("{action: 'create', fieldType: {name: 'n$vrt_field2', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Create a record type
+        body = json("{action: 'create', recordType: {name: 'n$vrt', " +
+                "fields: [ {name: 'n$vrt_field1'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        body = json("{name: 'n$vrt', " +
+                "fields: [ {name: 'n$vrt_field1'}, {name: 'n$vrt_field2'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/recordType/n$vrt?ns.n=org.lilycms.resttest", body);
+        assertStatus(Status.SUCCESS_OK, response);
+
+        response = get(BASE_URI + "/schema/recordType/n$vrt?ns.n=org.lilycms.resttest");
+        assertStatus(Status.SUCCESS_OK, response);
+        JsonNode json = readJson(response.getEntity());
+        assertEquals(2L, json.get("version").getLongValue());
+
+        // Create record
+        body = json("{ type: {name: 'n$vrt', version: 1}, " +
+                "fields: { 'n$field1' : 'pink shoe laces' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        json = readJson(response.getEntity());
+        assertEquals(1L, json.get("type").get("version").getLongValue());
+
+        // Update record
+        body = json("{ type: {name: 'n$vrt', version: 1}, " +
+                "fields: { 'n$field1' : 'pink shoe laces 2' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
+        assertStatus(Status.SUCCESS_OK, response);
+
+        json = readJson(response.getEntity());
+        assertEquals(1L, json.get("type").get("version").getLongValue());
+
+        // Update without specifying version, should move to last version
+        body = json("{ type: {name: 'n$vrt'}, " +
+                "fields: { 'n$field1' : 'pink shoe laces 3' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
+        assertStatus(Status.SUCCESS_OK, response);
+
+        json = readJson(response.getEntity());
+        assertEquals(2L, json.get("type").get("version").getLongValue());
+    }
+
+    /**
      * Tests reading and writing each type of field value.
      */
     @Test

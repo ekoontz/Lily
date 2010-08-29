@@ -48,10 +48,16 @@ public class RecordReader {
             record.setId(repository.getIdGenerator().newRecordId(id));
         }
 
-        // TODO support versioned type: {name: "", version: ...}
-        String type = getString(recordNode, "type", null);
-        if (type != null)
-            record.setRecordType(QNameConverter.fromJson(type, namespaces));
+        JsonNode typeNode = recordNode.get("type");
+        if (typeNode != null) {
+            if (typeNode.isObject()) {
+                QName qname = QNameConverter.fromJson(JsonUtil.getString(typeNode, "name"), namespaces);
+                Long version = JsonUtil.getLong(typeNode, "version", null);
+                record.setRecordType(qname, version);
+            } else if (typeNode.isTextual()) {
+                record.setRecordType(QNameConverter.fromJson(typeNode.getTextValue(), namespaces));
+            }
+        }
 
         ObjectNode fields = getObject(recordNode, "fields");
         Iterator<Map.Entry<String, JsonNode>> it = fields.getFields();

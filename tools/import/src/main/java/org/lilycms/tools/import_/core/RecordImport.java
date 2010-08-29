@@ -55,8 +55,12 @@ public class RecordImport {
                         }
                     }
 
+                    boolean useLatestRecordType = true;
                     // Handle record type
                     if (newRecord.getRecordTypeName() != null) {
+                        if (newRecord.getRecordTypeVersion() != null)
+                            useLatestRecordType = false;
+
                         if (!newRecord.getRecordTypeName().equals(oldRecord.getRecordTypeName())) {
                             updated = true;
                         } else if (newRecord.getRecordTypeVersion() != null && !newRecord.getRecordTypeVersion().equals(oldRecord.getRecordTypeVersion())) {
@@ -73,7 +77,7 @@ public class RecordImport {
 
                     if (updated) {
                         // TODO repository.update() should be able to return a record will all fields loaded
-                        Record updatedRecord = repository.update(newRecord);
+                        Record updatedRecord = repository.update(newRecord, false, useLatestRecordType);
                         return ImportResult.updated(updatedRecord);
                     } else {
                         // TODO: we moeten hier eigenlijk het record retourneren met de gewenste velden erin

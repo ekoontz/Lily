@@ -59,10 +59,10 @@ public class RecordTypeReader {
 
                 String rtId = getString(mixin, "id", null);
                 String rtName = getString(mixin, "name", null);
-                long rtVersion = getLong(mixin, "version", -1);
+                Long rtVersion = getLong(mixin, "version", null);
 
                 if (rtId != null) {
-                    recordType.addMixin(rtId, rtVersion == -1 ? null : rtVersion);
+                    recordType.addMixin(rtId, rtVersion);
                 } else if (rtName != null) {
                     QName rtQName = QNameConverter.fromJson(rtName, namespaces);
 
