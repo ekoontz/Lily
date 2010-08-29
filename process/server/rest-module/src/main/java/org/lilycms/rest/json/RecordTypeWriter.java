@@ -6,6 +6,8 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.FieldTypeEntry;
 import org.lilycms.repository.api.RecordType;
 
+import java.util.Map;
+
 public class RecordTypeWriter {
     public static ObjectNode toJson(RecordType recordType) {
         Namespaces namespaces = new Namespaces();
@@ -37,6 +39,16 @@ public class RecordTypeWriter {
             entryNode.put("mandatory", entry.isMandatory());
         }
 
+        rtNode.put("version", recordType.getVersion());
+
+
+        ArrayNode mixinsNode = rtNode.putArray("mixins");
+        for (Map.Entry<String, Long> mixin : recordType.getMixins().entrySet()) {
+            ObjectNode entryNode = mixinsNode.addObject();
+            entryNode.put("id", mixin.getKey());
+            entryNode.put("version", mixin.getValue());
+        }
+        
         return rtNode;
     }
 

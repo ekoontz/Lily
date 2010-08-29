@@ -56,7 +56,7 @@ public class FieldTypeReader {
             return Scope.NON_VERSIONED;
         } else if (scopeName.equals("versioned")) {
             return Scope.VERSIONED;
-        } else if (scopeName.equals("versioned-mutable")) {
+        } else if (scopeName.equals("versioned_mutable")) {
             return Scope.VERSIONED_MUTABLE;
         } else {
             throw new RuntimeException("Unrecognized scope name: " + scopeName);

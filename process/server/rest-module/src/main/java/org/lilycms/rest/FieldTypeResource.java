@@ -37,7 +37,7 @@ public class FieldTypeResource extends RepositoryEnabled {
         ImportResult<FieldType> result;
         try {
             result = FieldTypeImport.importFieldType(fieldType, ImportMode.CREATE_OR_UPDATE, IdentificationMode.NAME,
-                    repository.getTypeManager());
+                    qname, repository.getTypeManager());
         } catch (RepositoryException e) {
             throw new ResourceException("Error creating or updating field type named " + qname, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
@@ -54,8 +54,13 @@ public class FieldTypeResource extends RepositoryEnabled {
                 break;
             case UPDATED:
             case UP_TO_DATE:
+                // TODO if the name was updated, maybe we should set a Location header as well?
                 response = Response.ok(fieldType).build();
                 break;
+            case CONFLICT:
+                throw new ResourceException(String.format("Field type %1$s exists but with %2$s %3$s instead of %4$s",
+                        qname, result.getConflictingProperty(), result.getConflictingOldValue(),
+                        result.getConflictingNewValue()), CONFLICT.getStatusCode());
             default:
                 throw new RuntimeException("Unexpected import result type: " + resultType);
         }

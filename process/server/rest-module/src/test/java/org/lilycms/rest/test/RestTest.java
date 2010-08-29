@@ -3,15 +3,19 @@ package org.lilycms.rest.test;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.MappingJsonFactory;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.io.Closer;
@@ -27,6 +31,10 @@ import org.restlet.representation.StringRepresentation;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RestTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
@@ -54,69 +62,189 @@ public class RestTest {
     }
 
     @Test
-    public void testSchema() throws Exception {
+    public void testFieldTypes() throws Exception {
         // Create field type using POST
         String body = json("{action: 'create', fieldType: {name: 'n$field1', valueType: { primitive: 'STRING' }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
         Response response = post(BASE_URI + "/schema/fieldTypeById", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
+        JsonNode json = readJson(response.getEntity());
+
+        // verify location header
+        assertEquals(BASE_URI + "/schema/fieldTypeById/" + json.get("id").getValueAsText(), response.getLocationRef().toString());
+
+        // verify name
+        String prefix = json.get("namespaces").get("org.lilycms.resttest").getTextValue();
+        assertEquals(prefix + "$field1", json.get("name").getTextValue());
+
         // Create field type using PUT
         body = json("{name: 'n$field2', valueType: { primitive: 'STRING' }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", body);
+        String fieldType2Id = readJson(response.getEntity()).get("id").getValueAsText();
         assertStatus(Status.SUCCESS_CREATED, response);
 
+        // Update a field type - by name : change field2 to field3
+        body = json("{name: 'n$field3', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", body);
+        assertStatus(Status.SUCCESS_OK, response);
 
-        // Update the field type name
-//        body = json("{name: 'b$title2', valueType: { primitive: 'STRING' }, " +
-//                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'b' } }");
-//        response = put(BASE_URI + "/schema/fieldTypeById/" + titleFieldId, body);
-//
-//        assertStatus(Status.SUCCESS_OK, response);
-//
-//        response = get(BASE_URI + "/schema/fieldType/b$title2?ns.b=org.lilycms.resttest");
-//        assertStatus(Status.SUCCESS_OK, response);
+        response = get(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest");
+        assertStatus(Status.CLIENT_ERROR_NOT_FOUND, response);
+
+        response = get(BASE_URI + "/schema/fieldType/n$field3?ns.n=org.lilycms.resttest");
+        assertStatus(Status.SUCCESS_OK, response);
+
+        // Update a field type - by ID : change field3 to field4
+        body = json("{name: 'n$field4', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldTypeById/" + fieldType2Id, body);
+        assertStatus(Status.SUCCESS_OK, response);
+
+        // Test updating immutable properties
+        body = json("{name: 'n$field4', valueType: { primitive: 'INTEGER' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldTypeById/" + fieldType2Id, body);
+        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);
+
+        body = json("{name: 'n$field4', valueType: { primitive: 'STRING' }, " +
+                "scope: 'non_versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldTypeById/" + fieldType2Id, body);
+        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);
+
+        body = json("{name: 'n$field4', valueType: { primitive: 'STRING', multiValue: true }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldTypeById/" + fieldType2Id, body);
+        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);
+
+        body = json("{name: 'n$field4', valueType: { primitive: 'STRING', hierarchical: true }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/fieldType/n$field4?ns.n=org.lilycms.resttest", body);
+        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);        
     }
 
     @Test
-    public void test() throws Exception {
+    public void testRecordTypes() throws Exception {
+        // Create some field types
+        List<String> fieldTypeIds = new ArrayList<String>();
+        for (int i = 1; i < 4; i++) {
+            String body = json("{action: 'create', fieldType: {name: 'n$rt_field" + i +
+                    "', valueType: { primitive: 'STRING' }, " +
+                    "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+            Response response = post(BASE_URI + "/schema/fieldTypeById", body);
+            assertStatus(Status.SUCCESS_CREATED, response);
+            JsonNode json = readJson(response.getEntity());
+            fieldTypeIds.add(json.get("id").getValueAsText());
+        }
+
+        // Create a record type using POST
+        String body = json("{action: 'create', recordType: {name: 'n$recordType1', fields: [ {name: 'n$rt_field1'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        Response response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        JsonNode json = readJson(response.getEntity());
+
+        // verify location header
+        assertEquals(BASE_URI + "/schema/recordTypeById/" + json.get("id").getValueAsText() + "/version/1",
+                response.getLocationRef().toString());
+
+        // verify name
+        String prefix = json.get("namespaces").get("org.lilycms.resttest").getTextValue();
+        assertEquals(prefix + "$recordType1", json.get("name").getTextValue());
+
+        // verify the field
+        assertEquals(fieldTypeIds.get(0), json.get("fields").get(0).get("id").getTextValue());
+        assertFalse(json.get("fields").get(0).get("mandatory").getBooleanValue());
+
+        // verify version
+        assertEquals(1L, json.get("version").getLongValue());
+
+        // Create a record type using PUT
+        body = json("{action: 'create', recordType: {name: 'n$recordType2', fields: [ {name: 'n$rt_field1'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        json = readJson(response.getEntity());
+        String secondRtId = json.get("id").getValueAsText();
+
+        // Update a record type - by ID
+        body = json("{name: 'n$recordType2', " +
+                "fields: [ {name: 'n$rt_field1', mandatory: true}, " +
+                " {name : 'n$rt_field2', mandatory: true} ], namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/recordTypeById/" + secondRtId, body);
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertEquals(secondRtId, json.get("id").getTextValue());
+        assertEquals(2L, json.get("version").getLongValue());
+        assertEquals(2, json.get("fields").size());
+        assertTrue(json.get("fields").get(0).get("mandatory").getBooleanValue());
+        assertTrue(json.get("fields").get(1).get("mandatory").getBooleanValue());
+
+        //
+        // Test mixins
+        //
+
+        // Create two mixin record types
+        body = json("{action: 'create', recordType: {name: 'n$mixin1', fields: [ {name: 'n$rt_field2'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        String mixin1Id = readJson(response.getEntity()).get("id").getTextValue();
+
+        body = json("{action: 'create', recordType: {name: 'n$mixin2', fields: [ {name: 'n$rt_field3'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        String mixin2Id = readJson(response.getEntity()).get("id").getTextValue();
+
+        // Create a record type using the mixins
+        body = json("{action: 'create', recordType: {name: 'n$mixinUser', fields: [ {name: 'n$rt_field1'} ]," +
+                "mixins: [{name: 'n$mixin1', version: 1}, { id: '" + mixin2Id + "' } ], " +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        response = get(response.getLocationRef().toString());
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+
+        assertEquals(2, json.get("mixins").size());
+
+        // Update to remove one of the mixins
+        body = json("{name: 'n$mixinUser', fields: [ {name: 'n$rt_field1'} ]," +
+                "mixins: [{name: 'n$mixin1', version: 1}], " +
+                "namespaces: { 'org.lilycms.resttest': 'n' } }");
+        String mixinUserUri = BASE_URI + "/schema/recordType/n$mixinUser?ns.n=org.lilycms.resttest";
+        response = put(mixinUserUri, body);
+        assertStatus(Status.SUCCESS_OK, response);
+
+        response = get(mixinUserUri);
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+
+        assertEquals(1, json.get("mixins").size());
+    }
+
+    @Test
+    public void testRecordBasics() throws Exception {
         // Create field type
         String body = json("{action: 'create', fieldType: {name: 'b$title', valueType: { primitive: 'STRING' }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'b' } } }");
         Response response = post(BASE_URI + "/schema/fieldTypeById", body);
-
         assertStatus(Status.SUCCESS_CREATED, response);
-
-        JsonNode jsonNode = readJson(response.getEntity());
-        String prefix = jsonNode.get("namespaces").get("org.lilycms.resttest").getTextValue();
-        assertEquals(prefix + "$title", jsonNode.get("name").getTextValue());
-        String titleFieldId = jsonNode.get("id").getTextValue();
-        assertEquals(BASE_URI + "/schema/fieldTypeById/" + titleFieldId, response.getLocationRef().toString());
-
-        // Read the field type
-        response = get(response.getLocationRef().toString());
-        assertStatus(Status.SUCCESS_OK, response);
 
         // Create a record type
         body = json("{action: 'create', recordType: {name: 'b$book', fields: [ {name: 'b$title'} ]," +
                 "namespaces: { 'org.lilycms.resttest': 'b' } } }");
         response = post(BASE_URI + "/schema/recordTypeById", body);
-
         assertStatus(Status.SUCCESS_CREATED, response);
-
-        jsonNode = readJson(response.getEntity());
-        prefix = jsonNode.get("namespaces").get("org.lilycms.resttest").getTextValue();
-        assertEquals(prefix + "$book", jsonNode.get("name").getTextValue());
-
-        // Read the record type
-        response = get(response.getLocationRef().toString());
-        assertStatus(Status.SUCCESS_OK, response);
 
         // Create a record
         body = json("{ type: 'b$book', fields: { 'b$title' : 'Faster Fishing' }, namespaces : { 'org.lilycms.resttest': 'b' } }");
         response = put(BASE_URI + "/record/USER.faster_fishing", body);
-
         assertStatus(Status.SUCCESS_CREATED, response);
 
         // Read the record
@@ -139,7 +267,12 @@ public class RestTest {
         body = json("{ action: 'update', record: { type: 'b$book', fields: { 'b$title' : 'Faster Fishing (new)' }, namespaces : { 'org.lilycms.resttest': 'b' } } }");
         response = post(BASE_URI + "/record/USER.faster_fishing", body);
         assertStatus(Status.SUCCESS_OK, response);
-        // TODO verify version was updated
+
+        JsonNode json = readJson(response.getEntity());
+        assertEquals(2L, json.get("version").getLongValue());
+
+        response = get(BASE_URI + "/record/USER.faster_fishing/version/2");
+        assertStatus(Status.SUCCESS_OK, response);
 
         // Update a record which does not exist, should fail
         body = json("{ action: 'update', record: { type: 'b$book', fields: { 'b$title' : 'Faster Fishing (new)' }, namespaces : { 'org.lilycms.resttest': 'b' } } }");
@@ -157,6 +290,129 @@ public class RestTest {
         // Verify delete is idempotent
         response = delete(BASE_URI + "/record/USER.faster_fishing");
         assertStatus(Status.SUCCESS_OK, response);
+    }
+
+    /**
+     * Tests reading and writing each type of field value.
+     */
+    @Test
+    public void testTypes() throws Exception {
+        String[] types = {"STRING", "INTEGER", "LONG", "DOUBLE", "DECIMAL", "BOOLEAN", "URI", "DATETIME", "DATE", "LINK"};
+
+        for (String type : types) {
+            String body = json("{action: 'create', fieldType: {name: 'n$f" + type +
+                    "', valueType: { primitive: '" + type + "' }, " +
+                    "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+            Response response = post(BASE_URI + "/schema/fieldTypeById", body);
+            assertStatus(Status.SUCCESS_CREATED, response);
+        }
+
+        String body = json("{action: 'create', recordType: {name: 'n$types', fields: [" +
+                " {name: 'n$fSTRING'}, {name: 'n$fINTEGER'}, {name: 'n$fLONG'}, {name: 'n$fDOUBLE'}" +
+                " , {name: 'n$fDECIMAL'}, {name: 'n$fBOOLEAN'}, {name: 'n$fURI'}, {name: 'n$fDATETIME'}, " +
+                " {name: 'n$fDATE'}, {name: 'n$fLINK'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        Response response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        body = json("{ action: 'create', record: { type: 'n$types', fields: { " +
+                "'n$fSTRING' : 'a string'," +
+                "'n$fINTEGER' : 55," +
+                "'n$fLONG' : " + Long.MAX_VALUE + "," +
+                "'n$fDOUBLE' : 33.26," +
+                "'n$fDECIMAL' : 7.7777777777777777777777777," +
+                "'n$fBOOLEAN' : true," +
+                "'n$fURI' : 'http://www.lilycms.org/'," +
+                "'n$fDATETIME' : '2010-08-28T21:32:49Z'," +
+                "'n$fDATE' : '2010-08-28'," +
+                "'n$fLINK' : 'USER.foobar.!*;arg1=val1;+arg2;-arg3'" +
+                "}, namespaces : { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/record", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        response = get(response.getLocationRef().toString());
+        assertStatus(Status.SUCCESS_OK, response);
+
+        JsonNode json = readJson(response.getEntity());
+        ObjectNode fieldsNode = (ObjectNode)json.get("fields");
+        String prefix = json.get("namespaces").get("org.lilycms.resttest").getTextValue();
+        assertEquals("a string", fieldsNode.get(prefix + "$fSTRING").getTextValue());
+        assertEquals(55, fieldsNode.get(prefix + "$fINTEGER").getIntValue());
+        assertEquals(Long.MAX_VALUE, fieldsNode.get(prefix + "$fLONG").getLongValue());
+        assertEquals(33.26, fieldsNode.get(prefix + "$fDOUBLE").getDoubleValue(), 0.0001);
+        assertEquals(new BigDecimal("7.7777777777777777777777777"), fieldsNode.get(prefix + "$fDECIMAL").getDecimalValue());
+        assertTrue(fieldsNode.get(prefix + "$fBOOLEAN").getBooleanValue());
+        assertEquals(new URI("http://www.lilycms.org/"), new URI(fieldsNode.get(prefix + "$fURI").getTextValue()));
+        assertEquals(new DateTime("2010-08-28T21:32:49Z"), new DateTime(fieldsNode.get(prefix + "$fDATETIME").getTextValue()));
+        assertEquals(new LocalDate("2010-08-28"), new LocalDate(fieldsNode.get(prefix + "$fDATE").getTextValue()));
+        assertEquals("USER.foobar.!*;arg1=val1;+arg2;-arg3", fieldsNode.get(prefix + "$fLINK").getTextValue());
+    }
+
+    @Test
+    public void testMultiValueAndHierarchical() throws Exception {
+        // Multi-value field
+        String body = json("{action: 'create', fieldType: {name: 'n$multiValue', " +
+                "valueType: { primitive: 'STRING', multiValue: true }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        Response response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Hierarchical field
+        body = json("{action: 'create', fieldType: {name: 'n$hierarchical', " +
+                "valueType: { primitive: 'STRING', hierarchical: true }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Multi-value + hierarchical field
+        body = json("{action: 'create', fieldType: {name: 'n$multiValueHierarchical', " +
+                "valueType: { primitive: 'STRING', multiValue: true, hierarchical: true }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Combine them into a record type
+        body = json("{action: 'create', recordType: {name: 'n$mvAndHier', " +
+                "fields: [ {name: 'n$multiValue'}, {name: 'n$hierarchical'}, {name: 'n$multiValueHierarchical'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Create a record
+        body = json("{ type: 'n$mvAndHier', " +
+                "fields: { 'n$multiValue' : ['val1', 'val2', 'val3']," +
+                " 'n$hierarchical' : ['part1', 'part2', 'part3'], " +
+                " 'n$multiValueHierarchical' : [['partA', 'partB'],['partC','partD']]" +
+                " }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/record/USER.multiValueHierarchical", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Read the record
+        response = get(BASE_URI + "/record/USER.multiValueHierarchical");
+        assertStatus(Status.SUCCESS_OK, response);
+
+        JsonNode json = readJson(response.getEntity());
+        JsonNode fieldsNode = json.get("fields");
+        String prefix = json.get("namespaces").get("org.lilycms.resttest").getTextValue();
+
+        ArrayNode mv = (ArrayNode)fieldsNode.get(prefix + "$multiValue");
+        assertEquals("val1", mv.get(0).getTextValue());
+        assertEquals("val2", mv.get(1).getTextValue());
+        assertEquals("val3", mv.get(2).getTextValue());
+
+        ArrayNode hier = (ArrayNode)fieldsNode.get(prefix + "$hierarchical");
+        assertEquals("part1", hier.get(0).getTextValue());
+        assertEquals("part2", hier.get(1).getTextValue());
+        assertEquals("part3", hier.get(2).getTextValue());
+
+        ArrayNode mvAndHier = (ArrayNode)fieldsNode.get(prefix + "$multiValueHierarchical");
+        assertEquals(2, mvAndHier.size());
+        ArrayNode mv1 = (ArrayNode)mvAndHier.get(0);
+        assertEquals("partA", mv1.get(0).getTextValue());
+        assertEquals("partB", mv1.get(0).getTextValue());
+        ArrayNode mv2 = (ArrayNode)mvAndHier.get(1);
+        assertEquals("partC", mv2.get(0).getTextValue());
+        assertEquals("partD", mv2.get(0).getTextValue());
     }
 
     @Test
@@ -328,8 +584,9 @@ public class RestTest {
         if (response.getEntity().getMediaType().equals(MediaType.APPLICATION_JSON)) {
             JsonNode json = readJson(response.getEntity());
             System.err.println("Error:");
-            System.err.println("  Description: " + json.get("description").getTextValue());
-            System.err.println("  Status: " + json.get("status").getIntValue());
+            System.err.println("  Description: " +
+                    (json.get("description") != null ? json.get("description").getTextValue() : null));
+            System.err.println("  Status: " + (json.get("status") != null ? json.get("status").getIntValue() : null));
             if (json.get("causes") != null) {
                 System.err.println("  Causes:");
                 ArrayNode causes = (ArrayNode)json.get("causes");
@@ -389,8 +646,11 @@ public class RestTest {
         JsonFactory jsonFactory = new MappingJsonFactory();
         InputStream is = representation.getStream();
         try {
-            JsonParser jp = jsonFactory.createJsonParser(is);
-            return jp.readValueAsTree();
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+            mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+            mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+            return mapper.readTree(is);
         } finally {
             Closer.close(is);
         }

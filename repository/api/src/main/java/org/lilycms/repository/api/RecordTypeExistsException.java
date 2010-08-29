@@ -35,7 +35,7 @@ public class RecordTypeExistsException extends RepositoryException {
     public String getMessage() {
         StringBuilder message = new StringBuilder();
         message.append("RecordType <");
-        message.append(recordType.getId());
+        message.append(recordType.getName());
         message.append("> ");
         message.append("already exists");
         return message.toString();

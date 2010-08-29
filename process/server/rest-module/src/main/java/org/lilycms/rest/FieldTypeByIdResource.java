@@ -39,7 +39,7 @@ public class FieldTypeByIdResource extends RepositoryEnabled {
         ImportResult<FieldType> result;
         try {
             result = FieldTypeImport.importFieldType(fieldType, ImportMode.UPDATE, IdentificationMode.ID,
-                    repository.getTypeManager());
+                    null, repository.getTypeManager());
         } catch (RepositoryException e) {
             throw new ResourceException("Error creating or updating field type with id " + id, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());

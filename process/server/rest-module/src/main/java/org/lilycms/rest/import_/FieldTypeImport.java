@@ -7,7 +7,7 @@ import static org.lilycms.rest.import_.ImportMode.*;
 public class FieldTypeImport {
 
     public static ImportResult<FieldType> importFieldType(FieldType newFieldType, ImportMode impMode,
-            IdentificationMode idMode, TypeManager typeManager) throws RepositoryException {
+            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException {
 
         if (idMode == IdentificationMode.ID && impMode == CREATE_OR_UPDATE) {
             throw new IllegalArgumentException("The combination of import mode " + CREATE_OR_UPDATE
@@ -29,7 +29,7 @@ public class FieldTypeImport {
                     if (idMode == IdentificationMode.ID) {
                         oldFieldType = typeManager.getFieldTypeById(newFieldType.getId());                        
                     } else {
-                        oldFieldType = typeManager.getFieldTypeByName(newFieldType.getName());
+                        oldFieldType = typeManager.getFieldTypeByName(identifyingName);
                     }
                 } catch (FieldTypeNotFoundException e) {
                     if (impMode == UPDATE) {

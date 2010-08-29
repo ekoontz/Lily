@@ -48,6 +48,7 @@ public class RecordReader {
             record.setId(repository.getIdGenerator().newRecordId(id));
         }
 
+        // TODO support versioned type: {name: "", version: ...}
         String type = getString(recordNode, "type", null);
         if (type != null)
             record.setRecordType(QNameConverter.fromJson(type, namespaces));

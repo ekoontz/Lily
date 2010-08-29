@@ -41,7 +41,7 @@ public class RecordTypeResource extends RepositoryEnabled {
         ImportResult<RecordType> result;
         try {
             result = RecordTypeImport.importRecordType(recordType, ImportMode.CREATE_OR_UPDATE, IdentificationMode.NAME,
-                    repository.getTypeManager());
+                    qname, repository.getTypeManager());
         } catch (RepositoryException e) {
             throw new ResourceException("Error creating or updating record type named " + qname, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());

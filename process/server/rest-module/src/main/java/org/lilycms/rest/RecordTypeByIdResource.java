@@ -39,7 +39,7 @@ public class RecordTypeByIdResource extends RepositoryEnabled {
         ImportResult<RecordType> result;
         try {
             result = RecordTypeImport.importRecordType(recordType, ImportMode.UPDATE, IdentificationMode.ID,
-                    repository.getTypeManager());
+                    null, repository.getTypeManager());
         } catch (RepositoryException e) {
             throw new ResourceException("Error creating or updating record type with id " + id, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());

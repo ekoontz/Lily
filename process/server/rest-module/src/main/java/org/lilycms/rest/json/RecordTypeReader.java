@@ -1,6 +1,7 @@
 package org.lilycms.rest.json;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 
@@ -23,29 +24,58 @@ public class RecordTypeReader {
         if (id != null)
             recordType.setId(id);
 
-        JsonNode fields = getArray(node, "fields");
-        for (int j = 0; j < fields.size(); j++) {
-            JsonNode field = fields.get(j);
+        if (node.get("fields") != null) {
+            ArrayNode fields = getArray(node, "fields");
+            for (int i = 0; i < fields.size(); i++) {
+                JsonNode field = fields.get(i);
 
-            boolean mandatory = getBoolean(field, "mandatory", false);
+                boolean mandatory = getBoolean(field, "mandatory", false);
 
-            String fieldId = getString(field, "id", null);
-            String fieldName = getString(field, "name", null);
+                String fieldId = getString(field, "id", null);
+                String fieldName = getString(field, "name", null);
 
-            if (fieldId != null) {
-                recordType.addFieldTypeEntry(fieldId, mandatory);
-            } else if (fieldName != null) {
-                QName fieldQName = QNameConverter.fromJson(fieldName, namespaces);
+                if (fieldId != null) {
+                    recordType.addFieldTypeEntry(fieldId, mandatory);
+                } else if (fieldName != null) {
+                    QName fieldQName = QNameConverter.fromJson(fieldName, namespaces);
 
-                try {
-                    fieldId = typeManager.getFieldTypeByName(fieldQName).getId();
-                } catch (RepositoryException e) {
-                    throw new JsonFormatException("Record type " + name + ": error looking up field type with name: " +
-                            fieldQName, e);
+                    try {
+                        fieldId = typeManager.getFieldTypeByName(fieldQName).getId();
+                    } catch (RepositoryException e) {
+                        throw new JsonFormatException("Record type " + name + ": error looking up field type with name: " +
+                                fieldQName, e);
+                    }
+                    recordType.addFieldTypeEntry(fieldId, mandatory);
+                } else {
+                    throw new JsonFormatException("Record type " + name + ": field entry should specify an id or name");
                 }
-                recordType.addFieldTypeEntry(fieldId, mandatory);
-            } else {
-                throw new JsonFormatException("Record type " + name + ": field entry should specify an id or name");
+            }
+        }
+
+        if (node.get("mixins") != null) {
+            ArrayNode mixins = getArray(node, "mixins", null);
+            for (int i = 0; i < mixins.size(); i++) {
+                JsonNode mixin = mixins.get(i);
+
+                String rtId = getString(mixin, "id", null);
+                String rtName = getString(mixin, "name", null);
+                long rtVersion = getLong(mixin, "version", -1);
+
+                if (rtId != null) {
+                    recordType.addMixin(rtId, rtVersion == -1 ? null : rtVersion);
+                } else if (rtName != null) {
+                    QName rtQName = QNameConverter.fromJson(rtName, namespaces);
+
+                    try {
+                        rtId = typeManager.getRecordTypeByName(rtQName, null).getId();
+                    } catch (RepositoryException e) {
+                        throw new JsonFormatException("Record type " + name + ": error looking up mixin record type with name: " +
+                                rtQName, e);
+                    }
+                    recordType.addMixin(rtId, rtVersion == -1 ? null : rtVersion);
+                } else {
+                    throw new JsonFormatException("Record type " + name + ": mixin should specify an id or name");
+                }
             }
         }
 

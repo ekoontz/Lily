@@ -10,7 +10,7 @@ import static org.lilycms.rest.import_.ImportMode.*;
 
 public class RecordTypeImport {
     public static ImportResult<RecordType> importRecordType(RecordType newRecordType, ImportMode impMode,
-            IdentificationMode idMode, TypeManager typeManager) throws RepositoryException {
+            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException {
 
         if (idMode == IdentificationMode.ID && impMode == CREATE_OR_UPDATE) {
             throw new IllegalArgumentException("The combination of import mode " + CREATE_OR_UPDATE
@@ -32,7 +32,7 @@ public class RecordTypeImport {
                     if (idMode == IdentificationMode.ID) {
                         oldRecordType = typeManager.getRecordTypeById(newRecordType.getId(), null);
                     } else {
-                        oldRecordType = typeManager.getRecordTypeByName(newRecordType.getName(), null);
+                        oldRecordType = typeManager.getRecordTypeByName(identifyingName, null);
                     }
                 } catch (RecordTypeNotFoundException e) {
                     if (impMode == UPDATE) {

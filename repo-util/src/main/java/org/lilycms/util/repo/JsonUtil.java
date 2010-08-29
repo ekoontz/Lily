@@ -29,9 +29,19 @@ public class JsonUtil {
         return node.get(prop);
     }
 
-    public static JsonNode getArray(JsonNode node, String prop) throws JsonFormatException {
+    public static ArrayNode getArray(JsonNode node, String prop) throws JsonFormatException {
         if (node.get(prop) == null) {
             throw new JsonFormatException("Missing required property: " + prop);
+        }
+        if (!node.get(prop).isArray()) {
+            throw new JsonFormatException("Not an array property: " + prop);
+        }
+        return (ArrayNode)node.get(prop);
+    }
+
+    public static ArrayNode getArray(JsonNode node, String prop, ArrayNode defaultValue) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            return defaultValue;
         }
         if (!node.get(prop).isArray()) {
             throw new JsonFormatException("Not an array property: " + prop);
@@ -112,6 +122,16 @@ public class JsonUtil {
     public static long getLong(JsonNode node, String prop) throws JsonFormatException {
         if (node.get(prop) == null) {
             throw new JsonFormatException("Missing required property: " + prop);
+        }
+        if (!node.get(prop).isLong() && !node.get(prop).isInt()) {
+            throw new JsonFormatException("Not an long property: " + prop);
+        }
+        return node.get(prop).getLongValue();
+    }
+
+    public static long getLong(JsonNode node, String prop, long defaultValue) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            return defaultValue;
         }
         if (!node.get(prop).isLong() && !node.get(prop).isInt()) {
             throw new JsonFormatException("Not an long property: " + prop);
