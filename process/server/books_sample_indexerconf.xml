@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <indexer xmlns:b="org.lilycms.bookssample">
   <cases>
-    <case recordType="b:Book" variant="*" vtags="live" indexVersionless="true"/>
+    <case recordType="b:Book" variant="*" vtags="last" indexVersionless="true"/>
   </cases>
 
   <indexFields>
