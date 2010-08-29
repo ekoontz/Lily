@@ -1,4 +1,4 @@
-package org.lilycms.rest.json;
+package org.lilycms.tools.import_.json;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -35,12 +35,12 @@ public class RecordReader {
         return new RecordReader(namespaces, repository).readRecord(recordNode);
     }
 
-    public static Record readRecord(ObjectNode recordNode, Namespaces namespaces, Repository repository)
+    public static Record fromJson(ObjectNode recordNode, Namespaces namespaces, Repository repository)
             throws JsonFormatException, RepositoryException {
         return new RecordReader(namespaces, repository).readRecord(recordNode);
     }
 
-    public Record readRecord(ObjectNode recordNode) throws JsonFormatException, RepositoryException {
+    private Record readRecord(ObjectNode recordNode) throws JsonFormatException, RepositoryException {
         Record record = repository.newRecord();
 
         String id = getString(recordNode, "id", null);

@@ -8,7 +8,7 @@ import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.rest.RecordList;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.rest.json.RecordWriter;
+import org.lilycms.tools.import_.json.RecordWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.WebApplicationException;

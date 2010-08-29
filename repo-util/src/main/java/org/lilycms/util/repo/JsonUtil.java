@@ -59,6 +59,16 @@ public class JsonUtil {
         return (ObjectNode)node.get(prop);
     }
 
+    public static ObjectNode getObject(JsonNode node, String prop, ObjectNode defaultValue) throws JsonFormatException {
+        if (node.get(prop) == null) {
+            return defaultValue;
+        }
+        if (!node.get(prop).isObject()) {
+            throw new JsonFormatException("Not an object property: " + prop);
+        }
+        return (ObjectNode)node.get(prop);
+    }
+
     public static String getString(JsonNode node, String prop) throws JsonFormatException {
         if (node.get(prop) == null) {
             throw new JsonFormatException("Missing required property: " + prop);

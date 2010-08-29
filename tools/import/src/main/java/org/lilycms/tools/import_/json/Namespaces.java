@@ -1,4 +1,4 @@
-package org.lilycms.rest.json;
+package org.lilycms.tools.import_.json;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,5 +52,11 @@ public class Namespaces {
 
     public boolean isEmpty() {
         return prefixToNs.isEmpty();
+    }
+
+    public void clear() {
+        prefixToNs.clear();
+        nsToPrefix.clear();
+        counter = 0;
     }
 }

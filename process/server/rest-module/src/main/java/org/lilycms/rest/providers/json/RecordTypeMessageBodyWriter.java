@@ -1,7 +1,7 @@
 package org.lilycms.rest.providers.json;
 
 import org.lilycms.repository.api.RecordType;
-import org.lilycms.rest.json.RecordTypeWriter;
+import org.lilycms.tools.import_.json.RecordTypeWriter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

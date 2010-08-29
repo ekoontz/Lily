@@ -1,4 +1,4 @@
-package org.lilycms.rest.json;
+package org.lilycms.tools.import_.json;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.JsonNodeFactory;

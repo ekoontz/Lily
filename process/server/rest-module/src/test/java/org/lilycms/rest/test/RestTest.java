@@ -409,10 +409,10 @@ public class RestTest {
         assertEquals(2, mvAndHier.size());
         ArrayNode mv1 = (ArrayNode)mvAndHier.get(0);
         assertEquals("partA", mv1.get(0).getTextValue());
-        assertEquals("partB", mv1.get(0).getTextValue());
+        assertEquals("partB", mv1.get(1).getTextValue());
         ArrayNode mv2 = (ArrayNode)mvAndHier.get(1);
         assertEquals("partC", mv2.get(0).getTextValue());
-        assertEquals("partD", mv2.get(0).getTextValue());
+        assertEquals("partD", mv2.get(1).getTextValue());
     }
 
     @Test

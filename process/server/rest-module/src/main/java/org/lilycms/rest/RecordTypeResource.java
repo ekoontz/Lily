@@ -1,7 +1,7 @@
 package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
-import org.lilycms.rest.import_.*;
+import org.lilycms.tools.import_.core.*;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;

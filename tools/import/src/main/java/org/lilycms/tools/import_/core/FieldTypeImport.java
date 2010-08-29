@@ -1,16 +1,14 @@
-package org.lilycms.rest.import_;
+package org.lilycms.tools.import_.core;
 
 import org.lilycms.repository.api.*;
-
-import static org.lilycms.rest.import_.ImportMode.*;
 
 public class FieldTypeImport {
 
     public static ImportResult<FieldType> importFieldType(FieldType newFieldType, ImportMode impMode,
             IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException {
 
-        if (idMode == IdentificationMode.ID && impMode == CREATE_OR_UPDATE) {
-            throw new IllegalArgumentException("The combination of import mode " + CREATE_OR_UPDATE
+        if (idMode == IdentificationMode.ID && impMode == ImportMode.CREATE_OR_UPDATE) {
+            throw new IllegalArgumentException("The combination of import mode " + ImportMode.CREATE_OR_UPDATE
                     + " and identification mode " + IdentificationMode.ID + " is not possible.");
         }
 
@@ -23,7 +21,7 @@ public class FieldTypeImport {
                         "to update, it does not exist after all.");
             }
 
-            if (impMode == UPDATE || impMode == CREATE_OR_UPDATE) {
+            if (impMode == ImportMode.UPDATE || impMode == ImportMode.CREATE_OR_UPDATE) {
                 FieldType oldFieldType = null;
                 try {
                     if (idMode == IdentificationMode.ID) {
@@ -32,7 +30,7 @@ public class FieldTypeImport {
                         oldFieldType = typeManager.getFieldTypeByName(identifyingName);
                     }
                 } catch (FieldTypeNotFoundException e) {
-                    if (impMode == UPDATE) {
+                    if (impMode == ImportMode.UPDATE) {
                         return ImportResult.cannotUpdateDoesNotExist();
                     }
                 }
@@ -82,16 +80,16 @@ public class FieldTypeImport {
                 }
             }
 
-            if (impMode == UPDATE) {
+            if (impMode == ImportMode.UPDATE) {
                 // We should never arrive here, update is handled above
-                throw new RuntimeException("Unexpected situation: in case of mode " + UPDATE + " we should not be here.");
+                throw new RuntimeException("Unexpected situation: in case of mode " + ImportMode.UPDATE + " we should not be here.");
             }
 
             try {
                 FieldType createdFieldType = typeManager.createFieldType(newFieldType);
                 return ImportResult.created(createdFieldType);
             } catch (FieldTypeExistsException e) {
-                if (impMode == CREATE) {
+                if (impMode == ImportMode.CREATE) {
                     return ImportResult.cannotCreateExists();
                 }
                 // and otherwise, the field type has been created since we last checked, so we now

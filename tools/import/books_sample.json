@@ -1,80 +1,84 @@
 {
-  namespaces: [
-    { prefix: "b", uri: "org.lilycms.bookssample"},
-    { prefix: "vtag", uri: "org.lilycms.vtag"}
-  ],
+  namespaces: {
+    "org.lilycms.bookssample": "b",
+    "org.lilycms.vtag": "vtag"
+  },
   fieldTypes: [
     {
-      name: "b:title",
+      name: "b$title",
       valueType: { primitive: "STRING" },
       scope: "versioned"
     },
     {
-      name: "b:pages",
+      name: "b$pages",
       valueType: { primitive: "INTEGER" },
       scope: "versioned"
     },
     {
-      name: "b:language",
+      name: "b$language",
       valueType: { primitive: "STRING" },
       scope: "versioned"
     },
     {
-      name: "b:authors",
+      name: "b$authors",
       valueType: { primitive: "LINK", multiValue: true },
       scope: "versioned"
     },
     {
-      name: "b:name",
+      name: "b$name",
       valueType: { primitive: "STRING" },
       scope: "versioned"
     },
     {
-      name: "b:bio",
+      name: "b$bio",
       valueType: { primitive: "STRING" },
       scope: "versioned"
     },
     {
       /* vtag fields are fields that point to specific versions. Indexing of
          versioned records is done based on these vtags. */
-      name: "vtag:live",
+      name: "vtag$live",
       valueType: { primitive: "LONG" },
       scope: "non_versioned"
     }
   ],
   recordTypes: [
     {
-      name: "b:Book",
+      name: "b$Book",
       fields: [
-        {name: "b:title", mandatory: true },
-        {name: "b:pages", mandatory: false },
-        {name: "b:language", mandatory: false },
-        {name: "b:authors", mandatory: false }
+        {name: "b$title", mandatory: true },
+        {name: "b$pages", mandatory: false },
+        {name: "b$language", mandatory: false },
+        {name: "b$authors", mandatory: false },
+        {name: "vtag$live", mandatory: false }
       ]
     },
     {
-      name: "b:Author",
+      name: "b$Author",
       fields: [
-        {name: "b:name", mandatory: true },
-        {name: "b:bio", mandatory: false }
+        {name: "b$name", mandatory: true },
+        {name: "b$bio", mandatory: false },
+        {name: "vtag$live", mandatory: false }
       ]
     }
   ],
   records: [
     {
-      type: "b:Author",
+      type: "b$Author",
       id: "mary_shelley",
-      "b:name": "Mary Shelley",
-      "b:bio": "Mary Shelley (30 August 1797 – 1 February 1851) was a British novelist, short story writer, dramatist, essayist, biographer, and travel writer, best known for her Gothic novel Frankenstein: or, The Modern Prometheus (1818). She also edited and promoted the works of her husband, the Romantic poet and philosopher Percy Bysshe Shelley.",
-      "vtag:live": "last"
+      fields: {
+        "b$name": "Mary Shelley",
+        "b$bio": "Mary Shelley (30 August 1797 – 1 February 1851) was a British novelist, short story writer, dramatist, essayist, biographer, and travel writer, best known for her Gothic novel Frankenstein: or, The Modern Prometheus (1818). She also edited and promoted the works of her husband, the Romantic poet and philosopher Percy Bysshe Shelley."
+      }
     },
     {
-      type: "b:Book",
-      "b:title": "Frankenstein",
-      "b:pages": 288,
-      "b:language": "English",
-      "b:authors": ["USER.mary_shelley"],
-      "vtag:live": "last"
+      type: "b$Book",
+      fields: {
+        "b$title": "Frankenstein",
+        "b$pages": 288,
+        "b$language": "English",
+        "b$authors": ["USER.mary_shelley"]
+      }
     }
   ]
 }

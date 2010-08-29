@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.tools.import_;
+package org.lilycms.tools.import_.cli;
 
 public interface ImportListener {
     void conflict(EntityType entityType, String entityName, String propName, Object oldValue, Object newValue)

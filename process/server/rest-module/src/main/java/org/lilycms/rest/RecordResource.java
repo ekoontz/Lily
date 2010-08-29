@@ -1,7 +1,10 @@
 package org.lilycms.rest;
 
 import org.lilycms.repository.api.*;
-import org.lilycms.rest.import_.*;
+import org.lilycms.tools.import_.core.ImportMode;
+import org.lilycms.tools.import_.core.ImportResult;
+import org.lilycms.tools.import_.core.ImportResultType;
+import org.lilycms.tools.import_.core.RecordImport;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;

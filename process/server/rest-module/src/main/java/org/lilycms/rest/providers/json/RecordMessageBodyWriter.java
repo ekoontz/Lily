@@ -3,7 +3,7 @@ package org.lilycms.rest.providers.json;
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.rest.json.RecordWriter;
+import org.lilycms.tools.import_.json.RecordWriter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

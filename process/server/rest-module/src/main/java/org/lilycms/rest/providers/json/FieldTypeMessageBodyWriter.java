@@ -1,7 +1,7 @@
 package org.lilycms.rest.providers.json;
 
 import org.lilycms.repository.api.FieldType;
-import org.lilycms.rest.json.FieldTypeWriter;
+import org.lilycms.tools.import_.json.FieldTypeWriter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

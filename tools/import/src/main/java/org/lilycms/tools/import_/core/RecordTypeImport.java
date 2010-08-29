@@ -1,4 +1,4 @@
-package org.lilycms.rest.import_;
+package org.lilycms.tools.import_.core;
 
 import org.lilycms.repository.api.*;
 
@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.lilycms.rest.import_.ImportMode.*;
+import static org.lilycms.tools.import_.core.ImportMode.*;
 
 public class RecordTypeImport {
     public static ImportResult<RecordType> importRecordType(RecordType newRecordType, ImportMode impMode,

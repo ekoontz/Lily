@@ -1,4 +1,4 @@
-package org.lilycms.rest.import_;
+package org.lilycms.tools.import_.core;
 
 public class ImportResult<T> {
     private T entity;

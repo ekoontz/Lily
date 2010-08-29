@@ -35,7 +35,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
-          <mainClass>org.lilycms.tools.import_.JsonImportTool</mainClass>
+          <mainClass>org.lilycms.tools.import_.cli.JsonImportTool</mainClass>
           <classpathScope>runtime</classpathScope>
         </configuration>
       </plugin>

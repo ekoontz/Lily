@@ -15,9 +15,9 @@
     */
   },
 
-  "namespaces": [
-    { "prefix": "tester", "uri": "org.lilycms.tools.tester"}
-  ],
+  "namespaces": {
+    "org.lilycms.tools.tester": "tester"
+  },
 
   /*
       Field types:
@@ -32,52 +32,52 @@
   */
   "fieldTypes": [
     {
-      "name": "tester:field1",
+      "name": "tester$field1",
       "valueType": { "primitive": "STRING" },
       "scope": "versioned"
     },
     {
-      "name": "tester:field2",
+      "name": "tester$field2",
       "valueType": { "primitive": "STRING", "multiValue": true },
       "scope": "non_versioned"
     },
     {
-      "name": "tester:field3",
+      "name": "tester$field3",
       "valueType": { "primitive": "STRING", "hierarchical": true },
       "scope": "versioned"
     },
     {
-      "name": "tester:field4",
+      "name": "tester$field4",
       "valueType": { "primitive": "STRING", "multiValue": true, "hierarchical": true },
       "scope": "non_versioned"
     },
     {
-      "name": "tester:field5",
+      "name": "tester$field5",
       "valueType": { "primitive": "INTEGER" },
       "scope": "versioned"
     },
     {
-      "name": "tester:field6",
+      "name": "tester$field6",
       "valueType": { "primitive": "LONG" },
       "scope": "non_versioned"
     },
     {
-      "name": "tester:field7",
+      "name": "tester$field7",
       "valueType": { "primitive": "DATE" },
       "scope": "versioned"
     },
     {
-      "name": "tester:field8",
+      "name": "tester$field8",
       "valueType": { "primitive": "DATETIME" },
       "scope": "non_versioned"
     },
     {
-      "name": "tester:field9",
+      "name": "tester$field9",
       "valueType": { "primitive": "LINK" },
       "scope": "versioned"
     },
     {
-      "name": "tester:field10",
+      "name": "tester$field10",
       "valueType": { "primitive": "BOOLEAN" },
       "scope": "versioned"
     }
@@ -93,7 +93,7 @@
           containing all the above fields (as not mandatory).
 
   */
-  "recordTypeName": "tester:TesterRecordType",
+  "recordTypeName": "tester$TesterRecordType",
 
   "scenario": {
     /* The number of record creations to be done upon each iteration. Should be > 0 */

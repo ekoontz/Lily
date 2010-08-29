@@ -6,10 +6,10 @@ import org.lilycms.repository.api.*;
 import org.lilycms.rest.PostAction;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.rest.json.FieldTypeReader;
-import org.lilycms.rest.json.JsonFormatException;
-import org.lilycms.rest.json.RecordReader;
-import org.lilycms.rest.json.RecordTypeReader;
+import org.lilycms.tools.import_.json.FieldTypeReader;
+import org.lilycms.tools.import_.json.RecordReader;
+import org.lilycms.tools.import_.json.JsonFormatException;
+import org.lilycms.tools.import_.json.RecordTypeReader;
 import org.lilycms.util.repo.JsonUtil;
 
 import javax.ws.rs.WebApplicationException;

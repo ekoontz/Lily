@@ -1,4 +1,4 @@
-package org.lilycms.rest.json;
+package org.lilycms.tools.import_.json;
 
 public class JsonFormatException extends Exception {
     public JsonFormatException() {

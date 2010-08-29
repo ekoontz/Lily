@@ -1,11 +1,11 @@
-package org.lilycms.rest.import_;
+package org.lilycms.tools.import_.core;
 
 import org.lilycms.repository.api.*;
 import org.lilycms.util.ObjectUtils;
 
 import java.util.Map;
 
-import static org.lilycms.rest.import_.ImportMode.*;
+import static org.lilycms.tools.import_.core.ImportMode.*;
 
 public class RecordImport {
     public static ImportResult<Record> importRecord(Record newRecord, ImportMode impMode, Repository repository)
@@ -22,12 +22,16 @@ public class RecordImport {
 
             if (impMode == UPDATE || impMode == CREATE_OR_UPDATE) {
                 Record oldRecord = null;
-                try {
-                    oldRecord = repository.read(newRecord.getId());
-                } catch (RecordNotFoundException e) {
-                    if (impMode == UPDATE) {
-                        return ImportResult.cannotUpdateDoesNotExist();
+                if (newRecord.getId() != null) {
+                    try {
+                        oldRecord = repository.read(newRecord.getId());
+                    } catch (RecordNotFoundException e) {
+                        if (impMode == UPDATE) {
+                            return ImportResult.cannotUpdateDoesNotExist();
+                        }
                     }
+                } else if (impMode == UPDATE) {
+                    return ImportResult.cannotUpdateDoesNotExist();                    
                 }
 
                 if (oldRecord != null) {

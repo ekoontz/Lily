@@ -21,12 +21,17 @@ import org.apache.zookeeper.KeeperException;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.lilycms.client.LilyClient;
 import org.lilycms.client.ServerUnavailableException;
 import org.lilycms.repository.api.*;
-import org.lilycms.tools.import_.*;
+import org.lilycms.tools.import_.cli.DefaultImportListener;
+import org.lilycms.tools.import_.cli.ImportConflictException;
+import org.lilycms.tools.import_.cli.ImportException;
+import org.lilycms.tools.import_.cli.JsonImportTool;
+import org.lilycms.tools.import_.json.*;
 import org.lilycms.util.repo.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
 import org.lilycms.util.io.Closer;
@@ -71,8 +76,7 @@ public class Tester {
 
     private enum Action { CREATE, READ, UPDATE, DELETE }
 
-    public static void main(String[] args) throws IOException, InterruptedException, KeeperException,
-            RepositoryException, ImportConflictException, ServerUnavailableException, ImportException {
+    public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             System.out.println("Specify one argument: config location");
             System.exit(1);
@@ -81,7 +85,8 @@ public class Tester {
     }
 
     public void run(String configFileName) throws IOException, InterruptedException, KeeperException,
-            ServerUnavailableException, RepositoryException, ImportConflictException, ImportException {
+            ServerUnavailableException, RepositoryException, ImportConflictException, ImportException,
+            JsonFormatException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
@@ -170,16 +175,14 @@ public class Tester {
     }
 
     public void createSchema(JsonNode configNode) throws IOException, RepositoryException, ImportConflictException,
-            ImportException {
+            ImportException, JsonFormatException {
 
         JsonImportTool importTool = new JsonImportTool(repository, new DefaultImportListener());
 
         // Namespaces
-        JsonNode namespaces = configNode.get("namespaces");
-        if (namespaces != null && namespaces.isArray()) {
-            for (JsonNode node : namespaces) {
-                importTool.addNamespace(node);
-            }
+        ObjectNode namespacesNode = JsonUtil.getObject(configNode, "namespaces", null);
+        if (namespacesNode != null) {
+            importTool.readNamespaces(namespacesNode);
         }
 
         // Fields
@@ -194,11 +197,13 @@ public class Tester {
 
         // Record type
         String recordTypeName = JsonUtil.getString(configNode, "recordTypeName");
-        recordType = repository.getTypeManager().newRecordType(new QName(null, recordTypeName));
+        QName recordTypeQName = QNameConverter.fromJson(recordTypeName, importTool.getNamespaces());
+        recordType = repository.getTypeManager().newRecordType(recordTypeQName);
         for (Field field : fields) {
             recordType.addFieldTypeEntry(field.fieldType.getId(), false);
         }
-        recordType = importTool.getImportTool().importRecordType(recordType);
+
+        recordType = importTool.importRecordType(recordType);
     }
 
     private void test() {

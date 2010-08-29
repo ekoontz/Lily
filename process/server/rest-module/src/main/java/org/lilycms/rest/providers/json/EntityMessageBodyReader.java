@@ -5,10 +5,10 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.rest.json.FieldTypeReader;
-import org.lilycms.rest.json.JsonFormatException;
-import org.lilycms.rest.json.RecordReader;
-import org.lilycms.rest.json.RecordTypeReader;
+import org.lilycms.tools.import_.json.FieldTypeReader;
+import org.lilycms.tools.import_.json.JsonFormatException;
+import org.lilycms.tools.import_.json.RecordReader;
+import org.lilycms.tools.import_.json.RecordTypeReader;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

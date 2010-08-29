@@ -5,80 +5,86 @@
   and comments are allowed.
 */
 {
-  namespaces: [
-    { prefix: "sample", uri: "org.lilycms.tools.import_.sample"}
-  ],
+  namespaces: {
+    "org.lilycms.tools.import_.sample": "sample"
+  },
   fieldTypes: [
     {
-      name: "sample:stringfield",
+      name: "sample$stringfield",
       valueType: { "primitive": "STRING" },
       scope: "versioned"
     },
     {
-      name: "sample:multiValueString",
+      name: "sample$multiValueString",
       valueType: { "primitive": "STRING", multiValue: true },
       scope: "non_versioned"
     },
     {
-      name: "sample:intfield",
+      name: "sample$intfield",
       valueType: { "primitive": "INTEGER" },
       scope: "non_versioned"
     },
     {
-      name: "sample:longfield",
+      name: "sample$longfield",
       valueType: { "primitive": "LONG" },
       scope: "non_versioned"
     },
     {
-      name: "sample:booleanfield",
+      name: "sample$booleanfield",
       valueType: { "primitive": "BOOLEAN" },
       scope: "non_versioned"
     },
     {
-      name: "sample:linkfield",
+      name: "sample$linkfield",
       valueType: { "primitive": "LINK" },
       scope: "non_versioned"
     },
     {
-      name: "sample:datefield",
+      name: "sample$datefield",
       valueType: { "primitive": "DATE" },
       scope: "non_versioned"
     },
     {
-      name: "sample:datetimefield",
+      name: "sample$datetimefield",
       valueType: { "primitive": "DATETIME" },
       scope: "non_versioned"
     }
   ],
   recordTypes: [
     {
-      name: "sample:MiscFields",
+      name: "sample$MiscFields",
       fields: [
-        {name: "sample:stringfield", mandatory: false },
-        {name: "sample:intfield", mandatory: false }
+        {name: "sample$stringfield", mandatory: false },
+        {name: "sample$intfield", mandatory: false }
       ]
     }
   ],
   records: [
     {
-      type: "sample:MiscFields",
-      "sample:stringfield": "My first document.",
-      "sample:multiValueString": ["first", "second", "third"],
-      "sample:intfield": 23,
-      "sample:longfield": 242,
-      "sample:datefield": "2010-07-09",
-      "sample:datetimefield": "2010-07-09T14:04:46",
-      "sample:booleanfield": true
+      type: "sample$MiscFields",
+      fields: {
+        "sample$stringfield": "My first document.",
+        "sample$multiValueString": ["first", "second", "third"],
+        "sample$intfield": 23,
+        "sample$longfield": 242,
+        "sample$datefield": "2010-07-09",
+        "sample$datetimefield": "2010-07-09T14:04:46",
+        "sample$booleanfield": true
+      }
     },
     {
-      type: "sample:MiscFields",
+      type: "sample$MiscFields",
       id: "zoo",
-      "sample:stringfield": "A document with a user-defined ID"
+      fields: {
+        "sample$stringfield": "A document with a user-defined ID"
+      }
     },
     {
-      type: "sample:MiscFields",
-      "sample:stringfield": "A document with a link field",
-      "sample:linkfield": "USER.zoo"
+      type: "sample$MiscFields",
+      fields: {
+        "sample$stringfield": "A document with a link field",
+        "sample$linkfield": "USER.zoo"
+      }
     }
   ]
 }
