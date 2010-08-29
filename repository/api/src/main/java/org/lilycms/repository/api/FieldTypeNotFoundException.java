@@ -22,18 +22,15 @@ public class FieldTypeNotFoundException extends RepositoryException {
 
     private final String id;
     private final QName name;
-    private final Long version;
 
-    public FieldTypeNotFoundException(String id, Long version) {
+    public FieldTypeNotFoundException(String id) {
         this.id = id;
         this.name = null;
-        this.version = version;
     }
     
-    public FieldTypeNotFoundException(QName name, Long version) {
+    public FieldTypeNotFoundException(QName name) {
         this.id = null;
         this.name = name;
-        this.version = version;
     }
 
     public String getId() {
@@ -44,21 +41,12 @@ public class FieldTypeNotFoundException extends RepositoryException {
         return name;
     }
 
-    public Long getVersion() {
-        return version;
-    }
-    
     @Override
     public String getMessage() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("FieldType <");
         stringBuilder.append(id != null ? id : name);
         stringBuilder.append("> ");
-        if (version != null) {
-            stringBuilder.append("version: <");
-            stringBuilder.append(version);
-            stringBuilder.append("> ");
-        }
         stringBuilder.append("could not be found.");
         return stringBuilder.toString();
     }

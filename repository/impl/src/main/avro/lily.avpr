@@ -236,7 +236,6 @@
       "fields": [
         {"name": "id", "type": ["string", "null"]},
         {"name": "name", "type": ["AvroQName", "null"]},
-        {"name": "version", "type": "long"},
         {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
       ]
     },

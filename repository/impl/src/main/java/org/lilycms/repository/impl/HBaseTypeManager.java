@@ -283,7 +283,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         Get get = new Get(idBytes);
         try {
             if (!getTypeTable().exists(get)) {
-                throw new FieldTypeNotFoundException(fieldTypeEntry.getFieldTypeId(), null);
+                throw new FieldTypeNotFoundException(fieldTypeEntry.getFieldTypeId());
             }
         } catch (IOException e) {
             throw new TypeException("Exception occurred while checking existance of FieldTypeEntry <"
@@ -441,7 +441,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         try {
             // Do an exists check first and avoid useless creation of the row due to an incrementColumnValue call
             if (!getTypeTable().exists(new Get(rowId))) {
-                throw new FieldTypeNotFoundException(fieldType.getId(), null);
+                throw new FieldTypeNotFoundException(fieldType.getId());
             }
             // First increment the counter on the row with the name as key, then read the field type
             byte[] nameBytes = encodeName(fieldType.getName());
@@ -483,12 +483,12 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         Get get = new Get(idToBytes(id));
         try {
             if (!getTypeTable().exists(get)) {
-                throw new FieldTypeNotFoundException(id, null);
+                throw new FieldTypeNotFoundException(id);
             }  
             result = getTypeTable().get(get);
             // This covers the case where a given id would match a name that was used for setting the concurrent counters
             if (result.getValue(NON_VERSIONED_COLUMN_FAMILY, FIELDTYPE_NAME_COLUMN_NAME) == null) {
-                throw new FieldTypeNotFoundException(id, null);
+                throw new FieldTypeNotFoundException(id);
             }
         } catch (IOException e) {
             throw new TypeException("Exception occurred while retrieving fieldType <" + id + "> from HBase", e);
@@ -508,7 +508,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         // TODO the below is a temporary fix, should probably be fixed in
         // getFieldTypeFromCache
         if (fieldType == null) {
-            throw new FieldTypeNotFoundException(name, 1L);
+            throw new FieldTypeNotFoundException(name);
         }
         return fieldType.clone();
     }

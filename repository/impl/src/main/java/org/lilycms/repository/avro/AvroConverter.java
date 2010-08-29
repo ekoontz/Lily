@@ -420,10 +420,6 @@ public class AvroConverter {
             avroException.id = new Utf8(exception.getId());
         if (exception.getName() != null)
             avroException.name = convert(exception.getName());
-        Long version = exception.getVersion();
-        if (version != null) {
-            avroException.version = version;
-        }
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
@@ -466,9 +462,9 @@ public class AvroConverter {
     public FieldTypeNotFoundException convert(AvroFieldTypeNotFoundException avroException) {
         FieldTypeNotFoundException exception;
         if (avroException.id != null) {
-            exception = new FieldTypeNotFoundException(convert(avroException.id), avroException.version);
+            exception = new FieldTypeNotFoundException(convert(avroException.id));
         } else {
-            exception = new FieldTypeNotFoundException(convert(avroException.name), avroException.version);
+            exception = new FieldTypeNotFoundException(convert(avroException.name));
         }
         restoreCauses(avroException.remoteCauses, exception);
         return exception;
