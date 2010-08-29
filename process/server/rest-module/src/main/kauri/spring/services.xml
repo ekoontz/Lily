@@ -15,14 +15,6 @@
   <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module"/>
 
   <kauri:import-service
-      id="representationBuilder"
-      service="org.kauriproject.representation.build.RepresentationBuilder"/>
-
-  <bean factory-bean="representationBuilder" factory-method="install">
-    <constructor-arg ref="module"/>
-  </bean>
-
-  <kauri:import-service
       id="routingService"
       service="org.kauriproject.routing.RoutingService"/>
 
