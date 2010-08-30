@@ -16,39 +16,25 @@ import java.util.Map;
 
 import static org.lilycms.util.repo.JsonUtil.*;
 
-public class RecordReader {
-    private Namespaces namespaces;
-    private Repository repository;
+public class RecordReader implements EntityReader<Record> {
+    public static EntityReader<Record> INSTANCE = new RecordReader();
 
-    /**
-     * When you need to read a lot of records using the same namespace context and repository,
-     * the same RecordReader instance can be reused.
-     */
-    public RecordReader(Namespaces namespaces, Repository repository) {
-        this.namespaces = namespaces;
-        this.repository = repository;
+    public Record fromJson(ObjectNode node, Repository repository) throws JsonFormatException, RepositoryException {
+        Namespaces namespaces = NamespacesConverter.fromContextJson(node);
+        return fromJson(node, namespaces, repository);
     }
 
-    public static Record fromJson(ObjectNode recordNode, Repository repository)
+    public Record fromJson(ObjectNode node, Namespaces namespaces, Repository repository)
             throws JsonFormatException, RepositoryException {
-        Namespaces namespaces = NamespacesConverter.fromContextJson(recordNode);
-        return new RecordReader(namespaces, repository).readRecord(recordNode);
-    }
 
-    public static Record fromJson(ObjectNode recordNode, Namespaces namespaces, Repository repository)
-            throws JsonFormatException, RepositoryException {
-        return new RecordReader(namespaces, repository).readRecord(recordNode);
-    }
-
-    private Record readRecord(ObjectNode recordNode) throws JsonFormatException, RepositoryException {
         Record record = repository.newRecord();
 
-        String id = getString(recordNode, "id", null);
+        String id = getString(node, "id", null);
         if (id != null) {
             record.setId(repository.getIdGenerator().newRecordId(id));
         }
 
-        JsonNode typeNode = recordNode.get("type");
+        JsonNode typeNode = node.get("type");
         if (typeNode != null) {
             if (typeNode.isObject()) {
                 QName qname = QNameConverter.fromJson(JsonUtil.getString(typeNode, "name"), namespaces);
@@ -59,21 +45,23 @@ public class RecordReader {
             }
         }
 
-        ObjectNode fields = getObject(recordNode, "fields");
+        ObjectNode fields = getObject(node, "fields");
         Iterator<Map.Entry<String, JsonNode>> it = fields.getFields();
         while (it.hasNext()) {
             Map.Entry<String, JsonNode> entry = it.next();
 
             QName qname = QNameConverter.fromJson(entry.getKey(), namespaces);
             FieldType fieldType = repository.getTypeManager().getFieldTypeByName(qname);
-            Object value = readMultiValue(fields.get(entry.getKey()), fieldType, entry.getKey());
+            Object value = readMultiValue(fields.get(entry.getKey()), fieldType, entry.getKey(), repository);
             record.setField(qname, value);
         }
 
         return record;
     }
 
-    private Object readMultiValue(JsonNode node, FieldType fieldType, String prop) throws JsonFormatException {
+    private Object readMultiValue(JsonNode node, FieldType fieldType, String prop, Repository repository)
+            throws JsonFormatException {
+
         if (fieldType.getValueType().isMultiValue()) {
             if (!node.isArray()) {
                 throw new JsonFormatException("Multi-value value should be specified as array in " + prop);
@@ -81,16 +69,18 @@ public class RecordReader {
 
             List<Object> value = new ArrayList<Object>();
             for (int i = 0; i < node.size(); i++) {
-                value.add(readHierarchical(node.get(i), fieldType, prop));
+                value.add(readHierarchical(node.get(i), fieldType, prop, repository));
             }
 
             return value;
         } else {
-            return readHierarchical(node, fieldType, prop);
+            return readHierarchical(node, fieldType, prop, repository);
         }
     }
 
-    private Object readHierarchical(JsonNode node, FieldType fieldType, String prop) throws JsonFormatException {
+    private Object readHierarchical(JsonNode node, FieldType fieldType, String prop, Repository repository)
+            throws JsonFormatException {
+
         if (fieldType.getValueType().isHierarchical()) {
             if (!node.isArray()) {
                 throw new JsonFormatException("Hierarchical value should be specified as an array in " + prop);
@@ -98,16 +88,18 @@ public class RecordReader {
 
             Object[] elements = new Object[node.size()];
             for (int i = 0; i < node.size(); i++) {
-                elements[i] = readPrimitive(node.get(i), fieldType, prop);
+                elements[i] = readPrimitive(node.get(i), fieldType, prop, repository);
             }
 
             return new HierarchyPath(elements);
         } else {
-            return readPrimitive(node, fieldType, prop);
+            return readPrimitive(node, fieldType, prop, repository);
         }
     }
 
-    private Object readPrimitive(JsonNode node, FieldType fieldType, String prop) throws JsonFormatException {
+    private Object readPrimitive(JsonNode node, FieldType fieldType, String prop, Repository repository)
+            throws JsonFormatException {
+
         String primitive = fieldType.getValueType().getPrimitive().getName();
 
         if (primitive.equals("STRING")) {

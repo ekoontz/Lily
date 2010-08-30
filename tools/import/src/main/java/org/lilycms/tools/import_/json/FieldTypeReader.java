@@ -7,14 +7,16 @@ import org.lilycms.util.repo.VersionTag;
 
 import static org.lilycms.util.repo.JsonUtil.*;
 
-public class FieldTypeReader {
-    public static FieldType fromJson(ObjectNode node, TypeManager typeManager) throws JsonFormatException {
+public class FieldTypeReader implements EntityReader<FieldType> {
+    public static EntityReader<FieldType> INSTANCE = new FieldTypeReader();
+
+    public FieldType fromJson(ObjectNode node, Repository repository) throws JsonFormatException, RepositoryException {
         Namespaces namespaces = NamespacesConverter.fromContextJson(node);
-        return fromJson(node, namespaces, typeManager);
+        return fromJson(node, namespaces, repository);
     }
 
-    public static FieldType fromJson(ObjectNode node, Namespaces namespaces, TypeManager typeManager)
-            throws JsonFormatException {
+    public FieldType fromJson(ObjectNode node, Namespaces namespaces, Repository repository)
+            throws JsonFormatException, RepositoryException {
 
         QName name = QNameConverter.fromJson(getString(node, "name"), namespaces);
 
@@ -26,6 +28,7 @@ public class FieldTypeReader {
         String scopeName = getString(node, "scope", "non_versioned");
         Scope scope = parseScope(scopeName);
 
+        TypeManager typeManager = repository.getTypeManager();
         ValueType valueType = typeManager.getValueType(primitive, multiValue, hierarchical);
         FieldType fieldType = typeManager.newFieldType(valueType, name, scope);
 

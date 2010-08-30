@@ -6,10 +6,7 @@ import org.lilycms.repository.api.*;
 import org.lilycms.rest.PostAction;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.tools.import_.json.FieldTypeReader;
-import org.lilycms.tools.import_.json.RecordReader;
 import org.lilycms.tools.import_.json.JsonFormatException;
-import org.lilycms.tools.import_.json.RecordTypeReader;
 import org.lilycms.util.repo.JsonUtil;
 
 import javax.ws.rs.WebApplicationException;
@@ -22,8 +19,6 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Set;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -31,20 +26,12 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 @Provider
 public class PostActionMessageBodyReader extends RepositoryEnabled implements MessageBodyReader<PostAction> {
 
-    private static Set<Type> SUPPORTED_TYPES;
-    static {
-        SUPPORTED_TYPES = new HashSet<Type>();
-        SUPPORTED_TYPES.add(RecordType.class);
-        SUPPORTED_TYPES.add(FieldType.class);
-        SUPPORTED_TYPES.add(Record.class);
-    }
-
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         if (type.equals(PostAction.class) && mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
             if (genericType instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType)genericType;
                 Type[] types = pt.getActualTypeArguments();
-                if (types.length == 1 && SUPPORTED_TYPES.contains(types[0])) {
+                if (types.length == 1 && EntityRegistry.SUPPORTED_TYPES.containsKey(types[0])) {
                     return true;
                 }
             }
@@ -70,18 +57,9 @@ public class PostActionMessageBodyReader extends RepositoryEnabled implements Me
 
         Object entity;
         try {
-            if (entityType.equals(RecordType.class)) {
-                ObjectNode objectNode = JsonUtil.getObject(postNode, "recordType");
-                entity = RecordTypeReader.fromJson(objectNode, repository.getTypeManager());
-            } else if (entityType.equals(FieldType.class)) {
-                ObjectNode objectNode = JsonUtil.getObject(postNode, "fieldType");
-                entity = FieldTypeReader.fromJson(objectNode, repository.getTypeManager());
-            } else if (entityType.equals(Record.class)) {
-                ObjectNode objectNode = JsonUtil.getObject(postNode, "record");
-                entity = RecordReader.fromJson(objectNode, repository);
-            } else {
-                throw new RuntimeException("Unexpected PostAction parameter type: " + entityType);
-            }
+            EntityRegistry.RegistryEntry registryEntry = EntityRegistry.findReaderRegistryEntry((Class)entityType);
+            ObjectNode objectNode = JsonUtil.getObject(postNode, registryEntry.getPropertyName());
+            entity = EntityRegistry.findReader((Class)entityType).fromJson(objectNode, repository);
         } catch (JsonFormatException e) {
             throw new ResourceException("Error in submitted JSON.", e, BAD_REQUEST.getStatusCode());
         } catch (RepositoryException e) {

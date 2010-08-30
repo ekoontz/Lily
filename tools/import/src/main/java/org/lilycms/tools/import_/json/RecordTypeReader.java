@@ -7,15 +7,18 @@ import org.lilycms.repository.api.*;
 
 import static org.lilycms.util.repo.JsonUtil.*;
 
-public class RecordTypeReader {
-    public static RecordType fromJson(ObjectNode node, TypeManager typeManager) throws JsonFormatException {
+public class RecordTypeReader implements EntityReader<RecordType> {
+    public static EntityReader<RecordType> INSTANCE  = new RecordTypeReader();
+
+    public RecordType fromJson(ObjectNode node, Repository repository) throws JsonFormatException, RepositoryException {
         Namespaces namespaces = NamespacesConverter.fromContextJson(node);
-        return fromJson(node, namespaces, typeManager);
+        return fromJson(node, namespaces, repository);
     }
 
-    public static RecordType fromJson(ObjectNode node, Namespaces namespaces, TypeManager typeManager)
-            throws JsonFormatException {
+    public RecordType fromJson(ObjectNode node, Namespaces namespaces, Repository repository)
+            throws JsonFormatException, RepositoryException {
 
+        TypeManager typeManager = repository.getTypeManager();
         QName name = QNameConverter.fromJson(getString(node, "name"), namespaces);
 
         RecordType recordType = typeManager.newRecordType(name);

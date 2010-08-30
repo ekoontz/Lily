@@ -5,10 +5,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.tools.import_.json.FieldTypeReader;
 import org.lilycms.tools.import_.json.JsonFormatException;
-import org.lilycms.tools.import_.json.RecordReader;
-import org.lilycms.tools.import_.json.RecordTypeReader;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -26,8 +23,13 @@ import static javax.ws.rs.core.Response.Status.*;
 public class EntityMessageBodyReader extends RepositoryEnabled implements MessageBodyReader<Object> {
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return mediaType.equals(MediaType.APPLICATION_JSON_TYPE) &&
-                (type.equals(FieldType.class) || type.equals(RecordType.class) || type.equals(Record.class));
+        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+            for (Class clazz : EntityRegistry.SUPPORTED_TYPES.keySet()) {
+                if (type.isAssignableFrom(clazz))
+                    return true;
+            }
+        }
+        return false;
     }
 
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
@@ -43,15 +45,7 @@ public class EntityMessageBodyReader extends RepositoryEnabled implements Messag
         ObjectNode objectNode = (ObjectNode)node;
 
         try {
-            if (type.equals(FieldType.class)) {                
-                return FieldTypeReader.fromJson(objectNode, repository.getTypeManager());
-            } else if (type.equals(RecordType.class)) {
-                return RecordTypeReader.fromJson(objectNode, repository.getTypeManager());
-            } else if (type.equals(Record.class)) {
-                return RecordReader.fromJson(objectNode, repository);
-            } else {
-                throw new RuntimeException("Unexpected type: " + type);
-            }
+            return EntityRegistry.findReader(type).fromJson(objectNode, repository);
         } catch (JsonFormatException e) {
             throw new ResourceException("Error in submitted JSON.", e, BAD_REQUEST.getStatusCode());
         } catch (RepositoryException e) {

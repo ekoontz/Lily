@@ -5,6 +5,7 @@ import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.rest.EntityList;
+import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.tools.import_.json.EntityWriter;
 
@@ -21,10 +22,27 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 @Provider
-public class EntityListMessageBodyWriter extends BaseEntityWriter implements MessageBodyWriter<EntityList> {
+public class EntityListMessageBodyWriter extends RepositoryEnabled implements MessageBodyWriter<EntityList> {
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return type.equals(EntityList.class) && isTypeParamSupported(genericType) && mediaType.equals(MediaType.APPLICATION_JSON_TYPE);
+    }
+
+    public boolean isTypeParamSupported(Type genericType) {
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType pt = (ParameterizedType)genericType;
+            Type[] types = pt.getActualTypeArguments();
+            if (types.length == 1 && EntityRegistry.SUPPORTED_TYPES.containsKey(types[0])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected EntityWriter getEntityWriter(Type genericType) {
+        Class kind = (Class)((ParameterizedType)genericType).getActualTypeArguments()[0];
+        return EntityRegistry.SUPPORTED_TYPES.get(kind).getWriter();
     }
 
     public long getSize(EntityList entityList, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -39,8 +57,7 @@ public class EntityListMessageBodyWriter extends BaseEntityWriter implements Mes
         ArrayNode resultsNode = listNode.putArray("results");
 
         try {
-            Class kind = (Class)((ParameterizedType)genericType).getActualTypeArguments()[0];
-            EntityWriter writer = SUPPORTED_TYPES.get(kind);
+            EntityWriter writer = getEntityWriter(genericType);
             for (Object entity : entityList.getItems()) {
                 resultsNode.add(writer.toJson(entity, repository));
             }
