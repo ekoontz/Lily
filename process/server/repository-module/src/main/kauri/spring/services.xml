@@ -41,21 +41,6 @@
     <constructor-arg ref="hbaseConf"/>
   </bean>
 
-  <bean id="blobStoreAccess" class="org.lilycms.repository.impl.DFSBlobStoreAccess">
-    <constructor-arg>
-      <bean
-          class="org.apache.hadoop.fs.FileSystem"
-          factory-method="get">
-        <constructor-arg>
-          <bean class="java.net.URI">
-            <constructor-arg value="${repository:blobFileSystem}"/>
-          </bean>
-        </constructor-arg>
-        <constructor-arg ref="hbaseConf"/>
-      </bean>
-    </constructor-arg>
-  </bean>
-  
   <bean
     id="blobStoreAccessFactory"
     class="org.lilycms.server.modules.repository.BlobStoreConfig"
@@ -99,6 +84,7 @@
       <bean factory-bean="avroServer" factory-method="getPort"/>
     </constructor-arg>
     <constructor-arg value="${repository:blobFileSystem}"/>
+    <constructor-arg ref="hbaseConf"/>
   </bean>
 
 </beans>

@@ -29,7 +29,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.util.Pair;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -62,16 +61,17 @@ public class LilyClient {
     private Set<String> serverAddresses = new HashSet<String>();
     private String lilyPath = "/lily";
     private String nodesPath = lilyPath + "/repositoryNodes";
-    private String dfsUriPath = lilyPath + "/dfsUri";
+    private String blobDfsUriPath = lilyPath + "/blobStoresConfig/dfsUri";
+    private String blobHBaseZkQuorumPath = lilyPath + "/blobStoresConfig/hbaseZkQuorum";
+    private String blobHBaseZkPortPath = lilyPath + "/blobStoresConfig/hbaseZkPort";
 
-    private Log log = LogFactory.getLog(getClass());
     private BlobStoreAccess dfsBlobStoreAccess;
     private BlobStoreAccess hbaseBlobStoreAccess;
     private BlobStoreAccess inlineBlobStoreAccess;
-    private final String zookeeperConnectString;
+
+    private Log log = LogFactory.getLog(getClass());
 
     public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
-        this.zookeeperConnectString = zookeeperConnectString;
         zk = new ZooKeeper(zookeeperConnectString, 5000, new ZkWatcher());
         refreshServers();
     }
@@ -107,9 +107,8 @@ public class LilyClient {
 
     private SizeBasedBlobStoreAccessFactory setupBlobStoreAccess() throws IOException {
         Configuration configuration = HBaseConfiguration.create();
-        Pair<String,String> quorumsAndPorts = extractQuorumsAndPorts(zookeeperConnectString);
-        configuration.set("hbase.zookeeper.quorum", quorumsAndPorts.getFirst());
-        configuration.set("hbase.zookeeper.property.clientPort", quorumsAndPorts.getSecond());
+        configuration.set("hbase.zookeeper.quorum", getBlobHBaseZkQuorum());
+        configuration.set("hbase.zookeeper.property.clientPort", getBlobHBaseZkPort());
         
         FileSystem.get(getDfsUri(), configuration);
         
@@ -123,29 +122,27 @@ public class LilyClient {
         return blobStoreAccessFactory;
     }
     
-    private Pair<String, String> extractQuorumsAndPorts(String zookeeperConnectString) {
-        StringBuilder quorumBuilder = new StringBuilder();
-        StringBuilder portBuilder = new StringBuilder();
-        
-        String[] hostsAndPorts = zookeeperConnectString.split(",");
-        boolean firstTime = true;
-        for (String hostAndPort : hostsAndPorts) {
-            String[] splitHostAndPort = hostAndPort.split(":");
-            if (!firstTime) {
-                quorumBuilder.append(",");
-                portBuilder.append(",");
-            }
-            quorumBuilder.append(splitHostAndPort[0]);
-            portBuilder.append(splitHostAndPort[1]);
-        }
-        return new Pair<String, String>(quorumBuilder.toString(), portBuilder.toString());
-    }
-    
     private URI getDfsUri()  {
         try {
-            return new URI(new String(zk.getData(dfsUriPath, false, new Stat())));
+            return new URI(new String(zk.getData(blobDfsUriPath, false, new Stat())));
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get DFS URI information from Zookeeper", e);
+            throw new RuntimeException("Blob stores config lookup: failed to get DFS URI from ZooKeeper", e);
+        }
+    }
+
+    private String getBlobHBaseZkQuorum() {
+        try {
+            return new String(zk.getData(blobHBaseZkQuorumPath, false, new Stat()));
+        } catch (Exception e) {
+            throw new RuntimeException("Blob stores config lookup: failed to get HBase ZooKeeper quorum from ZooKeeper", e);
+        }
+    }
+
+    private String getBlobHBaseZkPort() {
+        try {
+            return new String(zk.getData(blobHBaseZkPortPath, false, new Stat()));
+        } catch (Exception e) {
+            throw new RuntimeException("Blob stores config lookup: failed to get HBase ZooKeeper port from ZooKeeper", e);
         }
     }
 
