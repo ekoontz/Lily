@@ -79,7 +79,7 @@ public class RecordResource extends RepositoryEnabled {
     @POST
     @Produces("application/json")
     @Consumes("application/json")
-    public Record post(@PathParam("id") String id, PostAction<Record> postAction) {
+    public Response post(@PathParam("id") String id, PostAction<Record> postAction) {
         if (!postAction.getAction().equals("update")) {
             throw new ResourceException("Unsupported POST action: " + postAction.getAction(), BAD_REQUEST.getStatusCode());
         }
@@ -94,14 +94,30 @@ public class RecordResource extends RepositoryEnabled {
 
         record.setId(recordId);
 
+        ImportResult<Record> result;
         try {
-            // TODO record we respond with should be full record or be limited to user-specified field list
-            return repository.update(record);
-        } catch (RecordNotFoundException e) {
-            throw new ResourceException(e, NOT_FOUND.getStatusCode());
+            result = RecordImport.importRecord(record, ImportMode.UPDATE, repository);
         } catch (RepositoryException e) {
             throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
+
+        // TODO record we respond with should be full record or be limited to user-specified field list
+        record = result.getEntity();
+        Response response;
+
+        ImportResultType resultType = result.getResultType();
+        switch (resultType) {
+            case CANNOT_UPDATE_DOES_NOT_EXIST:
+                throw new ResourceException("Record not found: " + recordId, NOT_FOUND.getStatusCode());
+            case UPDATED:
+            case UP_TO_DATE:
+                response = Response.ok(record).build();
+                break;
+            default:
+                throw new RuntimeException("Unexpected import result type: " + resultType);
+        }
+
+        return response;
     }
 
     @DELETE

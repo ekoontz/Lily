@@ -10,7 +10,7 @@ import org.lilycms.repository.api.ValueType;
 public class FieldTypeWriter implements EntityWriter<FieldType> {
     public static EntityWriter<FieldType> INSTANCE = new FieldTypeWriter();
 
-    public ObjectNode toJson(FieldType fieldType, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(FieldType fieldType, Repository repository) {
         Namespaces namespaces = new Namespaces();
 
         ObjectNode fieldNode = toJson(fieldType, namespaces, repository);
@@ -20,11 +20,11 @@ public class FieldTypeWriter implements EntityWriter<FieldType> {
         return fieldNode;
     }
 
-    public ObjectNode toJson(FieldType fieldType, Namespaces namespaces, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(FieldType fieldType, Namespaces namespaces, Repository repository) {
         return toJson(fieldType, namespaces, true);
     }
 
-    public static ObjectNode toJson(FieldType fieldType, Namespaces namespaces, boolean includeName) throws RepositoryException {
+    public static ObjectNode toJson(FieldType fieldType, Namespaces namespaces, boolean includeName) {
         ObjectNode fieldNode = JsonNodeFactory.instance.objectNode();
 
         fieldNode.put("id", fieldType.getId());

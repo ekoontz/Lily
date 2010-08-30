@@ -190,7 +190,7 @@ public class JsonImportTool {
         }
     }
 
-    public void readNamespaces(ObjectNode node) throws ImportException, JsonFormatException {
+    public void readNamespaces(ObjectNode node) throws JsonFormatException {
         this.namespaces = NamespacesConverter.fromJson(node);
     }
 

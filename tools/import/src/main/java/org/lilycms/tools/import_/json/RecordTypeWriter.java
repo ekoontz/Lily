@@ -13,7 +13,7 @@ import java.util.Map;
 public class RecordTypeWriter implements EntityWriter<RecordType> {
     public static EntityWriter<RecordType> INSTANCE = new RecordTypeWriter();
 
-    public ObjectNode toJson(RecordType recordType, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(RecordType recordType, Repository repository) {
         Namespaces namespaces = new Namespaces();
 
         ObjectNode rtNode = toJson(recordType, namespaces, repository);
@@ -23,11 +23,11 @@ public class RecordTypeWriter implements EntityWriter<RecordType> {
         return rtNode;
     }
 
-    public ObjectNode toJson(RecordType recordType, Namespaces namespaces, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(RecordType recordType, Namespaces namespaces, Repository repository) {
         return toJson(recordType, namespaces, true);
     }
 
-    public static ObjectNode toJson(RecordType recordType, Namespaces namespaces, boolean includeName) throws RepositoryException {
+    public static ObjectNode toJson(RecordType recordType, Namespaces namespaces, boolean includeName) {
         ObjectNode rtNode = JsonNodeFactory.instance.objectNode();
 
         rtNode.put("id", recordType.getId());

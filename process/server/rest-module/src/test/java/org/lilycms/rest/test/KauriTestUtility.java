@@ -79,7 +79,7 @@ public class KauriTestUtility {
         return runtime.getRestserviceManager().getComponent().getContext().getClientDispatcher();
     }
 
-    public ConfManager getConfManager() throws Exception {
+    public ConfManager getConfManager() {
         List<File> confDirs = new ArrayList<File>();
         confDirs.add(confDir);
         confDirs.add(new File(getBasedir() + "/../conf"));

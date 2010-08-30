@@ -1,6 +1,7 @@
 package org.lilycms.tools.import_.json;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -45,15 +46,30 @@ public class RecordReader implements EntityReader<Record> {
             }
         }
 
-        ObjectNode fields = getObject(node, "fields");
-        Iterator<Map.Entry<String, JsonNode>> it = fields.getFields();
-        while (it.hasNext()) {
-            Map.Entry<String, JsonNode> entry = it.next();
+        ObjectNode fields = getObject(node, "fields", null);
+        if (fields != null) {
+            Iterator<Map.Entry<String, JsonNode>> it = fields.getFields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
 
-            QName qname = QNameConverter.fromJson(entry.getKey(), namespaces);
-            FieldType fieldType = repository.getTypeManager().getFieldTypeByName(qname);
-            Object value = readMultiValue(fields.get(entry.getKey()), fieldType, entry.getKey(), repository);
-            record.setField(qname, value);
+                QName qname = QNameConverter.fromJson(entry.getKey(), namespaces);
+                FieldType fieldType = repository.getTypeManager().getFieldTypeByName(qname);
+                Object value = readMultiValue(fields.get(entry.getKey()), fieldType, entry.getKey(), repository);
+                record.setField(qname, value);
+            }
+        }
+
+        ArrayNode fieldsToDelete = getArray(node, "fieldsToDelete", null);
+        if (fieldsToDelete != null) {
+            for (int i = 0; i < fieldsToDelete.size(); i++) {
+                JsonNode fieldToDelete = fieldsToDelete.get(i);
+                if (!fieldToDelete.isTextual()) {
+                    throw new JsonFormatException("fieldsToDelete should be an array of strings, encountered: " + fieldToDelete);
+                } else {
+                    QName qname = QNameConverter.fromJson(fieldToDelete.getTextValue(), namespaces);
+                    record.getFieldsToDelete().add(qname);
+                }
+            }
         }
 
         return record;

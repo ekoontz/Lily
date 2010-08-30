@@ -352,6 +352,50 @@ public class RestTest {
         assertStatus(Status.SUCCESS_OK, response);
     }
 
+    @Test
+    public void testDeleteFields() throws Exception {
+        // Create two field types
+        String body = json("{action: 'create', fieldType: {name: 'n$del_field1', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        Response response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        body = json("{action: 'create', fieldType: {name: 'n$del_field2', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/fieldTypeById", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Create a record type
+        body = json("{action: 'create', recordType: {name: 'n$del', " +
+                "fields: [ {name: 'n$del_field1'}, {name: 'n$del_field2'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/recordType", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+
+        // Create a record with a value for the two fields
+        body = json("{ action: 'create', record: { type: 'n$del', " +
+                "fields: { 'n$del_field1' : 'foo', 'n$del_field2': 'bar' }, namespaces : { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/record", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        String uri = response.getLocationRef().toString();
+        JsonNode json = readJson(response.getEntity());
+        assertEquals(2L, json.get("fields").size());
+
+        // Delete one of the fields. Do this 2 times, the second time should have no effect.
+        for (int i = 0; i < 2; i++) {
+            body = json("{ fieldsToDelete: ['n$del_field2'], namespaces : { 'org.lilycms.resttest': 'n' } }");
+            response = put(uri, body);
+            assertStatus(Status.SUCCESS_OK, response);
+
+            // TODO FIXME we need to re-read the record here since the returned record contains only submitted fields
+            response = get(uri);
+            assertStatus(Status.SUCCESS_OK, response);
+            json = readJson(response.getEntity());
+            assertEquals(1L, json.get("fields").size());
+            assertEquals(2L, json.get("version").getLongValue());
+        }        
+    }
+
     /**
      * Test versioning of record types and the creation of a record that uses the non-latest version of a record type.
      */
@@ -399,7 +443,7 @@ public class RestTest {
 
         // Create record
         body = json("{ type: {name: 'n$vrt', version: 1}, " +
-                "fields: { 'n$field1' : 'pink shoe laces' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+                "fields: { 'n$vrt_field1' : 'pink shoe laces' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
         assertStatus(Status.SUCCESS_CREATED, response);
 
@@ -408,7 +452,7 @@ public class RestTest {
 
         // Update record
         body = json("{ type: {name: 'n$vrt', version: 1}, " +
-                "fields: { 'n$field1' : 'pink shoe laces 2' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+                "fields: { 'n$vrt_field1' : 'pink shoe laces 2' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
         assertStatus(Status.SUCCESS_OK, response);
 
@@ -417,7 +461,7 @@ public class RestTest {
 
         // Update without specifying version, should move to last version
         body = json("{ type: {name: 'n$vrt'}, " +
-                "fields: { 'n$field1' : 'pink shoe laces 3' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
+                "fields: { 'n$vrt_field1' : 'pink shoe laces 3' }, namespaces : { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/record/USER.pink_shoe_laces", body);
         assertStatus(Status.SUCCESS_OK, response);
 

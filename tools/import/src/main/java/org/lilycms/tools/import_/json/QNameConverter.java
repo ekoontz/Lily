@@ -6,7 +6,7 @@ public class QNameConverter {
     public static QName fromJson(String name, Namespaces namespaces) throws JsonFormatException {
         int pos = name.indexOf('$');
         if (pos == -1) {
-            throw new JsonFormatException("Invalid qualified name: " + name);
+            throw new JsonFormatException("Invalid qualified name, does not contain a $: " + name);
         }
 
         String prefix = name.substring(0, pos);
