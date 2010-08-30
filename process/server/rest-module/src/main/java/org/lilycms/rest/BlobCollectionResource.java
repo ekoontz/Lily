@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.Base64Variants;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
+import org.lilycms.tools.import_.json.BlobConverter;
 import org.lilycms.util.io.Closer;
 
 import javax.ws.rs.Consumes;
@@ -52,7 +53,7 @@ public class BlobCollectionResource extends RepositoryEnabled {
         }
 
         // TODO the URI we point to in the location header does currently not exist.
-        String value = Base64Variants.MODIFIED_FOR_URL.encode(blob.getValue());
+        String value = BlobConverter.valueToString(blob.getValue());
         URI uri = UriBuilder.fromUri("/blob/" + value).build();
         return Response.created(uri).entity(blob).build();
     }

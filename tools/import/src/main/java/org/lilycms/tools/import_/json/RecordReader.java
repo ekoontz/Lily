@@ -177,16 +177,7 @@ public class RecordReader implements EntityReader<Record> {
                 throw new JsonFormatException("Expected object value for " + prop);
 
             ObjectNode blobNode = (ObjectNode)node;
-
-            String mimeType = JsonUtil.getString(blobNode, "mimeType", null);
-            long size = JsonUtil.getLong(blobNode, "size");
-            String name = JsonUtil.getString(blobNode, "name", null);
-            byte[] value = JsonUtil.getBinary(blobNode, "value");
-
-            Blob blob = new Blob(mimeType, size, name);
-            blob.setValue(value);
-
-            return blob;
+            return BlobConverter.fromJson(blobNode);
         } else {
             throw new JsonFormatException("Primitive value type not supported: " + primitive);
         }

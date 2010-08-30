@@ -1,8 +1,7 @@
 package org.lilycms.rest.providers.json;
 
-import org.codehaus.jackson.node.JsonNodeFactory;
-import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.Blob;
+import org.lilycms.tools.import_.json.BlobConverter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -28,11 +27,6 @@ public class BlobMessageBodyWriter implements MessageBodyWriter<Blob> {
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
 
-        ObjectNode jsonNode = JsonNodeFactory.instance.objectNode();
-        jsonNode.put("value", blob.getValue());
-        jsonNode.put("size", blob.getSize());
-        jsonNode.put("mimeType", blob.getMimetype());
-
-        JsonFormat.serialize(jsonNode, entityStream);
+        JsonFormat.serialize(BlobConverter.toJson(blob), entityStream);
     }
 }

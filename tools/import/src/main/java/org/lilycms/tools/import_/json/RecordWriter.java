@@ -118,13 +118,7 @@ public class RecordWriter implements EntityWriter<Record> {
             result = factory.numberNode((BigDecimal)value);
         } else if (type.equals("BLOB")) {
             Blob blob = (Blob)value;
-            ObjectNode jsonBlob = factory.objectNode();
-            jsonBlob.put("value", blob.getValue());
-            jsonBlob.put("mimeType", blob.getMimetype());
-            if (blob.getName() != null)
-                jsonBlob.put("name", blob.getName());
-            jsonBlob.put("size", blob.getSize());
-            result = jsonBlob;
+            result = BlobConverter.toJson(blob);
         } else {
             throw new RuntimeException("Unsupported primitive value type: " + type);
         }
