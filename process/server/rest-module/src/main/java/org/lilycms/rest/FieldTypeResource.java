@@ -49,13 +49,29 @@ public class FieldTypeResource extends RepositoryEnabled {
         ImportResultType resultType = result.getResultType();
         switch (resultType) {
             case CREATED:
-                URI uri = UriBuilder.fromResource(FieldTypeByIdResource.class).build(fieldType.getId());
+                URI uri = UriBuilder.fromResource(FieldTypeResource.class).
+                        queryParam("ns.n", fieldType.getName().getNamespace()).
+                        build("n$" + fieldType.getName().getName());
                 response = Response.created(uri).entity(fieldType).build();
                 break;
             case UPDATED:
             case UP_TO_DATE:
-                // TODO if the name was updated, maybe we should set a Location header as well?
-                response = Response.ok(fieldType).build();
+                // About the use of "301 Moved Permanently" rather than "200 OK": I'm following here page
+                // 198 of "RESTful Web Services" (Richardson & Ruby):
+                //   The exception is if the client successfully changes a user's name. Now that resource is
+                //   available under a different URI: say, /users/lenoard instead of /users/leonardr. That
+                //   means I need to send a response code of 301 ("Moved Permanently") and put the user's
+                //   new URI in the Location header.
+                if (!fieldType.getName().equals(qname)) {
+                    uri = UriBuilder.fromResource(FieldTypeResource.class).
+                            queryParam("ns.n", fieldType.getName().getNamespace()).
+                            build("n$" + fieldType.getName().getName());
+
+                    return Response.status(Response.Status.MOVED_PERMANENTLY).header("Location", uri).
+                            entity(fieldType).build();
+                } else {
+                    response = Response.ok(fieldType).build();
+                }
                 break;
             case CONFLICT:
                 throw new ResourceException(String.format("Field type %1$s exists but with %2$s %3$s instead of %4$s",

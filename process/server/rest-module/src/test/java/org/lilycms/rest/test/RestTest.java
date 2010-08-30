@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RestTest {
@@ -62,6 +63,18 @@ public class RestTest {
     }
 
     @Test
+    public void testGeneralErrors() throws Exception {
+        // Perform request to non-existing resource class
+        Response response = get(BASE_URI + "/foobar");
+        assertStatus(Status.CLIENT_ERROR_NOT_FOUND, response);
+
+        // Submit invalid json
+        String body = json("{ f [ }");
+        response = post(BASE_URI + "/schema/fieldType", body);
+        assertStatus(Status.CLIENT_ERROR_BAD_REQUEST, response);
+    }
+
+    @Test
     public void testFieldTypes() throws Exception {
         // Create field type using POST
         String body = json("{action: 'create', fieldType: {name: 'n$field1', valueType: { primitive: 'STRING' }, " +
@@ -78,18 +91,27 @@ public class RestTest {
         String prefix = json.get("namespaces").get("org.lilycms.resttest").getTextValue();
         assertEquals(prefix + "$field1", json.get("name").getTextValue());
 
+        // Create field type using POST on the name-based resource
+        body = json("{action: 'create', fieldType: {name: 'n$field1a', valueType: { primitive: 'STRING' }, " +
+                "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } } }");
+        response = post(BASE_URI + "/schema/fieldType", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        assertEquals(BASE_URI + "/schema/fieldType/n$field1a?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
+
         // Create field type using PUT
         body = json("{name: 'n$field2', valueType: { primitive: 'STRING' }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", body);
         String fieldType2Id = readJson(response.getEntity()).get("id").getValueAsText();
         assertStatus(Status.SUCCESS_CREATED, response);
+        assertEquals(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
 
         // Update a field type - by name : change field2 to field3
         body = json("{name: 'n$field3', valueType: { primitive: 'STRING' }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest", body);
-        assertStatus(Status.SUCCESS_OK, response);
+        assertStatus(Status.REDIRECTION_PERMANENT, response);
+        assertEquals(BASE_URI + "/schema/fieldType/n$field3?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
 
         response = get(BASE_URI + "/schema/fieldType/n$field2?ns.n=org.lilycms.resttest");
         assertStatus(Status.CLIENT_ERROR_NOT_FOUND, response);
@@ -122,7 +144,18 @@ public class RestTest {
         body = json("{name: 'n$field4', valueType: { primitive: 'STRING', hierarchical: true }, " +
                 "scope: 'versioned', namespaces: { 'org.lilycms.resttest': 'n' } }");
         response = put(BASE_URI + "/schema/fieldType/n$field4?ns.n=org.lilycms.resttest", body);
-        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);        
+        assertStatus(Status.CLIENT_ERROR_CONFLICT, response);
+
+        // Get list of field types
+        response = get(BASE_URI + "/schema/fieldType");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertTrue(json.get("results").size() > 0);
+
+        response = get(BASE_URI + "/schema/fieldTypeById");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertTrue(json.get("results").size() > 0);
     }
 
     @Test
@@ -148,7 +181,7 @@ public class RestTest {
         JsonNode json = readJson(response.getEntity());
 
         // verify location header
-        assertEquals(BASE_URI + "/schema/recordTypeById/" + json.get("id").getValueAsText() + "/version/1",
+        assertEquals(BASE_URI + "/schema/recordTypeById/" + json.get("id").getValueAsText(),
                 response.getLocationRef().toString());
 
         // verify name
@@ -162,11 +195,19 @@ public class RestTest {
         // verify version
         assertEquals(1L, json.get("version").getLongValue());
 
-        // Create a record type using PUT
-        body = json("{action: 'create', recordType: {name: 'n$recordType2', fields: [ {name: 'n$rt_field1'} ]," +
+        // Create a record type using POST on the name-based resource
+        body = json("{action: 'create', recordType: {name: 'n$recordType1a', fields: [ {name: 'n$rt_field1'} ]," +
                 "namespaces: { 'org.lilycms.resttest': 'n' } } }");
-        response = post(BASE_URI + "/schema/recordTypeById", body);
+        response = post(BASE_URI + "/schema/recordType", body);
         assertStatus(Status.SUCCESS_CREATED, response);
+        assertEquals(BASE_URI + "/schema/recordType/n$recordType1a?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
+
+        // Create a record type using PUT
+        body = json("{name: 'n$recordType2', fields: [ {name: 'n$rt_field1'} ]," +
+                "namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/recordType/n$recordType2?ns.n=org.lilycms.resttest", body);
+        assertStatus(Status.SUCCESS_CREATED, response);
+        assertEquals(BASE_URI + "/schema/recordType/n$recordType2?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
         json = readJson(response.getEntity());
         String secondRtId = json.get("id").getValueAsText();
 
@@ -182,6 +223,25 @@ public class RestTest {
         assertEquals(2, json.get("fields").size());
         assertTrue(json.get("fields").get(0).get("mandatory").getBooleanValue());
         assertTrue(json.get("fields").get(1).get("mandatory").getBooleanValue());
+
+        // Rename a record type via the name-based resource
+        body = json("{name: 'n$recordType3', " +
+                "fields: [ {name: 'n$rt_field1', mandatory: true}, " +
+                " {name : 'n$rt_field2', mandatory: true} ], namespaces: { 'org.lilycms.resttest': 'n' } }");
+        response = put(BASE_URI + "/schema/recordType/n$recordType2?ns.n=org.lilycms.resttest", body);
+        assertStatus(Status.REDIRECTION_PERMANENT, response);
+        assertEquals(BASE_URI + "/schema/recordType/n$recordType3?ns.n=org.lilycms.resttest", response.getLocationRef().toString());
+
+        // Get list of record types
+        response = get(BASE_URI + "/schema/recordType");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertTrue(json.get("results").size() > 0);
+
+        response = get(BASE_URI + "/schema/recordTypeById");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertTrue(json.get("results").size() > 0);
 
         //
         // Test mixins
@@ -293,7 +353,7 @@ public class RestTest {
     }
 
     /**
-     * Test creation a record that uses the non-latest version of a record type.
+     * Test versioning of record types and the creation of a record that uses the non-latest version of a record type.
      */
     @Test
     public void testVersionRecordType() throws Exception {
@@ -314,6 +374,7 @@ public class RestTest {
                 "namespaces: { 'org.lilycms.resttest': 'n' } } }");
         response = post(BASE_URI + "/schema/recordTypeById", body);
         assertStatus(Status.SUCCESS_CREATED, response);
+        String rtIdUri = response.getLocationRef().toString();
 
         body = json("{name: 'n$vrt', " +
                 "fields: [ {name: 'n$vrt_field1'}, {name: 'n$vrt_field2'} ]," +
@@ -324,6 +385,16 @@ public class RestTest {
         response = get(BASE_URI + "/schema/recordType/n$vrt?ns.n=org.lilycms.resttest");
         assertStatus(Status.SUCCESS_OK, response);
         JsonNode json = readJson(response.getEntity());
+        assertEquals(2L, json.get("version").getLongValue());
+
+        response = get(BASE_URI + "/schema/recordType/n$vrt/version/2?ns.n=org.lilycms.resttest");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertEquals(2L, json.get("version").getLongValue());
+
+        response = get(rtIdUri + "/version/2");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
         assertEquals(2L, json.get("version").getLongValue());
 
         // Create record
@@ -512,6 +583,7 @@ public class RestTest {
         blobNode.put("size", data.length());
         blobNode.put("mimeType", "text/plain");
         blobNode.put("value", blobValue);
+        blobNode.put("name", "helloworld.txt");
         ObjectNode nsNode = recordNode.putObject("namespaces");
         nsNode.put("org.lilycms.resttest", "b");
 
@@ -523,12 +595,17 @@ public class RestTest {
         assertStatus(Status.SUCCESS_OK, response);
 
         jsonNode = readJson(response.getEntity());
-        // TODO verify again
+        String prefix = jsonNode.get("namespaces").get("org.lilycms.resttest").getValueAsText();
+        blobNode = (ObjectNode)jsonNode.get("fields").get(prefix + "$blob1");
+        assertEquals("text/plain", blobNode.get("mimeType").getValueAsText());
+        assertEquals(data.length(), blobNode.get("size").getLongValue());
+        assertTrue(Arrays.equals(blobValue, blobNode.get("value").getBinaryValue()));
+        assertEquals("helloworld.txt", blobNode.get("name").getValueAsText());
 
         // Read the blob
         response = get(BASE_URI + "/record/USER.blob1/field/b$blob1/data?ns.b=org.lilycms.resttest");
         assertStatus(Status.SUCCESS_OK, response);
-        // TODO verify content equals what was uploaded
+        assertEquals(data, response.getEntityAsText());
     }
 
     @Test
@@ -564,11 +641,42 @@ public class RestTest {
         response = put(BASE_URI + "/record/USER.product1", body);
         assertStatus(Status.SUCCESS_OK, response);
 
-        // Get list of versions
-        response = get(BASE_URI + "/record/USER.product1/version"); //?ns.b=org.lilycms.resttest");
-        System.out.println(response.getEntityAsText());
+        body = json("{ fields: { 'p$name' : 'Product 1', 'p$price': 5.5, 'p$colour': 'red' }, namespaces : { 'org.lilycms.resttest': 'p' } }");
+        response = put(BASE_URI + "/record/USER.product1", body);
         assertStatus(Status.SUCCESS_OK, response);
-        // TODO test response and more options (field list, range)
+
+        // Get list of versions
+        response = get(BASE_URI + "/record/USER.product1/version");
+        assertStatus(Status.SUCCESS_OK, response);
+        JsonNode json = readJson(response.getEntity());
+        assertEquals(3, json.get("results").size());
+        JsonNode results = json.get("results");
+        assertEquals(1, results.get(0).get("fields").size());
+        assertEquals(2, results.get(1).get("fields").size());
+        assertEquals(3, results.get(2).get("fields").size());
+
+        response = get(BASE_URI + "/record/USER.product1/version?max-results=1");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertEquals(1, json.get("results").size());
+        results = json.get("results");
+        assertEquals(1, results.get(0).get("version").getLongValue());
+
+        response = get(BASE_URI + "/record/USER.product1/version?start-index=2&max-results=1");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        assertEquals(1, json.get("results").size());
+        results = json.get("results");
+        assertEquals(2, results.get(0).get("version").getLongValue());
+
+        // Retrieve only one field
+        response = get(BASE_URI + "/record/USER.product1/version?fields=n$name&ns.n=org.lilycms.resttest");
+        assertStatus(Status.SUCCESS_OK, response);
+        json = readJson(response.getEntity());
+        results = json.get("results");
+        assertEquals(1, results.get(0).get("fields").size());
+        assertEquals(1, results.get(1).get("fields").size());
+        assertEquals(1, results.get(2).get("fields").size());
     }
 
     @Test

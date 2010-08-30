@@ -53,12 +53,24 @@ public class RecordTypeResource extends RepositoryEnabled {
         ImportResultType resultType = result.getResultType();
         switch (resultType) {
             case CREATED:
-                URI uri = UriBuilder.fromResource(RecordTypeByIdAndVersionResource.class).build(recordType.getId(), recordType.getVersion());
+                URI uri = UriBuilder.fromResource(RecordTypeResource.class).
+                        queryParam("ns.n", recordType.getName().getNamespace()).
+                        build("n$" + recordType.getName().getName());
                 response = Response.created(uri).entity(recordType).build();
                 break;
             case UPDATED:
             case UP_TO_DATE:
-                response = Response.ok(recordType).build();
+                if (!recordType.getName().equals(qname)) {
+                    // Reply with "301 Moved Permanently": see explanation in FieldTypeResource
+                    uri = UriBuilder.fromResource(RecordTypeResource.class).
+                            queryParam("ns.n", recordType.getName().getNamespace()).
+                            build("n$" + recordType.getName().getName());
+
+                    return Response.status(Response.Status.MOVED_PERMANENTLY).header("Location", uri).
+                            entity(recordType).build();
+                } else {
+                    response = Response.ok(recordType).build();
+                }
                 break;
             default:
                 throw new RuntimeException("Unexpected import result type: " + resultType);

@@ -5,25 +5,29 @@ import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.FieldTypeEntry;
 import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.Repository;
+import org.lilycms.repository.api.RepositoryException;
 
 import java.util.Map;
 
-public class RecordTypeWriter {
-    public static ObjectNode toJson(RecordType recordType) {
+public class RecordTypeWriter implements EntityWriter<RecordType> {
+    public static EntityWriter<RecordType> INSTANCE = new RecordTypeWriter();
+
+    public ObjectNode toJson(RecordType recordType, Repository repository) throws RepositoryException {
         Namespaces namespaces = new Namespaces();
 
-        ObjectNode rtNode = toJson(recordType, namespaces);
+        ObjectNode rtNode = toJson(recordType, namespaces, repository);
 
         rtNode.put("namespaces", NamespacesConverter.toJson(namespaces));
 
         return rtNode;
     }
 
-    public static ObjectNode toJson(RecordType recordType, Namespaces namespaces) {
+    public ObjectNode toJson(RecordType recordType, Namespaces namespaces, Repository repository) throws RepositoryException {
         return toJson(recordType, namespaces, true);
     }
 
-    public static ObjectNode toJson(RecordType recordType, Namespaces namespaces, boolean includeName) {
+    public static ObjectNode toJson(RecordType recordType, Namespaces namespaces, boolean includeName) throws RepositoryException {
         ObjectNode rtNode = JsonNodeFactory.instance.objectNode();
 
         rtNode.put("id", recordType.getId());

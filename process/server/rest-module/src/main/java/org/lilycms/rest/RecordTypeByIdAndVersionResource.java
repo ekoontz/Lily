@@ -22,7 +22,8 @@ public class RecordTypeByIdAndVersionResource extends RepositoryEnabled {
         } catch (RecordTypeNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (TypeException e) {
-            throw new ResourceException("Error loading record type with id " + id, e, INTERNAL_SERVER_ERROR.getStatusCode());
+            throw new ResourceException("Error loading record type with id " + id + ", version " + version, e,
+                    INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
 }

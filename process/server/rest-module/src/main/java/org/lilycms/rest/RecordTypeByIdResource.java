@@ -50,10 +50,6 @@ public class RecordTypeByIdResource extends RepositoryEnabled {
 
         ImportResultType resultType = result.getResultType();
         switch (resultType) {
-            case CREATED:
-                URI uri = UriBuilder.fromResource(RecordTypeByIdResource.class).build(recordType.getId());
-                response = Response.created(uri).entity(recordType).build();
-                break;
             case UPDATED:
             case UP_TO_DATE:
                 response = Response.ok(recordType).build();

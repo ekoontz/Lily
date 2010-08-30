@@ -3,13 +3,10 @@ package org.lilycms.rest.providers.json;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
-import org.lilycms.repository.api.Record;
-import org.lilycms.repository.api.Repository;
-import org.lilycms.repository.api.RepositoryException;
-import org.lilycms.rest.RecordList;
+import org.lilycms.repository.api.*;
+import org.lilycms.rest.EntityList;
 import org.lilycms.rest.ResourceException;
-import org.lilycms.tools.import_.json.RecordWriter;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.lilycms.tools.import_.json.EntityWriter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -20,21 +17,21 @@ import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 @Provider
-public class RecordListMessageBodyWriter implements MessageBodyWriter<RecordList> {
-    private Repository repository;
+public class EntityListMessageBodyWriter extends BaseEntityWriter implements MessageBodyWriter<EntityList> {
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type.equals(RecordList.class) && mediaType.equals(MediaType.APPLICATION_JSON_TYPE);
+        return type.equals(EntityList.class) && isTypeParamSupported(genericType) && mediaType.equals(MediaType.APPLICATION_JSON_TYPE);
     }
 
-    public long getSize(RecordList recordList, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public long getSize(EntityList entityList, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return -1;
     }
 
-    public void writeTo(RecordList recordList, Class<?> type, Type genericType, Annotation[] annotations,
+    public void writeTo(EntityList entityList, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         
@@ -42,18 +39,16 @@ public class RecordListMessageBodyWriter implements MessageBodyWriter<RecordList
         ArrayNode resultsNode = listNode.putArray("results");
 
         try {
-            for (Record record : recordList.getRecords()) {
-                resultsNode.add(RecordWriter.toJson(record, repository.getTypeManager()));
+            Class kind = (Class)((ParameterizedType)genericType).getActualTypeArguments()[0];
+            EntityWriter writer = SUPPORTED_TYPES.get(kind);
+            for (Object entity : entityList.getItems()) {
+                resultsNode.add(writer.toJson(entity, repository));
             }
         } catch (RepositoryException e) {
-            throw new ResourceException("Error serializing record.", e, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+            throw new ResourceException("Error serializing entity list.", e, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         }
 
         JsonFormat.serialize(listNode, entityStream);
     }
 
-    @Autowired
-    public void setRepository(Repository repository) {
-        this.repository = repository;
-    }
 }

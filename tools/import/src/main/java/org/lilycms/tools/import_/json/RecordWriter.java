@@ -10,12 +10,22 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-public class RecordWriter {
-    public static JsonNode toJson(Record record, TypeManager typeManager) throws FieldTypeNotFoundException, TypeException {
+public class RecordWriter implements EntityWriter<Record> {
+    public static RecordWriter INSTANCE = new RecordWriter();
+
+    public ObjectNode toJson(Record record, Repository repository) throws RepositoryException {
+        Namespaces namespaces = new Namespaces();
+
+        ObjectNode recordNode = toJson(record, namespaces, repository);
+
+        recordNode.put("namespaces", NamespacesConverter.toJson(namespaces));
+
+        return recordNode;
+    }
+
+    public ObjectNode toJson(Record record, Namespaces namespaces, Repository repository) throws RepositoryException {
         JsonNodeFactory factory = JsonNodeFactory.instance;
         ObjectNode recordNode = factory.objectNode();
-
-        Namespaces namespaces = new Namespaces();
 
         recordNode.put("id", record.getId().toString());
 
@@ -41,7 +51,7 @@ public class RecordWriter {
             ObjectNode schemaNode = recordNode.putObject("schema");
 
             for (Map.Entry<QName, Object> field : fields.entrySet()) {
-                FieldType fieldType = typeManager.getFieldTypeByName(field.getKey());
+                FieldType fieldType = repository.getTypeManager().getFieldTypeByName(field.getKey());
                 String fieldName = QNameConverter.toJson(fieldType.getName(), namespaces);
 
                 // fields entry
@@ -54,10 +64,6 @@ public class RecordWriter {
 
         if (record.getVersion() != null) {
             recordNode.put("version", record.getVersion());
-        }
-
-        if (!namespaces.isEmpty()) {
-            recordNode.put("namespaces", NamespacesConverter.toJson(namespaces));
         }
 
         return recordNode;

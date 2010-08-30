@@ -21,7 +21,7 @@ public class RecordVariantCollectionResource extends RepositoryEnabled {
 
     @GET
     @Produces("application/json")
-    public RecordList get(@PathParam("id") String id) {
+    public EntityList<Record> get(@PathParam("id") String id) {
         RecordId recordId = repository.getIdGenerator().fromString(id);
         try {
             Set<RecordId> recordIds = repository.getVariants(recordId);
@@ -30,7 +30,7 @@ public class RecordVariantCollectionResource extends RepositoryEnabled {
             for (RecordId variant : recordIds) {
                 records.add(repository.newRecord(variant));
             }
-            return new RecordList(records);
+            return new EntityList<Record>(records);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (RepositoryException e) {

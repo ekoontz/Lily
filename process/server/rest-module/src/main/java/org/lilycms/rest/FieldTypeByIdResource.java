@@ -50,10 +50,6 @@ public class FieldTypeByIdResource extends RepositoryEnabled {
 
         ImportResultType resultType = result.getResultType();
         switch (resultType) {
-            case CREATED:
-                URI uri = UriBuilder.fromResource(FieldTypeByIdResource.class).build(fieldType.getId());
-                response = Response.created(uri).entity(fieldType).build();
-                break;
             case UPDATED:
             case UP_TO_DATE:
                 response = Response.ok(fieldType).build();

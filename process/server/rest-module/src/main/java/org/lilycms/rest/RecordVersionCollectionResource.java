@@ -16,7 +16,7 @@ public class RecordVersionCollectionResource extends RepositoryEnabled {
 
     @GET
     @Produces("application/json")
-    public RecordList get(@PathParam("id") String id,
+    public EntityList<Record> get(@PathParam("id") String id,
             @DefaultValue("1") @QueryParam("start-index") long startIndex,
             @DefaultValue("10") @QueryParam("max-results") long maxResults,
             @Context UriInfo uriInfo) {
@@ -27,7 +27,7 @@ public class RecordVersionCollectionResource extends RepositoryEnabled {
         List<Record> records;
         try {
             records = repository.readVersions(recordId, startIndex, startIndex + maxResults - 1, fieldQNames);
-            return new RecordList(records);
+            return new EntityList<Record>(records);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (RepositoryException e) {

@@ -25,15 +25,13 @@ public class RecordResource extends RepositoryEnabled {
     public Record get(@PathParam("id") String id, @Context UriInfo uriInfo) {
         RecordId recordId = repository.getIdGenerator().fromString(id);
         List<QName> fieldQNames = ResourceClassUtil.parseFieldList(uriInfo);
-        Record record;
         try {
-            record = repository.read(recordId, fieldQNames);
+            return repository.read(recordId, fieldQNames);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (RepositoryException e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
-        return record;
     }
 
     @PUT

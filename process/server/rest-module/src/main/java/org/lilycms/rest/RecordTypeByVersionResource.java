@@ -26,7 +26,7 @@ public class RecordTypeByVersionResource extends RepositoryEnabled {
         } catch (RecordTypeNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (TypeException e) {
-            throw new ResourceException("Error loading record type with name " + qname, e,
+            throw new ResourceException("Error loading record type with name " + qname + ", version " + version, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

@@ -13,9 +13,8 @@ public class RecordByVersionResource extends RepositoryEnabled {
     @Produces("application/json")
     public Record get(@PathParam("id") String id, @PathParam("version") long version) {
         RecordId recordId = repository.getIdGenerator().fromString(id);
-        Record record;
         try {
-            record = repository.read(recordId, version);
+            return repository.read(recordId, version);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (VersionNotFoundException e) {
@@ -23,7 +22,6 @@ public class RecordByVersionResource extends RepositoryEnabled {
         } catch (RepositoryException e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
-        return record;
     }
 
     // TODO implement updating of versioned-mutable data (PUT or POST?)
