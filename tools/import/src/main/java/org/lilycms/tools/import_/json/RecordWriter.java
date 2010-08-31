@@ -29,6 +29,10 @@ public class RecordWriter implements EntityWriter<Record> {
 
         recordNode.put("id", record.getId().toString());
 
+        if (record.getVersion() != null) {
+            recordNode.put("version", record.getVersion());
+        }
+
         if (record.getRecordTypeName() != null) {
             recordNode.put("type", typeToJson(record.getRecordTypeName(), record.getRecordTypeVersion(), namespaces));
         }
@@ -60,10 +64,6 @@ public class RecordWriter implements EntityWriter<Record> {
                 // schema entry
                 schemaNode.put(fieldName, FieldTypeWriter.toJson(fieldType, namespaces, false));
             }
-        }
-
-        if (record.getVersion() != null) {
-            recordNode.put("version", record.getVersion());
         }
 
         return recordNode;
