@@ -1,11 +1,13 @@
 package org.lilycms.rest.providers.json;
 
 import org.lilycms.repository.api.Blob;
+import org.lilycms.rest.ResourceException;
 import org.lilycms.tools.import_.json.BlobConverter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
@@ -27,6 +29,12 @@ public class BlobMessageBodyWriter implements MessageBodyWriter<Blob> {
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
 
-        JsonFormat.serialize(BlobConverter.toJson(blob), entityStream);
+        try {
+            JsonFormat.serialize(BlobConverter.toJson(blob), entityStream);
+        } catch (Throwable e) {
+            // We catch every throwable, since otherwise no one does it and we will not have any trace
+            // of Errors that happened.
+            throw new ResourceException("Error serializing entity.", e, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        }
     }
 }

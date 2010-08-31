@@ -3,7 +3,6 @@ package org.lilycms.rest.providers.json;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
-import org.lilycms.repository.api.*;
 import org.lilycms.rest.EntityList;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
@@ -52,20 +51,22 @@ public class EntityListMessageBodyWriter extends RepositoryEnabled implements Me
     public void writeTo(EntityList entityList, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        
-        ObjectNode listNode = JsonNodeFactory.instance.objectNode();
-        ArrayNode resultsNode = listNode.putArray("results");
 
         try {
+            ObjectNode listNode = JsonNodeFactory.instance.objectNode();
+            ArrayNode resultsNode = listNode.putArray("results");
+
             EntityWriter writer = getEntityWriter(genericType);
             for (Object entity : entityList.getItems()) {
                 resultsNode.add(writer.toJson(entity, repository));
             }
-        } catch (RepositoryException e) {
+
+            JsonFormat.serialize(listNode, entityStream);
+        } catch (Throwable e) {
+            // We catch every throwable, since otherwise no one does it and we will not have any trace
+            // of Errors that happened.
             throw new ResourceException("Error serializing entity list.", e, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         }
-
-        JsonFormat.serialize(listNode, entityStream);
     }
 
 }

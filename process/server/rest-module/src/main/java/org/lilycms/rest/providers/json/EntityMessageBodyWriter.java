@@ -1,6 +1,5 @@
 package org.lilycms.rest.providers.json;
 
-import org.lilycms.repository.api.RepositoryException;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 
@@ -34,7 +33,9 @@ public class EntityMessageBodyWriter extends RepositoryEnabled implements Messag
     public void writeTo(Object object, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         try {
             JsonFormat.serialize(EntityRegistry.findWriter(object.getClass()).toJson(object, repository), entityStream);
-        } catch (RepositoryException e) {
+        } catch (Throwable e) {
+            // We catch every throwable, since otherwise no one does it and we will not have any trace
+            // of Errors that happened.
             throw new ResourceException("Error serializing entity.", e, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
