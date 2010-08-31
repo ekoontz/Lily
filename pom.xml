@@ -26,6 +26,13 @@
     <hadoop.version>0.20.3-append-r964955-1240</hadoop.version>
     <zookeeper.version>3.3.1</zookeeper.version>
     <version.maven>2.0.9</version.maven>
+
+    <!-- The following properties are all Kauri-related, and should be brought in sync with
+         Kauri when moving to a new Kauri version. -->
+    <version.kauri>0.4-r1695</version.kauri>
+    <version.spring>2.5.6</version.spring>
+    <version.jaxrs>1.0</version.jaxrs>
+    <version.restlet>svn6565</version.restlet>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -64,8 +71,7 @@
     <module>zk-util</module>
     <module>repository-api-tutorial</module>
     <module>rowlog</module>
-    <module>process/server</module>
-    <module>process/client</module>
+    <module>process</module>
     <module>tools/import</module>
     <module>tools/tester</module>
     <module>tools/kauri-dependency-resolver-plugin</module>
@@ -137,6 +143,31 @@
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-client</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-import</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-rest-module</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-indexer-module</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-general-module</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-repository-module</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>

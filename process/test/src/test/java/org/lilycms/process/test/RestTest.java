@@ -1,4 +1,4 @@
-package org.lilycms.rest.test;
+package org.lilycms.process.test;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
@@ -34,12 +34,11 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class RestTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
-    private final static KauriTestUtility KAURI_TEST_UTIL = new KauriTestUtility();
+    private final static KauriTestUtility KAURI_TEST_UTIL = new KauriTestUtility("../server/");
     private static String BASE_URI;
 
     private static Client CLIENT;
@@ -615,7 +614,7 @@ public class RestTest {
 
         assertStatus(Status.SUCCESS_CREATED, response);
         JsonNode jsonNode = readJson(response.getEntity());
-        byte[] blobValue = jsonNode.get("value").getBinaryValue();
+        String blobValue = jsonNode.get("value").getTextValue();
         assertEquals("text/plain", jsonNode.get("mimeType").getTextValue());
         assertEquals((long)data.length(), jsonNode.get("size").getLongValue());
 
@@ -643,7 +642,7 @@ public class RestTest {
         blobNode = (ObjectNode)jsonNode.get("fields").get(prefix + "$blob1");
         assertEquals("text/plain", blobNode.get("mimeType").getValueAsText());
         assertEquals(data.length(), blobNode.get("size").getLongValue());
-        assertTrue(Arrays.equals(blobValue, blobNode.get("value").getBinaryValue()));
+        assertEquals(blobValue, blobNode.get("value").getTextValue());
         assertEquals("helloworld.txt", blobNode.get("name").getValueAsText());
 
         // Read the blob

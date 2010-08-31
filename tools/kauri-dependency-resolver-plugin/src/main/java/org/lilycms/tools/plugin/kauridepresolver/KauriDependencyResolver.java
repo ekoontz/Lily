@@ -7,6 +7,7 @@ import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.kauriproject.runtime.model.SourceLocations;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -17,10 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +48,13 @@ public class KauriDependencyResolver extends AbstractMojo {
      * @required
      */
     protected String kauriVersion;
+
+    /**
+     * Location of the module-source-locations.properties file.
+     *
+     * @parameter
+     */
+    protected String moduleSourceLocations;
 
     /**
      * @parameter expression="${project.groupId}"
@@ -105,8 +110,25 @@ public class KauriDependencyResolver extends AbstractMojo {
     protected ArtifactResolver resolver;
 
     protected XPathFactory xpathFactory = XPathFactory.newInstance();
+    protected SourceLocations sourceLocations = new SourceLocations();
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (moduleSourceLocations != null) {
+            File sourceLocationsFile = new File(moduleSourceLocations);
+            FileInputStream sourceLocationsStream = null;
+            try {
+                sourceLocationsStream = new FileInputStream(sourceLocationsFile);
+                sourceLocations = new SourceLocations(sourceLocationsStream, sourceLocationsFile.getParentFile().getAbsolutePath());
+            } catch (Exception e) {
+                throw new MojoExecutionException("Problem reading module source locations file from " +
+                        sourceLocationsFile.getAbsolutePath(), e);
+            } finally {
+                if (sourceLocationsStream != null) {
+                    try { sourceLocationsStream.close(); } catch (IOException e) { e.printStackTrace(); }
+                }
+            }
+        }
+
         Set<Artifact> moduleArtifacts = getModuleArtifactsFromKauriConfig();
 
         for (Artifact moduleArtifact : moduleArtifacts) {
@@ -180,10 +202,14 @@ public class KauriDependencyResolver extends AbstractMojo {
                 classifier = null;
 
             Artifact artifact = artifactFactory.createArtifactWithClassifier(groupId, artifactId, version, "jar", classifier);
+
             if (artifact.getGroupId().equals(projectGroupId) &&
                     artifact.getArtifactId().equals(projectArtifactId) &&
                     artifact.getVersion().equals(projectVersion)) {
                 // Current project's artifact is not yet deployed, therefore do not treat it
+            } else if (sourceLocations.getSourceLocation(artifact.getGroupId(), artifact.getArtifactId()) != null) {
+                // It is one of the artifacts of this project, hence the dependencies will have been
+                // downloaded by Maven. Skip it.
             } else {
                 if (!artifacts.contains(artifact)) {
                     try {

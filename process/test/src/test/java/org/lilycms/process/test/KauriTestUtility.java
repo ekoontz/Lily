@@ -1,4 +1,4 @@
-package org.lilycms.rest.test;
+package org.lilycms.process.test;
 
 import org.apache.commons.io.FileUtils;
 import org.kauriproject.runtime.KauriRuntime;
@@ -22,9 +22,12 @@ import java.util.List;
 /**
  * Utility for helping to launch Kauri in a testcase.
  *
- * <p>It assumes that in the parent directory of the current project, there is a Kauri conf dir called conf,
- * and a file module-source-locations.properties containing pointers for all the modules that are part of
- * this project (= that will not necessarily already be present in the local Maven repo).
+ * <p>This is (currently?) specific to launching the Lily server process. The path to the source root
+ * of the server process should be given in the constructor. In this dir, there should be a Kauri conf
+ * dir called conf, and a file module-source-locations.properties containing pointers for all the
+ * modules that are part of this project (= that will not necessarily already be present in the local
+ * Maven repo). This is important because when running test cases that are part of a Kauri module
+ * project, as the artifact of the current project will not yet be deployed in the local Maven repository.
  *
  * <p>The HTTP port for Kauri is determined dynamically and can be retrieved via {@link #getPort()}.
  */
@@ -33,8 +36,14 @@ public class KauriTestUtility {
     private File tmpDir;
     private File confDir;
     private int port;
+    private String serverProcessSrcDir;
 
-    public KauriTestUtility() {
+    /**
+     *
+     * @param serverProcessSrcDir relative to project base dir, should end on slash
+     */
+    public KauriTestUtility(String serverProcessSrcDir) {
+        this.serverProcessSrcDir = "/" + serverProcessSrcDir;
         tmpDir = createTempDir();
         port = determineAvailablePort();
     }
@@ -47,8 +56,8 @@ public class KauriTestUtility {
         // We specify the module source locations, because when this test is run, the current module
         // will not yet be installed yet in the Maven repository. While we could get it from the target
         // directory, this approach makes it easier to run the tests from within your IDE.
-        FileInputStream fis = new FileInputStream(new File(getBasedir() + "/../module-source-locations.properties"));
-        SourceLocations sourceLocations = new SourceLocations(fis, getBasedir() + "/..");
+        FileInputStream fis = new FileInputStream(new File(getBasedir() + serverProcessSrcDir + "module-source-locations.properties"));
+        SourceLocations sourceLocations = new SourceLocations(fis, getBasedir() + serverProcessSrcDir);
         fis.close();
         settings.setSourceLocations(sourceLocations);
 
@@ -82,12 +91,12 @@ public class KauriTestUtility {
     public ConfManager getConfManager() {
         List<File> confDirs = new ArrayList<File>();
         confDirs.add(confDir);
-        confDirs.add(new File(getBasedir() + "/../conf"));
+        confDirs.add(new File(getBasedir() + serverProcessSrcDir + "conf"));
         return new ConfManagerImpl(confDirs);
     }
 
     public void createDefaultConf(HBaseProxy hbaseProxy) throws Exception {
-        File indexerConfFile = new File(getBasedir() + "/../indexerconf.xml");
+        File indexerConfFile = new File(getBasedir() + serverProcessSrcDir +"indexerconf.xml");
         FileUtils.copyFileToDirectory(indexerConfFile, tmpDir);
 
         File confDir = new File(tmpDir, "conf");

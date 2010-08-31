@@ -86,18 +86,6 @@
       <artifactId>junit</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.kauriproject</groupId>
-      <artifactId>kauri-runtime-testfw</artifactId>
-      <version>${version.kauri}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-testfw</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -115,24 +103,6 @@
       <plugin>
         <groupId>org.kauriproject</groupId>
         <artifactId>kauri-genclassloader-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.lilycms</groupId>
-        <artifactId>kauri-dependency-resolver-plugin</artifactId>
-        <version>0.2-SNAPSHOT</version>
-        <configuration>
-          <confDirectory>${basedir}/../conf</confDirectory>
-          <kauriVersion>${version.kauri}</kauriVersion>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <goals>
-              <goal>resolve</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
