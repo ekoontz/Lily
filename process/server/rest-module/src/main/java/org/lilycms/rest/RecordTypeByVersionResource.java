@@ -19,7 +19,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 public class RecordTypeByVersionResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")
-    public RecordType get(@PathParam("name") String name, @PathParam("version") long version, @Context UriInfo uriInfo) {
+    public RecordType get(@PathParam("name") String name, @PathParam("version") Long version, @Context UriInfo uriInfo) {
         QName qname = ResourceClassUtil.parseQName(name, uriInfo.getQueryParameters());
         try {
             return repository.getTypeManager().getRecordTypeByName(qname, version);

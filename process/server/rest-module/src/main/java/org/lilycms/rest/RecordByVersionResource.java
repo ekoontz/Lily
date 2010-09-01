@@ -11,7 +11,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 public class RecordByVersionResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")
-    public Record get(@PathParam("id") String id, @PathParam("version") long version) {
+    public Record get(@PathParam("id") String id, @PathParam("version") Long version) {
         RecordId recordId = repository.getIdGenerator().fromString(id);
         try {
             return repository.read(recordId, version);

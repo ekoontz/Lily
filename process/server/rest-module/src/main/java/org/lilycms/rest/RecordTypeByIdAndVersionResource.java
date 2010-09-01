@@ -16,7 +16,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 public class RecordTypeByIdAndVersionResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")
-    public RecordType get(@PathParam("id") String id, @PathParam("version") long version) {
+    public RecordType get(@PathParam("id") String id, @PathParam("version") Long version) {
         try {
             return repository.getTypeManager().getRecordTypeById(id, version);
         } catch (RecordTypeNotFoundException e) {

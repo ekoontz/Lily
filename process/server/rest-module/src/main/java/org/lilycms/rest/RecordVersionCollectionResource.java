@@ -17,8 +17,8 @@ public class RecordVersionCollectionResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")
     public EntityList<Record> get(@PathParam("id") String id,
-            @DefaultValue("1") @QueryParam("start-index") long startIndex,
-            @DefaultValue("10") @QueryParam("max-results") long maxResults,
+            @DefaultValue("1") @QueryParam("start-index") Long startIndex,
+            @DefaultValue("10") @QueryParam("max-results") Long maxResults,
             @Context UriInfo uriInfo) {
 
         List<QName> fieldQNames = ResourceClassUtil.parseFieldList(uriInfo);
