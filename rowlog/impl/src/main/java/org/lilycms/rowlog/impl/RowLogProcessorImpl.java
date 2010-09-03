@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -126,7 +127,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         stop = true;
         stopConsumerNotifyListener();
         rowLog.setProcessor(null);
-        Collection<ConsumerThread> threads = consumerThreads.values();
+        Collection<ConsumerThread> threads = new ArrayList<ConsumerThread>(consumerThreads.values());
         consumerThreads.clear();
         for (Thread thread : threads) {
             if (thread != null) {
@@ -136,7 +137,9 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         for (Thread thread : threads) {
             if (thread != null) {
                 try {
-                    thread.join();
+                    if (thread.isAlive()) {
+                        thread.join();
+                    }
                 } catch (InterruptedException e) {
                 }
             }
@@ -317,6 +320,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         private final RowLogMessageConsumer consumer;
         private long lastWakeup;
         private ProcessorMetrics metrics;
+        private volatile boolean stopRequested = false;
 
         public ConsumerThread(RowLogMessageConsumer consumer) {
             this.consumer = consumer;
@@ -329,10 +333,22 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             this.notify();
         }
         
+        @Override
+        public synchronized void start() {
+            stopRequested = false;
+            super.start();
+        }
+        
+        @Override
+        public void interrupt() {
+            stopRequested = true;
+            super.interrupt();
+        }
+                
         public void run() {
             if ((consumerThreads.get(consumer.getId()) == null)) return;
-            
-            while (!isInterrupted()) {
+            int i = 0;
+            while (!isInterrupted() && !stopRequested) {
                 try {
                     List<RowLogMessage> messages = shard.next(consumer.getId());
                     metrics.setScannedMessages(messages != null ? messages.size() : 0);

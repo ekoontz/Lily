@@ -76,6 +76,10 @@ public class IndexUpdater {
         public int getId() {
             return 101;
         }
+        
+        public int getMaxTries() {
+            return 10;
+        }
 
         public boolean processMessage(RowLogMessage msg) {
             long before = System.currentTimeMillis();

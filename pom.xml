@@ -171,11 +171,6 @@
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
-        <artifactId>lily-import</artifactId>
-        <version>0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>zookeeper</artifactId>
         <version>${zookeeper.version}</version>

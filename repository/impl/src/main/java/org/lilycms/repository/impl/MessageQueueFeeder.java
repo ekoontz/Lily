@@ -23,6 +23,7 @@ import org.lilycms.rowlog.api.RowLogMessageConsumer;
 public class MessageQueueFeeder implements RowLogMessageConsumer {
 
     public static final int ID = 1;
+    private static final int MAX_TRIES = 10;
     private final RowLog messageQueue;
     public MessageQueueFeeder(RowLog messageQueue) {
         this.messageQueue = messageQueue;
@@ -30,6 +31,10 @@ public class MessageQueueFeeder implements RowLogMessageConsumer {
     
     public int getId() {
         return ID;
+    }
+    
+    public int getMaxTries() {
+        return MAX_TRIES;
     }
     
     public boolean processMessage(RowLogMessage message) {

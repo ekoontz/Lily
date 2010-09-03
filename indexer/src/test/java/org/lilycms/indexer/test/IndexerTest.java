@@ -1201,6 +1201,10 @@ public class IndexerTest {
         public int getId() {
             return 201;
         }
+        
+        public int getMaxTries() {
+            return 10;
+        }
 
         public void init() {
             this.expectedId = null;

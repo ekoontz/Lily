@@ -66,7 +66,7 @@ public abstract class AbstractRepositoryTest {
     private static FieldType fieldType5;
     private static FieldType fieldType6;
     private static FieldType lastVTag;
-    private static RecordType recordType1;
+    protected static RecordType recordType1;
     private static RecordType recordType1B;
     private static RecordType recordType2;
     private static RecordType recordType3;
@@ -187,7 +187,7 @@ public abstract class AbstractRepositoryTest {
         assertEquals(null, record.getVersion());
     }
 
-    private Record createDefaultRecord() throws Exception {
+    protected Record createDefaultRecord() throws Exception {
         Record record = repository.newRecord();
         record.setRecordType(recordType1.getName(), recordType1.getVersion());
         record.setField(fieldType1.getName(), "value1");

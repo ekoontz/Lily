@@ -238,4 +238,34 @@ public class RowLogShardTest {
         control.verify();
     }
 
+    @Test
+    public void testProblematicMessage() throws Exception {
+        int consumerId = 1;
+
+        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        consumer.getId();
+        expectLastCall().andReturn(new Integer(consumerId));
+        
+        rowLog.getConsumers();
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer}));
+        
+        control.replay();
+        byte[] messageId1 = Bytes.toBytes("messageId1");
+        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
+        shard.putMessage(message1);
+        
+        shard.markProblematic(message1, consumerId);
+        
+        List<RowLogMessage> messages = shard.getProblematic(consumerId);
+        assertEquals(1, messages.size());
+        assertEquals(message1, messages.get(0));
+        
+        assertTrue(shard.next(consumerId).isEmpty());
+        
+        shard.removeMessage(message1, consumerId);
+        assertTrue(shard.getProblematic(consumerId).isEmpty());
+        assertTrue(shard.next(consumerId).isEmpty());
+        control.verify();
+    }
+
 }

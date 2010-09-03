@@ -15,6 +15,7 @@
  */
 package org.lilycms.rowlog.api;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Put;
@@ -112,7 +113,10 @@ public interface RowLog {
      * Request each registered {@link RowLogMessageConsumer} to process a {@link RowLogMessage} explicitly. 
      * This method can be called independently from a {@link RowLogProcessor} and can be used for instance when a message
      * needs to be processed immediately after it has been put on the RowLog instead of waiting for a {@link RowLogProcessor}
-     * to pick it up and process it. 
+     * to pick it up and process it.
+     * <p>This call increases the try count of the message for each registered consumer. If the maximum allowed number of
+     * tries has been reached for a consumer, the message is marked as problematic for that consumer. A {@link RowLogProcessor}
+     * will no longer pick up the message for that consumer. 
      * @param message a {@link RowLogMessage} to be processed
      * @return true if all consumers have processed the {@link RowLogMessage} successfully
      * @throws RowLogException
@@ -124,7 +128,8 @@ public interface RowLog {
      * to indicate that it is busy processing a message. 
      * The lock can be released either by calling {@link #unlockMessage(RowLogMessage, int, byte[])}, 
      * {@link #messageDone(RowLogMessage, int, byte[])}, or when the lock's timeout expires.
-     * This lock only locks the message for a certain consumer, other consumers can still process the message in parallel.  
+     * This lock only locks the message for a certain consumer, other consumers can still process the message in parallel.
+     * <p>This call increases the try count of the message for this consumer.
      * @param message the {@link RowLogMessage} for which to take the lock
      * @param consumerId the id of the {@link RowLogMessageConsumer} for which to lock the message
      * @return a lock when the message was successfully locked or null when locking the message failed for instance when
@@ -135,6 +140,9 @@ public interface RowLog {
 
     /**
      * Unlocks a {@link RowLogMessage} for a certain {@link RowLogMessageConsumer} 
+     * <p>This checks the try count of the message. If the maximum amount of tries allowed for the consumer has been reached,
+     * the message will be marked as problematic. 'Problematic' messages will no longer be picked up by a {@link RowLogProcessor}
+     * for processing.
      * @param message the {@link RowLogMessage} for which to release the lock
      * @param consumerId the id of the {@link RowLogMessageConsumer} for which to release the lock
      * @param lock the lock that was received when calling {@link #lockMessage(RowLogMessage, int)}
@@ -169,9 +177,9 @@ public interface RowLog {
     boolean messageDone(RowLogMessage message, int consumerId, byte[] lock) throws RowLogException;
     
     /**
-     * @return a list of the {@link RowLogMessageConsumer}s that are registered on the RowLog
+     * @return a collection of the {@link RowLogMessageConsumer}s that are registered on the RowLog
      */
-    List<RowLogMessageConsumer> getConsumers();
+    Collection<RowLogMessageConsumer> getConsumers();
 
     /**
      * This method allows a {@link RowLogProcessor} to be set on the {@link RowLog}.
@@ -180,4 +188,28 @@ public interface RowLog {
      * @param rowLogProcessor
      */
     void setProcessor(RowLogProcessor rowLogProcessor);
+
+    /**
+     * Return all messages that are still exist for the row, or if one or more consumerIds is given, 
+     * only the messages that are still open for one or more of those consumers.
+     * <p>This call ignores if messages have been marked as problematic.
+     * @param rowKey the row for which to return the messages
+     * @param consumerId one or more consumerIds for which to return the messages that are open
+     * @return a list of (open)messages of the row
+     * @throws RowLogException
+     */
+    List<RowLogMessage> getMessages(byte[] rowKey, int ... consumerId) throws RowLogException;
+
+    /**
+     * Return all messages that have been marked as problematic for a certain consumer.
+     * <p>Messages have a try count for each consumer for the number of times the message has been 
+     * processed unsuccessfully. This try count is increased either when calling {@link #processMessage(RowLogMessage)}
+     * or {@link #lockMessage(RowLogMessage, int)}. When the try count reaches the maximum allowed
+     * by the consumer it is marked as 'problematic'. Problematic messages are no longer picked up
+     * by a {@link RowLogProcessor}, but can still be processed by calling {@link #processMessage(RowLogMessage)}.
+     * @param consumerId the id of the consumer
+     * @return a list of problematic messages
+     * @throws RowLogException
+     */
+    List<RowLogMessage> getProblematic(int consumerId) throws RowLogException;
 }

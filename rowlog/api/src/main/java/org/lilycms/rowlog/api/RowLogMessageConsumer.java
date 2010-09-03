@@ -31,6 +31,11 @@ public interface RowLogMessageConsumer {
      * An id which should be unique across all registered consumers on the {@link RowLog} 
      */
     int getId();
+    
+    /**
+     * Indicates the number of times the processing of a message should be tried before it should be marked as problematic. 
+     */
+    int getMaxTries();
 
     /**
      * Request a consumer to process a {@link RowLogMessage}. 

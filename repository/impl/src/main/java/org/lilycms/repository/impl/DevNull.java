@@ -21,12 +21,17 @@ import org.lilycms.rowlog.api.RowLogMessageConsumer;
 public class DevNull implements RowLogMessageConsumer {
 
     public static final int ID = 2;
+    private static final int MAX_TRIES = 10;
     
     public DevNull() {
     }
     
     public int getId() {
         return ID;
+    }
+    
+    public int getMaxTries() {
+        return MAX_TRIES;
     }
     
     public boolean processMessage(RowLogMessage message) {

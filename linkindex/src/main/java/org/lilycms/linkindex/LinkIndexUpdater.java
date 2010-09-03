@@ -79,6 +79,10 @@ public class LinkIndexUpdater {
         public int getId() {
             return 102;
         }
+        
+        public int getMaxTries() {
+            return 10;
+        }
 
         public boolean processMessage(RowLogMessage msg) {
             try {

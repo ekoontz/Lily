@@ -19,8 +19,14 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.classextension.EasyMock.createControl;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -72,6 +78,9 @@ public class RowLogTest {
         consumer.getId();
         expectLastCall().andReturn(consumerId).anyTimes();
         
+        consumer.getMaxTries();
+        expectLastCall().andReturn(5).anyTimes();
+        
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -87,7 +96,7 @@ public class RowLogTest {
 
         control.replay();
         rowLog.registerConsumer(consumer);
-        List<RowLogMessageConsumer> consumers = rowLog.getConsumers();
+        Collection<RowLogMessageConsumer> consumers = rowLog.getConsumers();
         assertTrue(consumers.size() == 1);
         assertEquals(consumer, consumers.iterator().next());
         control.verify();
@@ -101,7 +110,34 @@ public class RowLogTest {
         control.replay();
         rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
-        rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
+        byte[] rowKey = Bytes.toBytes("row1");
+        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
+        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
+        assertEquals(1, messages.size());
+        assertEquals(message, messages.get(0));
+        control.verify();
+    }
+    
+    @Test
+    public void testMultipleMessages() throws Exception {
+
+        shard.putMessage(isA(RowLogMessage.class));
+        expectLastCall().times(3);
+        shard.removeMessage(isA(RowLogMessage.class), eq(consumerId));
+        
+        control.replay();
+        rowLog.registerConsumer(consumer);
+        rowLog.registerShard(shard);
+        byte[] rowKey = Bytes.toBytes("row2");
+        RowLogMessage message1 = rowLog.putMessage(rowKey, null, null, null);
+        RowLogMessage message2 = rowLog.putMessage(rowKey, null, null, null);
+        RowLogMessage message3 = rowLog.putMessage(rowKey, null, null, null);
+        rowLog.messageDone(message2, consumerId, null);
+        
+        List<RowLogMessage> messages = rowLog.getMessages(rowKey, consumerId);
+        assertEquals(2, messages.size());
+        assertEquals(message1, messages.get(0));
+        assertEquals(message3, messages.get(1));
         control.verify();
     }
     
@@ -208,9 +244,13 @@ public class RowLogTest {
         RowLogMessageConsumer consumer1 = control.createMock(RowLogMessageConsumer.class);
         consumer1.getId();
         expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
+        consumer1.getMaxTries();
+        expectLastCall().andReturn(5).anyTimes();
         RowLogMessageConsumer consumer2 = control.createMock(RowLogMessageConsumer.class);
         consumer2.getId();
         expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
+        consumer2.getMaxTries();
+        expectLastCall().andReturn(5).anyTimes();
 
         shard.putMessage(isA(RowLogMessage.class));
         shard.removeMessage(isA(RowLogMessage.class), eq(2));
@@ -219,7 +259,8 @@ public class RowLogTest {
         rowLog.registerConsumer(consumer1);
         rowLog.registerConsumer(consumer2);
         rowLog.registerShard(shard);
-        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
+        byte[] rowKey = Bytes.toBytes("row2");
+        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
         
         byte[] lock = rowLog.lockMessage(message, 1);
         assertNotNull(lock);
@@ -235,5 +276,53 @@ public class RowLogTest {
         control.verify();
         //Cleanup 
         rowLog.unlockMessage(message, 1, lock2);
+    }
+    
+    @Test
+    public void testgetMessages() throws Exception {
+        RowLogMessageConsumer consumer1 = control.createMock(RowLogMessageConsumer.class);
+        consumer1.getId();
+        expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
+        consumer1.getMaxTries();
+        expectLastCall().andReturn(5).anyTimes();
+        RowLogMessageConsumer consumer2 = control.createMock(RowLogMessageConsumer.class);
+        consumer2.getId();
+        expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
+        consumer2.getMaxTries();
+        expectLastCall().andReturn(5).anyTimes();
+        
+        shard.putMessage(isA(RowLogMessage.class));
+        expectLastCall().times(2);
+        shard.removeMessage(isA(RowLogMessage.class), eq(1));
+        shard.removeMessage(isA(RowLogMessage.class), eq(2));
+        
+        control.replay();
+        rowLog.registerConsumer(consumer1);
+        rowLog.registerConsumer(consumer2);
+        rowLog.registerShard(shard);
+        byte[] rowKey = Bytes.toBytes("row3");
+        RowLogMessage message1 = rowLog.putMessage(rowKey, null, null, null);
+        RowLogMessage message2 = rowLog.putMessage(rowKey, null, null, null);
+
+        byte[] lock = rowLog.lockMessage(message1, consumer1.getId());
+        rowLog.messageDone(message1, consumer1.getId(), lock);
+        lock = rowLog.lockMessage(message2, consumer2.getId());
+        rowLog.messageDone(message2, consumer2.getId(), lock);
+        
+        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
+        assertEquals(2, messages.size());
+        
+        messages = rowLog.getMessages(rowKey, consumer1.getId());
+        assertEquals(1, messages.size());
+        assertEquals(message2, messages.get(0));
+        
+        messages = rowLog.getMessages(rowKey, consumer2.getId());
+        assertEquals(1, messages.size());
+        assertEquals(message1, messages.get(0));
+        
+        messages = rowLog.getMessages(rowKey, consumer1.getId(), consumer2.getId());
+        assertEquals(2, messages.size());
+        
+        control.verify();
     }
 }

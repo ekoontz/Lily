@@ -82,7 +82,7 @@ import org.lilycms.util.io.Closer;
  * After usage, the Repository should be stopped by calling the stop() method!
  */
 public class HBaseRepository implements Repository {
-
+ 
     private static final byte[] CURRENT_VERSION_COLUMN_NAME = Bytes.toBytes("$CurrentVersion");
     private static final byte[] LOCK_COLUMN_NAME = Bytes.toBytes("$Lock");
     private static final byte[] DELETED_COLUMN_NAME = Bytes.toBytes("$Deleted");
@@ -195,7 +195,7 @@ public class HBaseRepository implements Repository {
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
 
         checkCreatePreconditions(record);
-
+        
         Record newRecord = record.clone();
 
         RecordId recordId = newRecord.getId();
@@ -206,6 +206,7 @@ public class HBaseRepository implements Repository {
 
         byte[] rowId = recordId.toBytes();
         RowLock rowLock = null;
+        org.lilycms.repository.impl.lock.RowLock customRowLock = null;
         RowLogMessage walMessage;
 
         try {
@@ -232,8 +233,15 @@ public class HBaseRepository implements Repository {
             if (newRecord.getVersion() != null)
                 recordEvent.setVersionCreated(newRecord.getVersion());
 
-            walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+            walMessage = getWal().putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
             recordTable.put(put);
+            
+            // Take Custom RowLock before releasing the HBase RowLock
+            try {
+                customRowLock = lockRow(recordId, rowLock);
+            } catch (IOException ignore) {
+                // The create succeeded, but processing the WAL message didn't. It will be retried later.
+            }
         } catch (IOException e) {
             throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
                     e);
@@ -250,21 +258,12 @@ public class HBaseRepository implements Repository {
             }
         }
 
-        // Take Custom RowLock
-        org.lilycms.repository.impl.lock.RowLock customRowLock = null;
-        try {
-            customRowLock = rowLocker.lockRow(rowId);
-            if (customRowLock != null) {
-                try {
-                    wal.processMessage(walMessage);
-                } catch (RowLogException e) {
-                    // Processing the message failed, it will be retried later
-                }
+        if (customRowLock != null) {
+            try {
+                getWal().processMessage(walMessage);
+            } catch (RowLogException e) {
+                // Processing the message failed, it will be retried later
             }
-        } catch (IOException e) {
-            throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
-                    e);
-        } finally {
             unlockRow(customRowLock);
         }
         return newRecord;
@@ -318,6 +317,13 @@ public class HBaseRepository implements Repository {
     }
 
     public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+        if (record.getId() == null) {
+            throw new InvalidRecordException(record, "The recordId cannot be null for a record to be updated.");
+        }
+        if (!checkAndProcessOpenMessages(record.getId())) {
+            throw new RecordException("Record <"+ record.getId()+"> update could not be performed due to remaining messages on the WAL");
+        }
+        
         if (updateVersion) {
             return updateMutableFields(record, useLatestRecordType);
         } else {
@@ -364,7 +370,7 @@ public class HBaseRepository implements Repository {
     private void putMessageOnWalAndProcess(RecordId recordId, org.lilycms.repository.impl.lock.RowLock rowLock,
             Put put, RecordEvent recordEvent) throws RowLogException, IOException, RecordException {
         RowLogMessage walMessage;
-        walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+        walMessage = getWal().putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
         if (!rowLocker.put(put, rowLock)) {
             throw new RecordException("Exception occurred while putting updated record <" + recordId
                     + "> on HBase table", null);
@@ -372,7 +378,7 @@ public class HBaseRepository implements Repository {
 
         if (walMessage != null) {
             try {
-                wal.processMessage(walMessage);
+                getWal().processMessage(walMessage);
             } catch (RowLogException e) {
                 // Processing the message failed, it will be retried later.
             }
@@ -1078,8 +1084,13 @@ public class HBaseRepository implements Repository {
 
     private org.lilycms.repository.impl.lock.RowLock lockRow(RecordId recordId) throws IOException,
             RecordException {
+        return lockRow(recordId, null);
+    }
+    
+    private org.lilycms.repository.impl.lock.RowLock lockRow(RecordId recordId, RowLock hbaseRowLock) throws IOException,
+            RecordException {
         org.lilycms.repository.impl.lock.RowLock rowLock;
-        rowLock = rowLocker.lockRow(recordId.toBytes());
+        rowLock = rowLocker.lockRow(recordId.toBytes(), hbaseRowLock);
         if (rowLock == null)
             throw new RecordException("Failed to lock row for record <" + recordId + ">", null);
         return rowLock;
@@ -1128,6 +1139,21 @@ public class HBaseRepository implements Repository {
         }
 
         return recordIds;
+    }
+    
+    private boolean checkAndProcessOpenMessages(RecordId recordId) throws RecordException {
+        byte[] rowKey = recordId.toBytes();
+        try {
+            List<RowLogMessage> messages = getWal().getMessages(rowKey);
+            if (messages.isEmpty())
+               return true;
+            for (RowLogMessage rowLogMessage : messages) {
+                getWal().processMessage(rowLogMessage);
+            }
+            return (getWal().getMessages(rowKey).isEmpty());
+        } catch (RowLogException e) {
+            throw new RecordException("Failed to check for open WAL message for record <" + recordId + ">", e);
+        }
     }
 
     private static class ReadContext {

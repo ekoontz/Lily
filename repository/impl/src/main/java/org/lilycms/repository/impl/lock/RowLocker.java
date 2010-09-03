@@ -35,21 +35,34 @@ public class RowLocker {
     }
     
     public RowLock lockRow(byte[] rowKey) throws IOException {
+        return lockRow(rowKey, null);
+    }
+    
+    public RowLock lockRow(byte[] rowKey, org.apache.hadoop.hbase.client.RowLock hbaseRowLock) throws IOException {
         long now = System.currentTimeMillis();
         Get get = new Get(rowKey);
         get.addColumn(family, qualifier);
-
+        org.apache.hadoop.hbase.client.RowLock actualHBaseRowLock;
         if (!table.exists(get)) {
-            org.apache.hadoop.hbase.client.RowLock hbaseRowLock = table.lockRow(rowKey);
-            if (hbaseRowLock == null) return null;
+            if (hbaseRowLock == null) {
+                actualHBaseRowLock = table.lockRow(rowKey);
+            } else {
+                actualHBaseRowLock = hbaseRowLock;
+            }
+            if (actualHBaseRowLock == null) return null;
             try {
-                Put put = new Put(rowKey, hbaseRowLock);
+                Put put = new Put(rowKey, actualHBaseRowLock);
                 byte[] lock = Bytes.toBytes(now);
                 put.add(family, qualifier, lock);
                 table.put(put);
                 return new RowLock(rowKey, now);
             } finally {
-                table.unlockRow(hbaseRowLock);
+                if (hbaseRowLock == null)
+                try {
+                    table.unlockRow(actualHBaseRowLock);
+                } catch (IOException e) {
+                    // ignore
+                }
             }
         } else {
             Result result = table.get(get);
@@ -62,7 +75,7 @@ public class RowLocker {
                 }
             }
             if ((previousTimestamp == -1) || (previousTimestamp + timeout  < now)) {
-                Put put = new Put(rowKey);
+                Put put = new Put(rowKey, hbaseRowLock);
                 byte[] lock = Bytes.toBytes(now);
                 put.add(family, qualifier, lock);
                 if (table.checkAndPut(rowKey, family, qualifier, previousLock, put)) {

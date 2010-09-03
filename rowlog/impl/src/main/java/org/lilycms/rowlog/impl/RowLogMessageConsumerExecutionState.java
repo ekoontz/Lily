@@ -31,6 +31,7 @@ public class RowLogMessageConsumerExecutionState {
 
     private final byte[] messageId;
     Map<Integer, Boolean> states = new HashMap<Integer, Boolean>();
+    Map<Integer, Integer> tryCounts = new HashMap<Integer, Integer>();
     Map<Integer, byte[]> locks = new HashMap<Integer, byte[]>();
 
     public RowLogMessageConsumerExecutionState(byte[] messageId) {
@@ -49,6 +50,21 @@ public class RowLogMessageConsumerExecutionState {
         Boolean state = states.get(consumerId);
         if (state == null) return true;
         return state;
+    }
+    
+    public void incTryCount(int consumerId) {
+        Integer count = tryCounts.get(consumerId);
+        
+        if (count == null)
+            tryCounts.put(consumerId, 0);
+        else 
+            tryCounts.put(consumerId, ++count);
+    }
+    
+    public int getTryCount(int consumerId) {
+        Integer count = tryCounts.get(consumerId);
+        if (count == null) return 0;
+        return count;
     }
     
     public void setLock(int consumerId, byte[] lock) {
@@ -71,6 +87,14 @@ public class RowLogMessageConsumerExecutionState {
             consumerStateNode.put("id", entry.getKey());
             consumerStateNode.put("state", entry.getValue());
             consumerStatesNode.add(consumerStateNode);
+        }
+
+        ArrayNode consumerTryCountsNode = object.putArray("counts");
+        for (Entry<Integer, Integer> entry : tryCounts.entrySet()) {
+            ObjectNode consumerTryCountNode = factory.objectNode();
+            consumerTryCountNode.put("id", entry.getKey());
+            consumerTryCountNode.put("count", entry.getValue());
+            consumerTryCountsNode.add(consumerTryCountNode);
         }
 
         ArrayNode consumerLocksNode = object.putArray("locks");
@@ -109,6 +133,14 @@ public class RowLogMessageConsumerExecutionState {
             executionState.setState(id, state);
         }
 
+        JsonNode consumerTryCountsNode = node.get("counts");
+        for (int i = 0; i < consumerTryCountsNode.size(); i++) {
+            JsonNode consumerTryCountNode = consumerTryCountsNode.get(i);
+            Integer id = consumerTryCountNode.get("id").getIntValue();
+            Integer tryCount = consumerTryCountNode.get("count").getIntValue();
+            executionState.tryCounts.put(id, tryCount);
+        }
+        
         JsonNode consumerLocksNode = node.get("locks");
         for (int i = 0; i < consumerLocksNode.size(); i++) {
             JsonNode consumerLockNode = consumerLocksNode.get(i);

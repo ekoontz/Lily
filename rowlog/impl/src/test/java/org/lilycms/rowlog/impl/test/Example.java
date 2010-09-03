@@ -95,12 +95,17 @@ public class Example {
     private static class FooBarConsumer implements RowLogMessageConsumer {
 
         public static final int ID = 1;
+        private static final int MAX_TRIES = 10;
         
         public FooBarConsumer() {
         }
         
         public int getId() {
             return ID;
+        }
+        
+        public int getMaxTries() {
+            return MAX_TRIES;
         }
         
         public boolean processMessage(RowLogMessage message) {

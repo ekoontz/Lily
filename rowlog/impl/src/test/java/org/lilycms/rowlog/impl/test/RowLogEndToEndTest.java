@@ -19,8 +19,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.apache.hadoop.conf.Configuration;
@@ -34,6 +35,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,7 +49,6 @@ import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
-
 
 public class RowLogEndToEndTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
@@ -66,13 +67,12 @@ public class RowLogEndToEndTest {
         configuration = HBASE_PROXY.getConf();
         rowTable = RowLogTableUtil.getRowTable(configuration);
         zkConnectString = HBASE_PROXY.getZkConnectString();
-        rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY, RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, zkConnectString);
+        rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, zkConnectString);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
-        consumer = new TestMessageConsumer(0);
         processor = new RowLogProcessorImpl(rowLog, shard, zkConnectString);
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
-        
+
     }
 
     @AfterClass
@@ -82,26 +82,27 @@ public class RowLogEndToEndTest {
 
     @Before
     public void setUp() throws Exception {
-        
+        consumer = new TestMessageConsumer(0);
+        rowLog.registerConsumer(consumer);
     }
 
     @After
     public void tearDown() throws Exception {
+        assertHostAndPortRemovedFromZK();
+        consumer.validate();
+        rowLog.unRegisterConsumer(consumer);
     }
-    
+
     @Test
     public void testSingleMessage() throws Exception {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
         consumer.expectMessage(message);
         consumer.expectMessages(1);
         processor.start();
-        if (!consumer.waitUntilMessagesConsumed(120000)) {
-            fail("Messages not consumed within timeout");
-        }
+        consumer.waitUntilMessagesConsumed(120000);
         processor.stop();
-        assertHostAndPortRemovedFromZK();
     }
-    
+
     @Test
     public void testProcessorPublishesHost() throws Exception {
         processor.start();
@@ -109,7 +110,7 @@ public class RowLogEndToEndTest {
         ZooKeeper zooKeeper = null;
         try {
             zooKeeper = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
-                
+
                 public void process(WatchedEvent event) {
                     if (KeeperState.SyncConnected.equals(event.getState())) {
                         semaphore.release();
@@ -125,25 +126,21 @@ public class RowLogEndToEndTest {
             }
         }
         processor.stop();
-        assertHostAndPortRemovedFromZK();
     }
-    
+
     @Test
     public void testSingleMessageProcessorStartsFirst() throws Exception {
         processor.start();
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         consumer.expectMessage(message);
         consumer.expectMessages(1);
-        if (!consumer.waitUntilMessagesConsumed(120000)) {
-            fail("Messages not consumed within timeout");
-        }
+        consumer.waitUntilMessagesConsumed(120000);
         processor.stop();
-        assertHostAndPortRemovedFromZK();
     }
 
     @Test
     public void testMultipleMessagesSameRow() throws Exception {
-        RowLogMessage message; 
+        RowLogMessage message;
         consumer.expectMessages(10);
         for (int i = 0; i < 10; i++) {
             byte[] rowKey = Bytes.toBytes("row3");
@@ -151,82 +148,102 @@ public class RowLogEndToEndTest {
             consumer.expectMessage(message);
         }
         processor.start();
-        if (!consumer.waitUntilMessagesConsumed(120000)) {
-            fail("Messages not consumed within timeout");
-        }
+        consumer.waitUntilMessagesConsumed(120000);
         processor.stop();
-        assertHostAndPortRemovedFromZK();
     }
 
     @Test
     public void testMultipleMessagesMultipleRows() throws Exception {
-        RowLogMessage message; 
+        RowLogMessage message;
         consumer.expectMessages(25);
         for (long seqnr = 0L; seqnr < 5; seqnr++) {
             for (int rownr = 10; rownr < 15; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
-                message = rowLog.putMessage(Bytes.toBytes("row"+rownr), data, null, null);
+                message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
                 consumer.expectMessage(message);
             }
         }
         processor.start();
-        if (!consumer.waitUntilMessagesConsumed(120000)) { // TODO avoid flipping tests
-            fail("Messages not consumed within timeout");
-        }
+        consumer.waitUntilMessagesConsumed(120000);
         processor.stop();
-        assertHostAndPortRemovedFromZK();
     }
-    
+
     @Test
     public void testMultipleConsumers() throws Exception {
         TestMessageConsumer consumer2 = new TestMessageConsumer(1);
         rowLog.registerConsumer(consumer2);
         consumer.expectMessages(10);
         consumer2.expectMessages(10);
-        RowLogMessage message; 
+        RowLogMessage message;
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
-                message = rowLog.putMessage(Bytes.toBytes("row"+rownr), data, null, null);
+                message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
                 consumer.expectMessage(message);
                 consumer2.expectMessage(message);
             }
         }
         processor.start();
-        if (!consumer.waitUntilMessagesConsumed(120000)) { // TODO avoid flipping tests
-            fail("Messages not consumed within timeout");
-        }
-        if (!consumer2.waitUntilMessagesConsumed(120000)) { // TODO avoid flipping tests
-            fail("Messages not consumed within timeout");
-        }
+        consumer.waitUntilMessagesConsumed(120000);
+        consumer2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        assertHostAndPortRemovedFromZK();
+        consumer2.validate();
+        rowLog.unRegisterConsumer(consumer2);
     }
 
-    
+    @Test
+    public void testProblematicMessage() throws Exception {
+        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
+        consumer.problematicMessages.add(message);
+        consumer.expectMessage(message, 3);
+        consumer.expectMessages(3);
+        processor.start();
+        consumer.waitUntilMessagesConsumed(120000);
+        List<RowLogMessage> problematic = rowLog.getProblematic(0);
+        Assert.assertTrue(problematic.contains(message));
+        processor.stop();
+    }
+
     private static class TestMessageConsumer implements RowLogMessageConsumer {
-        
-        private List<RowLogMessage> expectedMessages = Collections.synchronizedList(new ArrayList<RowLogMessage>());
-        private List<RowLogMessage> earlyMessages = Collections.synchronizedList(new ArrayList<RowLogMessage>());
+
+        private Map<RowLogMessage, Integer> expectedMessages = new HashMap<RowLogMessage, Integer>();
+        private Map<RowLogMessage, Integer> earlyMessages = new HashMap<RowLogMessage, Integer>();
+        public List<RowLogMessage> problematicMessages = new ArrayList<RowLogMessage>();
         private int count = 0;
         private int numberOfMessagesToBeExpected = 0;
         private final int id;
-        
+        public int maxTries = 3;
+
         public TestMessageConsumer(int id) {
             this.id = id;
         }
-        
-        public void expectMessage(RowLogMessage message) {
-            if (earlyMessages.contains(message)) {
+
+        public int getMaxTries() {
+            return maxTries;
+        }
+
+        public void expectMessage(RowLogMessage message) throws Exception {
+            expectMessage(message, 1);
+        }
+
+        public void expectMessage(RowLogMessage message, int times) throws Exception {
+            if (earlyMessages.containsKey(message)) {
+                int timesEarlyReceived = earlyMessages.get(message);
+                count = count + timesEarlyReceived;
+                int remainingTimes = times - timesEarlyReceived;
+                if (remainingTimes < 0)
+                    throw new Exception("Recieved message <" + message + "> more than expected");
                 earlyMessages.remove(message);
-                count++;
+                if (remainingTimes > 0) {
+                    expectedMessages.put(message, remainingTimes);
+                }
             } else {
-                expectedMessages.add(message);
+                expectedMessages.put(message, times);
             }
         }
-        
+
         public void expectMessages(int i) {
             this.numberOfMessagesToBeExpected = i;
         }
@@ -234,36 +251,53 @@ public class RowLogEndToEndTest {
         public int getId() {
             return id;
         }
-    
+
         public boolean processMessage(RowLogMessage message) {
-            if (!expectedMessages.contains(message)) {
-                earlyMessages.add(message);
-                return true;
+            if (!expectedMessages.containsKey(message)) {
+                if (earlyMessages.containsKey(message)) {
+                    earlyMessages.put(message, earlyMessages.get(message) + 1);
+                } else {
+                    earlyMessages.put(message, 1);
+                }
+                return (!problematicMessages.contains(message));
             } else {
-                boolean removed;
-                if (removed = expectedMessages.remove(message)) {
-                    count++;
-                } 
-                return removed;
+                count++;
+                int timesRemaining = expectedMessages.get(message);
+                if (timesRemaining == 1) {
+                    expectedMessages.remove(message);
+                    return (!problematicMessages.contains(message));
+                } else {
+                    expectedMessages.put(message, timesRemaining - 1);
+                    return false;
+                }
             }
         }
-        
-        public boolean waitUntilMessagesConsumed(long timeout) throws Exception {
+
+        public void waitUntilMessagesConsumed(long timeout) throws Exception {
             long waitUntil = System.currentTimeMillis() + timeout;
-            while ((!expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected)) && System.currentTimeMillis() < waitUntil) {
+            while ((!expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected))
+                    && System.currentTimeMillis() < waitUntil) {
                 Thread.sleep(100);
             }
-            return expectedMessages.isEmpty();
+        }
+
+        public void validate() throws Exception {
+            if (count > numberOfMessagesToBeExpected)
+                throw new Exception("Received more messages than expected");
+            if (!earlyMessages.isEmpty())
+                throw new Exception("Received more messages than expected");
+            if (!expectedMessages.isEmpty())
+                throw new Exception("Messages not processed within timeout");
         }
 
     }
-    
-    private void assertHostAndPortRemovedFromZK() throws Exception{
+
+    private void assertHostAndPortRemovedFromZK() throws Exception {
         final Semaphore semaphore = new Semaphore(0);
         ZooKeeper zooKeeper = null;
         try {
             zooKeeper = new ZooKeeper(HBASE_PROXY.getZkConnectString(), 50000, new Watcher() {
-                
+
                 public void process(WatchedEvent event) {
                     if (KeeperState.SyncConnected.equals(event.getState())) {
                         semaphore.release();

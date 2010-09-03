@@ -75,7 +75,7 @@ public class RowLockerTest {
     @Test
     public void testLockUnlock() throws IOException {
         RowLocker locker = new RowLocker(table, family, qualifier, 600000L);
-        byte[] rowKey = Bytes.toBytes("row1");
+        byte[] rowKey = Bytes.toBytes("testLockUnlock");
         RowLock lock = locker.lockRow(rowKey);
         assertFalse(lock == null);
         assertTrue(locker.isLocked(rowKey));
@@ -86,7 +86,7 @@ public class RowLockerTest {
     @Test
     public void testLockTwice() throws IOException {
         RowLocker locker = new RowLocker(table, family, qualifier, 600000L);
-        byte[] rowKey = Bytes.toBytes("row1");
+        byte[] rowKey = Bytes.toBytes("testLockTwice");
         RowLock lock = locker.lockRow(rowKey);
         assertFalse(lock == null);
         assertTrue(locker.isLocked(rowKey));
@@ -98,7 +98,7 @@ public class RowLockerTest {
     @Test
     public void testLockTimesOut() throws Exception {
         RowLocker locker = new RowLocker(table, family, qualifier, 1L);
-        byte[] rowKey = Bytes.toBytes("row1");
+        byte[] rowKey = Bytes.toBytes("testLockTimesOut");
         RowLock lock = locker.lockRow(rowKey);
         assertFalse(lock == null);
         Thread.sleep(10);
@@ -110,7 +110,7 @@ public class RowLockerTest {
     @Test
     public void testPut() throws IOException {
         RowLocker locker = new RowLocker(table, family, qualifier, 60000L);
-        byte[] rowKey = Bytes.toBytes("row1");
+        byte[] rowKey = Bytes.toBytes("testPut");
         RowLock lock1 = locker.lockRow(rowKey);
         locker.unlockRow(lock1);
         RowLock lock2 = locker.lockRow(rowKey);
@@ -125,8 +125,8 @@ public class RowLockerTest {
     @Test
     public void testPutLockOtherRow() throws IOException {
         RowLocker locker = new RowLocker(table, family, qualifier, 60000L);
-        RowLock lock = locker.lockRow(Bytes.toBytes("row1"));
-        Put put = new Put(Bytes.toBytes("row2"));
+        RowLock lock = locker.lockRow(Bytes.toBytes("testPutLockOtherRow"));
+        Put put = new Put(Bytes.toBytes("testPutLockOtherRow2"));
         put.add(family, Bytes.toBytes("testQualifier"), Bytes.toBytes("testValue"));
         assertFalse(locker.put(put, lock));
         

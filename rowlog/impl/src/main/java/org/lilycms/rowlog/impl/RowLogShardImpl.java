@@ -23,7 +23,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RowLock;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
@@ -35,6 +43,7 @@ import org.lilycms.util.io.Closer;
 
 public class RowLogShardImpl implements RowLogShard {
 
+    private static final byte[] PROBLEMATIC_MARKER = Bytes.toBytes("P");
     private static final byte[] MESSAGES_CF = Bytes.toBytes("MESSAGES");
     private static final byte[] MESSAGE_COLUMN = Bytes.toBytes("MESSAGE");
     private HTableInterface table;
@@ -58,19 +67,19 @@ public class RowLogShardImpl implements RowLogShard {
 
         table = new LocalHTable(configuration, id);
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public void putMessage(RowLogMessage message) throws RowLogException {
         for (RowLogMessageConsumer consumer : rowLog.getConsumers()) {
             putMessage(message, consumer.getId());
         }
     }
-    
+
     private void putMessage(RowLogMessage message, int consumerId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId);
+        byte[] rowKey = createRowKey(message.getId(), consumerId, false);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {
@@ -79,15 +88,25 @@ public class RowLogShardImpl implements RowLogShard {
             throw new RowLogException("Failed to put message on RowLogShard", e);
         }
     }
-    
+
     public void removeMessage(RowLogMessage message, int consumerId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId);
-        
+        // There is a slight chance that when marking a message as problematic,
+        // the problematic message was put on the table, but the non-problematic
+        // message was not removed. So we always try to remove both.
+        removeMessage(message, consumerId, false);
+        removeMessage(message, consumerId, true);
+    }
+
+    private void removeMessage(RowLogMessage message, int consumerId, boolean problematic) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), consumerId, problematic);
+
         RowLock rowLock = null;
         try {
-            rowLock = table.lockRow(rowKey);
-            Delete delete = new Delete(rowKey, Long.MAX_VALUE, rowLock);
-            table.delete(delete);
+            if (table.exists(new Get(rowKey))) {
+                rowLock = table.lockRow(rowKey);
+                Delete delete = new Delete(rowKey, Long.MAX_VALUE, rowLock);
+                table.delete(delete);
+            }
         } catch (IOException e) {
             throw new RowLogException("Failed to remove message from RowLogShard", e);
         } finally {
@@ -102,24 +121,43 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public List<RowLogMessage> next(int consumerId) throws RowLogException {
-        Scan scan = new Scan(Bytes.toBytes(consumerId));
+        return next(consumerId, false);
+    }
+    
+    public List<RowLogMessage> next(int consumerId, boolean problematic) throws RowLogException {
+        byte[] rowPrefix = null;
+        if (problematic) {
+            rowPrefix = PROBLEMATIC_MARKER;
+            rowPrefix = Bytes.add(rowPrefix, Bytes.toBytes(consumerId));
+        } else {
+            rowPrefix = Bytes.toBytes(consumerId);
+        }
+        Scan scan = new Scan(rowPrefix);
         scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
         ResultScanner scanner = null;
         List<RowLogMessage> rowLogMessages = new ArrayList<RowLogMessage>();
         try {
             scanner = table.getScanner(scan);
-            Result[] results = scanner.next(batchSize);
-            if (results == null)
-                return null;
-            for (Result next : results) {
-                byte[] rowKey = next.getRow();
-                int actualConsumerId = Bytes.toInt(rowKey);
-                if (consumerId != actualConsumerId)
-                    break; // There were no messages for this consumer
-                byte[] value = next.getValue(MESSAGES_CF, MESSAGE_COLUMN);
-                byte[] messageId = Bytes.tail(rowKey, rowKey.length - Bytes.SIZEOF_INT);
-                rowLogMessages.add(decodeMessage(messageId, value));
-            }
+            boolean keepScanning = problematic;
+            do {
+                Result[] results = scanner.next(batchSize);
+                if (results.length == 0) {
+                    keepScanning = false;
+                }
+                for (Result next : results) {
+                    byte[] rowKey = next.getRow();
+                    if (!Bytes.startsWith(rowKey, rowPrefix)) {
+                        keepScanning = false;
+                        break; // There were no messages for this consumer
+                    }
+                    if (problematic) {
+                        rowKey = Bytes.tail(rowKey, rowKey.length - PROBLEMATIC_MARKER.length);
+                    }
+                    byte[] value = next.getValue(MESSAGES_CF, MESSAGE_COLUMN);
+                    byte[] messageId = Bytes.tail(rowKey, rowKey.length - Bytes.SIZEOF_INT);
+                    rowLogMessages.add(decodeMessage(messageId, value));
+                }
+            } while(keepScanning);
             return rowLogMessages;
         } catch (IOException e) {
             throw new RowLogException("Failed to fetch next message from RowLogShard", e);
@@ -128,12 +166,32 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    private byte[] createRowKey(byte[] messageId, int consumerId) {
-        byte[] rowKey = Bytes.toBytes(consumerId);
+    public void markProblematic(RowLogMessage message, int consumerId) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), consumerId, true);
+        Put put = new Put(rowKey);
+        put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
+        try {
+            table.put(put);
+        } catch (IOException e) {
+            throw new RowLogException("Failed to mark message as problematic", e);
+        }
+        removeMessage(message, consumerId, false);
+    }
+
+    public List<RowLogMessage> getProblematic(int consumerId) throws RowLogException {
+        return next(consumerId, true);
+    }
+
+    private byte[] createRowKey(byte[] messageId, int consumerId, boolean problematic) {
+        byte[] rowKey = new byte[0];
+        if (problematic) {
+            rowKey = PROBLEMATIC_MARKER;
+        }
+        rowKey = Bytes.add(rowKey, Bytes.toBytes(consumerId));
         rowKey = Bytes.add(rowKey, messageId);
         return rowKey;
     }
-    
+
     private byte[] encodeMessage(RowLogMessage message) {
         byte[] bytes = Bytes.toBytes(message.getSeqNr());
         bytes = Bytes.add(bytes, Bytes.toBytes(message.getRowKey().length));
@@ -143,11 +201,12 @@ public class RowLogShardImpl implements RowLogShard {
         }
         return bytes;
     }
-    
+
     private RowLogMessage decodeMessage(byte[] messageId, byte[] bytes) {
         long seqnr = Bytes.toLong(bytes);
-        int rowKeyLength = Bytes.toInt(bytes,Bytes.SIZEOF_LONG);
-        byte[] rowKey = Bytes.head(Bytes.tail(bytes, bytes.length-Bytes.SIZEOF_LONG-Bytes.SIZEOF_INT), rowKeyLength);
+        int rowKeyLength = Bytes.toInt(bytes, Bytes.SIZEOF_LONG);
+        byte[] rowKey = Bytes
+                .head(Bytes.tail(bytes, bytes.length - Bytes.SIZEOF_LONG - Bytes.SIZEOF_INT), rowKeyLength);
         int dataLength = bytes.length - Bytes.SIZEOF_LONG - Bytes.SIZEOF_INT - rowKeyLength;
         byte[] data = null;
         if (dataLength > 0) {
