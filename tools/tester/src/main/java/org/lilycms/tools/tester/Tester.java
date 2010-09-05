@@ -32,7 +32,7 @@ import org.lilycms.tools.import_.cli.ImportConflictException;
 import org.lilycms.tools.import_.cli.ImportException;
 import org.lilycms.tools.import_.cli.JsonImportTool;
 import org.lilycms.tools.import_.json.*;
-import org.lilycms.util.repo.JsonUtil;
+import org.lilycms.util.json.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
 import org.lilycms.util.io.Closer;
 

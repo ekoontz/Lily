@@ -44,9 +44,9 @@ public class JsonImportTool {
         Options cliOptions = new Options();
 
         Option zkOption = OptionBuilder
-                .withArgName("quorum")
+                .withArgName("connection-string")
                 .hasArg()
-                .withDescription("Zookeeper quorum: hostname1:port,hostname2:port,...")
+                .withDescription("Zookeeper connection string: hostname1:port,hostname2:port,...")
                 .withLongOpt("zookeeper")
                 .create("z");
         cliOptions.addOption(zkOption);
@@ -66,6 +66,7 @@ public class JsonImportTool {
         try {
             cmd = parser.parse(cliOptions, args);
         } catch (ParseException e) {
+            System.out.println(e.getMessage());
             showHelp = true;
         }
 
@@ -79,17 +80,17 @@ public class JsonImportTool {
             System.exit(1);
         }
 
-        String zookeeperConnectString;
+        String zkConnectionString;
         if (!cmd.hasOption(zkOption.getOpt())) {
-            System.out.println("Zookeeper quorum not specified, using default: " + DEFAULT_ZK_CONNECT);
-            zookeeperConnectString = DEFAULT_ZK_CONNECT;
+            System.out.println("Zookeeper connection string not specified, using default: " + DEFAULT_ZK_CONNECT);
+            zkConnectionString = DEFAULT_ZK_CONNECT;
         } else {
-            zookeeperConnectString = cmd.getOptionValue(zkOption.getOpt());
+            zkConnectionString = cmd.getOptionValue(zkOption.getOpt());
         }
 
         boolean schemaOnly = cmd.hasOption(schemaOnlyOption.getOpt());
 
-        LilyClient client = new LilyClient(zookeeperConnectString);
+        LilyClient client = new LilyClient(zkConnectionString);
 
         for (String arg : (List<String>)cmd.getArgList()) {
             System.out.println("----------------------------------------------------------------------");

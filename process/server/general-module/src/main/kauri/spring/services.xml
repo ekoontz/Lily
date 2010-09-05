@@ -20,6 +20,8 @@
 
   <kauri:export-service ref="hbaseConfiguration" service="org.lilycms.server.modules.general.HBaseConfigurationFactory"/>
 
+  <kauri:export-service ref="zooKeeper" service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+
   <bean id="hbaseConfiguration"
       class="org.lilycms.server.modules.general.HBaseConfigurationFactoryImpl">
     <constructor-arg value="${hbase:zookeeperQuorum}"/>
@@ -29,6 +31,17 @@
   <bean id="metrics"
       class="org.lilycms.server.modules.general.Metrics">
     <constructor-arg><kauri:conf path="metrics"/></constructor-arg>
+  </bean>
+
+  <bean id="zooKeeper"
+        class="org.lilycms.util.zookeeper.ZooKeeperImpl">
+    <constructor-arg>
+      <bean class="org.apache.zookeeper.ZooKeeper" destroy-method="close">
+        <constructor-arg value="${zookeeper:connectString}"/>
+        <constructor-arg value="${zookeeper:sessionTimeout}"/>
+        <constructor-arg><bean class="org.lilycms.server.modules.general.DummyWatcher"/></constructor-arg>
+      </bean>      
+    </constructor-arg>
   </bean>
 
 </beans>

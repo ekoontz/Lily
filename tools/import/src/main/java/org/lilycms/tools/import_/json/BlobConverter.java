@@ -4,7 +4,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.Blob;
-import org.lilycms.util.repo.JsonUtil;
+import org.lilycms.util.json.JsonUtil;
 
 public class BlobConverter {
     public static ObjectNode toJson(Blob blob) {

@@ -7,6 +7,7 @@ import org.lilycms.rest.EntityList;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.tools.import_.json.EntityWriter;
+import org.lilycms.util.json.JsonFormat;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

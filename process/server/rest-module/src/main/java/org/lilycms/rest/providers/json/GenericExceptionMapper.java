@@ -4,6 +4,7 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.rest.ResourceException;
+import org.lilycms.util.json.JsonFormat;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

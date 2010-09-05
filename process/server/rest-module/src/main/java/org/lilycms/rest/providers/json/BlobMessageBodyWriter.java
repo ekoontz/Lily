@@ -3,6 +3,7 @@ package org.lilycms.rest.providers.json;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.tools.import_.json.BlobConverter;
+import org.lilycms.util.json.JsonFormat;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

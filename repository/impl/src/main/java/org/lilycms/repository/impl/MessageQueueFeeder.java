@@ -22,7 +22,7 @@ import org.lilycms.rowlog.api.RowLogMessageConsumer;
 
 public class MessageQueueFeeder implements RowLogMessageConsumer {
 
-    public static final int ID = 1;
+    public static final int ID = 10;
     private static final int MAX_TRIES = 10;
     private final RowLog messageQueue;
     public MessageQueueFeeder(RowLog messageQueue) {

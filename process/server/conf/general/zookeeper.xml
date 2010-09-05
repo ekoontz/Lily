@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<zooKeeper xmlns:conf="http://kauriproject.org/configuration"
+       conf:inherit="shallow">
+
+ <connectString>localhost:2181</connectString>
+ <sessionTimeout>10000</sessionTimeout> 
+</zooKeeper>

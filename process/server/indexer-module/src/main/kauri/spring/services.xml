@@ -12,12 +12,6 @@
 
   <context:annotation-config/>
 
-  <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module" conf="confRegistry"/>
-
-  <bean class="org.kauriproject.runtime.rapi.ConfPlaceholderConfigurer">
-    <constructor-arg ref="confRegistry"/>
-  </bean>
-
   <kauri:import-service
       id="hbaseConfFactory"
       service="org.lilycms.server.modules.general.HBaseConfigurationFactory"/>
@@ -30,16 +24,42 @@
       id="messageQueue"
       service="org.lilycms.rowlog.api.RowLog"/>
 
+  <kauri:import-service
+      id="writeAheadLog"
+      service="org.lilycms.rowlog.api.RowLog"/>
+
+  <kauri:import-service
+      id="zooKeeper"
+      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+
   <bean id="hbaseConf"
       factory-bean="hbaseConfFactory"
       factory-method="get"/>
 
-  <bean id="indexerSetup" class="org.lilycms.server.modules.indexer.IndexerSetup">
+  <bean id="indexerModel" class="org.lilycms.indexer.model.impl.IndexerModelImpl">
+    <constructor-arg ref="zooKeeper"/>
+  </bean>
+
+  <bean id="indexerMaster" class="org.lilycms.indexer.master.IndexerMaster">
+    <constructor-arg ref="zooKeeper"/>
+    <constructor-arg ref="indexerModel"/>
+  </bean>
+
+  <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">
+    <constructor-arg ref="repository"/>
+    <constructor-arg ref="writeAheadLog"/>
+    <constructor-arg ref="hbaseConf"/>
+  </bean>
+
+  <bean id="linkIndex"
+      factory-bean="linkIndexSetup"
+      factory-method="getLinkIndex"/>
+
+  <bean id="indexerWorker" class="org.lilycms.indexer.worker.IndexerWorker">
+    <constructor-arg ref="indexerModel"/>
     <constructor-arg ref="repository"/>
     <constructor-arg ref="messageQueue"/>
-    <constructor-arg ref="hbaseConf"/>
-    <constructor-arg value="${indexer:confPath}"/>
-    <constructor-arg value="${indexer:solrAddress}"/>
+    <constructor-arg ref="linkIndex"/>
   </bean>
 
 </beans>

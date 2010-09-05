@@ -6,27 +6,52 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * Various ZooKeeper utility methods.
  */
 public class ZkUtil {
 
+    public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
+        createPath(new ZooKeeperImpl(zk), path);
+    }
+
     /**
      * Creates a persistent path on zookeeper if it does not exist yet, including any parents.
+     * Keeps retrying in case of connection loss.
      *
      */
-    public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
-        if (path.startsWith("/"))
-            path = path.substring(1);
+    public static void createPath(final ZooKeeperItf zk, final String path) throws ZkPathCreationException {
+        try {
+            Stat stat = retryOperationForever(new ZooKeeperOperation<Stat>() {
+                public Stat execute() throws KeeperException, InterruptedException {
+                    return zk.exists(path, null);
+                }
+            });
 
-        String[] parts = path.split("/");
+            if (stat != null)
+                return;
+        } catch (KeeperException e) {
+            throw new ZkPathCreationException("Error testing path for existence: " + path, e);
+        } catch (InterruptedException e) {
+            throw new ZkPathCreationException("Error testing path for existence: " + path, e);
+        }
 
-        StringBuilder subPath = new StringBuilder();
+        if (!path.startsWith("/"))
+            throw new IllegalArgumentException("Path should start with a slash.");
+
+        String[] parts = path.substring(1).split("/");
+
+        final StringBuilder subPath = new StringBuilder();
         for (String part : parts) {
             subPath.append("/").append(part);
             try {
-                zk.create(subPath.toString(), null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                retryOperationForever(new ZooKeeperOperation<String>() {
+                    public String execute() throws KeeperException, InterruptedException {
+                        return zk.create(subPath.toString(), null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                    }
+                });
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
             } catch (InterruptedException e) {

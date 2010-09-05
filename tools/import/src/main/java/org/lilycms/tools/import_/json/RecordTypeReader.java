@@ -5,7 +5,7 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 
-import static org.lilycms.util.repo.JsonUtil.*;
+import static org.lilycms.util.json.JsonUtil.*;
 
 public class RecordTypeReader implements EntityReader<RecordType> {
     public static EntityReader<RecordType> INSTANCE  = new RecordTypeReader();

@@ -6,7 +6,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.lilycms.repository.api.*;
-import org.lilycms.util.repo.JsonUtil;
+import org.lilycms.util.json.JsonUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.lilycms.util.repo.JsonUtil.*;
+import static org.lilycms.util.json.JsonUtil.*;
 
 public class RecordReader implements EntityReader<Record> {
     public static EntityReader<Record> INSTANCE = new RecordReader();

@@ -2,9 +2,6 @@ package org.lilycms.util.zookeeper;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-
-import java.io.IOException;
 
 /**
  * Class to run the leader election by itself for test purposes.
@@ -22,7 +19,7 @@ public class LeaderElectionMain implements Runnable {
 
     public void run() {
         try {
-            ZooKeeper zk = new ZooKeeper("localhost:2181,localhost:21812", 5000, new ZkWatcher());
+            ZooKeeperItf zk = new ZooKeeperImpl("localhost:2181,localhost:21812", 5000, new ZkWatcher());
             new LeaderElection(zk, "electiontest", "/lily/electiontest/leaders", new Callback());
         } catch (Exception e) {
             e.printStackTrace();

@@ -96,20 +96,17 @@ public class KauriTestUtility {
     }
 
     public void createDefaultConf(HBaseProxy hbaseProxy) throws Exception {
-        File indexerConfFile = new File(getBasedir() + serverProcessSrcDir +"indexerconf.xml");
-        FileUtils.copyFileToDirectory(indexerConfFile, tmpDir);
-
         File confDir = new File(tmpDir, "conf");
         confDir.mkdir();
-
-        writeConf(confDir, "indexer", "indexer.xml",
-                "<indexer xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"shallow\">" +
-                        "<confPath>" + indexerConfFile.getAbsolutePath() + "</confPath></indexer>");
 
         String zkServer = hbaseProxy.getConf().get("hbase.zookeeper.quorum");
         String zkPort = hbaseProxy.getConf().get("hbase.zookeeper.property.clientPort");
 
         String blobFsUri = hbaseProxy.getBlobFS().getUri().toString();
+
+        writeConf(confDir, "general", "zookeeper.xml",
+                "<zooKeeper xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"shallow\">" +
+                        "<connectString>" + zkServer + ":" + zkPort + "</connectString></zooKeeper>");
 
         writeConf(confDir, "repository", "repository.xml",
                 "<repository xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"shallow\">" +

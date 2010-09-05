@@ -77,7 +77,8 @@ public class LinkIndexUpdater {
     private class  MyListener implements RowLogMessageConsumer {
 
         public int getId() {
-            return 102;
+            // This is selected so as to come before the MessageQueueFeeder 
+            return 5;
         }
         
         public int getMaxTries() {

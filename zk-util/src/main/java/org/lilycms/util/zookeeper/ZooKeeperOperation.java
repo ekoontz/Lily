@@ -7,7 +7,7 @@ import org.apache.zookeeper.KeeperException;
 
 /**
  * A callback object which can be used for implementing retry-able operations, used by
- * {@link ZkUtil#retryOperation(ZooKeeperOperation)}.
+ * {@link ZkUtil#retryOperation}.
  *
  */
 public interface ZooKeeperOperation<T> {

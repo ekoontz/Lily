@@ -30,6 +30,10 @@
       ref="messageQueue"
       service="org.lilycms.rowlog.api.RowLog"/>
 
+  <kauri:export-service
+      ref="writeAheadLog"
+      service="org.lilycms.rowlog.api.RowLog"/>
+
   <bean id="hbaseConf"
       factory-bean="hbaseConfFactory"
       factory-method="get"/>
@@ -61,6 +65,8 @@
   </bean>
 
   <bean id="messageQueue" factory-bean="repository" factory-method="getMessageQueue"/>
+
+  <bean id="writeAheadLog" factory-bean="repository" factory-method="getWal"/>
 
   <bean id="address" class="org.lilycms.server.modules.repository.AddressResolver">
     <constructor-arg value="${repository:interface}"/>

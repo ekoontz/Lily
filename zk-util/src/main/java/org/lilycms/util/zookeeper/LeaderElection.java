@@ -22,7 +22,7 @@ import java.util.List;
  * (see http://markmail.org/message/o6whuii7wlf2a64c).
  */
 public class LeaderElection {
-    private ZooKeeper zk;
+    private ZooKeeperItf zk;
     private String position;
     private String electionPath;
     private String electionNodeName;
@@ -38,7 +38,7 @@ public class LeaderElection {
      * @param electionPath path under which the ephemeral leader election nodes should be created. The path
      *                     will be created if it does not exist. The path should not end on a slash.
      */
-    public LeaderElection(ZooKeeper zk, String position, String electionPath, LeaderElectionCallback callback)
+    public LeaderElection(ZooKeeperItf zk, String position, String electionPath, LeaderElectionCallback callback)
             throws LeaderElectionSetupException {
         this.zk = zk;
         this.position = position;
@@ -74,9 +74,12 @@ public class LeaderElection {
         try {
             List<String> children = ZkUtil.retryOperationForever(new ZooKeeperOperation<List<String>>() {
                 public List<String> execute() throws KeeperException, InterruptedException {
+                    // Here the code could be improved: providing the watcher here can give the so-called
+                    // "herd-effect", especially when there are many potential leaders.
                     return zk.getChildren(electionPath, watcher);
                 }
             });
+            // The child sequence numbers are fixed-with, prefixed with zeros, so we can sort them as strings
             Collections.sort(children);
 
             if (log.isDebugEnabled()) {

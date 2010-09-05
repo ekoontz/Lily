@@ -43,6 +43,9 @@ public class RecordLinkExtractor {
                 extract(value, collector, fieldType.getId(), record.getId(), repository.getIdGenerator());
             } else if (valueType.getPrimitive().getName().equals("BLOB")) {
                 // TODO implement link extraction from blob fields
+                //      However: since blob link extraction is more expensive, we might not want to do
+                //               it as a secondary action. Maybe the link index for blobs should be a
+                //               completely different index.
             }
         }
     }

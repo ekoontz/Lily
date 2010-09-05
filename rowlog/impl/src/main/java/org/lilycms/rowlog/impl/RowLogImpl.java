@@ -16,12 +16,7 @@
 package org.lilycms.rowlog.impl;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
+import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
@@ -50,7 +45,7 @@ public class RowLogImpl implements RowLog {
     private final byte[] payloadColumnFamily;
     private final byte[] executionStateColumnFamily;
     
-    private Map<Integer, RowLogMessageConsumer> consumers = new HashMap<Integer, RowLogMessageConsumer>();
+    private Map<Integer, RowLogMessageConsumer> consumers = new TreeMap<Integer, RowLogMessageConsumer>();
     private final long lockTimeout;
     private final String id;
     private RowLogProcessor rowLogProcessor;

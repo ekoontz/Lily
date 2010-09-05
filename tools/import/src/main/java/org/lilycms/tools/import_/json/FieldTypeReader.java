@@ -5,7 +5,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
 
-import static org.lilycms.util.repo.JsonUtil.*;
+import static org.lilycms.util.json.JsonUtil.*;
 
 public class FieldTypeReader implements EntityReader<FieldType> {
     public static EntityReader<FieldType> INSTANCE = new FieldTypeReader();

@@ -6,6 +6,7 @@ import org.lilycms.repository.api.*;
 import org.lilycms.rest.RepositoryEnabled;
 import org.lilycms.rest.ResourceException;
 import org.lilycms.tools.import_.json.JsonFormatException;
+import org.lilycms.util.json.JsonFormat;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

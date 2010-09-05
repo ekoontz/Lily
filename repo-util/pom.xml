@@ -36,18 +36,13 @@
     <!-- Please keep the dependencies of this project to a minimum! -->
     
     <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-core-asl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-repository-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.lilycms</groupId>
-      <artifactId>lily-repository-api</artifactId>
+      <artifactId>lily-json-util</artifactId>
     </dependency>
 
     <dependency>

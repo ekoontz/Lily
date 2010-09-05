@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <repository xmlns:conf="http://kauriproject.org/configuration"
             conf:inherit="shallow">
-  <zookeeperConnectString>localhost:2181</zookeeperConnectString>
 
   <!-- Filesystem to use to store blobs -->
   <blobFileSystem>hdfs://localhost:9000</blobFileSystem>

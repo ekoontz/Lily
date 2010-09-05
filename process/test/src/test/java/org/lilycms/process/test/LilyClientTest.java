@@ -26,8 +26,17 @@ public class LilyClientTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        KAURI_TEST_UTIL.stop();
-        HBASE_PROXY.stop();
+        try {
+            KAURI_TEST_UTIL.stop();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+
+        try {
+            HBASE_PROXY.stop();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     /**
