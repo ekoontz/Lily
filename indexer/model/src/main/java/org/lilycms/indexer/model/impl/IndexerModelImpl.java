@@ -14,6 +14,31 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+// About how the indexer conf is stored in ZooKeeper
+// -------------------------------------------------
+// I had to make the decision of whether to store all properties of an index in the
+// data of one node, or rather to add these properties as subnodes.
+//
+// The advantages of putting index properties in subnodes are:
+//  - they allow to watch inidividual properties, so you know which one changed
+//  - each property can be updated individually
+//  - there is no impact of big properties, like the indexerconf XML, on other
+//    ones
+//
+// The advantages of putting all index properties in the data of one znode are:
+//  - the atomic create or update of an index is easy/possible. ZK does not have
+//    transactions. Intermediate state while performing updates is not visible.
+//  - watching is simpler: just watch one node, rather than having to register
+//    watches on every child node and on the parent for children changes.
+//  - in practice it is usually still easy to know what individual properties
+//    changed, by comparing with previous state you hold yourself.
+//
+// So the clear winner was to put all properties in the data of one znode.
+// It is much easier: less work, reduced complexity, less chance for errors.
+// Also, the state of indexes does not change frequently, so that the data
+// of this znode is somewhat bigger is not really important.
+
+
 public class IndexerModelImpl implements WriteableIndexerModel {
     private ZooKeeperItf zk;
 
