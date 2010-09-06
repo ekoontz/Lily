@@ -68,7 +68,7 @@ public class Indexer {
      *
      * @param recordId
      */
-    public void index(RecordId recordId) throws FieldTypeNotFoundException, VersionNotFoundException, RepositoryException, RecordNotFoundException, RecordTypeNotFoundException {
+    public void index(RecordId recordId) throws RepositoryException, IOException, SolrServerException {
         IdRecord record = repository.readWithIds(recordId, null, null);
         Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
 
@@ -80,6 +80,7 @@ public class Indexer {
         Set<String> vtagsToIndex = new HashSet<String>();
         setIndexAllVTags(vtagsToIndex, vtags, indexCase, record);
 
+        index(record, vtagsToIndex, vtags);
     }
 
     protected void index(IdRecord record, Set<String> vtagsToIndex, Map<String, Long> vtags) throws IOException, SolrServerException, FieldTypeNotFoundException, RepositoryException, RecordTypeNotFoundException {

@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.mapred.MiniMRCluster;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class HBaseRunner {
     private MiniZooKeeperCluster zkCluster = null;
     private MiniDFSCluster dfsCluster = null;
     private MiniHBaseCluster hbaseCluster = null;
+    private MiniMRCluster mrCluster = null;
     private File clusterTestBuildDir = null;
     private Configuration conf;
     private int zkPort = 2181;
@@ -60,6 +62,43 @@ public class HBaseRunner {
         HBaseProxy.addHBaseTestProps(conf);
 
         startMiniCluster(1);
+
+        startMiniMapReduceCluster();
+
+        System.out.println("-------------------------");
+        System.out.println("Minicluster is up");
+        System.out.println();
+        System.out.println("To connect to this HBase, use the following properties:");
+        System.out.println("hbase.zookeeper.quorum=localhost");
+        System.out.println("hbase.zookeeper.property.clientPort=" + zkPort);
+        System.out.println();
+        System.out.println("In Java code, create the HBase configuration like this:");
+        System.out.println("Configuration conf = HBaseConfiguration.create();");
+        System.out.println("conf.set(\"hbase.zookeeper.quorum\", \"localhost\");");
+        System.out.println("conf.set(\"hbase.zookeeper.property.clientPort\", \"" + zkPort + "\");");
+        System.out.println();
+        System.out.println("For MapReduce, use:");
+        System.out.println("Configuration conf = new Configuration();");
+        System.out.println("conf.set(\"mapred.job.tracker\", \"localhost:" + mrCluster.getJobTrackerPort() + "\");");
+        System.out.println("Job job = new Job(conf);");
+        System.out.println("-------------------------");
+
+        // Seems like Hadoop registers its own shutdown hooks which interfere with ours, so disabled
+        // this for now.
+//        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+//            public void run() {
+//                try {
+//                   shutdownMiniCluster();
+//                } catch (Throwable t) {
+//                    t.printStackTrace();
+//                }
+//                try {
+//                    shutdownMiniMapReduceCluster();
+//                } catch (Throwable t) {
+//                    t.printStackTrace();
+//                }
+//            }
+//        }));
     }
 
     public MiniHBaseCluster startMiniCluster(final int servers)
@@ -95,18 +134,6 @@ public class HBaseRunner {
         ResultScanner s = t.getScanner(new Scan());
         while (s.next() != null) continue;
 
-        System.out.println("-------------------------");
-        System.out.println("Minicluster is up");
-        System.out.println();
-        System.out.println("To connect to this HBase, use the following properties:");
-        System.out.println("hbase.zookeeper.quorum=localhost");
-        System.out.println("hbase.zookeeper.property.clientPort=" + zkPort);
-        System.out.println();
-        System.out.println("In Java code, create the HBase configuration like this:");
-        System.out.println("Configuration conf = HBaseConfiguration.create();");
-        System.out.println("conf.set(\"hbase.zookeeper.quorum\", \"localhost\");");
-        System.out.println("conf.set(\"hbase.zookeeper.property.clientPort\", \"" + zkPort + "\");");
-        System.out.println("-------------------------");
         return this.hbaseCluster;
     }
 
@@ -127,6 +154,30 @@ public class HBaseRunner {
         return new Path(System.getProperty(TEST_DIRECTORY_KEY, DEFAULT_TEST_DIRECTORY));
     }
 
+    public void shutdownMiniCluster() throws IOException {
+        System.out.println("Shutting down minicluster");
+        if (this.hbaseCluster != null) {
+            this.hbaseCluster.shutdown();
+            // Wait till hbase is down before going on to shutdown zk.
+            this.hbaseCluster.join();
+        }
+        shutdownMiniZKCluster();
+        if (this.dfsCluster != null) {
+            // The below throws an exception per dn, AsynchronousCloseException.
+            this.dfsCluster.shutdown();
+        }
+        // Clean up our directory.
+        if (this.clusterTestBuildDir != null && this.clusterTestBuildDir.exists()) {
+            // Need to use deleteDirectory because File.delete required dir is empty.
+            if (!FSUtils.deleteDirectory(FileSystem.getLocal(this.conf),
+                    new Path(this.clusterTestBuildDir.toString()))) {
+                System.out.println("Failed delete of " + this.clusterTestBuildDir.toString());
+            }
+            this.clusterTestBuildDir = null;
+        }
+        System.out.println("Minicluster is down");
+    }
+
     private MiniZooKeeperCluster startMiniZKCluster(final File dir)
             throws Exception {
         if (this.zkCluster != null) {
@@ -137,6 +188,13 @@ public class HBaseRunner {
         int clientPort = this.zkCluster.startup(dir);
         this.conf.set("hbase.zookeeper.property.clientPort", Integer.toString(clientPort));
         return this.zkCluster;
+    }
+
+    public void shutdownMiniZKCluster() throws IOException {
+        if (this.zkCluster != null) {
+            this.zkCluster.shutdown();
+            this.zkCluster = null;
+        }
     }
 
     public MiniDFSCluster startMiniDFSCluster(int servers, final File dir)
@@ -152,5 +210,31 @@ public class HBaseRunner {
         this.dfsCluster = new MiniDFSCluster(9000, this.conf, servers, true, true,
                 true, null, null, null, null);
         return this.dfsCluster;
+    }
+
+    public void startMiniMapReduceCluster() throws IOException {
+        startMiniMapReduceCluster(2);
+    }
+
+    public void startMiniMapReduceCluster(final int servers) throws IOException {
+        System.out.println("Starting mini mapreduce cluster...");
+        // These are needed for the new and improved Map/Reduce framework
+        System.setProperty("hadoop.log.dir", conf.get("hadoop.log.dir"));
+        conf.set("mapred.output.dir", conf.get("hadoop.tmp.dir"));
+        mrCluster = new MiniMRCluster(9001, 0, servers,
+                FileSystem.get(conf).getUri().toString(), 1);
+        System.out.println("Mini mapreduce cluster started");
+        conf.set("mapred.job.tracker",
+                mrCluster.createJobConf().get("mapred.job.tracker"));
+    }
+
+    public void shutdownMiniMapReduceCluster() {
+        System.out.println("Stopping mini mapreduce cluster...");
+        if (mrCluster != null) {
+            mrCluster.shutdown();
+        }
+        // Restore configuration to point to local jobtracker
+        conf.set("mapred.job.tracker", "local");
+        System.out.println("Mini mapreduce cluster stopped");
     }
 }

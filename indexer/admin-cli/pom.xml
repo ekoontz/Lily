@@ -30,6 +30,40 @@
   </parent>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-genscript-plugin</artifactId>
+        <configuration>
+          <scripts>
+            <script>
+              <basename>lily-add-index</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.AddIndexCli</mainClass>
+            </script>
+            <script>
+              <basename>lily-update-index</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.UpdateIndexCli</mainClass>
+            </script>
+            <script>
+              <basename>lily-list-indexes</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.ListIndexesCli</mainClass>
+            </script>
+            <script>
+              <basename>lily-touch-index</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.TouchIndexCli</mainClass>
+            </script>
+          </scripts>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>genscript</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <dependencies>

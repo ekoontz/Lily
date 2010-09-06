@@ -76,6 +76,7 @@
     <module>tools/import</module>
     <module>tools/tester</module>
     <module>tools/kauri-dependency-resolver-plugin</module>
+    <module>tools/genscript-plugin</module>
   </modules>
 
   <dependencyManagement>

@@ -1,0 +1,20 @@
+#
+# Configuration variables
+#
+# LILY_CLI_CLASSPATH
+#    additional entries to be added to the classpath
+#
+# LILY_JAVA_OPTIONS
+#    additional options to be passed to the java executable
+#
+
+if [ -z "$JAVA_HOME" ] ; then
+  echo "JAVA_HOME not set!"
+  exit 1
+fi
+
+CLASSPATH="$$$CLASSPATH$$$"
+
+export CLASSPATH
+
+"$JAVA_HOME/bin/java" $LILY_JAVA_OPTIONS $$$MAINCLASS$$$ "$@"

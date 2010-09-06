@@ -9,6 +9,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.net.NetUtils;
 import org.lilycms.util.zookeeper.ZkLock;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperImpl;
@@ -16,8 +17,6 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 
 import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -35,7 +34,7 @@ public class ZkLockTest {
         TestHelper.setupLogging("org.lilycms.util.zookeeper");
 
         ZK_DIR = new File(System.getProperty("java.io.tmpdir") + File.separator + "lily.zklocktest");
-        ZK_CLIENT_PORT = determineAvailablePort();
+        ZK_CLIENT_PORT = NetUtils.getFreePort();
 
         ZK_CLUSTER = new MiniZooKeeperCluster();
         ZK_CLUSTER.setClientPort(ZK_CLIENT_PORT);
@@ -124,21 +123,4 @@ public class ZkLockTest {
         public T value;
     }
 
-    private static int determineAvailablePort() {
-        ServerSocket socket = null;
-        try {
-            socket = new ServerSocket(0);
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException("Error determining an available port", e);
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    throw new RuntimeException("Error closing ServerSocket used to detect an available port.", e);
-                }
-            }
-        }
-    }
 }

@@ -60,7 +60,7 @@ public class TestHelper {
     public static void setupConsoleLogging(String defaultLevel, final String... debugCategories) {
         init();
 
-        final String CONSOLE_LAYOUT = "[%-5p][%d{ABSOLUTE}][%-10.10t][%30.30c] %m%n";
+        final String CONSOLE_LAYOUT = "[%-5p][%d{ABSOLUTE}][%-10.10t] %c - %m%n";
 
         ConsoleAppender consoleAppender = new ConsoleAppender();
         consoleAppender.setLayout(new PatternLayout(CONSOLE_LAYOUT));
@@ -95,8 +95,10 @@ public class TestHelper {
     }
 
     public static void setupOtherDefaults() {
-        // The HDFS datanode clienttrace is way too chatty
+        // Some categories which are too chatty on INFO level
         Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.DataNode.clienttrace").setLevel(Level.WARN);
+        Logger.getLogger("org.apache.hadoop.hdfs.server.namenode.FSNamesystem.audit").setLevel(Level.WARN);
+        Logger.getLogger("org.apache.hadoop.hbase.master.BaseScanner").setLevel(Level.WARN);
     }
 
     /**

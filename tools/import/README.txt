@@ -12,4 +12,4 @@ TODO: describe the json format
 
 In a source setting, you can run this tool with maven:
 
-mvn exec:java -Dexec.args="-z localhost:2181 sample.json"
+./target/lily-import -z localhost:2181 sample.json

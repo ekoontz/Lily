@@ -1,4 +1,4 @@
-package org.lilycms.tools.plugin.kauridepresolver;
+package org.lilycms.tools.mavenplugin.kauridepresolver;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
@@ -29,7 +29,7 @@ import java.util.zip.ZipFile;
 /**
  *
  * @goal resolve
- * @requiresDependencyResolution resolve
+ * @requiresDependencyResolution runtime
  * @description Resolve (download) all the dependencies of a Kauri project starting from wiring.xml.
  */
 public class KauriDependencyResolver extends AbstractMojo {

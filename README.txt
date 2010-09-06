@@ -80,7 +80,7 @@ this is also easier for debugging.
 To easily launch a mini HBase without having to install it, execute:
 
 cd testfw
-mvn exec:java
+./target/launch-hadoop
 
 This prints a line "Minicluster is up" when it is started, though it is
 quickly followed by more logging.

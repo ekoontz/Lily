@@ -16,4 +16,4 @@ duration and success tate. Another file contains the stacktraces of errors that 
 
 In a source setting, you can run this tool with maven:
 
-mvn exec:java -Dexec.args="config.json"
+./target/lily-tester config.json

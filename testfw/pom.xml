@@ -32,11 +32,21 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-genscript-plugin</artifactId>
         <configuration>
-          <mainClass>org.lilycms.testfw.HBaseRunner</mainClass>
+          <scripts>
+            <script><basename>launch-hadoop</basename><mainClass>org.lilycms.testfw.HBaseRunner</mainClass></script>
+          </scripts>
         </configuration>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>genscript</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -1,0 +1,25 @@
+@echo off
+rem
+rem Configuration variables
+rem
+rem LILY_CLI_CLASSPATH
+rem    additional entries to be added to the classpath
+rem
+rem LILY_JAVA_OPTIONS
+rem    additional options to be passed to the java executable
+rem
+
+if "%JAVA_HOME%"=="" goto javaHomeNotSet
+
+set CLASSPATH=$$$CLASSPATH$$$
+
+"%JAVA_HOME%/bin/java" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
+goto end
+
+:javaHomeNotSet
+echo JAVA_HOME not set!
+goto end
+
+:end
+if "%_EXIT_ERRORLEVEL%"=="true" exit %ERRORLEVEL%
+      

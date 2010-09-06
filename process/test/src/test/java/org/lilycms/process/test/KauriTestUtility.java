@@ -10,12 +10,12 @@ import org.kauriproject.runtime.rapi.Mode;
 import org.kauriproject.runtime.repository.ArtifactRepository;
 import org.kauriproject.runtime.repository.Maven2StyleArtifactRepository;
 import org.lilycms.testfw.HBaseProxy;
+import org.lilycms.util.net.NetUtils;
 import org.restlet.Client;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +45,7 @@ public class KauriTestUtility {
     public KauriTestUtility(String serverProcessSrcDir) {
         this.serverProcessSrcDir = "/" + serverProcessSrcDir;
         tmpDir = createTempDir();
-        port = determineAvailablePort();
+        port = NetUtils.getFreePort();
     }
 
     public void start() throws Exception {
@@ -178,21 +178,4 @@ public class KauriTestUtility {
         return new Maven2StyleArtifactRepository(new File(localRepositoryPath));
     }
 
-    private int determineAvailablePort() {
-        ServerSocket socket = null;
-        try {
-            socket = new ServerSocket(0);
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException("Error determining an available port", e);
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    throw new RuntimeException("Error closing ServerSocket used to detect an available port.", e);
-                }
-            }
-        }
-    }
 }

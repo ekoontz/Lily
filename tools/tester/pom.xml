@@ -32,12 +32,24 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-genscript-plugin</artifactId>
         <configuration>
-          <mainClass>org.lilycms.tools.tester.Tester</mainClass>
-          <classpathScope>runtime</classpathScope>
+          <scripts>
+            <script>
+              <basename>lily-tester</basename>
+              <mainClass>org.lilycms.tools.tester.Tester</mainClass>
+            </script>
+          </scripts>
         </configuration>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>genscript</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
