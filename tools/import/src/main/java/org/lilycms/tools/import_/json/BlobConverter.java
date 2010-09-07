@@ -1,10 +1,12 @@
 package org.lilycms.tools.import_.json;
 
-import org.apache.commons.codec.binary.Base64;
+import net.iharder.Base64;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.util.json.JsonUtil;
+
+import java.io.IOException;
 
 public class BlobConverter {
     public static ObjectNode toJson(Blob blob) {
@@ -30,12 +32,20 @@ public class BlobConverter {
     }
 
     public static String valueToString(byte[] value) {
-        // URL safe encoding because the value (= the blob access key) might be embedded in URIs 
-        return Base64.encodeBase64URLSafeString(value);
+        // URL safe encoding because the value (= the blob access key) might be embedded in URIs
+        try {
+            return Base64.encodeBytes(value, Base64.URL_SAFE);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static byte[] valueFromString(String value) {
-        return Base64.decodeBase64(value);
+        try {
+            return Base64.decode(value);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

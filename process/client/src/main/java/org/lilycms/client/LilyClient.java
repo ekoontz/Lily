@@ -65,10 +65,6 @@ public class LilyClient {
     private String blobHBaseZkQuorumPath = lilyPath + "/blobStoresConfig/hbaseZkQuorum";
     private String blobHBaseZkPortPath = lilyPath + "/blobStoresConfig/hbaseZkPort";
 
-    private BlobStoreAccess dfsBlobStoreAccess;
-    private BlobStoreAccess hbaseBlobStoreAccess;
-    private BlobStoreAccess inlineBlobStoreAccess;
-
     private Log log = LogFactory.getLog(getClass());
 
     public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
@@ -111,12 +107,11 @@ public class LilyClient {
         configuration.set("hbase.zookeeper.property.clientPort", getBlobHBaseZkPort());
         
         FileSystem.get(getDfsUri(), configuration);
-        
-        dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(configuration));
-        hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
-        inlineBlobStoreAccess = new InlineBlobStoreAccess();
-        BlobStoreAccess defaultBlobStoreAccess = dfsBlobStoreAccess == null ? hbaseBlobStoreAccess : dfsBlobStoreAccess;
-        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(defaultBlobStoreAccess);
+
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(configuration));
+        BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
+        BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess();
+        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(5000, inlineBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(200000, hbaseBlobStoreAccess);
         return blobStoreAccessFactory;

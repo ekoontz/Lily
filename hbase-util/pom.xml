@@ -36,8 +36,8 @@
     <!-- Please keep the dependencies of this project to a minimum! -->
 
     <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-hbase-client</artifactId>
     </dependency>
   </dependencies>
 

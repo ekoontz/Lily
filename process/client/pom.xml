@@ -35,6 +35,25 @@
     <dependency>
       <groupId>org.lilycms</groupId>
       <artifactId>lily-repository-impl</artifactId>
+      <exclusions>
+        <!-- Removing some dependencies which are not at all needed by the client. -->
+        <exclusion>
+          <groupId>org.lilycms</groupId>
+          <artifactId>lily-rowlog-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.lilycms</groupId>
+          <artifactId>lily-rowlog-impl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.thoughtworks.paranamer</groupId>
+          <artifactId>paranamer-ant</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

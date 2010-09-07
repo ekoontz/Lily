@@ -1,7 +1,6 @@
 package org.lilycms.rest;
 
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.Base64Variants;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.tools.import_.json.BlobConverter;

@@ -54,8 +54,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-hbase-client</artifactId>
     </dependency>
 
     <dependency>

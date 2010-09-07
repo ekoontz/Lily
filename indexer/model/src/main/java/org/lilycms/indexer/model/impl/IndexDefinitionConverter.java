@@ -1,5 +1,6 @@
 package org.lilycms.indexer.model.impl;
 
+import net.iharder.Base64;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
@@ -30,7 +31,13 @@ public class IndexDefinitionConverter {
     public void fromJson(ObjectNode node, IndexDefinitionImpl index) {
         IndexState state = IndexState.valueOf(JsonUtil.getString(node, "state"));
         String messageConsumerId = JsonUtil.getString(node, "messageConsumerId", null);
-        byte[] configuration = JsonUtil.getBinary(node, "configuration");
+        String configurationAsString = JsonUtil.getString(node, "configuration");
+        byte[] configuration;
+        try {
+            configuration = Base64.decode(configurationAsString);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         List<String> solrShards = new ArrayList<String>();
         ArrayNode shardsArray = JsonUtil.getArray(node, "solrShards");
@@ -61,7 +68,14 @@ public class IndexDefinitionConverter {
         if (index.getMessageConsumerId() != null)
             node.put("messageConsumerId", index.getMessageConsumerId());
 
-        node.put("configuration", index.getConfiguration());
+        String configurationAsString;
+        try {
+            configurationAsString = Base64.encodeBytes(index.getConfiguration(), Base64.GZIP);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        node.put("configuration", configurationAsString);
 
         ArrayNode shardsNode = node.putArray("solrShards");
         for (String shard : index.getSolrShards()) {

@@ -20,27 +20,31 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
-  <artifactId>lily-rowlog-api</artifactId>
-  <name>Lily: Row Log API</name>
+  <artifactId>lily-hbase-exclusions-plugin</artifactId>
+  <packaging>maven-plugin</packaging>
+  <name>Lily: Maven plugin to check for unnecessary HBase deps</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
-    <artifactId>lily-rowlog</artifactId>
+    <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
 
-  <build>
-  </build>
-
   <dependencies>
-   <dependency>
-     <groupId>org.lilycms</groupId>
-     <artifactId>lily-hbase-client</artifactId>
-    </dependency>
-
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-util</artifactId>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${version.maven}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${version.maven}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>${version.maven}</version>
     </dependency>
   </dependencies>
 
