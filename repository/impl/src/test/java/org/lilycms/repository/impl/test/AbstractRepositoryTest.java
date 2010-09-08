@@ -787,44 +787,43 @@ public abstract class AbstractRepositoryTest {
     
     @Test
     public void TestDeleteRecordCleansUpDataBeforeRecreate() throws Exception {
-        Record record = createDefaultRecord();
-        RecordId recordId = record.getId();
-        repository.delete(recordId);
+        // We will not allow recreation after a delete.
+        // A record will be marked as deleted, creating it again will cause a next version to be created
         
-     // Work around HBASE-2256
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-
-        record = repository.newRecord(recordId);
-        record.setRecordType(recordType2.getName(), recordType2.getVersion());
-        record.setField(fieldType4.getName(), 555);
-        record.setField(fieldType5.getName(), false);
-        record.setField(fieldType6.getName(), "zzz");
-        repository.create(record);
-        Record readRecord = repository.read(recordId);
-        assertEquals(Long.valueOf(1), readRecord.getVersion());
-        try {
-            readRecord.getField(fieldType1.getName());
-            fail();
-        } catch (FieldNotFoundException expected) {
-        }
-        try {
-            readRecord.getField(fieldType2.getName());
-            fail();
-        } catch (FieldNotFoundException expected) {
-        }
-        try {
-            readRecord.getField(fieldType3.getName());
-            fail();
-        } catch (FieldNotFoundException expected) {
-        }
-        
-        
-        
-        
-        
-        assertEquals(555, readRecord.getField(fieldType4.getName()));
-        assertFalse((Boolean)readRecord.getField(fieldType5.getName()));
-        assertEquals("zzz", readRecord.getField(fieldType6.getName()));
+//        Record record = createDefaultRecord();
+//        RecordId recordId = record.getId();
+//        repository.delete(recordId);
+//        
+//     // Work around HBASE-2256
+////        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//
+//        record = repository.newRecord(recordId);
+//        record.setRecordType(recordType2.getName(), recordType2.getVersion());
+//        record.setField(fieldType4.getName(), 555);
+//        record.setField(fieldType5.getName(), false);
+//        record.setField(fieldType6.getName(), "zzz");
+//        repository.create(record);
+//        Record readRecord = repository.read(recordId);
+//        assertEquals(Long.valueOf(1), readRecord.getVersion());
+//        try {
+//            readRecord.getField(fieldType1.getName());
+//            fail();
+//        } catch (FieldNotFoundException expected) {
+//        }
+//        try {
+//            readRecord.getField(fieldType2.getName());
+//            fail();
+//        } catch (FieldNotFoundException expected) {
+//        }
+//        try {
+//            readRecord.getField(fieldType3.getName());
+//            fail();
+//        } catch (FieldNotFoundException expected) {
+//        }
+//        
+//        assertEquals(555, readRecord.getField(fieldType4.getName()));
+//        assertFalse((Boolean)readRecord.getField(fieldType5.getName()));
+//        assertEquals("zzz", readRecord.getField(fieldType6.getName()));
     }
 
     
@@ -847,7 +846,7 @@ public abstract class AbstractRepositoryTest {
         updateRecord.setField(fieldType6.getName(), "value2");
         repository.update(updateRecord);
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
         
         // Read version 1
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
@@ -862,7 +861,7 @@ public abstract class AbstractRepositoryTest {
         mutableRecord.setVersion(1L);
         mutableRecord = repository.update(mutableRecord, true, false);
         
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         // Read version 1 again
         readRecord = repository.read(record.getId(), 1L);
@@ -888,11 +887,11 @@ public abstract class AbstractRepositoryTest {
         updateMutableRecord.setField(fieldType5.getName(), false);
         updateMutableRecord.setField(fieldType6.getName(), "value3");
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
         
         assertEquals(Long.valueOf(1), repository.update(updateMutableRecord, true, false).getVersion());
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
         assertEquals(Long.valueOf(1), readRecord.getVersion());
@@ -943,11 +942,11 @@ public abstract class AbstractRepositoryTest {
         deleteRecord.setRecordType(record.getRecordTypeName(), record.getRecordTypeVersion());
         deleteRecord.addFieldsToDelete(Arrays.asList(new QName[] { fieldType1.getName(), fieldType2.getName(), fieldType3.getName() }));
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         repository.update(deleteRecord, true, false);
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
         // The non-mutable fields were ignored
@@ -984,19 +983,17 @@ public abstract class AbstractRepositoryTest {
         deleteMutableFieldRecord.setRecordType(record.getRecordTypeName(), record.getRecordTypeVersion());
         deleteMutableFieldRecord.addFieldsToDelete(Arrays.asList(new QName[] { fieldType3.getName() }));
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         repository.update(deleteMutableFieldRecord, true, false);
 
-        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-// Due to HBase-1485 the field does not get updated at version 1 (marking it as deleted) when (more or less)
-// at the same time updating it at version 2 (copying the value that was previously in version 1)
-//        Record readRecord = repository.read(record.getId(), Long.valueOf(1));
-//        try {
-//            readRecord.getField(fieldType3.getName());
-//            fail();
-//        } catch (FieldNotFoundException expected) {
-//        }
+//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
+            readRecord = repository.read(record.getId(), Long.valueOf(1));
+            try {
+                readRecord.getField(fieldType3.getName());
+                fail();
+            } catch (FieldNotFoundException expected) {
+        }
 
         readRecord = repository.read(record.getId(), Long.valueOf(2));
         assertEquals(true, readRecord.getField(fieldType3.getName()));
