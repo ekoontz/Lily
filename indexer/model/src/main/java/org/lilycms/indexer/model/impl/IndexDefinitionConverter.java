@@ -5,6 +5,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
+import org.lilycms.indexer.model.api.ActiveBuildJobInfo;
+import org.lilycms.indexer.model.api.BuildJobInfo;
 import org.lilycms.indexer.model.api.IndexDefinition;
 import org.lilycms.indexer.model.api.IndexState;
 import org.lilycms.util.json.JsonFormat;
@@ -45,10 +47,30 @@ public class IndexDefinitionConverter {
             solrShards.add(shardsArray.get(i).getTextValue());
         }
 
+        ActiveBuildJobInfo activeBuildJob = null;
+        if (node.get("activeBuildJob") != null) {
+            ObjectNode jobNode = JsonUtil.getObject(node, "activeBuildJob");
+            activeBuildJob = new ActiveBuildJobInfo();
+            activeBuildJob.setJobId(JsonUtil.getString(jobNode, "jobId"));
+            activeBuildJob.setSubmitTime(JsonUtil.getLong(jobNode, "submitTime"));
+        }
+
+        BuildJobInfo lastBuildJob = null;
+        if (node.get("lastBuildJob") != null) {
+            ObjectNode jobNode = JsonUtil.getObject(node, "lastBuildJob");
+            lastBuildJob = new BuildJobInfo();
+            lastBuildJob.setJobId(JsonUtil.getString(jobNode, "jobId"));
+            lastBuildJob.setSubmitTime(JsonUtil.getLong(jobNode, "submitTime"));
+            lastBuildJob.setSuccess(JsonUtil.getBoolean(jobNode, "success"));
+            lastBuildJob.setJobState(JsonUtil.getString(jobNode, "jobState"));
+        }
+
         index.setState(state);
         index.setMessageConsumerId(messageConsumerId);
         index.setConfiguration(configuration);
         index.setSolrShards(solrShards);
+        index.setActiveBuildJobInfo(activeBuildJob);
+        index.setLastBuildJobInfo(lastBuildJob);
     }
 
     public byte[] toJsonBytes(IndexDefinition index) {
@@ -80,6 +102,22 @@ public class IndexDefinitionConverter {
         ArrayNode shardsNode = node.putArray("solrShards");
         for (String shard : index.getSolrShards()) {
             shardsNode.add(shard);
+        }
+
+        if (index.getActiveBuildJobInfo() != null) {
+            ActiveBuildJobInfo jobInfo = index.getActiveBuildJobInfo();
+            ObjectNode jobNode = node.putObject("activeBuildJob");
+            jobNode.put("jobId", jobInfo.getJobId());
+            jobNode.put("submitTime", jobInfo.getSubmitTime());
+        }
+
+        if (index.getLastBuildJobInfo() != null) {
+            BuildJobInfo jobInfo = index.getLastBuildJobInfo();
+            ObjectNode jobNode = node.putObject("lastBuildJob");
+            jobNode.put("jobId", jobInfo.getJobId());
+            jobNode.put("submitTime", jobInfo.getSubmitTime());
+            jobNode.put("success", jobInfo.getSuccess());
+            jobNode.put("jobState", jobInfo.getJobState());
         }
 
         return node;

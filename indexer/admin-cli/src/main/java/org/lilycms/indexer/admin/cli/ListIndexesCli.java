@@ -2,9 +2,8 @@ package org.lilycms.indexer.admin.cli;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.lilycms.indexer.model.api.IndexDefinition;
-import org.lilycms.indexer.model.api.IndexDefinitionNameComparator;
-import org.lilycms.indexer.model.api.WriteableIndexerModel;
+import org.joda.time.DateTime;
+import org.lilycms.indexer.model.api.*;
 import org.lilycms.indexer.model.impl.IndexerModelImpl;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -13,6 +12,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class ListIndexesCli extends BaseIndexerAdminCli {
+    @Override
+    protected String getCmdName() {
+        return "lily-list-indexes";
+    }
+
     public static void main(String[] args) {
         start(args, new ListIndexesCli());
     }
@@ -39,9 +43,24 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
             for (String shard : index.getSolrShards()) {
                 System.out.println("    + " + shard);
             }
+
+            ActiveBuildJobInfo activeBuildJob = index.getActiveBuildJobInfo();
+            if (activeBuildJob != null) {
+                System.out.println("  + Active build job:");
+                System.out.println("    + Hadoop Job ID: " + activeBuildJob.getJobId());
+                System.out.println("    + Submitted at: " + new DateTime(activeBuildJob.getSubmitTime()).toString());
+            }
+
+            BuildJobInfo lastBuildJob = index.getLastBuildJobInfo();
+            if (lastBuildJob != null) {
+                System.out.println("  + Last build job:");
+                System.out.println("    + Hadoop Job ID: " + lastBuildJob.getJobId());
+                System.out.println("    + Submitted at: " + new DateTime(lastBuildJob.getSubmitTime()).toString());
+                System.out.println("    + Success: " + lastBuildJob.getSuccess());
+                System.out.println("    + Job state: " + lastBuildJob.getJobState());
+            }
+
             System.out.println();
         }
     }
-
-
 }

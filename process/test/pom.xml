@@ -49,6 +49,17 @@
       <scope>test</scope>
     </dependency>
 
+    <!--
+      The following dependencies are here because otherwise Spring/Kauri does not find their classes.
+      This is because of the excludes that were added to the lily-client pom to make it lighter, combined
+      with the fact the classes can't see classes in class loaders lower in the CL hierarchy.
+    -->
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-repository-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- The following dependencies are to force the server modules to be built, which is
          a prerequisite for launching the server process. -->
     <dependency>

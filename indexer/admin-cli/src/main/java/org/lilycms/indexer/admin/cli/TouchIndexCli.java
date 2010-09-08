@@ -11,6 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TouchIndexCli extends BaseIndexerAdminCli {
+    @Override
+    protected String getCmdName() {
+        return "lily-touch-index";
+    }
 
     public static void main(String[] args) {
         start(args, new TouchIndexCli());

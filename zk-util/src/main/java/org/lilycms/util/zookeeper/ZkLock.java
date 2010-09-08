@@ -24,6 +24,14 @@ import java.util.*;
  * 1 delete(n)
  * </pre>
  *
+ * <p><b>Important usage note:</b> do not take ZKLock's in ZooKeeper's Watcher.process()
+ * callback, unless the ZooKeeper handle used to take the lock is different from the one
+ * of that called the Watcher. This is because ZkLock might need to wait for an event
+ * too (if the lock is currently held by someone else), and since all ZK events to all
+ * watchers are dispatched by one thread, it would hang forever. This limitation is not
+ * very important, since long lasting actions (which waiting for a lock could be) should
+ * never be done in Watcher callbacks.
+ *
  */
 public class ZkLock {
 

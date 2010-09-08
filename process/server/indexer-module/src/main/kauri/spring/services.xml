@@ -13,8 +13,8 @@
   <context:annotation-config/>
 
   <kauri:import-service
-      id="hbaseConfFactory"
-      service="org.lilycms.server.modules.general.HBaseConfigurationFactory"/>
+      id="hadoopConfFactory"
+      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
 
   <kauri:import-service
       id="repository"
@@ -33,8 +33,8 @@
       service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
 
   <bean id="hbaseConf"
-      factory-bean="hbaseConfFactory"
-      factory-method="get"/>
+      factory-bean="hadoopConfFactory"
+      factory-method="getHBaseConf"/>
 
   <bean id="indexerModel" class="org.lilycms.indexer.model.impl.IndexerModelImpl">
     <constructor-arg ref="zooKeeper"/>
@@ -43,6 +43,8 @@
   <bean id="indexerMaster" class="org.lilycms.indexer.master.IndexerMaster">
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="indexerModel"/>
+    <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceConf"/></constructor-arg>
+    <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceJobConf"/></constructor-arg>
   </bean>
 
   <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">

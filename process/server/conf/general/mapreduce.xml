@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<mapreduce xmlns:conf="http://kauriproject.org/configuration"
+       conf:inherit="deep">
+
+  <!-- Base properties, used to connect to job tracker for status information and also
+       used for new MR jobs. -->
+  <properties conf:inheritKey="string(name)">
+    <property>
+      <name>mapred.job.tracker</name>
+      <value>localhost:9001</value>
+    </property>
+  </properties>
+
+  <!-- In addition to the general properties above, the properties here will be added
+       to each new started MR task. -->
+  <jobProperties conf:inheritKey="string(name)">
+    <!--
+    <property>
+      <name>myprop</name>
+      <value>my property value</value>
+    </property>
+    -->
+  </jobProperties>
+
+</mapreduce>

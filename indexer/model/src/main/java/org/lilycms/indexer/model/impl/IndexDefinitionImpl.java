@@ -1,5 +1,7 @@
 package org.lilycms.indexer.model.impl;
 
+import org.lilycms.indexer.model.api.ActiveBuildJobInfo;
+import org.lilycms.indexer.model.api.BuildJobInfo;
 import org.lilycms.indexer.model.api.IndexDefinition;
 import org.lilycms.indexer.model.api.IndexState;
 
@@ -13,6 +15,8 @@ public class IndexDefinitionImpl implements IndexDefinition {
     private byte[] configuration;
     private List<String> solrShards;
     private int zkDataVersion = -1;
+    private BuildJobInfo lastBuildJobInfo;
+    private ActiveBuildJobInfo activeBuildJobInfo;
     private boolean immutable;
 
     public IndexDefinitionImpl(String name) {
@@ -66,11 +70,33 @@ public class IndexDefinitionImpl implements IndexDefinition {
         this.zkDataVersion = zkDataVersion;
     }
 
-    public void makeImmutable() {
-        this.immutable = true;
+    public BuildJobInfo getLastBuildJobInfo() {
+        return lastBuildJobInfo;
     }
 
-    public void checkIfMutable() {
+    public void setLastBuildJobInfo(BuildJobInfo info) {
+        checkIfMutable();
+        this.lastBuildJobInfo = info;
+    }
+
+    public ActiveBuildJobInfo getActiveBuildJobInfo() {
+        return activeBuildJobInfo;
+    }
+
+    public void setActiveBuildJobInfo(ActiveBuildJobInfo info) {
+        checkIfMutable();
+        this.activeBuildJobInfo = info;
+    }
+
+    public void makeImmutable() {
+        this.immutable = true;
+        if (lastBuildJobInfo != null)
+            lastBuildJobInfo.makeImmutable();
+        if (activeBuildJobInfo != null)
+            activeBuildJobInfo.makeImmutable();
+    }
+
+    private void checkIfMutable() {
         if (immutable)
             throw new RuntimeException("This IndexDefinition is immutable");
     }

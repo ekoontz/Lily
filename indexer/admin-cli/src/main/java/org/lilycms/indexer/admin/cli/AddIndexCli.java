@@ -11,6 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AddIndexCli extends BaseIndexerAdminCli {
+    @Override
+    protected String getCmdName() {
+        return "lily-add-index";
+    }
 
     public static void main(String[] args) {
         start(args, new AddIndexCli());

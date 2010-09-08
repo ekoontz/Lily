@@ -12,6 +12,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class UpdateIndexCli extends BaseIndexerAdminCli {
+    @Override
+    protected String getCmdName() {
+        return "lily-update-index";
+    }
 
     public static void main(String[] args) {
         start(args, new UpdateIndexCli());
@@ -25,6 +29,7 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         options.add(nameOption);
         options.add(solrShardsOption);
         options.add(configurationOption);
+        options.add(stateOption);
 
         return options;
     }
@@ -50,6 +55,11 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
 
             if (indexerConfiguration != null && !Arrays.equals(indexerConfiguration, index.getConfiguration())) {
                 index.setConfiguration(indexerConfiguration);
+                changes = true;
+            }
+
+            if (stateOption != null && indexState != index.getState()) {
+                index.setState(indexState);
                 changes = true;
             }
 

@@ -23,4 +23,11 @@ public interface IndexDefinition {
 
     int getZkDataVersion();
 
+    BuildJobInfo getLastBuildJobInfo();
+
+    void setLastBuildJobInfo(BuildJobInfo info);
+
+    ActiveBuildJobInfo getActiveBuildJobInfo();
+
+    void setActiveBuildJobInfo(ActiveBuildJobInfo info);
 }

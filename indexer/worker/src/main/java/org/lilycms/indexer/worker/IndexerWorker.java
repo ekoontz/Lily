@@ -155,7 +155,8 @@ public class IndexerWorker {
     }
 
     private boolean shouldRunIndexUpdater(IndexDefinition index) {
-        return index.getState() == IndexState.READY && index.getMessageConsumerId() != null;
+        return (index.getState() == IndexState.READY || index.getState() == IndexState.BUILDING)
+                && index.getMessageConsumerId() != null;
     }
 
     private class IndexUpdaterHandle {
@@ -172,6 +173,11 @@ public class IndexerWorker {
         public void run() {
             while (true) {
                 try {
+                    int queueSize = eventQueue.size();
+                    if (queueSize >= 10) {
+                        log.warn("EventWorker queue getting large, size = " + queueSize);
+                    }
+
                     IndexerModelEvent event = eventQueue.take();
                     if (event.getType() == INDEX_ADDED || event.getType() == INDEX_UPDATED) {
                         try {

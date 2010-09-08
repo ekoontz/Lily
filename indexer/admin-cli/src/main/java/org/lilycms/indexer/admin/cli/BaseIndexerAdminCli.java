@@ -4,6 +4,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.lilycms.indexer.model.api.IndexState;
 import org.lilycms.util.zookeeper.ZooKeeperImpl;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -19,10 +20,12 @@ public abstract class BaseIndexerAdminCli {
     protected Option nameOption;
     protected Option solrShardsOption;
     protected Option configurationOption;
+    protected Option stateOption;
 
     protected String zkConnectionString;
     protected String indexName;
     protected List<String> solrShards;
+    protected IndexState indexState;
     protected byte[] indexerConfiguration;
 
     public static void start(String[] args, BaseIndexerAdminCli cli) {
@@ -51,7 +54,8 @@ public abstract class BaseIndexerAdminCli {
         cliOptions.addOption(zkOption);
 
         //
-        // Instantiate default options, but don't add them to the options
+        // Instantiate default options, but don't add them to the options, it is up to subclasses to reuse
+        // some of these.
         //
         nameOption = OptionBuilder
                 .withArgName("name")
@@ -77,6 +81,14 @@ public abstract class BaseIndexerAdminCli {
                 .withLongOpt("indexer-config")
                 .create("c");
         cliOptions.addOption(configurationOption);
+
+        stateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("Index state: ready, request_build, ...")
+                .withLongOpt("state")
+                .create("i");
+        cliOptions.addOption(stateOption);
 
         //
         // Options of this specific CLI tool
@@ -150,6 +162,17 @@ public abstract class BaseIndexerAdminCli {
             indexerConfiguration = FileUtils.readFileToByteArray(configurationFile);
         }
 
+        if (cmd.hasOption(stateOption.getOpt())) {
+            String indexStateName = cmd.getOptionValue(stateOption.getOpt());
+            try {
+                indexState = IndexState.valueOf(indexStateName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid index state: " + indexStateName);
+                // TODO on the CLI, user should not be able to set any arbitrary state!
+                System.exit(1);
+            }
+        }
+
         ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
 
         run(zk, cmd);
@@ -164,8 +187,10 @@ public abstract class BaseIndexerAdminCli {
         }
     }
 
-    private static void printHelp(Options cliOptions) {
+    protected abstract String getCmdName();
+
+    private void printHelp(Options cliOptions) {
         HelpFormatter help = new HelpFormatter();
-        help.printHelp("lily-add-index", cliOptions, true);
+        help.printHelp(getCmdName(), cliOptions, true);
     }
 }

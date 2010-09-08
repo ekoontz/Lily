@@ -19,8 +19,8 @@
   </bean>
 
   <kauri:import-service
-      id="hbaseConfFactory"
-      service="org.lilycms.server.modules.general.HBaseConfigurationFactory"/>
+      id="hadoopConfFactory"
+      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
 
   <kauri:export-service
       ref="repository"
@@ -35,8 +35,8 @@
       service="org.lilycms.rowlog.api.RowLog"/>
 
   <bean id="hbaseConf"
-      factory-bean="hbaseConfFactory"
-      factory-method="get"/>
+      factory-bean="hadoopConfFactory"
+      factory-method="getHBaseConf"/>
 
   <bean id="idGenerator" class="org.lilycms.repository.impl.IdGeneratorImpl"/>
 
