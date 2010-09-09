@@ -25,11 +25,19 @@ public interface WriteableIndexerModel extends IndexerModel {
      * Updates an index.
      *
      * <p>The update will only succeed if it was not modified since it was read. This situation can be avoided
-     * by taking a lock on the index.
+     * by taking a lock on the index before reading it. In fact, you are obliged to do so, and to pass your lock,
+     * of which it will be validated that it really is the owner of the index lock.
      */
-    void updateIndex(IndexDefinition index) throws InterruptedException, KeeperException, IndexNotFoundException,
-            IndexConcurrentModificationException;
+    public void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
+            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException;
 
+    /**
+     * Internal index update method, <b>this method is only intended for internal Lily components</b>. It
+     * is similar to the update method but bypasses some checks.
+     */
+    public void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
+            IndexNotFoundException, IndexConcurrentModificationException;
+    
     /**
      * Takes a lock on this index.
      *

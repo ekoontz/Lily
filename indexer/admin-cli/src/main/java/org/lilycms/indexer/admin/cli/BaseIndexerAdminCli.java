@@ -4,7 +4,9 @@ import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.lilycms.indexer.model.api.IndexState;
+import org.lilycms.indexer.model.api.IndexBatchBuildState;
+import org.lilycms.indexer.model.api.IndexGeneralState;
+import org.lilycms.indexer.model.api.IndexUpdateState;
 import org.lilycms.util.zookeeper.ZooKeeperImpl;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -20,12 +22,16 @@ public abstract class BaseIndexerAdminCli {
     protected Option nameOption;
     protected Option solrShardsOption;
     protected Option configurationOption;
-    protected Option stateOption;
+    protected Option generalStateOption;
+    protected Option updateStateOption;
+    protected Option buildStateOption;
 
     protected String zkConnectionString;
     protected String indexName;
     protected List<String> solrShards;
-    protected IndexState indexState;
+    protected IndexGeneralState generalState;
+    protected IndexUpdateState updateState;
+    protected IndexBatchBuildState buildState;
     protected byte[] indexerConfiguration;
 
     public static void start(String[] args, BaseIndexerAdminCli cli) {
@@ -82,13 +88,29 @@ public abstract class BaseIndexerAdminCli {
                 .create("c");
         cliOptions.addOption(configurationOption);
 
-        stateOption = OptionBuilder
+        generalStateOption = OptionBuilder
                 .withArgName("state")
                 .hasArg()
-                .withDescription("Index state: ready, request_build, ...")
+                .withDescription("General state, one of: " + getStates(IndexGeneralState.values()))
                 .withLongOpt("state")
                 .create("i");
-        cliOptions.addOption(stateOption);
+        cliOptions.addOption(generalStateOption);
+
+        updateStateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("Update state, one of: " + getStates(IndexUpdateState.values()))
+                .withLongOpt("update-state")
+                .create("u");
+        cliOptions.addOption(updateStateOption);
+
+        buildStateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("Build state, only: " + IndexBatchBuildState.BUILD_REQUESTED)
+                .withLongOpt("build-state")
+                .create("b");
+        cliOptions.addOption(buildStateOption);
 
         //
         // Options of this specific CLI tool
@@ -162,13 +184,37 @@ public abstract class BaseIndexerAdminCli {
             indexerConfiguration = FileUtils.readFileToByteArray(configurationFile);
         }
 
-        if (cmd.hasOption(stateOption.getOpt())) {
-            String indexStateName = cmd.getOptionValue(stateOption.getOpt());
+        if (cmd.hasOption(generalStateOption.getOpt())) {
+            String stateName = cmd.getOptionValue(generalStateOption.getOpt());
             try {
-                indexState = IndexState.valueOf(indexStateName.toUpperCase());
+                generalState = IndexGeneralState.valueOf(stateName.toUpperCase());
             } catch (IllegalArgumentException e) {
-                System.out.println("Invalid index state: " + indexStateName);
-                // TODO on the CLI, user should not be able to set any arbitrary state!
+                System.out.println("Invalid index state: " + stateName);
+                System.exit(1);
+            }
+        }
+
+        if (cmd.hasOption(updateStateOption.getOpt())) {
+            String stateName = cmd.getOptionValue(updateStateOption.getOpt());
+            try {
+                updateState = IndexUpdateState.valueOf(stateName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid index update state: " + stateName);
+                System.exit(1);
+            }
+        }
+
+        if (cmd.hasOption(buildStateOption.getOpt())) {
+            String stateName = cmd.getOptionValue(buildStateOption.getOpt());
+            try {
+                buildState = IndexBatchBuildState.valueOf(stateName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid index build state: " + stateName);
+                System.exit(1);
+            }
+
+            if (buildState != IndexBatchBuildState.BUILD_REQUESTED) {
+                System.out.println("The build state can only be set to " + IndexBatchBuildState.BUILD_REQUESTED);
                 System.exit(1);
             }
         }
@@ -176,6 +222,16 @@ public abstract class BaseIndexerAdminCli {
         ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
 
         run(zk, cmd);
+    }
+
+    private String getStates(Enum[] values) {
+        StringBuilder builder = new StringBuilder();
+        for (Enum value : values) {
+            if (builder.length() > 0)
+                builder.append(", ");
+            builder.append(value);
+        }
+        return builder.toString();
     }
 
     public abstract List<Option> getOptions();

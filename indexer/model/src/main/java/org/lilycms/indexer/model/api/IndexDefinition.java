@@ -5,13 +5,26 @@ import java.util.List;
 public interface IndexDefinition {
     String getName();
 
-    IndexState getState();
+    IndexGeneralState getGeneralState();
 
-    void setState(IndexState state);
+    void setGeneralState(IndexGeneralState state);
+    
+    IndexBatchBuildState getBatchBuildState();
 
-    String getMessageConsumerId();
+    void setBatchBuildState(IndexBatchBuildState state);
 
-    void setMessageConsumerId(String messageConsumerId);
+    /**
+     * If the state implies that there should be a message queue subscription, check
+     * {@link #getQueueSubscriptionId()} to see if the subscription is already assigned,
+     * same for unsubscribe.
+     */
+    IndexUpdateState getUpdateState();
+
+    void setUpdateState(IndexUpdateState state);
+
+    String getQueueSubscriptionId();
+
+    void setQueueSubscriptionId(String queueSubscriptionId);
 
     byte[] getConfiguration();
 
@@ -23,11 +36,11 @@ public interface IndexDefinition {
 
     int getZkDataVersion();
 
-    BuildJobInfo getLastBuildJobInfo();
+    BatchBuildInfo getLastBatchBuildInfo();
 
-    void setLastBuildJobInfo(BuildJobInfo info);
+    void setLastBatchBuildInfo(BatchBuildInfo info);
 
-    ActiveBuildJobInfo getActiveBuildJobInfo();
+    ActiveBatchBuildInfo getActiveBatchBuildInfo();
 
-    void setActiveBuildJobInfo(ActiveBuildJobInfo info);
+    void setActiveBatchBuildInfo(ActiveBatchBuildInfo info);
 }

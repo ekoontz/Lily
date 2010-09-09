@@ -91,7 +91,7 @@ public class IndexerWorker {
 
             Indexer indexer = new Indexer(indexerConf, repository, solrServer);
 
-            int consumerId = Integer.parseInt(index.getMessageConsumerId());
+            int consumerId = Integer.parseInt(index.getQueueSubscriptionId());
             IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex);
 
             IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater);
@@ -155,8 +155,8 @@ public class IndexerWorker {
     }
 
     private boolean shouldRunIndexUpdater(IndexDefinition index) {
-        return (index.getState() == IndexState.READY || index.getState() == IndexState.BUILDING)
-                && index.getMessageConsumerId() != null;
+        return index.getUpdateState() == IndexUpdateState.SUBSCRIBE_AND_LISTEN &&
+                index.getQueueSubscriptionId() != null;
     }
 
     private class IndexUpdaterHandle {

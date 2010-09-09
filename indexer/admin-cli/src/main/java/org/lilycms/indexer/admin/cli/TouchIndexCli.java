@@ -41,7 +41,7 @@ public class TouchIndexCli extends BaseIndexerAdminCli {
         String lock = model.lockIndex(indexName);
         try {
             IndexDefinition index = model.getMutableIndex(indexName);
-            model.updateIndex(index);
+            model.updateIndex(index, lock);
 
             System.out.println("Index touched.");
         } finally {

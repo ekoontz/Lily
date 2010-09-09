@@ -37,27 +37,29 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
 
         for (IndexDefinition index : indexes) {
             System.out.println(index.getName());
-            System.out.println("  + State: " + index.getState());
-            System.out.println("  + Message consumer: " + index.getMessageConsumerId());
+            System.out.println("  + General state: " + index.getGeneralState());
+            System.out.println("  + Update state: " + index.getUpdateState());
+            System.out.println("  + Batch build state: " + index.getBatchBuildState());
+            System.out.println("  + Queue subscription ID: " + index.getQueueSubscriptionId());
             System.out.println("  + SOLR shards: ");
             for (String shard : index.getSolrShards()) {
                 System.out.println("    + " + shard);
             }
 
-            ActiveBuildJobInfo activeBuildJob = index.getActiveBuildJobInfo();
-            if (activeBuildJob != null) {
-                System.out.println("  + Active build job:");
-                System.out.println("    + Hadoop Job ID: " + activeBuildJob.getJobId());
-                System.out.println("    + Submitted at: " + new DateTime(activeBuildJob.getSubmitTime()).toString());
+            ActiveBatchBuildInfo activeBatchBuild = index.getActiveBatchBuildInfo();
+            if (activeBatchBuild != null) {
+                System.out.println("  + Active batch build:");
+                System.out.println("    + Hadoop Job ID: " + activeBatchBuild.getJobId());
+                System.out.println("    + Submitted at: " + new DateTime(activeBatchBuild.getSubmitTime()).toString());
             }
 
-            BuildJobInfo lastBuildJob = index.getLastBuildJobInfo();
-            if (lastBuildJob != null) {
-                System.out.println("  + Last build job:");
-                System.out.println("    + Hadoop Job ID: " + lastBuildJob.getJobId());
-                System.out.println("    + Submitted at: " + new DateTime(lastBuildJob.getSubmitTime()).toString());
-                System.out.println("    + Success: " + lastBuildJob.getSuccess());
-                System.out.println("    + Job state: " + lastBuildJob.getJobState());
+            BatchBuildInfo lastBatchBuild = index.getLastBatchBuildInfo();
+            if (lastBatchBuild != null) {
+                System.out.println("  + Last batch build:");
+                System.out.println("    + Hadoop Job ID: " + lastBatchBuild.getJobId());
+                System.out.println("    + Submitted at: " + new DateTime(lastBatchBuild.getSubmitTime()).toString());
+                System.out.println("    + Success: " + lastBatchBuild.getSuccess());
+                System.out.println("    + Job state: " + lastBatchBuild.getJobState());
             }
 
             System.out.println();

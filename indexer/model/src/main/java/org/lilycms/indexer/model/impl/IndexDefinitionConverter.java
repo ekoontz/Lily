@@ -5,10 +5,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
-import org.lilycms.indexer.model.api.ActiveBuildJobInfo;
-import org.lilycms.indexer.model.api.BuildJobInfo;
-import org.lilycms.indexer.model.api.IndexDefinition;
-import org.lilycms.indexer.model.api.IndexState;
+import org.lilycms.indexer.model.api.*;
 import org.lilycms.util.json.JsonFormat;
 import org.lilycms.util.json.JsonUtil;
 
@@ -31,8 +28,11 @@ public class IndexDefinitionConverter {
     }
 
     public void fromJson(ObjectNode node, IndexDefinitionImpl index) {
-        IndexState state = IndexState.valueOf(JsonUtil.getString(node, "state"));
-        String messageConsumerId = JsonUtil.getString(node, "messageConsumerId", null);
+        IndexGeneralState state = IndexGeneralState.valueOf(JsonUtil.getString(node, "generalState"));
+        IndexUpdateState updateState = IndexUpdateState.valueOf(JsonUtil.getString(node, "updateState"));
+        IndexBatchBuildState buildState = IndexBatchBuildState.valueOf(JsonUtil.getString(node, "batchBuildState"));
+
+        String queueSubscriptionId = JsonUtil.getString(node, "queueSubscriptionId", null);
         String configurationAsString = JsonUtil.getString(node, "configuration");
         byte[] configuration;
         try {
@@ -47,30 +47,32 @@ public class IndexDefinitionConverter {
             solrShards.add(shardsArray.get(i).getTextValue());
         }
 
-        ActiveBuildJobInfo activeBuildJob = null;
-        if (node.get("activeBuildJob") != null) {
-            ObjectNode jobNode = JsonUtil.getObject(node, "activeBuildJob");
-            activeBuildJob = new ActiveBuildJobInfo();
-            activeBuildJob.setJobId(JsonUtil.getString(jobNode, "jobId"));
-            activeBuildJob.setSubmitTime(JsonUtil.getLong(jobNode, "submitTime"));
+        ActiveBatchBuildInfo activeBatchBuild = null;
+        if (node.get("activeBatchBuild") != null) {
+            ObjectNode buildNode = JsonUtil.getObject(node, "activeBatchBuild");
+            activeBatchBuild = new ActiveBatchBuildInfo();
+            activeBatchBuild.setJobId(JsonUtil.getString(buildNode, "jobId"));
+            activeBatchBuild.setSubmitTime(JsonUtil.getLong(buildNode, "submitTime"));
         }
 
-        BuildJobInfo lastBuildJob = null;
-        if (node.get("lastBuildJob") != null) {
-            ObjectNode jobNode = JsonUtil.getObject(node, "lastBuildJob");
-            lastBuildJob = new BuildJobInfo();
-            lastBuildJob.setJobId(JsonUtil.getString(jobNode, "jobId"));
-            lastBuildJob.setSubmitTime(JsonUtil.getLong(jobNode, "submitTime"));
-            lastBuildJob.setSuccess(JsonUtil.getBoolean(jobNode, "success"));
-            lastBuildJob.setJobState(JsonUtil.getString(jobNode, "jobState"));
+        BatchBuildInfo lastBatchBuild = null;
+        if (node.get("lastBatchBuild") != null) {
+            ObjectNode buildNode = JsonUtil.getObject(node, "lastBatchBuild");
+            lastBatchBuild = new BatchBuildInfo();
+            lastBatchBuild.setJobId(JsonUtil.getString(buildNode, "jobId"));
+            lastBatchBuild.setSubmitTime(JsonUtil.getLong(buildNode, "submitTime"));
+            lastBatchBuild.setSuccess(JsonUtil.getBoolean(buildNode, "success"));
+            lastBatchBuild.setJobState(JsonUtil.getString(buildNode, "jobState"));
         }
 
-        index.setState(state);
-        index.setMessageConsumerId(messageConsumerId);
+        index.setGeneralState(state);
+        index.setUpdateState(updateState);
+        index.setBatchBuildState(buildState);
+        index.setQueueSubscriptionId(queueSubscriptionId);
         index.setConfiguration(configuration);
         index.setSolrShards(solrShards);
-        index.setActiveBuildJobInfo(activeBuildJob);
-        index.setLastBuildJobInfo(lastBuildJob);
+        index.setActiveBatchBuildInfo(activeBatchBuild);
+        index.setLastBatchBuildInfo(lastBatchBuild);
     }
 
     public byte[] toJsonBytes(IndexDefinition index) {
@@ -85,10 +87,12 @@ public class IndexDefinitionConverter {
     public ObjectNode toJson(IndexDefinition index) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
 
-        node.put("state", index.getState().toString());
+        node.put("generalState", index.getGeneralState().toString());
+        node.put("batchBuildState", index.getBatchBuildState().toString());
+        node.put("updateState", index.getUpdateState().toString());
 
-        if (index.getMessageConsumerId() != null)
-            node.put("messageConsumerId", index.getMessageConsumerId());
+        if (index.getQueueSubscriptionId() != null)
+            node.put("queueSubscriptionId", index.getQueueSubscriptionId());
 
         String configurationAsString;
         try {
@@ -104,20 +108,20 @@ public class IndexDefinitionConverter {
             shardsNode.add(shard);
         }
 
-        if (index.getActiveBuildJobInfo() != null) {
-            ActiveBuildJobInfo jobInfo = index.getActiveBuildJobInfo();
-            ObjectNode jobNode = node.putObject("activeBuildJob");
-            jobNode.put("jobId", jobInfo.getJobId());
-            jobNode.put("submitTime", jobInfo.getSubmitTime());
+        if (index.getActiveBatchBuildInfo() != null) {
+            ActiveBatchBuildInfo buildInfo = index.getActiveBatchBuildInfo();
+            ObjectNode buildNode = node.putObject("activeBatchBuild");
+            buildNode.put("jobId", buildInfo.getJobId());
+            buildNode.put("submitTime", buildInfo.getSubmitTime());
         }
 
-        if (index.getLastBuildJobInfo() != null) {
-            BuildJobInfo jobInfo = index.getLastBuildJobInfo();
-            ObjectNode jobNode = node.putObject("lastBuildJob");
-            jobNode.put("jobId", jobInfo.getJobId());
-            jobNode.put("submitTime", jobInfo.getSubmitTime());
-            jobNode.put("success", jobInfo.getSuccess());
-            jobNode.put("jobState", jobInfo.getJobState());
+        if (index.getLastBatchBuildInfo() != null) {
+            BatchBuildInfo buildInfo = index.getLastBatchBuildInfo();
+            ObjectNode buildNode = node.putObject("lastBatchBuild");
+            buildNode.put("jobId", buildInfo.getJobId());
+            buildNode.put("submitTime", buildInfo.getSubmitTime());
+            buildNode.put("success", buildInfo.getSuccess());
+            buildNode.put("jobState", buildInfo.getJobState());
         }
 
         return node;

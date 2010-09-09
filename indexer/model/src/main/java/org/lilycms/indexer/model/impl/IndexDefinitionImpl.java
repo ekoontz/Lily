@@ -1,22 +1,21 @@
 package org.lilycms.indexer.model.impl;
 
-import org.lilycms.indexer.model.api.ActiveBuildJobInfo;
-import org.lilycms.indexer.model.api.BuildJobInfo;
-import org.lilycms.indexer.model.api.IndexDefinition;
-import org.lilycms.indexer.model.api.IndexState;
+import org.lilycms.indexer.model.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class IndexDefinitionImpl implements IndexDefinition {
     private String name;
-    private IndexState state;
-    private String messageConsumerId;
+    private IndexGeneralState generalState = IndexGeneralState.ACTIVE;
+    private IndexBatchBuildState buildState = IndexBatchBuildState.INACTIVE;
+    private IndexUpdateState updateState = IndexUpdateState.SUBSCRIBE_AND_LISTEN;
+    private String queueSubscriptionId;
     private byte[] configuration;
     private List<String> solrShards;
     private int zkDataVersion = -1;
-    private BuildJobInfo lastBuildJobInfo;
-    private ActiveBuildJobInfo activeBuildJobInfo;
+    private BatchBuildInfo lastBatchBuildInfo;
+    private ActiveBatchBuildInfo activeBatchBuildInfo;
     private boolean immutable;
 
     public IndexDefinitionImpl(String name) {
@@ -27,22 +26,40 @@ public class IndexDefinitionImpl implements IndexDefinition {
         return name;
     }
 
-    public IndexState getState() {
-        return state;
+    public IndexGeneralState getGeneralState() {
+        return generalState;
     }
 
-    public void setState(IndexState state) {
+    public void setGeneralState(IndexGeneralState state) {
         checkIfMutable();
-        this.state = state;
+        this.generalState = state;
     }
 
-    public String getMessageConsumerId() {
-        return messageConsumerId;
+    public IndexBatchBuildState getBatchBuildState() {
+        return buildState;
     }
 
-    public void setMessageConsumerId(String messageConsumerId) {
+    public void setBatchBuildState(IndexBatchBuildState state) {
         checkIfMutable();
-        this.messageConsumerId = messageConsumerId;
+        this.buildState = state;
+    }
+
+    public IndexUpdateState getUpdateState() {
+        return updateState;
+    }
+
+    public void setUpdateState(IndexUpdateState state) {
+        checkIfMutable();
+        this.updateState = state;
+    }
+
+    public String getQueueSubscriptionId() {
+        return queueSubscriptionId;
+    }
+
+    public void setQueueSubscriptionId(String queueSubscriptionId) {
+        checkIfMutable();
+        this.queueSubscriptionId = queueSubscriptionId;
     }
 
     public byte[] getConfiguration() {
@@ -70,30 +87,30 @@ public class IndexDefinitionImpl implements IndexDefinition {
         this.zkDataVersion = zkDataVersion;
     }
 
-    public BuildJobInfo getLastBuildJobInfo() {
-        return lastBuildJobInfo;
+    public BatchBuildInfo getLastBatchBuildInfo() {
+        return lastBatchBuildInfo;
     }
 
-    public void setLastBuildJobInfo(BuildJobInfo info) {
+    public void setLastBatchBuildInfo(BatchBuildInfo info) {
         checkIfMutable();
-        this.lastBuildJobInfo = info;
+        this.lastBatchBuildInfo = info;
     }
 
-    public ActiveBuildJobInfo getActiveBuildJobInfo() {
-        return activeBuildJobInfo;
+    public ActiveBatchBuildInfo getActiveBatchBuildInfo() {
+        return activeBatchBuildInfo;
     }
 
-    public void setActiveBuildJobInfo(ActiveBuildJobInfo info) {
+    public void setActiveBatchBuildInfo(ActiveBatchBuildInfo info) {
         checkIfMutable();
-        this.activeBuildJobInfo = info;
+        this.activeBatchBuildInfo = info;
     }
 
     public void makeImmutable() {
         this.immutable = true;
-        if (lastBuildJobInfo != null)
-            lastBuildJobInfo.makeImmutable();
-        if (activeBuildJobInfo != null)
-            activeBuildJobInfo.makeImmutable();
+        if (lastBatchBuildInfo != null)
+            lastBatchBuildInfo.makeImmutable();
+        if (activeBatchBuildInfo != null)
+            activeBatchBuildInfo.makeImmutable();
     }
 
     private void checkIfMutable() {

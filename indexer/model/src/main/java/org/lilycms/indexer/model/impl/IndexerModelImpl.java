@@ -6,6 +6,7 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 import static org.apache.zookeeper.Watcher.Event.EventType.*;
 import org.lilycms.indexer.model.api.*;
+import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.*;
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
@@ -75,7 +76,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
     }
 
     public void addIndex(IndexDefinition index) throws IndexExistsException, IndexModelException {
-        assertValid(index);
+        assertValid(index);        
 
         final String indexPath = INDEX_COLLECTION_PATH + "/" + index.getName();
         final byte[] data = IndexDefinitionConverter.INSTANCE.toJsonBytes(index);
@@ -100,8 +101,28 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         if (index.getConfiguration() == null)
             throw new IllegalArgumentException("IndexDefinition: configuration should not be null.");
 
-        if (index.getState() == null)
+        if (index.getGeneralState() == null)
             throw new IllegalArgumentException("IndexDefinition: state should not be null.");
+
+        if (index.getBatchBuildState() == null)
+            throw new IllegalArgumentException("IndexDefinition: build state should not be null.");
+
+        if (index.getUpdateState() == null)
+            throw new IllegalArgumentException("IndexDefinition: update state should not be null.");
+
+        if (index.getActiveBatchBuildInfo() != null) {
+            ActiveBatchBuildInfo info = index.getActiveBatchBuildInfo();
+            if (info.getJobId() == null)
+                throw new IllegalArgumentException("IndexDefinition; job id of active batch build cannot be null.");
+        }
+
+        if (index.getLastBatchBuildInfo() != null) {
+            BatchBuildInfo info = index.getLastBatchBuildInfo();
+            if (info.getJobId() == null)
+                throw new IllegalArgumentException("IndexDefinition: job id of last batch build cannot be null.");
+            if (info.getJobState() == null)
+                throw new IllegalArgumentException("IndexDefinition: job state of last batch build cannot be null.");
+        }
 
         if (index.getSolrShards() == null || index.getSolrShards().isEmpty())
             throw new IllegalArgumentException("IndexDefinition: SOLR shards should not be null or empty.");
@@ -118,7 +139,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         }
     }
 
-    public void updateIndex(final IndexDefinition index) throws InterruptedException, KeeperException,
+    public void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
             IndexNotFoundException, IndexConcurrentModificationException {
 
         assertValid(index);
@@ -136,6 +157,40 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         } catch (KeeperException.BadVersionException e) {
             throw new IndexConcurrentModificationException(index.getName());
         }
+    }
+
+    public void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
+            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException {
+
+        if (!ZkLock.ownsLock(zk, lock)) {
+            throw new IndexUpdateException("You are not owner of the indexes lock, your lock path is: " + lock);
+        }
+
+        assertValid(index);
+
+        IndexDefinition currentIndex = getMutableIndex(index.getName());
+
+        if (index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED &&
+                currentIndex.getBatchBuildState() != IndexBatchBuildState.INACTIVE) {
+            throw new IndexUpdateException("Cannot move index build state from " + currentIndex.getBatchBuildState() +
+                    " to " + index.getBatchBuildState());
+        }
+
+        if (currentIndex.getGeneralState() == IndexGeneralState.DELETE_REQUESTED) {
+            throw new IndexUpdateException("An index in the state " + IndexGeneralState.DELETE_REQUESTED +
+                    " cannot be updated.");
+        }
+
+        if (!ObjectUtils.safeEquals(currentIndex.getActiveBatchBuildInfo(), index.getActiveBatchBuildInfo())) {
+            throw new IndexUpdateException("The active batch build info cannot be modified by users.");
+        }
+
+        if (!ObjectUtils.safeEquals(currentIndex.getLastBatchBuildInfo(), index.getLastBatchBuildInfo())) {
+            throw new IndexUpdateException("The last batch build info cannot be modified by users.");
+        }
+
+        updateIndexInternal(index);
+
     }
 
     public String lockIndex(String indexName) throws ZkLockException, IndexNotFoundException, InterruptedException,
@@ -204,10 +259,6 @@ public class IndexerModelImpl implements WriteableIndexerModel {
             registerListener(listener);
             return new ArrayList<IndexDefinition>(indexes.values());
         }
-    }
-
-    public Collection<IndexDefinition> getIndexes(IndexState... states) {
-        return null;
     }
 
     private List<IndexerModelEvent> refreshIndexes() throws InterruptedException, KeeperException {

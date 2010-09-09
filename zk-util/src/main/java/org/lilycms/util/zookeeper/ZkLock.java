@@ -143,6 +143,32 @@ public class ZkLock {
         }
     }
 
+    /**
+     * Verifies that the specified lockId is the owner of the lock.
+     */
+    public static boolean ownsLock(final ZooKeeperItf zk, final String lockId) throws ZkLockException {
+        try {
+            int lastSlashPos = lockId.lastIndexOf('/');
+            final String lockPath = lockId.substring(0, lastSlashPos);
+            String lockName = lockId.substring(lastSlashPos + 1);
+
+            List<String> children = ZkUtil.retryOperationForever(new ZooKeeperOperation<List<String>>() {
+                public List<String> execute() throws KeeperException, InterruptedException {
+                    return zk.getChildren(lockPath, null);
+                }
+            });
+
+            if (children.isEmpty())
+                return false;
+
+            SortedSet<String> sortedChildren = new TreeSet<String>(children);
+
+            return sortedChildren.first().equals(lockName);
+        } catch (Throwable t) {
+            throw new ZkLockException("Error checking lock, path: " + lockId, t);
+        }
+    }
+
     private static class MyWatcher implements Watcher {
         private String path;
         private final Object condition;

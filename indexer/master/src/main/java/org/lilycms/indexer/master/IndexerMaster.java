@@ -136,12 +136,12 @@ public class IndexerMaster {
         }
     }
 
-    private boolean needsConsumerIdAssigned(IndexDefinition index) {
-        return index.getState() == IndexState.READY && index.getMessageConsumerId() == null;
+    private boolean needsSubscriptionIdAssigned(IndexDefinition index) {
+        return index.getUpdateState() != IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() == null;
     }
 
     private boolean needsFullBuildStart(IndexDefinition index) {
-        return index.getState() == IndexState.REQUEST_BUILD && index.getActiveBuildJobInfo() == null;
+        return index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
     }
 
     /**
@@ -151,8 +151,8 @@ public class IndexerMaster {
     private void initMaxConsumerId() {
         int currentMaxId = 10000;
         for (IndexDefinition index : indexerModel.getIndexes()) {
-            if (index.getMessageConsumerId() != null) {
-                int id = Integer.parseInt(index.getMessageConsumerId());
+            if (index.getQueueSubscriptionId() != null) {
+                int id = Integer.parseInt(index.getQueueSubscriptionId());
                 if (id > currentMaxId) {
                     currentMaxId = id;
                 }
@@ -162,23 +162,23 @@ public class IndexerMaster {
     }
 
 
-    private void assignConsumer(String indexName) {
+    private void assignSubscription(String indexName) {
         try {
             String lock = indexerModel.lockIndex(indexName);
             try {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
-                if (needsConsumerIdAssigned(index)) {
+                if (needsSubscriptionIdAssigned(index)) {
                     String newConsumerId = String.valueOf(++currentMaxConsumerId);
-                    index.setMessageConsumerId(newConsumerId);
-                    indexerModel.updateIndex(index);
-                    log.info("Assigned message consumer ID " + newConsumerId + " to index " + indexName);
+                    index.setQueueSubscriptionId(newConsumerId);
+                    indexerModel.updateIndexInternal(index);
+                    log.info("Assigned queue subscription ID " + newConsumerId + " to index " + indexName);
                 }
             } finally {
                 indexerModel.unlockIndex(lock);
             }
         } catch (Throwable t) {
-            log.error("Error trying to assign a message consumer to index " + indexName, t);
+            log.error("Error trying to assign a queue subscription to index " + indexName, t);
         }
     }
 
@@ -189,16 +189,16 @@ public class IndexerMaster {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsFullBuildStart(index)) {
-                    String jobId = FullIndexBuilder.startRebuildJob(index, mapReduceJobConf);
+                    String jobId = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf);
 
-                    ActiveBuildJobInfo jobInfo = new ActiveBuildJobInfo();
+                    ActiveBatchBuildInfo jobInfo = new ActiveBatchBuildInfo();
                     jobInfo.setSubmitTime(System.currentTimeMillis());
                     jobInfo.setJobId(jobId);
-                    index.setActiveBuildJobInfo(jobInfo);
+                    index.setActiveBatchBuildInfo(jobInfo);
 
-                    index.setState(IndexState.BUILDING);
+                    index.setBatchBuildState(IndexBatchBuildState.BUILDING);
 
-                    indexerModel.updateIndex(index);
+                    indexerModel.updateIndexInternal(index);
 
                     log.info("Started index build job for index " + indexName + ", job ID =  " + jobId);
                 }
@@ -246,16 +246,16 @@ public class IndexerMaster {
                         }
 
                         if (index != null) {
-                            if (needsConsumerIdAssigned(index)) {
-                                assignConsumer(index.getName());
+                            if (needsSubscriptionIdAssigned(index)) {
+                                assignSubscription(index.getName());
                             }
 
                             if (needsFullBuildStart(index)) {
                                 startFullIndexBuild(index.getName());
                             }
 
-                            if (index.getActiveBuildJobInfo() != null) {
-                                jobStatusWatcher.assureWatching(index.getName(), index.getActiveBuildJobInfo().getJobId());
+                            if (index.getActiveBatchBuildInfo() != null) {
+                                jobStatusWatcher.assureWatching(index.getName(), index.getActiveBatchBuildInfo().getJobId());
                             }
                         }
                     }
@@ -329,7 +329,7 @@ public class IndexerMaster {
                     // Read current situation of record and assure it is still actual
                     IndexDefinition index = indexerModel.getMutableIndex(indexName);
 
-                    ActiveBuildJobInfo activeJobInfo = index.getActiveBuildJobInfo();
+                    ActiveBatchBuildInfo activeJobInfo = index.getActiveBatchBuildInfo();
 
                     if (activeJobInfo == null) {
                         // This might happen if we got some older update event on the index right after we
@@ -346,7 +346,7 @@ public class IndexerMaster {
                                 " done anyway.");
                     }
 
-                    BuildJobInfo jobInfo = new BuildJobInfo();
+                    BatchBuildInfo jobInfo = new BatchBuildInfo();
                     jobInfo.setJobState(jobState);
                     jobInfo.setSuccess(success);
                     jobInfo.setJobId(jobId);
@@ -354,13 +354,13 @@ public class IndexerMaster {
                     if (activeJobInfo != null)
                         jobInfo.setSubmitTime(activeJobInfo.getSubmitTime());
 
-                    index.setLastBuildJobInfo(jobInfo);
-                    index.setActiveBuildJobInfo(null);
+                    index.setLastBatchBuildInfo(jobInfo);
+                    index.setActiveBatchBuildInfo(null);
 
-                    index.setState(success ? IndexState.READY : IndexState.BUILD_FAILED);
+                    index.setBatchBuildState(IndexBatchBuildState.INACTIVE);
 
                     runningJobs.remove(indexName);
-                    indexerModel.updateIndex(index);
+                    indexerModel.updateIndexInternal(index);
 
                     log.info("Marked index build job as finished for index " + indexName + ", job ID =  " + jobId);
 

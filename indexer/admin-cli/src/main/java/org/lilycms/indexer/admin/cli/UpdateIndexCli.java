@@ -29,7 +29,9 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         options.add(nameOption);
         options.add(solrShardsOption);
         options.add(configurationOption);
-        options.add(stateOption);
+        options.add(generalStateOption);
+        options.add(updateStateOption);
+        options.add(buildStateOption);
 
         return options;
     }
@@ -58,13 +60,23 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
                 changes = true;
             }
 
-            if (stateOption != null && indexState != index.getState()) {
-                index.setState(indexState);
+            if (generalState != null && generalState != index.getGeneralState()) {
+                index.setGeneralState(generalState);
+                changes = true;
+            }
+
+            if (updateState != null && updateState != index.getUpdateState()) {
+                index.setUpdateState(updateState);
+                changes = true;
+            }
+
+            if (buildState != null && buildState != index.getBatchBuildState()) {
+                index.setBatchBuildState(buildState);
                 changes = true;
             }
 
             if (changes) {
-                model.updateIndex(index);
+                model.updateIndex(index, lock);
                 System.out.println("Index updated: " + indexName);
             } else {
                 System.out.println("Index already matches the specified settings, did not update it.");

@@ -21,7 +21,7 @@ public class FullIndexBuilder {
      *
      * @return the ID of the started job
      */
-    public static String startRebuildJob(IndexDefinition index, Configuration mapReduceConf) throws Exception {
+    public static String startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf) throws Exception {
         Configuration conf = new Configuration(mapReduceConf);
         Job job = new Job(conf);
 

@@ -1,6 +1,8 @@
 package org.lilycms.indexer.model.api;
 
-public class ActiveBuildJobInfo {
+import org.lilycms.util.ObjectUtils;
+
+public class ActiveBatchBuildInfo {
     private String jobId;
     private long submitTime;
     private boolean immutable;
@@ -30,5 +32,24 @@ public class ActiveBuildJobInfo {
     private void checkIfMutable() {
         if (immutable)
             throw new RuntimeException("This IndexDefinition is immutable");
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ActiveBatchBuildInfo other = (ActiveBatchBuildInfo)obj;
+
+        if (!ObjectUtils.safeEquals(jobId, other.jobId))
+            return false;
+
+        if (submitTime != other.submitTime)
+            return false;
+
+        return true;
     }
 }

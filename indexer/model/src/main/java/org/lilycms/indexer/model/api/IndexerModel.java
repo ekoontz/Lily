@@ -19,8 +19,6 @@ public interface IndexerModel {
 
     boolean hasIndex(String name);
 
-    Collection<IndexDefinition> getIndexes(IndexState... states);
-
     void registerListener(IndexerModelListener listener);
 
     void unregisterListener(IndexerModelListener listener);
