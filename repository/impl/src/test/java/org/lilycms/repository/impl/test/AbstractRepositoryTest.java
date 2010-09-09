@@ -846,8 +846,6 @@ public abstract class AbstractRepositoryTest {
         updateRecord.setField(fieldType6.getName(), "value2");
         repository.update(updateRecord);
 
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-        
         // Read version 1
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
         assertEquals(456, readRecord.getField(fieldType4.getName()));
@@ -861,8 +859,6 @@ public abstract class AbstractRepositoryTest {
         mutableRecord.setVersion(1L);
         mutableRecord = repository.update(mutableRecord, true, false);
         
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-
         // Read version 1 again
         readRecord = repository.read(record.getId(), 1L);
         assertEquals(456, readRecord.getField(fieldType4.getName()));
@@ -870,7 +866,7 @@ public abstract class AbstractRepositoryTest {
         assertEquals("value3", readRecord.getField(fieldType6.getName()));
         
     }
-
+    
     @Test
     public void testUpdateMutableFieldWithNewRecordType() throws Exception {
         Record record = createDefaultRecord();
@@ -887,11 +883,7 @@ public abstract class AbstractRepositoryTest {
         updateMutableRecord.setField(fieldType5.getName(), false);
         updateMutableRecord.setField(fieldType6.getName(), "value3");
 
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-        
         assertEquals(Long.valueOf(1), repository.update(updateMutableRecord, true, false).getVersion());
-
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
         assertEquals(Long.valueOf(1), readRecord.getVersion());
@@ -927,6 +919,7 @@ public abstract class AbstractRepositoryTest {
         assertEquals(recordType1.getName(), readRecord.getRecordTypeName(Scope.VERSIONED_MUTABLE));
     }
 
+    
 
     @Test
     public void testDeleteMutableField() throws Exception {
@@ -942,11 +935,7 @@ public abstract class AbstractRepositoryTest {
         deleteRecord.setRecordType(record.getRecordTypeName(), record.getRecordTypeVersion());
         deleteRecord.addFieldsToDelete(Arrays.asList(new QName[] { fieldType1.getName(), fieldType2.getName(), fieldType3.getName() }));
 
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-
         repository.update(deleteRecord, true, false);
-
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
 
         Record readRecord = repository.read(record.getId(), Long.valueOf(1));
         // The non-mutable fields were ignored
@@ -983,16 +972,13 @@ public abstract class AbstractRepositoryTest {
         deleteMutableFieldRecord.setRecordType(record.getRecordTypeName(), record.getRecordTypeVersion());
         deleteMutableFieldRecord.addFieldsToDelete(Arrays.asList(new QName[] { fieldType3.getName() }));
 
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-
         repository.update(deleteMutableFieldRecord, true, false);
 
-//        HBASE_PROXY.majorCompact("recordTable", new String[] {"VSCF", "VCF", "VMCF"});
-            readRecord = repository.read(record.getId(), Long.valueOf(1));
-            try {
-                readRecord.getField(fieldType3.getName());
-                fail();
-            } catch (FieldNotFoundException expected) {
+        readRecord = repository.read(record.getId(), Long.valueOf(1));
+        try {
+            readRecord.getField(fieldType3.getName());
+            fail();
+        } catch (FieldNotFoundException expected) {
         }
 
         readRecord = repository.read(record.getId(), Long.valueOf(2));
