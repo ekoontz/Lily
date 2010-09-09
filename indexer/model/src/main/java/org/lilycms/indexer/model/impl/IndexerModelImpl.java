@@ -50,6 +50,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private final Object indexes_lock = new Object();
 
+    /** Using a Map since there is no IdentitySet. */
     private Map<IndexerModelListener, Object> listeners = new IdentityHashMap<IndexerModelListener, Object>();
 
     private Watcher watcher = new MyWatcher();

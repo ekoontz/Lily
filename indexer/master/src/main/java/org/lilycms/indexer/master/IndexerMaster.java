@@ -56,9 +56,6 @@ public class IndexerMaster {
 
     @PostConstruct
     public void start() throws LeaderElectionSetupException, IOException {
-        eventWorkerThread = new Thread(new EventWorker());
-        eventWorkerThread.start();
-
         jobStatusWatcher = new JobStatusWatcher();
 
         LeaderElection leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",
@@ -67,11 +64,13 @@ public class IndexerMaster {
 
     @PreDestroy
     public void stop() {
-        eventWorkerThread.interrupt();
-        try {
-            eventWorkerThread.join();
-        } catch (InterruptedException e) {
-            log.info("Interrupted while joining eventWorkerThread.");
+        if (eventWorkerThread != null) {
+            eventWorkerThread.interrupt();
+            try {
+                eventWorkerThread.join();
+            } catch (InterruptedException e) {
+                log.info("Interrupted while joining eventWorkerThread.");
+            }
         }
 
         if (jobStatusWatcherThread != null) {
@@ -91,6 +90,10 @@ public class IndexerMaster {
             // We do not need to worry about events already arriving, since this code is called
             // from a ZK callback.
             jobStatusWatcher.reset();
+
+            eventQueue.clear(); // Just to be sure
+            eventWorkerThread = new Thread(new EventWorker());
+            eventWorkerThread.start();
 
             initMaxConsumerId();
 
@@ -115,6 +118,14 @@ public class IndexerMaster {
 
         public void noLongerElected() {
             log.info("I am no longer the IndexerMaster.");
+
+            indexerModel.unregisterListener(listener);
+
+            eventQueue.clear();
+            if (eventWorkerThread != null) {
+                eventWorkerThread.interrupt();
+                eventWorkerThread = null;
+            }
 
             if (jobStatusWatcherThread != null) {
                 jobStatusWatcherThread.interrupt();
@@ -215,6 +226,10 @@ public class IndexerMaster {
         public void run() {
             while (true) {
                 try {
+                    if (Thread.interrupted()) {
+                        return;
+                    }
+
                     int queueSize = eventQueue.size();
                     if (queueSize >= 10) {
                         log.warn("EventWorker queue getting large, size = " + queueSize);
