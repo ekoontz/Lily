@@ -2,6 +2,13 @@
                            http://www.lilycms.org
 
 
+Getting started
+===============
+
+For a first introduction to using Lily, please see:
+
+http://docs.outerthought.org/lily-docs-trunk/414-lily.html
+
 Prerequisites
 =============
 
