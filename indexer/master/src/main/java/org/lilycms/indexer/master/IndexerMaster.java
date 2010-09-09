@@ -261,10 +261,7 @@ public class IndexerMaster {
          */
         private Map<String, String> runningJobs = new ConcurrentHashMap<String, String>(10, 0.75f, 2);
 
-        private JobClient client;
-
         public JobStatusWatcher() throws IOException {
-            client = new JobClient(JobTracker.getAddress(mapReduceConf), mapReduceConf);
         }
 
         public void reset() {
@@ -272,6 +269,7 @@ public class IndexerMaster {
         }
 
         public void run() {
+            JobClient jobClient = null;
             while (true) {
                 try {
                     Thread.sleep(5000);
@@ -281,7 +279,13 @@ public class IndexerMaster {
                             return;
                         }
 
-                        RunningJob job = client.getJob(jobEntry.getValue());
+                        if (jobClient == null) {
+                            // We only create the JobClient the first time we need it, to avoid that the
+                            // repository fails to start up when there is no JobTracker running.
+                            jobClient = new JobClient(JobTracker.getAddress(mapReduceConf), mapReduceConf);
+                        }
+
+                        RunningJob job = jobClient.getJob(jobEntry.getValue());
 
                         if (job == null) {
                             markJobComplete(jobEntry.getKey(), jobEntry.getValue(), false, "job unknown");
