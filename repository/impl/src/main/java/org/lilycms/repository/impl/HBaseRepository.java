@@ -83,6 +83,7 @@ import org.lilycms.util.io.Closer;
  */
 public class HBaseRepository implements Repository {
  
+    private static final byte[] DELETE_MARKER = new byte[] { EncodingUtil.DELETE_FLAG };
     private static final byte[] CURRENT_VERSION_COLUMN_NAME = Bytes.toBytes("$CurrentVersion");
     private static final byte[] LOCK_COLUMN_NAME = Bytes.toBytes("$Lock");
     private static final byte[] DELETED_COLUMN_NAME = Bytes.toBytes("$Deleted");
@@ -480,10 +481,9 @@ public class HBaseRepository implements Repository {
             RecordTypeNotFoundException, RecordException, TypeException {
         Map<QName, Object> originalFields = originalRecord.getFields();
         Set<Scope> changedScopes = new HashSet<Scope>();
-        // Update fields
-        changedScopes.addAll(calculateUpdateFields(record.getFields(), originalFields, version, put, recordEvent));
-        // Delete fields
-        changedScopes.addAll(calculateDeleteFields(record.getFieldsToDelete(), originalFields, version, put, recordEvent));
+        
+        Map<QName, Object> fields = getFieldsToUpdate(record);
+        changedScopes.addAll(calculateUpdateFields(fields, originalFields, null, version, put, recordEvent));
         for (Scope scope : changedScopes) {
             if (Scope.NON_VERSIONED.equals(scope)) {
                 put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), Bytes.toBytes(recordType
@@ -502,15 +502,26 @@ public class HBaseRepository implements Repository {
         return changedScopes;
     }
 
-    private Set<Scope> calculateUpdateFields(Map<QName, Object> fields, Map<QName, Object> originalFields,
+    private Map<QName, Object> getFieldsToUpdate(Record record) {
+        // Work with a copy of the map
+        Map<QName, Object> fields = new HashMap<QName, Object>();
+        fields.putAll(record.getFields());
+        for (QName qName : record.getFieldsToDelete()) {
+            fields.put(qName, DELETE_MARKER);
+        }
+        return fields;
+    }
+
+    private Set<Scope> calculateUpdateFields(Map<QName, Object> fields, Map<QName, Object> originalFields, Map<QName, Object> originalNextFields,
             Long version, Put put, RecordEvent recordEvent) throws FieldTypeNotFoundException,
             RecordTypeNotFoundException, RecordException, TypeException {
         Set<Scope> changedScopes = new HashSet<Scope>();
         for (Entry<QName, Object> field : fields.entrySet()) {
             QName fieldName = field.getKey();
             Object newValue = field.getValue();
+            boolean fieldIsNew = !originalFields.containsKey(fieldName);
             Object originalValue = originalFields.get(fieldName);
-            if (((newValue == null) && (originalValue != null)) || !newValue.equals(originalValue)) {
+            if (fieldIsNew || ((newValue == null) && (originalValue != null)) || !newValue.equals(originalValue)) {
                 FieldType fieldType = typeManager.getFieldTypeByName(fieldName);
                 Scope scope = fieldType.getScope();
                 byte[] fieldIdAsBytes = Bytes.toBytes(fieldType.getId());
@@ -520,7 +531,11 @@ public class HBaseRepository implements Repository {
                     put.add(columnFamilies.get(scope), fieldIdAsBytes, encodedFieldValue);
                 } else {
                     put.add(columnFamilies.get(scope), fieldIdAsBytes, version, encodedFieldValue);
+                    if (originalNextFields != null && !fieldIsNew && originalNextFields.containsKey(fieldName)) {
+                        copyValueToNextVersionIfNeeded(version, put, originalNextFields, fieldName, originalValue);
+                    }
                 }
+                
                 changedScopes.add(scope);
 
                 recordEvent.addUpdatedField(fieldType.getId());
@@ -531,36 +546,14 @@ public class HBaseRepository implements Repository {
 
     private byte[] encodeFieldValue(FieldType fieldType, Object fieldValue) throws FieldTypeNotFoundException,
             RecordTypeNotFoundException, RecordException {
+        if (DELETE_MARKER.equals(fieldValue))
+            return DELETE_MARKER;
         ValueType valueType = fieldType.getValueType();
 
         // TODO validate with Class#isAssignableFrom()
         byte[] encodedFieldValue = valueType.toBytes(fieldValue);
         encodedFieldValue = EncodingUtil.prefixValue(encodedFieldValue, EncodingUtil.EXISTS_FLAG);
         return encodedFieldValue;
-    }
-
-    private Set<Scope> calculateDeleteFields(List<QName> fieldsToDelete, Map<QName, Object> originalFields,
-            Long version, Put put, RecordEvent recordEvent) throws FieldTypeNotFoundException,
-            RecordTypeNotFoundException, RecordException, TypeException {
-        Set<Scope> changedScopes = new HashSet<Scope>();
-        for (QName fieldToDelete : fieldsToDelete) {
-            if (originalFields.get(fieldToDelete) != null) {
-                FieldType fieldType = typeManager.getFieldTypeByName(fieldToDelete);
-                Scope scope = fieldType.getScope();
-                byte[] fieldIdAsBytes = Bytes.toBytes(fieldType.getId());
-                if (Scope.NON_VERSIONED.equals(scope)) {
-                    put.add(columnFamilies.get(scope), fieldIdAsBytes, new byte[] { EncodingUtil.DELETE_FLAG });
-                } else {
-                    put
-                            .add(columnFamilies.get(scope), fieldIdAsBytes, version,
-                                    new byte[] { EncodingUtil.DELETE_FLAG });
-                }
-                changedScopes.add(scope);
-
-                recordEvent.addUpdatedField(fieldType.getId());
-            }
-        }
-        return changedScopes;
     }
 
     private Record updateMutableFields(Record record, boolean latestRecordType) throws InvalidRecordException, RecordNotFoundException,
@@ -585,21 +578,16 @@ public class HBaseRepository implements Repository {
 
             // Update the mutable fields
             Put put = new Put(record.getId().toBytes());
-            Map<QName, Object> fieldsToUpdate = filterMutableFields(record.getFields());
+            Map<QName, Object> fields = getFieldsToUpdate(record);
+            fields = filterMutableFields(fields);
             Map<QName, Object> originalFields = filterMutableFields(originalRecord.getFields());
             RecordEvent recordEvent = new RecordEvent();
             recordEvent.setType(Type.UPDATE);
             recordEvent.setVersionUpdated(version);
 
-            Set<Scope> changedScopes = calculateUpdateFields(fieldsToUpdate, originalFields, version, put, recordEvent);
+            Set<Scope> changedScopes = calculateUpdateFields(fields, originalFields, getOriginalNextFields(recordId, version), version, put, recordEvent);
 
-            // Delete mutable fields and copy values to the next version if
-            // needed
-            List<QName> fieldsToDelete = filterMutableFieldsToDelete(record.getFieldsToDelete());
-            boolean deleted = calculateDeleteMutableFields(fieldsToDelete, originalFields, record.getId(), version,
-                    put, recordEvent);
-
-            if (!changedScopes.isEmpty() || deleted) {
+            if (!changedScopes.isEmpty()) {
                 Long recordTypeVersion = latestRecordType ? null : record.getRecordTypeVersion();
                 RecordType recordType = typeManager.getRecordTypeByName(record.getRecordTypeName(), recordTypeVersion);
                 
@@ -642,62 +630,34 @@ public class HBaseRepository implements Repository {
         return mutableFields;
     }
 
-    private List<QName> filterMutableFieldsToDelete(List<QName> fields) throws FieldTypeNotFoundException,
-            RecordTypeNotFoundException, RecordException, TypeException {
-        List<QName> mutableFields = new ArrayList<QName>();
-        for (QName field : fields) {
-            FieldType fieldType = typeManager.getFieldTypeByName(field);
-            if (Scope.VERSIONED_MUTABLE.equals(fieldType.getScope())) {
-                mutableFields.add(field);
-            }
+    /**
+     * If the original value is the same as for the next version
+     * this means that the cell at the next version does not contain any value yet,
+     * and the record relies on what is in the previous cell's version.
+     * The original value needs to be copied into it. Otherwise we loose that value.
+     */
+    private void copyValueToNextVersionIfNeeded(Long version, Put put, Map<QName, Object> originalNextFields,
+            QName fieldName, Object originalValue)
+            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException {
+        Object originalNextValue = originalNextFields.get(fieldName);
+        if ((originalValue == null && originalNextValue == null) || originalValue.equals(originalNextValue)) {
+            FieldType fieldType = typeManager.getFieldTypeByName(fieldName);
+            byte[] fieldIdBytes = Bytes.toBytes(fieldType.getId());
+            byte[] encodedValue = encodeFieldValue(fieldType, originalValue);
+            put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version + 1, encodedValue);
         }
-        return mutableFields;
-    }
-
-    private boolean calculateDeleteMutableFields(List<QName> fieldsToDelete, Map<QName, Object> originalFields,
-            RecordId recordId, Long version, Put put, RecordEvent recordEvent)
-            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException, VersionNotFoundException {
-        boolean changed = false;
-        
-        Map<QName, Object> originalNextFields = null;
-        
-        for (QName fieldToDelete : fieldsToDelete) {
-            Object originalValue = originalFields.get(fieldToDelete);
-            if (originalValue != null) {
-                FieldType fieldType = typeManager.getFieldTypeByName(fieldToDelete);
-                byte[] fieldIdBytes = Bytes.toBytes(fieldType.getId());
-                put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version,
-                        new byte[] { EncodingUtil.DELETE_FLAG });
-                // Postpone the read of the next version of the record as long as possible
-                if (originalNextFields == null) 
-                    originalNextFields = getOriginalNextFields(recordId, version);
-                // If the original value is the same as for the next version
-                // this means that the cell at the next version does not contain any value yet,
-                // and the record relies on what is in the previous cell's version.
-                // The original value needs to be copied into it. Otherwise we loose that value.
-                if (originalValue.equals(originalNextFields.get(fieldToDelete))) {
-                    byte[] encodedValue = encodeFieldValue(fieldType, originalValue);
-                    put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version + 1, encodedValue);
-                }
-                recordEvent.addUpdatedField(fieldType.getId());
-                changed = true;
-            }
-        }
-        return changed;
     }
 
     private Map<QName, Object> getOriginalNextFields(RecordId recordId, Long version)
-            throws RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
-            TypeException {
-        Map<QName, Object> originalNextFields = new HashMap<QName, Object>();
+            throws RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, 
+            TypeException, RecordNotFoundException {
         try {
             Record originalNextRecord = read(recordId, version + 1, null, new ReadContext(false));
-            originalNextFields = new HashMap<QName, Object>();
-            originalNextFields.putAll(filterMutableFields(originalNextRecord.getFields()));
-        } catch (RecordNotFoundException exception) {
+            return filterMutableFields(originalNextRecord.getFields());
+        } catch (VersionNotFoundException exception) {
             // There is no next record
-        }
-        return originalNextFields;
+            return null;
+        } 
     }
 
     public Record read(RecordId recordId) throws RecordNotFoundException, RecordTypeNotFoundException,

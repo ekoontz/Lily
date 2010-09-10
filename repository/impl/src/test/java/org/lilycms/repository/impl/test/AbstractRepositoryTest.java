@@ -826,11 +826,6 @@ public abstract class AbstractRepositoryTest {
 //        assertEquals("zzz", readRecord.getField(fieldType6.getName()));
     }
 
-    
-
-//    TODO IMPORTANT: Adapted tests with majorCompaction calls to avoid the effects of HBase-1485.
-//                    Putting these calls allows us to at least test the behaviour of our own code.                      
-                    
     @Test
     public void testUpdateMutableField() throws Exception {
         Record record = repository.newRecord();
@@ -865,6 +860,16 @@ public abstract class AbstractRepositoryTest {
         assertEquals(true, readRecord.getField(fieldType5.getName()));
         assertEquals("value3", readRecord.getField(fieldType6.getName()));
         
+        // Update mutable version 2
+        mutableRecord.setVersion(2L);
+        mutableRecord.setField(fieldType6.getName(), "value4");
+        mutableRecord = repository.update(mutableRecord, true, false);
+
+        // Read version 2
+        readRecord = repository.read(record.getId(), 2L);
+        assertEquals(456, readRecord.getField(fieldType4.getName()));
+        assertEquals(false, readRecord.getField(fieldType5.getName()));
+        assertEquals("value4", readRecord.getField(fieldType6.getName()));
     }
     
     @Test
@@ -919,7 +924,35 @@ public abstract class AbstractRepositoryTest {
         assertEquals(recordType1.getName(), readRecord.getRecordTypeName(Scope.VERSIONED_MUTABLE));
     }
 
-    
+    @Test
+    public void testUpdateMutableFieldCopiesValueToNext() throws Exception {
+        Record record = createDefaultRecord();
+        Record updateRecord = record.clone();
+        updateRecord.setField(fieldType1.getName(), "value2");
+        updateRecord.setField(fieldType2.getName(), 789);
+        updateRecord = repository.update(updateRecord); // Leave mutable field
+        // same on first update
+
+        updateRecord.setField(fieldType3.getName(), false);
+        updateRecord = repository.update(updateRecord);
+
+        Record readRecord = repository.read(record.getId(), Long.valueOf(2));
+        assertEquals(true, readRecord.getField(fieldType3.getName()));
+        
+        updateRecord  = repository.newRecord(record.getId());
+        updateRecord.setRecordType(recordType1.getName(), recordType1.getVersion());
+        updateRecord.setField(fieldType3.getName(), false);
+        updateRecord.setVersion(1L);
+        
+        repository.update(updateRecord, true, false);
+        
+        readRecord = repository.read(record.getId(), Long.valueOf(1));
+        assertFalse((Boolean)readRecord.getField(fieldType3.getName()));
+        readRecord = repository.read(record.getId(), Long.valueOf(2));
+        assertTrue((Boolean)readRecord.getField(fieldType3.getName()));
+        readRecord = repository.read(record.getId(), Long.valueOf(3));
+        assertFalse((Boolean)readRecord.getField(fieldType3.getName()));
+    }
 
     @Test
     public void testDeleteMutableField() throws Exception {
