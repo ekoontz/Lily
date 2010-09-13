@@ -47,6 +47,7 @@ public class IndexUpdater {
     private IndexerListener indexerListener = new IndexerListener();
     private Indexer indexer;
     private IndexUpdaterMetrics metrics;
+    private ClassLoader myContextClassLoader;
 
     private Log log = LogFactory.getLog(getClass());
 
@@ -57,6 +58,8 @@ public class IndexUpdater {
         this.repository = repository;
         this.typeManager = repository.getTypeManager();
         this.linkIndex = linkIndex;
+
+        this.myContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         this.metrics = new IndexUpdaterMetrics();
 
@@ -81,7 +84,14 @@ public class IndexUpdater {
 
         public boolean processMessage(RowLogMessage msg) {
             long before = System.currentTimeMillis();
+
+            // During the processing of this message, we switch the context class loader to the one
+            // of the Kauri module to which the index updater belongs. This is necessary for Tika
+            // to find its parser implementations.
+
+            ClassLoader currentCL = Thread.currentThread().getContextClassLoader();
             try {
+                Thread.currentThread().setContextClassLoader(myContextClassLoader);
                 RecordEvent event = new RecordEvent(msg.getPayload());
                 RecordId recordId = repository.getIdGenerator().fromBytes(msg.getRowKey());
 
@@ -112,6 +122,7 @@ public class IndexUpdater {
             } finally {
                 long after = System.currentTimeMillis();
                 metrics.messageProcessed(after - before);
+                Thread.currentThread().setContextClassLoader(currentCL);
             }
             return true;
         }
