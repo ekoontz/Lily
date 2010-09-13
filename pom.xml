@@ -76,6 +76,7 @@
     <module>process</module>
     <module>tools/import</module>
     <module>tools/tester</module>
+    <module>tools/mbox-import</module>
     <module>tools/kauri-dependency-resolver-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
     <module>tools/genscript-plugin</module>

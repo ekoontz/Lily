@@ -1,0 +1,83 @@
+{
+  namespaces: {
+    "org.lilycms.mail": "m",
+    "org.lilycms.vtag": "vtag"
+  },
+  fieldTypes: [
+    {
+      name: "m$to",
+      valueType: { primitive: "STRING", multiValue: true },
+      scope: "versioned"
+    },
+    {
+      name: "m$cc",
+      valueType: { primitive: "STRING", multiValue: true },
+      scope: "versioned"
+    },
+    {
+      name: "m$from",
+      valueType: { primitive: "STRING", multiValue: true },
+      scope: "versioned"
+    },
+    {
+      name: "m$sender",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "m$listId",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "m$subject",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "m$parts",
+      valueType: { primitive: "LINK", multiValue: true },
+      scope: "versioned"
+    },
+    {
+      name: "m$mimeType",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "m$content",
+      valueType: { primitive: "BLOB" },
+      scope: "versioned"
+    },
+    {
+      name: "m$message",
+      valueType: { primitive: "LINK" },
+      scope: "versioned"
+    },
+    {
+      name: "vtag$last",
+      valueType: { primitive: "LONG" },
+      scope: "non_versioned"
+    }
+  ],
+  recordTypes: [
+    {
+      name: "m$Message",
+      fields: [
+        {name: "m$to" },
+        {name: "m$subject" },
+        {name: "m$parts" },
+        {name: "vtag$last" }
+      ]
+    },
+    {
+      name: "m$Part",
+      fields: [
+        {name: "m$mimeType" },
+        {name: "m$content" },
+        {name: "m$message" },
+        {name: "vtag$last" }
+      ]
+    }
+  ]
+}

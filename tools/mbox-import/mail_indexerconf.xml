@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<indexer xmlns:m="org.lilycms.mail">
+  <cases>
+    <case recordType="m:Part" variant="*" vtags="last"/>
+  </cases>
+
+  <indexFields>
+    <indexField name="content">
+      <value extractContent="true">
+        <field name="m:content"/>
+      </value>
+    </indexField>
+
+    <indexField name="subject">
+      <value>
+        <deref>
+          <follow field="m:message"/>
+          <field name="m:subject"/>
+        </deref>
+      </value>
+    </indexField>
+  </indexFields>
+
+</indexer>
