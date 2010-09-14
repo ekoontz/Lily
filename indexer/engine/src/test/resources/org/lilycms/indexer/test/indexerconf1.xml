@@ -3,7 +3,7 @@
 
   <cases>
     <case recordType="ns:NVRecordType1" variant="*" vtags="live" indexVersionless="true"/>
-    <case recordType="ns2:VRecordType1" variant="*" vtags="live,preview,last" indexVersionless="true"/>
+    <case recordType="ns2:VRecordType1" variant="*" vtags="live,preview,latest" indexVersionless="true"/>
   </cases>
 
   <formatters>

@@ -135,8 +135,10 @@ public class IndexerTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        indexUpdater.stop();
-        repository.stop();
+        if (indexUpdater != null)
+            indexUpdater.stop();
+        if (repository != null)
+            repository.stop();
 
         HBASE_PROXY.stop();
 
@@ -172,7 +174,8 @@ public class IndexerTest {
         previewTag = typeManager.newFieldType(longValueType, previewTagName, Scope.NON_VERSIONED);
         previewTag = typeManager.createFieldType(previewTag);
 
-        QName lastTagName = new QName(VersionTag.NAMESPACE, "last");
+        // Note: tag 'last' was renamed to 'latest' because there is now built-in behaviour for the tag named 'last'
+        QName lastTagName = new QName(VersionTag.NAMESPACE, "latest");
         lastTag = typeManager.newFieldType(longValueType, lastTagName, Scope.NON_VERSIONED);
         lastTag = typeManager.createFieldType(lastTag);
 
@@ -479,644 +482,644 @@ public class IndexerTest {
 
     @Test
     public void testIndexerWithVersioning() throws Exception {
-//        messageVerifier.init();
-//
-//        //
-//        // Basic create-update-delete
-//        //
-//        {
-//            log.debug("Begin test V1");
-//            // Create a record
-//            Record record = repository.newRecord();
-//            record.setRecordType(vRecordType1.getName());
-//            record.setField(vfield1.getName(), "apple");
-//            record.setField(liveTag.getName(), new Long(1));
-//            expectEvent(CREATE, record.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record = repository.create(record);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:apple", 1);
-//
-//            // Update the record, this will create a new version, but we leave the live version tag pointing to version 1
-//            log.debug("Begin test V2");
-//            record.setField(vfield1.getName(), "pear");
-//            expectEvent(UPDATE, record.getId(), 2L, null, vfield1.getId());
-//            repository.update(record);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:pear", 0);
-//            verifyResultCount("v_field1:apple", 1);
-//
-//            // Now move the live version tag to point to version 2
-//            log.debug("Begin test V3");
-//            record.setField(liveTag.getName(), new Long(2));
-//            expectEvent(UPDATE, record.getId(), liveTag.getId());
-//            record = repository.update(record);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:pear", 1);
-//            verifyResultCount("v_field1:apple", 0);
-//
-//            // Now remove the live version tag
-//            log.debug("Begin test V4");
-//            record.delete(liveTag.getName(), true);
-//            expectEvent(UPDATE, record.getId(), liveTag.getId());
-//            record = repository.update(record);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:pear", 0);
-//
-//            // Now test with multiple version tags
-//            log.debug("Begin test V5");
-//            record.setField(liveTag.getName(), new Long(1));
-//            record.setField(previewTag.getName(), new Long(2));
-//            record.setField(lastTag.getName(), new Long(2));
-//            expectEvent(UPDATE, record.getId(), liveTag.getId(), previewTag.getId(), lastTag.getId());
-//            record = repository.update(record);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:apple", 1);
-//            verifyResultCount("v_field1:pear", 2);
-//
-//            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(previewTag.getId()), 1);
-//            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(lastTag.getId()), 1);
-//            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(liveTag.getId()), 0);
-//            verifyResultCount("+v_field1:apple +@@vtag:" + qesc(liveTag.getId()), 1);
-//        }
-//
-//        //
-//        // Deref
-//        //
-//        {
-//            // Create 4 records for the 4 kinds of dereferenced fields
-//            log.debug("Begin test V6");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vfield1.getName(), "fig");
-//            record1.setField(liveTag.getName(), Long.valueOf(1));
-//            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(vLinkField1.getName(), new Link(record1.getId()));
-//            record2.setField(liveTag.getName(), Long.valueOf(1));
-//            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:fig", 1);
-//
-//            log.debug("Begin test V6.1");
-//            RecordId record3Id = idGenerator.newRecordId(record1.getId(), Collections.singletonMap("lang", "en"));
-//            Record record3 = repository.newRecord(record3Id);
-//            record3.setRecordType(vRecordType1.getName());
-//            record3.setField(vfield1.getName(), "banana");
-//            record3.setField(liveTag.getName(), Long.valueOf(1));
-//            expectEvent(CREATE, record3.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record3 = repository.create(record3);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref3:fig", 1);
-//
-//            log.debug("Begin test V6.2");
-//            Map<String, String> varprops = new HashMap<String, String>();
-//            varprops.put("lang", "en");
-//            varprops.put("branch", "dev");
-//            RecordId record4Id = idGenerator.newRecordId(record1.getId(), varprops);
-//            Record record4 = repository.newRecord(record4Id);
-//            record4.setRecordType(vRecordType1.getName());
-//            record4.setField(vfield1.getName(), "coconut");
-//            record4.setField(liveTag.getName(), Long.valueOf(1));
-//            expectEvent(CREATE, record4.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record4 = repository.create(record4);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref3:fig", 2);
-//            verifyResultCount("v_deref2:fig", 1);
-//            verifyResultCount("v_deref4:banana", 1);
-//
-//            // remove the live tag from record1
-//            log.debug("Begin test V7");
-//            record1.delete(liveTag.getName(), true);
-//            expectEvent(UPDATE, record1.getId(), liveTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:fig", 0);
-//
-//            // and add the live tag again record1
-//            log.debug("Begin test V8");
-//            record1.setField(liveTag.getName(), Long.valueOf(1));
-//            expectEvent(UPDATE, record1.getId(), liveTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:fig", 1);
-//
-//            // Make second version of record1, assign both versions different tags, and assign these tags also
-//            // to version1 of record2.
-//            log.debug("Begin test V9");
-//            record1.setField(vfield1.getName(), "strawberries");
-//            record1.setField(previewTag.getName(), Long.valueOf(2));
-//            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), previewTag.getId());
-//            record1 = repository.update(record1);
-//
-//            record2.setField(previewTag.getName(), Long.valueOf(1));
-//            expectEvent(UPDATE, record2.getId(), previewTag.getId());
-//            record2 = repository.update(record2);
-//
-//            commitIndex();
-//            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(previewTag.getId()), 1);
-//            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(liveTag.getId()), 0);
-//            verifyResultCount("+v_deref1:strawberries", 1);
-//            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
-//            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(previewTag.getId()), 0);
-//            verifyResultCount("+v_deref1:fig", 1);
-//
-//            // Now do something similar with a 3th version, but first update record2 and then record1
-//            log.debug("Begin test V10");
-//            record2.setField(lastTag.getName(), Long.valueOf(1));
-//            expectEvent(UPDATE, record2.getId(), lastTag.getId());
-//            record2 = repository.update(record2);
-//
-//            record1.setField(vfield1.getName(), "kiwi");
-//            record1.setField(lastTag.getName(), Long.valueOf(3));
-//            expectEvent(UPDATE, record1.getId(), 3L, null, vfield1.getId(), lastTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("+v_deref1:kiwi +@@vtag:" + qesc(lastTag.getId()), 1);
-//            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(previewTag.getId()), 1);
-//            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
-//            verifyResultCount("+v_deref1:kiwi +@@vtag:" + qesc(liveTag.getId()), 0);
-//            verifyResultCount("+v_field1:kiwi +@@vtag:" + qesc(lastTag.getId()), 1);
-//            verifyResultCount("+v_field1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
-//
-//            // Perform updates to record3 and check if denorm'ed data in record4 follows
-//            log.debug("Begin test V11");
-//            record3.delete(vfield1.getName(), true);
-//            expectEvent(UPDATE, record3.getId(), 2L, null, vfield1.getId());
-//            record3 = repository.update(record3);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref4:banana", 1); // live tag still points to version 1!
-//
-//            log.debug("Begin test V12");
-//            repository.read(record3Id, Long.valueOf(2)); // check version 2 really exists
-//            record3.setField(liveTag.getName(), Long.valueOf(2));
-//            expectEvent(UPDATE, record3.getId(), liveTag.getId());
-//            repository.update(record3);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref4:banana", 0);
-//            verifyResultCount("v_field1:coconut", 1);
-//
-//            // Delete master
-//            log.debug("Begin test V13");
-//            expectEvent(DELETE, record1.getId());
-//            repository.delete(record1.getId());
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:fig", 0);
-//            verifyResultCount("v_deref2:fig", 0);
-//            verifyResultCount("v_deref3:fig", 0);
-//        }
-//
-//        //
-//        // Test deref from a versionless record to versioned field
-//        //
-//        {
-//            log.debug("Begin test V14");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vfield1.getName(), "bicycle");
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(nvLinkField2.getName(), new Link(record1.getId()));
-//            expectEvent(CREATE, record2.getId(), nvLinkField2.getId());
-//            record2 = repository.create(record2);
-//
-//            // A versionless record cannot contain derefed data from a versioned field, since it does
-//            // not know at what version to look
-//            commitIndex();
-//            verifyResultCount("nv_v_deref:bicycle", 0);
-//
-//            // Now give record2 a version and vtag
-//            log.debug("Begin test V15");
-//            record2.setField(vfield1.getName(), "boat");
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(UPDATE, record2.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record2 = repository.update(record2);
-//
-//            commitIndex();
-//            verifyResultCount("nv_v_deref:bicycle", 1);
-//
-//            // Give record1 some more versions with vtags
-//            log.debug("Begin test V16");
-//            record1.setField(vfield1.getName(), "train");
-//            record1.setField(previewTag.getName(), Long.valueOf(2));
-//            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), previewTag.getId());
-//            record1 = repository.update(record1);
-//
-//            record1.setField(vfield1.getName(), "car");
-//            record1.setField(lastTag.getName(), Long.valueOf(3));
-//            expectEvent(UPDATE, record1.getId(), 3L, null, vfield1.getId(), lastTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("nv_v_deref:bicycle", 1);
-//            verifyResultCount("nv_v_deref:train", 0);
-//            verifyResultCount("nv_v_deref:car", 0);
-//
-//            // Give record2 some more versions with vtags
-//            log.debug("Begin test V17");
-//            record2.setField(vfield1.getName(), "airplane");
-//            record2.setField(previewTag.getName(), 2L);
-//            expectEvent(UPDATE, record2.getId(), 2L, null, vfield1.getId(), previewTag.getId());
-//            record2 = repository.update(record2);
-//
-//            record2.setField(vfield1.getName(), "hovercraft");
-//            record2.setField(lastTag.getName(), 3L);
-//            expectEvent(UPDATE, record2.getId(), 3L, null, vfield1.getId(), lastTag.getId());
-//            record2 = repository.update(record2);
-//
-//            commitIndex();
-//            verifyResultCount("nv_v_deref:bicycle", 1);
-//            verifyResultCount("nv_v_deref:train", 1);
-//            verifyResultCount("nv_v_deref:car", 1);
-//        }
-//
-//        //
-//        // Test deref from a versionless record via a versioned field to a non-versioned field.
-//        // From the moment a versioned field is in the deref chain, when the vtag is versionless,
-//        // the deref should evaluate to null.
-//        //
-//        {
-//            log.debug("Begin test V18");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(nvfield1.getName(), "Brussels");
-//            expectEvent(CREATE, record1.getId(), (Long)null, null, nvfield1.getId());
-//            record1 = repository.create(record1);
-//
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(vLinkField1.getName(), new Link(record1.getId()));
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            Record record3 = repository.newRecord();
-//            record3.setRecordType(vRecordType1.getName());
-//            record3.setField(nvLinkField2.getName(), new Link(record2.getId()));
-//            expectEvent(CREATE, record3.getId(), (Long)null, null, nvLinkField2.getId());
-//            record3 = repository.create(record3);
-//
-//            commitIndex();
-//            verifyResultCount("nv_v_nv_deref:Brussels", 0);
-//
-//            // Give a version to the versionless records
-//            log.debug("Begin test V19");
-//            record3.setField(vfield1.getName(), "Ghent");
-//            record3.setField(liveTag.getName(), 1L);
-//            expectEvent(UPDATE, record3.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record3 = repository.update(record3);
-//
-//            record1.setField(vfield1.getName(), "Antwerp");
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("nv_v_nv_deref:Brussels", 1);
-//        }
-//
-//        //
-//        // Test many-to-one dereferencing (= deref where there's actually more than one record pointing to another
-//        // record)
-//        // (Besides correctness, this test was also added to check/evaluate the processing time)
-//        //
-//        {
-//            log.debug("Begin test V19.1");
-//
-//            final int COUNT = 5;
-//
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vfield1.getName(), "hyponiem");
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            // Create multiple records
-//            for (int i = 0; i < COUNT; i++) {
-//                Record record2 = repository.newRecord();
-//                record2.setRecordType(vRecordType1.getName());
-//                record2.setField(vLinkField1.getName(), new Link(record1.getId()));
-//                record2.setField(liveTag.getName(), 1L);
-//                expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
-//                record2 = repository.create(record2);
-//            }
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:hyponiem", COUNT);
-//
-//            record1.setField(vfield1.getName(), "hyperoniem");
-//            record1.setField(liveTag.getName(), 2L);
-//            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.update(record1);
-//            commitIndex();
-//            verifyResultCount("v_deref1:hyperoniem", COUNT);
-//        }
-//
-//        //
-//        // Multi-value field tests
-//        //
-//        {
-//            // Test multi-value field
-//            log.debug("Begin test V30");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vStringMvField.getName(), Arrays.asList("Dog", "Cat"));
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vStringMvField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_string_mv:Dog", 1);
-//            verifyResultCount("v_string_mv:Cat", 1);
-//            verifyResultCount("v_string_mv:(Dog Cat)", 1);
-//            verifyResultCount("v_string_mv:(\"Dog Cat\")", 0);
-//
-//            // Test multiple single-valued fields indexed into one MV field
-//            // TODO
-//
-//            // Test single-value field turned into multivalue by formatter
-//            // TODO
-//
-//            // Test multi-valued deref to single-valued field
-//            // TODO
-//        }
-//
-//        //
-//        // Long type tests
-//        //
-//        {
-//            log.debug("Begin test V40");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vLongField.getName(), 123L);
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vLongField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_long:123", 1);
-//            verifyResultCount("v_long:[100 TO 150]", 1);
-//        }
-//
-//        //
-//        // Datetime type test
-//        //
-//        {
-//            log.debug("Begin test V50");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vDateTimeField.getName(), new DateTime(2010, 10, 14, 15, 30, 12, 756, DateTimeZone.UTC));
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.756Z\"", 1);
-//            verifyResultCount("v_datetime:\"2010-10-14T15:30:12Z\"", 0);
-//
-//            // Test without milliseconds
-//            log.debug("Begin test V51");
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(vDateTimeField.getName(), new DateTime(2010, 10, 14, 15, 30, 12, 000, DateTimeZone.UTC));
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record2.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            commitIndex();
-//            verifyResultCount("v_datetime:\"2010-10-14T15:30:12Z\"", 1);
-//            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.000Z\"", 1);
-//            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.000Z/SECOND\"", 1);
-//        }
-//
-//        //
-//        // Date type test
-//        //
-//        {
-//            log.debug("Begin test V60");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vDateField.getName(), new LocalDate(2020, 1, 30));
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vDateField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_date:\"2020-01-30T00:00:00Z/DAY\"", 1);
-//            verifyResultCount("v_date:\"2020-01-30T00:00:00.000Z\"", 1);
-//            verifyResultCount("v_date:\"2020-01-30T00:00:00Z\"", 1);
-//            verifyResultCount("v_date:\"2020-01-30T00:00:01Z\"", 0);
-//
-//            verifyResultCount("v_date:[2020-01-29T00:00:00Z/DAY TO 2020-01-31T00:00:00Z/DAY]", 1);
-//
-//            log.debug("Begin test V61");
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(vDateField.getName(), new LocalDate(2020, 1, 30));
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record2.getId(), 1L, null, vDateField.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            commitIndex();
-//            verifyResultCount("v_date:\"2020-01-30T00:00:00Z/DAY\"", 2);
-//        }
-//
-//        //
-//        // Blob tests
-//        //
-//        {
-//            log.debug("Begin test V70");
-//            Blob blob1 = createBlob("org/lilycms/indexer/test/blob1_msword.doc", "application/msword", "blob1_msword.doc");
-//            Blob blob2 = createBlob("org/lilycms/indexer/test/blob2.pdf", "application/pdf", "blob2.pdf");
-//            Blob blob3 = createBlob("org/lilycms/indexer/test/blob3_oowriter.odt", "application/vnd.oasis.opendocument.text", "blob3_oowriter.odt");
-//            Blob blob4 = createBlob("org/lilycms/indexer/test/blob4_excel.xls", "application/excel", "blob4_excel.xls");
-//
-//            // Single-valued blob field
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vBlobField.getName(), blob1);
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vBlobField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_blob:sollicitudin", 1);
-//            verifyResultCount("v_blob:\"Sed pretium pretium lorem\"", 1);
-//            verifyResultCount("v_blob:lily", 0);
-//
-//            // Multi-value and hierarchical blob field
-//            log.debug("Begin test V71");
-//            HierarchyPath path1 = new HierarchyPath(blob1, blob2);
-//            HierarchyPath path2 = new HierarchyPath(blob3, blob4);
-//            List blobs = Arrays.asList(path1, path2);
-//
-//            Record record2 = repository.newRecord();
-//            record2.setRecordType(vRecordType1.getName());
-//            record2.setField(vBlobMvHierField.getName(), blobs);
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record2.getId(), 1L, null, vBlobMvHierField.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            commitIndex();
-//            verifyResultCount("v_blob:blob1", 2);
-//            verifyResultCount("v_blob:blob2", 1);
-//            verifyResultCount("v_blob:blob3", 1);
-//            verifyResultCount("+v_blob:blob4 +v_blob:\"Netherfield Park\"", 1);
-//        }
-//
-//        //
-//        // Test field with explicitly configured formatter
-//        //
-//        {
-//            log.debug("Begin test V80");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vDateTimeField.getName(), new DateTime(2058, 10, 14, 15, 30, 12, 756, DateTimeZone.UTC));
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("year:2058", 1);
-//        }
-//
-//        //
-//        // Test field with auto-selected formatter
-//        //
-//        {
-//            log.debug("Begin test V90");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vIntHierField.getName(), new HierarchyPath(8, 16, 24, 32));
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vIntHierField.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("inthierarchy:\"8_16_24_32\"", 1);
-//        }
-//
-//        //
-//        // Test inheritance of variant properties for link fields
-//        //
-//        {
-//            log.debug("Begin test V100");
-//            Map<String, String> varProps = new HashMap<String, String>();
-//            varProps.put("lang", "nl");
-//            varProps.put("user", "ali");
-//
-//            RecordId record1Id = repository.getIdGenerator().newRecordId(varProps);
-//            Record record1 = repository.newRecord(record1Id);
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(vfield1.getName(), "venus");
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            RecordId record2Id = repository.getIdGenerator().newRecordId(varProps);
-//            Record record2 = repository.newRecord(record2Id);
-//            record2.setRecordType(vRecordType1.getName());
-//            // Notice we make the link to the record without variant properties
-//            record2.setField(vLinkField1.getName(), new Link(record1.getId().getMaster()));
-//            record2.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
-//            record2 = repository.create(record2);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:venus", 1);
-//
-//            log.debug("Begin test V101");
-//            record1.setField(vfield1.getName(), "mars");
-//            record1.setField(liveTag.getName(), 2L);
-//            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_deref1:mars", 1);
-//        }
-//
-//        // Test that when a record moves from versionless to having versions, its versionless index entry gets removed.
-//        // This would fail if the 'versionCreated' is not in the record event.
-//        {
-//            log.debug("Begin test V110");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(nvfield1.getName(), "road");
-//            expectEvent(CREATE, record1.getId(), nvfield1.getId());
-//            record1 = repository.create(record1);
-//
-//            commitIndex();
-//            verifyResultCount("+nv_field1:road +@@versionless:true", 1);
-//
-//            record1.setField(vfield1.getName(), "cloud");
-//            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("+nv_field1:road +@@versionless:true", 0);
-//
-//        }
-//
-//        // Test that the index is updated when a version is created, in absence of changes to the vtag fields.
-//        // This would fail if the 'versionCreated' is not in the record event.
-//        {
-//            log.debug("Begin test V120");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(liveTag.getName(), 1L);
-//            expectEvent(CREATE, record1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            record1.setField(vfield1.getName(), "stool");
-//            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:stool", 1);
-//        }
-//
-//        // Test that the index is updated when a version is updated, in absence of changes to the vtag fields.
-//        // This would fail if the 'versionCreated' is not in the record event.
-//        {
-//            log.debug("Begin test V130");
-//            Record record1 = repository.newRecord();
-//            record1.setRecordType(vRecordType1.getName());
-//            record1.setField(liveTag.getName(), 2L);
-//            record1.setField(vfield1.getName(), "wall");
-//            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
-//            record1 = repository.create(record1);
-//
-//            record1.setField(vfield1.getName(), "floor");
-//            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId());
-//            record1 = repository.update(record1);
-//
-//            commitIndex();
-//            verifyResultCount("v_field1:floor", 1);
-//        }
-//
-//        assertEquals("All received messages are correct.", 0, messageVerifier.getFailures());
+        messageVerifier.init();
+
+        //
+        // Basic create-update-delete
+        //
+        {
+            log.debug("Begin test V1");
+            // Create a record
+            Record record = repository.newRecord();
+            record.setRecordType(vRecordType1.getName());
+            record.setField(vfield1.getName(), "apple");
+            record.setField(liveTag.getName(), new Long(1));
+            expectEvent(CREATE, record.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record = repository.create(record);
+
+            commitIndex();
+            verifyResultCount("v_field1:apple", 1);
+
+            // Update the record, this will create a new version, but we leave the live version tag pointing to version 1
+            log.debug("Begin test V2");
+            record.setField(vfield1.getName(), "pear");
+            expectEvent(UPDATE, record.getId(), 2L, null, vfield1.getId());
+            repository.update(record);
+
+            commitIndex();
+            verifyResultCount("v_field1:pear", 0);
+            verifyResultCount("v_field1:apple", 1);
+
+            // Now move the live version tag to point to version 2
+            log.debug("Begin test V3");
+            record.setField(liveTag.getName(), new Long(2));
+            expectEvent(UPDATE, record.getId(), liveTag.getId());
+            record = repository.update(record);
+
+            commitIndex();
+            verifyResultCount("v_field1:pear", 1);
+            verifyResultCount("v_field1:apple", 0);
+
+            // Now remove the live version tag
+            log.debug("Begin test V4");
+            record.delete(liveTag.getName(), true);
+            expectEvent(UPDATE, record.getId(), liveTag.getId());
+            record = repository.update(record);
+
+            commitIndex();
+            verifyResultCount("v_field1:pear", 0);
+
+            // Now test with multiple version tags
+            log.debug("Begin test V5");
+            record.setField(liveTag.getName(), new Long(1));
+            record.setField(previewTag.getName(), new Long(2));
+            record.setField(lastTag.getName(), new Long(2));
+            expectEvent(UPDATE, record.getId(), liveTag.getId(), previewTag.getId(), lastTag.getId());
+            record = repository.update(record);
+
+            commitIndex();
+            verifyResultCount("v_field1:apple", 1);
+            verifyResultCount("v_field1:pear", 2);
+
+            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(previewTag.getId()), 1);
+            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(lastTag.getId()), 1);
+            verifyResultCount("+v_field1:pear +@@vtag:" + qesc(liveTag.getId()), 0);
+            verifyResultCount("+v_field1:apple +@@vtag:" + qesc(liveTag.getId()), 1);
+        }
+
+        //
+        // Deref
+        //
+        {
+            // Create 4 records for the 4 kinds of dereferenced fields
+            log.debug("Begin test V6");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vfield1.getName(), "fig");
+            record1.setField(liveTag.getName(), Long.valueOf(1));
+            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(vLinkField1.getName(), new Link(record1.getId()));
+            record2.setField(liveTag.getName(), Long.valueOf(1));
+            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            commitIndex();
+            verifyResultCount("v_deref1:fig", 1);
+
+            log.debug("Begin test V6.1");
+            RecordId record3Id = idGenerator.newRecordId(record1.getId(), Collections.singletonMap("lang", "en"));
+            Record record3 = repository.newRecord(record3Id);
+            record3.setRecordType(vRecordType1.getName());
+            record3.setField(vfield1.getName(), "banana");
+            record3.setField(liveTag.getName(), Long.valueOf(1));
+            expectEvent(CREATE, record3.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record3 = repository.create(record3);
+
+            commitIndex();
+            verifyResultCount("v_deref3:fig", 1);
+
+            log.debug("Begin test V6.2");
+            Map<String, String> varprops = new HashMap<String, String>();
+            varprops.put("lang", "en");
+            varprops.put("branch", "dev");
+            RecordId record4Id = idGenerator.newRecordId(record1.getId(), varprops);
+            Record record4 = repository.newRecord(record4Id);
+            record4.setRecordType(vRecordType1.getName());
+            record4.setField(vfield1.getName(), "coconut");
+            record4.setField(liveTag.getName(), Long.valueOf(1));
+            expectEvent(CREATE, record4.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record4 = repository.create(record4);
+
+            commitIndex();
+            verifyResultCount("v_deref3:fig", 2);
+            verifyResultCount("v_deref2:fig", 1);
+            verifyResultCount("v_deref4:banana", 1);
+
+            // remove the live tag from record1
+            log.debug("Begin test V7");
+            record1.delete(liveTag.getName(), true);
+            expectEvent(UPDATE, record1.getId(), liveTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("v_deref1:fig", 0);
+
+            // and add the live tag again record1
+            log.debug("Begin test V8");
+            record1.setField(liveTag.getName(), Long.valueOf(1));
+            expectEvent(UPDATE, record1.getId(), liveTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("v_deref1:fig", 1);
+
+            // Make second version of record1, assign both versions different tags, and assign these tags also
+            // to version1 of record2.
+            log.debug("Begin test V9");
+            record1.setField(vfield1.getName(), "strawberries");
+            record1.setField(previewTag.getName(), Long.valueOf(2));
+            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), previewTag.getId());
+            record1 = repository.update(record1);
+
+            record2.setField(previewTag.getName(), Long.valueOf(1));
+            expectEvent(UPDATE, record2.getId(), previewTag.getId());
+            record2 = repository.update(record2);
+
+            commitIndex();
+            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(previewTag.getId()), 1);
+            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(liveTag.getId()), 0);
+            verifyResultCount("+v_deref1:strawberries", 1);
+            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
+            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(previewTag.getId()), 0);
+            verifyResultCount("+v_deref1:fig", 1);
+
+            // Now do something similar with a 3th version, but first update record2 and then record1
+            log.debug("Begin test V10");
+            record2.setField(lastTag.getName(), Long.valueOf(1));
+            expectEvent(UPDATE, record2.getId(), lastTag.getId());
+            record2 = repository.update(record2);
+
+            record1.setField(vfield1.getName(), "kiwi");
+            record1.setField(lastTag.getName(), Long.valueOf(3));
+            expectEvent(UPDATE, record1.getId(), 3L, null, vfield1.getId(), lastTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("+v_deref1:kiwi +@@vtag:" + qesc(lastTag.getId()), 1);
+            verifyResultCount("+v_deref1:strawberries +@@vtag:" + qesc(previewTag.getId()), 1);
+            verifyResultCount("+v_deref1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
+            verifyResultCount("+v_deref1:kiwi +@@vtag:" + qesc(liveTag.getId()), 0);
+            verifyResultCount("+v_field1:kiwi +@@vtag:" + qesc(lastTag.getId()), 1);
+            verifyResultCount("+v_field1:fig +@@vtag:" + qesc(liveTag.getId()), 1);
+
+            // Perform updates to record3 and check if denorm'ed data in record4 follows
+            log.debug("Begin test V11");
+            record3.delete(vfield1.getName(), true);
+            expectEvent(UPDATE, record3.getId(), 2L, null, vfield1.getId());
+            record3 = repository.update(record3);
+
+            commitIndex();
+            verifyResultCount("v_deref4:banana", 1); // live tag still points to version 1!
+
+            log.debug("Begin test V12");
+            repository.read(record3Id, Long.valueOf(2)); // check version 2 really exists
+            record3.setField(liveTag.getName(), Long.valueOf(2));
+            expectEvent(UPDATE, record3.getId(), liveTag.getId());
+            repository.update(record3);
+
+            commitIndex();
+            verifyResultCount("v_deref4:banana", 0);
+            verifyResultCount("v_field1:coconut", 1);
+
+            // Delete master
+            log.debug("Begin test V13");
+            expectEvent(DELETE, record1.getId());
+            repository.delete(record1.getId());
+
+            commitIndex();
+            verifyResultCount("v_deref1:fig", 0);
+            verifyResultCount("v_deref2:fig", 0);
+            verifyResultCount("v_deref3:fig", 0);
+        }
+
+        //
+        // Test deref from a versionless record to versioned field
+        //
+        {
+            log.debug("Begin test V14");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vfield1.getName(), "bicycle");
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(nvLinkField2.getName(), new Link(record1.getId()));
+            expectEvent(CREATE, record2.getId(), nvLinkField2.getId());
+            record2 = repository.create(record2);
+
+            // A versionless record cannot contain derefed data from a versioned field, since it does
+            // not know at what version to look
+            commitIndex();
+            verifyResultCount("nv_v_deref:bicycle", 0);
+
+            // Now give record2 a version and vtag
+            log.debug("Begin test V15");
+            record2.setField(vfield1.getName(), "boat");
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(UPDATE, record2.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record2 = repository.update(record2);
+
+            commitIndex();
+            verifyResultCount("nv_v_deref:bicycle", 1);
+
+            // Give record1 some more versions with vtags
+            log.debug("Begin test V16");
+            record1.setField(vfield1.getName(), "train");
+            record1.setField(previewTag.getName(), Long.valueOf(2));
+            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), previewTag.getId());
+            record1 = repository.update(record1);
+
+            record1.setField(vfield1.getName(), "car");
+            record1.setField(lastTag.getName(), Long.valueOf(3));
+            expectEvent(UPDATE, record1.getId(), 3L, null, vfield1.getId(), lastTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("nv_v_deref:bicycle", 1);
+            verifyResultCount("nv_v_deref:train", 0);
+            verifyResultCount("nv_v_deref:car", 0);
+
+            // Give record2 some more versions with vtags
+            log.debug("Begin test V17");
+            record2.setField(vfield1.getName(), "airplane");
+            record2.setField(previewTag.getName(), 2L);
+            expectEvent(UPDATE, record2.getId(), 2L, null, vfield1.getId(), previewTag.getId());
+            record2 = repository.update(record2);
+
+            record2.setField(vfield1.getName(), "hovercraft");
+            record2.setField(lastTag.getName(), 3L);
+            expectEvent(UPDATE, record2.getId(), 3L, null, vfield1.getId(), lastTag.getId());
+            record2 = repository.update(record2);
+
+            commitIndex();
+            verifyResultCount("nv_v_deref:bicycle", 1);
+            verifyResultCount("nv_v_deref:train", 1);
+            verifyResultCount("nv_v_deref:car", 1);
+        }
+
+        //
+        // Test deref from a versionless record via a versioned field to a non-versioned field.
+        // From the moment a versioned field is in the deref chain, when the vtag is versionless,
+        // the deref should evaluate to null.
+        //
+        {
+            log.debug("Begin test V18");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(nvfield1.getName(), "Brussels");
+            expectEvent(CREATE, record1.getId(), (Long)null, null, nvfield1.getId());
+            record1 = repository.create(record1);
+
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(vLinkField1.getName(), new Link(record1.getId()));
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            Record record3 = repository.newRecord();
+            record3.setRecordType(vRecordType1.getName());
+            record3.setField(nvLinkField2.getName(), new Link(record2.getId()));
+            expectEvent(CREATE, record3.getId(), (Long)null, null, nvLinkField2.getId());
+            record3 = repository.create(record3);
+
+            commitIndex();
+            verifyResultCount("nv_v_nv_deref:Brussels", 0);
+
+            // Give a version to the versionless records
+            log.debug("Begin test V19");
+            record3.setField(vfield1.getName(), "Ghent");
+            record3.setField(liveTag.getName(), 1L);
+            expectEvent(UPDATE, record3.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record3 = repository.update(record3);
+
+            record1.setField(vfield1.getName(), "Antwerp");
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("nv_v_nv_deref:Brussels", 1);
+        }
+
+        //
+        // Test many-to-one dereferencing (= deref where there's actually more than one record pointing to another
+        // record)
+        // (Besides correctness, this test was also added to check/evaluate the processing time)
+        //
+        {
+            log.debug("Begin test V19.1");
+
+            final int COUNT = 5;
+
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vfield1.getName(), "hyponiem");
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            // Create multiple records
+            for (int i = 0; i < COUNT; i++) {
+                Record record2 = repository.newRecord();
+                record2.setRecordType(vRecordType1.getName());
+                record2.setField(vLinkField1.getName(), new Link(record1.getId()));
+                record2.setField(liveTag.getName(), 1L);
+                expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
+                record2 = repository.create(record2);
+            }
+
+            commitIndex();
+            verifyResultCount("v_deref1:hyponiem", COUNT);
+
+            record1.setField(vfield1.getName(), "hyperoniem");
+            record1.setField(liveTag.getName(), 2L);
+            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.update(record1);
+            commitIndex();
+            verifyResultCount("v_deref1:hyperoniem", COUNT);
+        }
+
+        //
+        // Multi-value field tests
+        //
+        {
+            // Test multi-value field
+            log.debug("Begin test V30");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vStringMvField.getName(), Arrays.asList("Dog", "Cat"));
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vStringMvField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("v_string_mv:Dog", 1);
+            verifyResultCount("v_string_mv:Cat", 1);
+            verifyResultCount("v_string_mv:(Dog Cat)", 1);
+            verifyResultCount("v_string_mv:(\"Dog Cat\")", 0);
+
+            // Test multiple single-valued fields indexed into one MV field
+            // TODO
+
+            // Test single-value field turned into multivalue by formatter
+            // TODO
+
+            // Test multi-valued deref to single-valued field
+            // TODO
+        }
+
+        //
+        // Long type tests
+        //
+        {
+            log.debug("Begin test V40");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vLongField.getName(), 123L);
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vLongField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("v_long:123", 1);
+            verifyResultCount("v_long:[100 TO 150]", 1);
+        }
+
+        //
+        // Datetime type test
+        //
+        {
+            log.debug("Begin test V50");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vDateTimeField.getName(), new DateTime(2010, 10, 14, 15, 30, 12, 756, DateTimeZone.UTC));
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.756Z\"", 1);
+            verifyResultCount("v_datetime:\"2010-10-14T15:30:12Z\"", 0);
+
+            // Test without milliseconds
+            log.debug("Begin test V51");
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(vDateTimeField.getName(), new DateTime(2010, 10, 14, 15, 30, 12, 000, DateTimeZone.UTC));
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record2.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            commitIndex();
+            verifyResultCount("v_datetime:\"2010-10-14T15:30:12Z\"", 1);
+            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.000Z\"", 1);
+            verifyResultCount("v_datetime:\"2010-10-14T15:30:12.000Z/SECOND\"", 1);
+        }
+
+        //
+        // Date type test
+        //
+        {
+            log.debug("Begin test V60");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vDateField.getName(), new LocalDate(2020, 1, 30));
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vDateField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("v_date:\"2020-01-30T00:00:00Z/DAY\"", 1);
+            verifyResultCount("v_date:\"2020-01-30T00:00:00.000Z\"", 1);
+            verifyResultCount("v_date:\"2020-01-30T00:00:00Z\"", 1);
+            verifyResultCount("v_date:\"2020-01-30T00:00:01Z\"", 0);
+
+            verifyResultCount("v_date:[2020-01-29T00:00:00Z/DAY TO 2020-01-31T00:00:00Z/DAY]", 1);
+
+            log.debug("Begin test V61");
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(vDateField.getName(), new LocalDate(2020, 1, 30));
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record2.getId(), 1L, null, vDateField.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            commitIndex();
+            verifyResultCount("v_date:\"2020-01-30T00:00:00Z/DAY\"", 2);
+        }
+
+        //
+        // Blob tests
+        //
+        {
+            log.debug("Begin test V70");
+            Blob blob1 = createBlob("org/lilycms/indexer/test/blob1_msword.doc", "application/msword", "blob1_msword.doc");
+            Blob blob2 = createBlob("org/lilycms/indexer/test/blob2.pdf", "application/pdf", "blob2.pdf");
+            Blob blob3 = createBlob("org/lilycms/indexer/test/blob3_oowriter.odt", "application/vnd.oasis.opendocument.text", "blob3_oowriter.odt");
+            Blob blob4 = createBlob("org/lilycms/indexer/test/blob4_excel.xls", "application/excel", "blob4_excel.xls");
+
+            // Single-valued blob field
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vBlobField.getName(), blob1);
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vBlobField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("v_blob:sollicitudin", 1);
+            verifyResultCount("v_blob:\"Sed pretium pretium lorem\"", 1);
+            verifyResultCount("v_blob:lily", 0);
+
+            // Multi-value and hierarchical blob field
+            log.debug("Begin test V71");
+            HierarchyPath path1 = new HierarchyPath(blob1, blob2);
+            HierarchyPath path2 = new HierarchyPath(blob3, blob4);
+            List blobs = Arrays.asList(path1, path2);
+
+            Record record2 = repository.newRecord();
+            record2.setRecordType(vRecordType1.getName());
+            record2.setField(vBlobMvHierField.getName(), blobs);
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record2.getId(), 1L, null, vBlobMvHierField.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            commitIndex();
+            verifyResultCount("v_blob:blob1", 2);
+            verifyResultCount("v_blob:blob2", 1);
+            verifyResultCount("v_blob:blob3", 1);
+            verifyResultCount("+v_blob:blob4 +v_blob:\"Netherfield Park\"", 1);
+        }
+
+        //
+        // Test field with explicitly configured formatter
+        //
+        {
+            log.debug("Begin test V80");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vDateTimeField.getName(), new DateTime(2058, 10, 14, 15, 30, 12, 756, DateTimeZone.UTC));
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vDateTimeField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("year:2058", 1);
+        }
+
+        //
+        // Test field with auto-selected formatter
+        //
+        {
+            log.debug("Begin test V90");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vIntHierField.getName(), new HierarchyPath(8, 16, 24, 32));
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vIntHierField.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("inthierarchy:\"8_16_24_32\"", 1);
+        }
+
+        //
+        // Test inheritance of variant properties for link fields
+        //
+        {
+            log.debug("Begin test V100");
+            Map<String, String> varProps = new HashMap<String, String>();
+            varProps.put("lang", "nl");
+            varProps.put("user", "ali");
+
+            RecordId record1Id = repository.getIdGenerator().newRecordId(varProps);
+            Record record1 = repository.newRecord(record1Id);
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(vfield1.getName(), "venus");
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            RecordId record2Id = repository.getIdGenerator().newRecordId(varProps);
+            Record record2 = repository.newRecord(record2Id);
+            record2.setRecordType(vRecordType1.getName());
+            // Notice we make the link to the record without variant properties
+            record2.setField(vLinkField1.getName(), new Link(record1.getId().getMaster()));
+            record2.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record2.getId(), 1L, null, vLinkField1.getId(), liveTag.getId());
+            record2 = repository.create(record2);
+
+            commitIndex();
+            verifyResultCount("v_deref1:venus", 1);
+
+            log.debug("Begin test V101");
+            record1.setField(vfield1.getName(), "mars");
+            record1.setField(liveTag.getName(), 2L);
+            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("v_deref1:mars", 1);
+        }
+
+        // Test that when a record moves from versionless to having versions, its versionless index entry gets removed.
+        // This would fail if the 'versionCreated' is not in the record event.
+        {
+            log.debug("Begin test V110");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(nvfield1.getName(), "road");
+            expectEvent(CREATE, record1.getId(), nvfield1.getId());
+            record1 = repository.create(record1);
+
+            commitIndex();
+            verifyResultCount("+nv_field1:road +@@versionless:true", 1);
+
+            record1.setField(vfield1.getName(), "cloud");
+            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("+nv_field1:road +@@versionless:true", 0);
+
+        }
+
+        // Test that the index is updated when a version is created, in absence of changes to the vtag fields.
+        // This would fail if the 'versionCreated' is not in the record event.
+        {
+            log.debug("Begin test V120");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(liveTag.getName(), 1L);
+            expectEvent(CREATE, record1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            record1.setField(vfield1.getName(), "stool");
+            expectEvent(UPDATE, record1.getId(), 1L, null, vfield1.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("v_field1:stool", 1);
+        }
+
+        // Test that the index is updated when a version is updated, in absence of changes to the vtag fields.
+        // This would fail if the 'versionCreated' is not in the record event.
+        {
+            log.debug("Begin test V130");
+            Record record1 = repository.newRecord();
+            record1.setRecordType(vRecordType1.getName());
+            record1.setField(liveTag.getName(), 2L);
+            record1.setField(vfield1.getName(), "wall");
+            expectEvent(CREATE, record1.getId(), 1L, null, vfield1.getId(), liveTag.getId());
+            record1 = repository.create(record1);
+
+            record1.setField(vfield1.getName(), "floor");
+            expectEvent(UPDATE, record1.getId(), 2L, null, vfield1.getId());
+            record1 = repository.update(record1);
+
+            commitIndex();
+            verifyResultCount("v_field1:floor", 1);
+        }
+
+        assertEquals("All received messages are correct.", 0, messageVerifier.getFailures());
     }
 
     private Blob createBlob(String resource, String mediaType, String fileName) throws Exception {
