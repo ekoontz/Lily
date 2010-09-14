@@ -40,7 +40,7 @@
       scope: "versioned"
     },
     {
-      name: "m$mimeType",
+      name: "m$mediaType",
       valueType: { primitive: "STRING" },
       scope: "versioned"
     },

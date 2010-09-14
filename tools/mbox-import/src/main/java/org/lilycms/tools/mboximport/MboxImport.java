@@ -1,5 +1,6 @@
 package org.lilycms.tools.mboximport;
 
+import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.james.mime4j.codec.Base64InputStream;
 import org.apache.james.mime4j.codec.QuotedPrintableInputStream;
@@ -10,49 +11,180 @@ import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.field.address.MailboxList;
 import org.apache.james.mime4j.io.EOLConvertingInputStream;
 import org.apache.james.mime4j.parser.Field;
+import org.apache.james.mime4j.parser.MimeEntityConfig;
 import org.apache.james.mime4j.parser.MimeTokenStream;
 import org.apache.james.mime4j.util.MimeUtil;
 import org.lilycms.client.LilyClient;
 import org.lilycms.repository.api.*;
 import org.lilycms.tools.import_.cli.JsonImportTool;
+import org.lilycms.util.io.Closer;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 public class MboxImport {
+
+    private LilyClient lilyClient;
+
+    private int messageCount;
+
+    private int partCount;
+
+    private int invalidMessageCount;
+
+    private Map<String, Integer> partsByMediaType = new HashMap<String, Integer>();
+
     private static final String NS = "org.lilycms.mail";
+
+    private static final String DEFAULT_ZK_CONNECT = "localhost:2181";
 
     public static void main(String[] args) throws Exception {
         new MboxImport().run(args);
     }
 
     public void run(String[] args) throws Exception {
-        LilyClient lilyClient = new LilyClient("localhost:2181");
-        loadSchema(lilyClient);
+        Options cliOptions = new Options();
+
+        Option helpOption = new Option("h", "help", false, "Shows help");
+        cliOptions.addOption(helpOption);
+
+        Option fileOption = OptionBuilder
+                .withArgName("file")
+                .hasArg()
+                .withDescription("File or directory name")
+                .withLongOpt("file")
+                .create("f");
+        cliOptions.addOption(fileOption);
+
+        Option zkOption = OptionBuilder
+                .withArgName("connection-string")
+                .hasArg()
+                .withDescription("Zookeeper connection string: hostname1:port,hostname2:port,...")
+                .withLongOpt("zookeeper")
+                .create("z");
+        cliOptions.addOption(zkOption);
 
 
-        InputStream is = new BufferedInputStream(new FileInputStream(args[0]));
-        MboxInputStream mboxStream = new MboxInputStream(is);
-
-        while (mboxStream.nextMessage()) {
-            MimeTokenStream stream = new MimeTokenStream();
-            stream.parse(new BufferedInputStream(mboxStream));
-            importMessage(stream, lilyClient.getRepository());
+        CommandLineParser parser = new PosixParser();
+        CommandLine cmd = null;
+        boolean showHelp = false;
+        try {
+            cmd = parser.parse(cliOptions, args);
+        } catch (org.apache.commons.cli.ParseException e) {
+            System.out.println(e.getMessage());
+            showHelp = true;
         }
+
+        if (showHelp || cmd.hasOption(helpOption.getOpt())) {
+            printHelp(cliOptions);
+            System.exit(1);
+        }
+
+        String zkConnectionString;
+        if (!cmd.hasOption(zkOption.getOpt())) {
+            System.out.println("Zookeeper connection string not specified, using default: " + DEFAULT_ZK_CONNECT);
+            zkConnectionString = DEFAULT_ZK_CONNECT;
+        } else {
+            zkConnectionString = cmd.getOptionValue(zkOption.getOpt());
+        }
+
+        lilyClient = new LilyClient(zkConnectionString);
+
+        loadSchema();
+
+        if (cmd.hasOption(fileOption.getOpt())) {
+            try {
+                String fileName = cmd.getOptionValue(fileOption.getOpt());
+                File file = new File(fileName);
+
+                if (!file.exists()) {
+                    System.out.println("File does not exist: " + file.getAbsolutePath());
+                    System.exit(1);
+                }
+
+                if (file.isDirectory()) {
+                    File[] files = file.listFiles();
+                    Arrays.sort(files);
+                    for (File item : files) {
+                        if (!item.isDirectory()) {
+                            importFile(item);
+                        }
+                    }
+                } else {
+                    importFile(file);
+                }
+
+            } finally {
+                System.out.println();
+                System.out.println("Number of created messages: " + messageCount);
+                System.out.println("Number of created parts: " + partCount);
+                System.out.println("Number of invalid messages (msg without headers or parts): " + invalidMessageCount);
+                System.out.println();
+                System.out.println("Number of created parts per media type:");
+                for (Map.Entry<String, Integer> entry : partsByMediaType.entrySet()) {
+                    System.out.println("  " + entry.getKey() + " : " + entry.getValue());
+                }
+            }
+        }
+
     }
 
-    private void loadSchema(LilyClient lilyClient) throws Exception {
+    private void printHelp(Options cliOptions) {
+        HelpFormatter help = new HelpFormatter();
+        help.printHelp("lily-mbox-import", cliOptions, true);
+    }
+
+    private void loadSchema() throws Exception {
+        System.out.println("Creating the schema (if necessary)");
+        System.out.println();
         Repository repository = lilyClient.getRepository();
         InputStream is = getClass().getClassLoader().getResourceAsStream("org/lilycms/tools/mboximport/mail_schema.json");
         JsonImportTool.load(repository, is, false);
+        System.out.println();
+    }
+
+    private void importFile(File file) throws Exception {
+        System.out.println("Processing file " + file.getAbsolutePath());
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(new FileInputStream(file));
+
+            if (file.getName().endsWith(".gz")) {
+                is = new GZIPInputStream(is);
+            }
+
+            MboxInputStream mboxStream = new MboxInputStream(is);
+
+            while (mboxStream.nextMessage()) {
+                MimeTokenStream stream = new MyMimeTokenStream();
+                stream.parse(new BufferedInputStream(mboxStream));
+                importMessage(stream, lilyClient.getRepository());
+            }
+
+        } finally {
+            Closer.close(is);
+        }
+        System.out.println();
+    }
+
+    public static class MyMimeTokenStream extends MimeTokenStream {
+        protected MyMimeTokenStream() {
+            super(getConfig());
+        }
+
+        private static MimeEntityConfig getConfig() {
+            MimeEntityConfig config = new MimeEntityConfig();
+            config.setMaxLineLen(10000);
+            return config;
+        }
     }
 
     private void importMessage(MimeTokenStream stream, Repository repository) throws Exception {
         int multiPartNesting = 0; // note that a multipart can again contain a multipart
 
         Message message = new Message();
-        
+
         for (int state = stream.getState();
              state != MimeTokenStream.T_END_OF_STREAM;
              state = stream.next()) {
@@ -82,7 +214,8 @@ public class MboxImport {
                         os.close();
                     }
 
-                    message.addPart(blob);
+                    Part part = message.addPart(blob);
+                    part.baseMediaType = stream.getBodyDescriptor().getMimeType();
 
                     break;
                 case MimeTokenStream.T_FIELD:
@@ -129,17 +262,28 @@ public class MboxImport {
             messageRecord.setField(new QName(NS, "sender"), message.getSenderAddressAsString());
         if (message.listId != null)
             messageRecord.setField(new QName(NS, "listId"), message.listId);
+
+        if (messageRecord.getFields().size() == 0 || message.parts.size() == 0) {
+            // Message has no useful headers, do not create it.
+            invalidMessageCount++;
+            return;
+        }
+
         messageRecord = repository.create(messageRecord);
+        messageCount++;
 
         for (Part part : message.parts) {
             Record partRecord = repository.newRecord();
             partRecord.setRecordType(new QName(NS, "Part"));
-            partRecord.setField(new QName(NS, "mimeType"), part.blob.getMimetype());
+            partRecord.setField(new QName(NS, "mediaType"), part.blob.getMimetype());
             partRecord.setField(new QName(NS, "content"), part.blob);
             partRecord.setField(new QName(NS, "message"), new Link(messageRecord.getId()));
             partRecord = repository.create(partRecord);
-            System.out.println("Created part record: " + partRecord.getId());
             part.recordId = partRecord.getId();
+            increment(part.baseMediaType);
+            partCount++;
+
+            System.out.println("Created part record: " + partRecord.getId());
         }
 
         List<Link> partLinks = new ArrayList<Link>(message.parts.size());
@@ -153,6 +297,15 @@ public class MboxImport {
         System.out.println("Created message record " + messageRecord.getId());
     }
 
+    public void increment(String mediaType) {
+        Integer count = partsByMediaType.get(mediaType);
+        if (count == null) {
+            partsByMediaType.put(mediaType, 1);
+        } else {
+            partsByMediaType.put(mediaType, count + 1);
+        }
+    }
+
     private static class Message {
         public String subject;
         public AddressList to;
@@ -163,10 +316,11 @@ public class MboxImport {
 
         public List<Part> parts = new ArrayList<Part>();
 
-        public void addPart(Blob blob) {
+        public Part addPart(Blob blob) {
             Part part = new Part();
             part.blob = blob;
             parts.add(part);
+            return part;
         }
 
         public List<String> getToAddressesAsStringList() {
@@ -201,5 +355,7 @@ public class MboxImport {
     private static class Part {
         public Blob blob;
         public RecordId recordId;
+        /** Media type without parameters. */
+        public String baseMediaType;
     }
 }
