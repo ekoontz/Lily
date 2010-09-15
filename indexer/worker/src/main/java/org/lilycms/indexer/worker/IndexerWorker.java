@@ -1,26 +1,29 @@
 package org.lilycms.indexer.worker;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.lilycms.indexer.IndexUpdater;
 import org.lilycms.indexer.Indexer;
 import org.lilycms.indexer.conf.IndexerConf;
 import org.lilycms.indexer.conf.IndexerConfBuilder;
+import org.lilycms.indexer.engine.SolrServers;
+import org.lilycms.indexer.model.sharding.DefaultShardSelectorBuilder;
+import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
+import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.util.ObjectUtils;
+
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -43,6 +46,10 @@ public class IndexerWorker {
 
     private Thread eventWorkerThread;
 
+    private HttpClient httpClient;
+
+    private MultiThreadedHttpConnectionManager connectionManager;
+    
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, LinkIndex linkIndex) {
@@ -54,6 +61,11 @@ public class IndexerWorker {
 
     @PostConstruct
     public void init() {
+        connectionManager = new MultiThreadedHttpConnectionManager();
+        connectionManager.getParams().setDefaultMaxConnectionsPerHost(5);
+        connectionManager.getParams().setMaxTotalConnections(50);
+      	httpClient = new HttpClient(connectionManager);
+
         eventWorkerThread = new Thread(new EventWorker());
         eventWorkerThread.start();
 
@@ -77,19 +89,28 @@ public class IndexerWorker {
             log.info("Interrupted while joining eventWorkerThread.");
         }
 
-        // TODO stop all the IndexerUpdaters
+        for (IndexUpdaterHandle handle : indexUpdaters.values()) {
+            handle.updater.stop();
+        }
 
+        connectionManager.shutdown();
     }
 
     private void addIndexUpdater(IndexDefinition index) {
         try {
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(index.getConfiguration()), repository);
 
-            // TODO currently we just pick the first shard
-            String solrAddress = index.getSolrShards().get(0);
-            SolrServer solrServer = new CommonsHttpSolrServer(solrAddress);
+            ShardSelector shardSelector;
+            if (index.getShardingConfiguration() == null) {
+                shardSelector = DefaultShardSelectorBuilder.createDefaultSelector(index.getSolrShards());
+            } else {
+                shardSelector = JsonShardSelectorBuilder.build(index.getShardingConfiguration());
+            }
 
-            Indexer indexer = new Indexer(indexerConf, repository, solrServer);
+            checkShardUsage(index.getName(), index.getSolrShards().keySet(), shardSelector.getShards());
+
+            SolrServers solrServers = new SolrServers(index.getSolrShards(), shardSelector, httpClient);
+            Indexer indexer = new Indexer(indexerConf, repository, solrServers);
 
             int consumerId = Integer.parseInt(index.getQueueSubscriptionId());
             IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex);
@@ -104,6 +125,14 @@ public class IndexerWorker {
         }
     }
 
+    private void checkShardUsage(String indexName, Set<String> definedShards, Set<String> selectorShards) {
+        for (String shard : definedShards) {
+            if (!selectorShards.contains(shard)) {
+                log.warn("A shard is not used by the shard selector. Index: " + indexName + ", shard: " + shard);
+            }
+        }
+    }
+
     private void updateIndexUpdater(IndexDefinition index) {
         IndexUpdaterHandle handle = indexUpdaters.get(index.getName());
 
@@ -112,7 +141,8 @@ public class IndexerWorker {
         }
 
         boolean relevantChanges = !Arrays.equals(handle.indexDef.getConfiguration(), index.getConfiguration()) ||
-                !handle.indexDef.getSolrShards().equals(index.getSolrShards());
+                !handle.indexDef.getSolrShards().equals(index.getSolrShards()) ||
+                !ObjectUtils.safeEquals(handle.indexDef.getShardingConfiguration(), index.getShardingConfiguration());
 
         if (!relevantChanges) {
             return;

@@ -1,6 +1,6 @@
 package org.lilycms.indexer.model.api;
 
-import java.util.List;
+import java.util.Map;
 
 public interface IndexDefinition {
     String getName();
@@ -26,13 +26,27 @@ public interface IndexDefinition {
 
     void setQueueSubscriptionId(String queueSubscriptionId);
 
+    /**
+     * The XML configuration for the Indexer.
+     */
     byte[] getConfiguration();
 
     void setConfiguration(byte[] configuration);
 
-    List<String> getSolrShards();
+    /**
+     * The JSON configuration for the shard selector.
+     */
+    byte[] getShardingConfiguration();
 
-    void setSolrShards(List<String> shards);
+    void setShardingConfiguration(byte[] configuration);
+
+    /**
+     * Map containing the SOLR shards: the key is a logical name for the shard, the value is the
+     * address (URL) of the shard.
+     */
+    Map<String, String> getSolrShards();
+
+    void setSolrShards(Map<String, String> shards);
 
     int getZkDataVersion();
 

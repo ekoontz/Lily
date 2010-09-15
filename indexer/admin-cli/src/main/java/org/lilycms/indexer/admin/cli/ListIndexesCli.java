@@ -10,6 +10,7 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class ListIndexesCli extends BaseIndexerAdminCli {
     @Override
@@ -42,8 +43,8 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
             System.out.println("  + Batch build state: " + index.getBatchBuildState());
             System.out.println("  + Queue subscription ID: " + index.getQueueSubscriptionId());
             System.out.println("  + SOLR shards: ");
-            for (String shard : index.getSolrShards()) {
-                System.out.println("    + " + shard);
+            for (Map.Entry<String, String> shard : index.getSolrShards().entrySet()) {
+                System.out.println("    + " + shard.getKey() + ": " + shard.getValue());
             }
 
             ActiveBatchBuildInfo activeBatchBuild = index.getActiveBatchBuildInfo();

@@ -15,13 +15,18 @@
  */
 package org.lilycms.util;
 
+import java.util.Arrays;
+
 public class ObjectUtils {
     public static boolean safeEquals(Object obj1, Object obj2) {
-        if (obj1 == null && obj2 == null)
-            return true;
-        else if (obj1 == null || obj2 == null)
-            return false;
-        else
-            return obj1.equals(obj2);
+        return obj1 == null && obj2 == null || !(obj1 == null || obj2 == null) && obj1.equals(obj2);
+    }
+
+    public static boolean safeEquals(Object[] obj1, Object[] obj2) {
+        return obj1 == null && obj2 == null || !(obj1 == null || obj2 == null) && Arrays.equals(obj1, obj2);
+    }
+
+    public static boolean safeEquals(byte[] obj1, byte[] obj2) {
+        return obj1 == null && obj2 == null || !(obj1 == null || obj2 == null) && Arrays.equals(obj1, obj2);
     }
 }

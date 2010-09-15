@@ -1,0 +1,17 @@
+{
+  shardingKey: {
+    value: {
+      source: "variantProperty",
+      property: "transport"
+    },
+    type: "string"
+  },
+
+  mapping: {
+    type: "list",
+    entries: [
+      { shard: "shard1", values: ["car", "boat"] },
+      { shard: "shard2", values: ["train", "bicycle"] }
+    ]
+  }
+}

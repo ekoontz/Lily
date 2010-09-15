@@ -1,0 +1,18 @@
+{
+  shardingKey: {
+    value: {
+      source: "variantProperty",
+      property: "weight"
+    },
+    type: "long"
+  },
+
+  mapping: {
+    type: "range",
+    entries: [
+      { shard: "shard1", upTo: 1000 },
+      { shard: "shard2", upTo: 2000 },
+      { shard: "shard3" }
+    ]
+  }
+}

@@ -11,8 +11,8 @@ import org.lilycms.util.json.JsonUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class IndexDefinitionConverter {
     public static IndexDefinitionConverter INSTANCE = new IndexDefinitionConverter();
@@ -33,18 +33,32 @@ public class IndexDefinitionConverter {
         IndexBatchBuildState buildState = IndexBatchBuildState.valueOf(JsonUtil.getString(node, "batchBuildState"));
 
         String queueSubscriptionId = JsonUtil.getString(node, "queueSubscriptionId", null);
-        String configurationAsString = JsonUtil.getString(node, "configuration");
+
         byte[] configuration;
         try {
+            String configurationAsString = JsonUtil.getString(node, "configuration");
             configuration = Base64.decode(configurationAsString);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        List<String> solrShards = new ArrayList<String>();
+        byte[] shardingConfiguration = null;
+        if (node.get("shardingConfiguration") != null) {
+            String shardingConfAsString = JsonUtil.getString(node, "shardingConfiguration");
+            try {
+                shardingConfiguration = Base64.decode(shardingConfAsString);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        Map<String, String> solrShards = new HashMap<String, String>();
         ArrayNode shardsArray = JsonUtil.getArray(node, "solrShards");
         for (int i = 0; i < shardsArray.size(); i++) {
-            solrShards.add(shardsArray.get(i).getTextValue());
+            ObjectNode shardNode = (ObjectNode)shardsArray.get(i);
+            String shardName = JsonUtil.getString(shardNode, "name");
+            String address = JsonUtil.getString(shardNode, "address");
+            solrShards.put(shardName, address);
         }
 
         ActiveBatchBuildInfo activeBatchBuild = null;
@@ -71,6 +85,7 @@ public class IndexDefinitionConverter {
         index.setQueueSubscriptionId(queueSubscriptionId);
         index.setConfiguration(configuration);
         index.setSolrShards(solrShards);
+        index.setShardingConfiguration(shardingConfiguration);
         index.setActiveBatchBuildInfo(activeBatchBuild);
         index.setLastBatchBuildInfo(lastBatchBuild);
     }
@@ -103,9 +118,22 @@ public class IndexDefinitionConverter {
 
         node.put("configuration", configurationAsString);
 
+        if (index.getShardingConfiguration() != null) {
+            String shardingConfAsString;
+            try {
+                shardingConfAsString = Base64.encodeBytes(index.getShardingConfiguration(), Base64.GZIP);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            node.put("shardingConfiguration", shardingConfAsString);
+        }
+
         ArrayNode shardsNode = node.putArray("solrShards");
-        for (String shard : index.getSolrShards()) {
-            shardsNode.add(shard);
+        for (Map.Entry<String, String> shard : index.getSolrShards().entrySet()) {
+            ObjectNode shardNode = shardsNode.addObject();
+            shardNode.put("name", shard.getKey());
+            shardNode.put("address", shard.getValue());
         }
 
         if (index.getActiveBatchBuildInfo() != null) {

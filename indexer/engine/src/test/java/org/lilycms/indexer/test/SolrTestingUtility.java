@@ -15,8 +15,6 @@
  */
 package org.lilycms.indexer.test;
 
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.webapp.WebAppContext;
 
@@ -24,7 +22,6 @@ import java.io.*;
 
 public class SolrTestingUtility {
     private int solrPort = 6712;
-    private SolrServer solrServer;
     private Server server;
     private File solrHomeDir;
     private String schemaLocation;
@@ -60,12 +57,10 @@ public class SolrTestingUtility {
         server.addHandler(new WebAppContext(solrWar, "/"));
 
         server.start();
-
-        solrServer = new CommonsHttpSolrServer("http://localhost:" + solrPort);
     }
 
-    public SolrServer getSolrServer() {
-        return solrServer;
+    public String getUri() {
+        return "http://localhost:" + solrPort;
     }
 
     public void stop() throws Exception {

@@ -1,0 +1,19 @@
+{
+  shardingKey: {
+    value: {
+      source: "recordId"
+    },
+    type: "long",
+    hash: "md5",
+    modulus: 3
+  },
+
+  mapping: {
+    type: "list",
+    entries: [
+      { shard: "shard1", values: [0] },
+      { shard: "shard2", values: [1] },
+      { shard: "shard3", values: [2] }
+    ]
+  }
+}

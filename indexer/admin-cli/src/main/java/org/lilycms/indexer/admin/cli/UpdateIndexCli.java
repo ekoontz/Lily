@@ -5,6 +5,7 @@ import org.apache.commons.cli.Option;
 import org.lilycms.indexer.model.api.IndexDefinition;
 import org.lilycms.indexer.model.api.WriteableIndexerModel;
 import org.lilycms.indexer.model.impl.IndexerModelImpl;
+import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         List<Option> options = new ArrayList<Option>();
         options.add(nameOption);
         options.add(solrShardsOption);
+        options.add(shardingConfigurationOption);
         options.add(configurationOption);
         options.add(generalStateOption);
         options.add(updateStateOption);
@@ -52,6 +54,11 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
 
             if (solrShards != null && !solrShards.equals(index.getSolrShards())) {
                 index.setSolrShards(solrShards);
+                changes = true;
+            }
+
+            if (shardingConfiguration != null && !ObjectUtils.safeEquals(shardingConfiguration, index.getShardingConfiguration())) {
+                index.setShardingConfiguration(shardingConfiguration);
                 changes = true;
             }
 

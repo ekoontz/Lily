@@ -41,6 +41,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-repository-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-core-asl</artifactId>
     </dependency>
@@ -53,6 +58,18 @@
     <dependency>
       <groupId>net.iharder</groupId>
       <artifactId>base64</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-repository-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

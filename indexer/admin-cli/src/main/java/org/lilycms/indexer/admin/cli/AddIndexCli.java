@@ -28,6 +28,7 @@ public class AddIndexCli extends BaseIndexerAdminCli {
         List<Option> options = new ArrayList<Option>();
         options.add(nameOption);
         options.add(solrShardsOption);
+        options.add(shardingConfigurationOption);
         options.add(configurationOption);
         options.add(generalStateOption);
         options.add(updateStateOption);
@@ -44,6 +45,9 @@ public class AddIndexCli extends BaseIndexerAdminCli {
         index.setSolrShards(solrShards);
 
         index.setConfiguration(indexerConfiguration);
+
+        if (shardingConfiguration != null)
+            index.setShardingConfiguration(shardingConfiguration);
 
         if (generalState != null)
             index.setGeneralState(generalState);

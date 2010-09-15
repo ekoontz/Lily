@@ -2,8 +2,8 @@ package org.lilycms.indexer.model.impl;
 
 import org.lilycms.indexer.model.api.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class IndexDefinitionImpl implements IndexDefinition {
     private String name;
@@ -12,7 +12,8 @@ public class IndexDefinitionImpl implements IndexDefinition {
     private IndexUpdateState updateState = IndexUpdateState.SUBSCRIBE_AND_LISTEN;
     private String queueSubscriptionId;
     private byte[] configuration;
-    private List<String> solrShards;
+    private byte[] shardingConfiguration;
+    private Map<String, String> solrShards;
     private int zkDataVersion = -1;
     private BatchBuildInfo lastBatchBuildInfo;
     private ActiveBatchBuildInfo activeBatchBuildInfo;
@@ -63,6 +64,8 @@ public class IndexDefinitionImpl implements IndexDefinition {
     }
 
     public byte[] getConfiguration() {
+        // Note that while one could modify the returned byte array, it is very unlikely to do this
+        // by accident, and we assume cooperating users.
         return configuration;
     }
 
@@ -70,12 +73,20 @@ public class IndexDefinitionImpl implements IndexDefinition {
         this.configuration = configuration;
     }
 
-    public List<String> getSolrShards() {
-        return new ArrayList<String>(solrShards);
+    public byte[] getShardingConfiguration() {
+        return shardingConfiguration;
     }
 
-    public void setSolrShards(List<String> shards) {
-        this.solrShards = new ArrayList<String>(shards);
+    public void setShardingConfiguration(byte[] shardingConfiguration) {
+        this.shardingConfiguration = shardingConfiguration;
+    }
+
+    public Map<String, String> getSolrShards() {
+        return new HashMap<String, String>(solrShards);
+    }
+
+    public void setSolrShards(Map<String, String> shards) {
+        this.solrShards = new HashMap<String, String>(shards);
     }
 
     public int getZkDataVersion() {

@@ -6,6 +6,9 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 import static org.apache.zookeeper.Watcher.Event.EventType.*;
 import org.lilycms.indexer.model.api.*;
+import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
+import org.lilycms.indexer.model.sharding.ShardSelector;
+import org.lilycms.indexer.model.sharding.ShardingConfigException;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.*;
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
@@ -75,7 +78,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         return new IndexDefinitionImpl(name);
     }
 
-    public void addIndex(IndexDefinition index) throws IndexExistsException, IndexModelException {
+    public void addIndex(IndexDefinition index) throws IndexExistsException, IndexModelException, IndexValidityException {
         assertValid(index);        
 
         final String indexPath = INDEX_COLLECTION_PATH + "/" + index.getName();
@@ -94,53 +97,73 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         }
     }
 
-    private void assertValid(IndexDefinition index) {
+    private void assertValid(IndexDefinition index) throws IndexValidityException {
         if (index.getName() == null || index.getName().length() == 0)
-            throw new IllegalArgumentException("IndexDefinition: name should not be null or zero-length");
+            throw new IndexValidityException("Name should not be null or zero-length");
 
         if (index.getConfiguration() == null)
-            throw new IllegalArgumentException("IndexDefinition: configuration should not be null.");
+            throw new IndexValidityException("Configuration should not be null.");
 
         if (index.getGeneralState() == null)
-            throw new IllegalArgumentException("IndexDefinition: state should not be null.");
+            throw new IndexValidityException("General state should not be null.");
 
         if (index.getBatchBuildState() == null)
-            throw new IllegalArgumentException("IndexDefinition: build state should not be null.");
+            throw new IndexValidityException("Build state should not be null.");
 
         if (index.getUpdateState() == null)
-            throw new IllegalArgumentException("IndexDefinition: update state should not be null.");
+            throw new IndexValidityException("Update state should not be null.");
 
         if (index.getActiveBatchBuildInfo() != null) {
             ActiveBatchBuildInfo info = index.getActiveBatchBuildInfo();
             if (info.getJobId() == null)
-                throw new IllegalArgumentException("IndexDefinition; job id of active batch build cannot be null.");
+                throw new IndexValidityException("Job id of active batch build cannot be null.");
         }
 
         if (index.getLastBatchBuildInfo() != null) {
             BatchBuildInfo info = index.getLastBatchBuildInfo();
             if (info.getJobId() == null)
-                throw new IllegalArgumentException("IndexDefinition: job id of last batch build cannot be null.");
+                throw new IndexValidityException("Job id of last batch build cannot be null.");
             if (info.getJobState() == null)
-                throw new IllegalArgumentException("IndexDefinition: job state of last batch build cannot be null.");
+                throw new IndexValidityException("Job state of last batch build cannot be null.");
         }
 
         if (index.getSolrShards() == null || index.getSolrShards().isEmpty())
-            throw new IllegalArgumentException("IndexDefinition: SOLR shards should not be null or empty.");
+            throw new IndexValidityException("SOLR shards should not be null or empty.");
 
-        for (String shard : index.getSolrShards()) {
+        for (String shard : index.getSolrShards().values()) {
             try {
                 URI uri = new URI(shard);
                 if (!uri.isAbsolute()) {
-                    throw new IllegalArgumentException("IndexDefinition: SOLR shard URI is not absolute: " + shard);
+                    throw new IndexValidityException("SOLR shard URI is not absolute: " + shard);
                 }
             } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("IndexDefinition: invalid SOLR shard URI: " + shard);
+                throw new IndexValidityException("Invalid SOLR shard URI: " + shard);
+            }
+        }
+
+        if (index.getShardingConfiguration() != null) {
+            // parse it + check used shards -> requires dependency on the engine or moving the relevant classes
+            // to the model
+            ShardSelector selector;
+            try {
+                selector = JsonShardSelectorBuilder.build(index.getShardingConfiguration());
+            } catch (ShardingConfigException e) {
+                throw new IndexValidityException("Error with sharding configuration.", e);
+            }
+
+            Set<String> shardNames = index.getSolrShards().keySet();
+
+            for (String shard : selector.getShards()) {
+                if (!shardNames.contains(shard)) {
+                    throw new IndexValidityException("The sharding configuration refers to a shard that is not" +
+                    " in the set of available shards. Shard: " + shard);
+                }
             }
         }
     }
 
     public void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
-            IndexNotFoundException, IndexConcurrentModificationException {
+            IndexNotFoundException, IndexConcurrentModificationException, IndexValidityException {
 
         assertValid(index);
 
@@ -160,7 +183,8 @@ public class IndexerModelImpl implements WriteableIndexerModel {
     }
 
     public void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
-            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException {
+            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException,
+            IndexValidityException {
 
         if (!ZkLock.ownsLock(zk, lock)) {
             throw new IndexUpdateException("You are not owner of the indexes lock, your lock path is: " + lock);

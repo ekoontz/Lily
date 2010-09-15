@@ -13,14 +13,14 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public abstract class BaseIndexerAdminCli {
     private static final String DEFAULT_ZK_CONNECT = "localhost:2181";
 
     protected Option nameOption;
     protected Option solrShardsOption;
+    protected Option shardingConfigurationOption;
     protected Option configurationOption;
     protected Option generalStateOption;
     protected Option updateStateOption;
@@ -28,11 +28,12 @@ public abstract class BaseIndexerAdminCli {
 
     protected String zkConnectionString;
     protected String indexName;
-    protected List<String> solrShards;
+    protected Map<String, String> solrShards;
     protected IndexGeneralState generalState;
     protected IndexUpdateState updateState;
     protected IndexBatchBuildState buildState;
     protected byte[] indexerConfiguration;
+    protected byte[] shardingConfiguration;
 
     public static void start(String[] args, BaseIndexerAdminCli cli) {
         try {
@@ -72,13 +73,20 @@ public abstract class BaseIndexerAdminCli {
         cliOptions.addOption(nameOption);
 
         solrShardsOption = OptionBuilder
-                .withArgName("solr-urls")
+                .withArgName("solr-shards")
                 .hasArg()
-                .withDescription("Comma separated list of URLs to SOLR instances (shards).")
+                .withDescription("Comma separated list of 'shardname:URL' pairs pointing to SOLR instances.")
                 .withLongOpt("solr-shards")
-                .withValueSeparator(',')
                 .create("s");
         cliOptions.addOption(solrShardsOption);
+
+        shardingConfigurationOption = OptionBuilder
+                .withArgName("shardingconfig.json")
+                .hasArg()
+                .withDescription("Sharding configuration.")
+                .withLongOpt("sharding-config")
+                .create("p");
+        cliOptions.addOption(shardingConfigurationOption);
 
         configurationOption = OptionBuilder
                 .withArgName("indexerconfig.xml")
@@ -155,21 +163,72 @@ public abstract class BaseIndexerAdminCli {
         }
 
         if (cmd.hasOption(solrShardsOption.getOpt())) {
-            solrShards = Arrays.asList(cmd.getOptionValues(solrShardsOption.getOpt()));
+            solrShards = new HashMap<String, String>();
+            String[] solrShardEntries = cmd.getOptionValue(solrShardsOption.getOpt()).split(",");
+            Set<String> addresses = new HashSet<String>();
             // Be helpful to the user and validate the URIs are syntactically correct
-            for (String shard : solrShards) {
+            for (String shardEntry : solrShardEntries) {
+                int sep = shardEntry.indexOf(':');
+                if (sep == -1) {
+                    System.out.println("SOLR shards should be specified as 'name:URL' pairs, which the following is not:");
+                    System.out.println(shardEntry);
+                    System.exit(1);
+                }
+
+                String shardName = shardEntry.substring(0, sep).trim();
+                if (shardName.length() == 0) {
+                    System.out.println("Zero-length shard name in the following shard entry:");
+                    System.out.println(shardEntry);
+                    System.exit(1);
+                }
+
+                String shardAddress = shardEntry.substring(sep + 1).trim();
                 try {
-                    URI uri = new URI(shard);
+                    URI uri = new URI(shardAddress);
                     if (!uri.isAbsolute()) {
-                        System.out.println("Not an absolute URI: " + shard);
+                        System.out.println("Not an absolute URI: " + shardAddress);
                         System.exit(1);
                     }
                 } catch (URISyntaxException e) {
-                    System.out.println("Invalid SOLR shard URI: " + shard);
+                    System.out.println("Invalid SOLR shard URI: " + shardAddress);
                     System.out.println(e.getMessage());
                     System.exit(1);
                 }
+
+                if (solrShards.containsKey(shardName)) {
+                    System.out.println("Duplicate shard name: " + shardName);
+                    System.exit(1);
+                }
+
+                if (addresses.contains(shardAddress)) {
+                    System.out.println("!!!");
+                    System.out.println("Warning: you have two shards pointing to the same URI:");
+                    System.out.println(shardAddress);
+                    System.out.println();
+                }
+
+                addresses.add(shardAddress);
+
+                solrShards.put(shardName, shardAddress);
             }
+
+            if (solrShards.isEmpty()) {
+                // Probably cannot occur
+                System.out.println("No SOLR shards specified though option is used.");
+                System.exit(1);
+            }
+        }
+
+        if (cmd.hasOption(shardingConfigurationOption.getOpt())) {
+            File configurationFile = new File(cmd.getOptionValue(shardingConfigurationOption.getOpt()));
+
+            if (!configurationFile.exists()) {
+                System.out.println("Specified sharding configuration file not found:");
+                System.out.println(configurationFile.getAbsolutePath());
+                System.exit(1);
+            }
+
+            shardingConfiguration = FileUtils.readFileToByteArray(configurationFile);
         }
 
         if (cmd.hasOption(configurationOption.getOpt())) {

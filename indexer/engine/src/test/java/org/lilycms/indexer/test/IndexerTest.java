@@ -18,6 +18,7 @@ package org.lilycms.indexer.test;
 import static org.junit.Assert.assertEquals;
 
 import org.lilycms.indexer.IndexUpdater;
+import org.lilycms.indexer.engine.SolrServers;
 import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.rowlog.api.RowLogException;
@@ -27,7 +28,6 @@ import org.lilycms.rowlog.api.RowLogMessageConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -66,7 +66,7 @@ public class IndexerTest {
     private static HBaseRepository repository;
     private static TypeManager typeManager;
     private static IdGenerator idGenerator;
-    private static SolrServer solrServer;
+    private static SolrServers solrServers;
     private static IndexUpdater indexUpdater;
 
     private static FieldType liveTag;
@@ -113,8 +113,6 @@ public class IndexerTest {
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, HBASE_PROXY.getConf());
 
-        solrServer = SOLR_TEST_UTIL.getSolrServer();
-
         IndexManager.createIndexMetaTableIfNotExists(HBASE_PROXY.getConf());
         IndexManager indexManager = new IndexManager(HBASE_PROXY.getConf());
 
@@ -126,8 +124,9 @@ public class IndexerTest {
         // Field types should exist before the indexer conf is loaded
         setupSchema();
 
+        solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/test/indexerconf1.xml"), repository);
-        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServer);
+        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers);
         indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex);
 
         repository.getWal().registerConsumer(messageVerifier);
@@ -1153,14 +1152,14 @@ public class IndexerTest {
     }
 
     private void commitIndex() throws IOException, SolrServerException {
-        solrServer.commit(true, true);
+        solrServers.commit(true, true);
     }
 
     private void verifyResultCount(String query, int count) throws SolrServerException {
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.set("q", query);
         solrQuery.set("rows", 5000);
-        QueryResponse response = SOLR_TEST_UTIL.getSolrServer().query(solrQuery);
+        QueryResponse response = solrServers.query(solrQuery);
         if (count != response.getResults().size()) {
             System.out.println("The query result contains a wrong number of documents, here is the result:");
             for (int i = 0; i < response.getResults().size(); i++) {

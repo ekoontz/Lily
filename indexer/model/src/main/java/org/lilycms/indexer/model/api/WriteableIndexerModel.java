@@ -11,7 +11,7 @@ public interface WriteableIndexerModel extends IndexerModel {
      */
     IndexDefinition newIndex(String name);
 
-    void addIndex(IndexDefinition index) throws IndexExistsException, IndexModelException;
+    void addIndex(IndexDefinition index) throws IndexExistsException, IndexModelException, IndexValidityException;
 
     /**
      * Loads an index definition and returns it in a mutable way.
@@ -29,14 +29,14 @@ public interface WriteableIndexerModel extends IndexerModel {
      * of which it will be validated that it really is the owner of the index lock.
      */
     public void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
-            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException;
+            IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException, IndexValidityException;
 
     /**
      * Internal index update method, <b>this method is only intended for internal Lily components</b>. It
      * is similar to the update method but bypasses some checks.
      */
     public void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
-            IndexNotFoundException, IndexConcurrentModificationException;
+            IndexNotFoundException, IndexConcurrentModificationException, IndexValidityException;
     
     /**
      * Takes a lock on this index.

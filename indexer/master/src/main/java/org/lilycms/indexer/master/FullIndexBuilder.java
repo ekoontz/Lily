@@ -15,6 +15,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 
 public class FullIndexBuilder {
     /**
@@ -37,9 +38,16 @@ public class FullIndexBuilder {
         String indexerConfString = Base64.encodeBytes(index.getConfiguration(), Base64.GZIP);
         job.getConfiguration().set("org.lilycms.indexer.fullbuild.indexerconf", indexerConfString);
 
-        List<String> solrShards = index.getSolrShards();
-        for (int i = 0; i < solrShards.size(); i++) {
-            job.getConfiguration().set("org.lilycms.indexer.fullbuild.solrshard." + (i + 1), solrShards.get(i));
+        if (index.getShardingConfiguration() != null) {
+            String shardingConfString = Base64.encodeBytes(index.getShardingConfiguration(), Base64.GZIP);
+            job.getConfiguration().set("org.lilycms.indexer.fullbuild.shardingconf", shardingConfString);
+        }
+
+        int i = 0;
+        for (Map.Entry<String, String> shard : index.getSolrShards().entrySet()) {
+            i++;
+            job.getConfiguration().set("org.lilycms.indexer.fullbuild.solrshard.name." + i, shard.getKey());
+            job.getConfiguration().set("org.lilycms.indexer.fullbuild.solrshard.address." + i, shard.getValue());
         }
 
         job.setNumReduceTasks(0);

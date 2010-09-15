@@ -21,13 +21,14 @@ import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.lilycms.indexer.conf.IndexCase;
 import org.lilycms.indexer.conf.IndexField;
 import org.lilycms.indexer.conf.IndexerConf;
+import org.lilycms.indexer.engine.SolrServers;
+import org.lilycms.indexer.model.sharding.ShardSelectorException;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
 
@@ -44,15 +45,15 @@ public class Indexer {
     private IndexerConf conf;
     private Repository repository;
     private TypeManager typeManager;
-    private SolrServer solrServer;
+    private SolrServers solrServers;
     private IndexerMetrics metrics;
 
     private Log log = LogFactory.getLog(getClass());
 
-    public Indexer(IndexerConf conf, Repository repository, SolrServer solrServer) {
+    public Indexer(IndexerConf conf, Repository repository, SolrServers solrServers) {
         this.conf = conf;
         this.repository = repository;
-        this.solrServer = solrServer;
+        this.solrServers = solrServers;
         this.typeManager = repository.getTypeManager();
 
         this.metrics = new IndexerMetrics();
@@ -68,7 +69,7 @@ public class Indexer {
      *
      * @param recordId
      */
-    public void index(RecordId recordId) throws RepositoryException, IOException, SolrServerException {
+    public void index(RecordId recordId) throws RepositoryException, IOException, SolrServerException, ShardSelectorException {
         IdRecord record = repository.readWithIds(recordId, null, null);
         Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
 
@@ -83,7 +84,7 @@ public class Indexer {
         index(record, vtagsToIndex, vtags);
     }
 
-    protected void index(IdRecord record, Set<String> vtagsToIndex, Map<String, Long> vtags) throws IOException, SolrServerException, FieldTypeNotFoundException, RepositoryException, RecordTypeNotFoundException {
+    protected void index(IdRecord record, Set<String> vtagsToIndex, Map<String, Long> vtags) throws IOException, SolrServerException, FieldTypeNotFoundException, RepositoryException, RecordTypeNotFoundException, ShardSelectorException {
         if (vtagsToIndex.contains(VersionTag.VERSIONLESS_TAG)) {
             // Usually when the @@versionless vtag should be indexed, the vtagsToIndex set will
             // not contain any other tags.
@@ -106,7 +107,7 @@ public class Indexer {
      */
     protected void indexRecord(RecordId recordId, Set<String> vtagsToIndex, Map<String, Long> vtags)
             throws IOException, SolrServerException, FieldTypeNotFoundException, RepositoryException,
-            RecordTypeNotFoundException {
+            RecordTypeNotFoundException, ShardSelectorException {
         // One version might have multiple vtags, so to index we iterate the version numbers
         // rather than the vtags
         Map<Long, Set<String>> vtagsToIndexByVersion = getVtagsByVersion(vtagsToIndex, vtags);
@@ -122,7 +123,7 @@ public class Indexer {
 
             if (version == null) {
                 for (String vtag : entry.getValue()) {
-                    solrServer.deleteById(getIndexId(recordId, vtag));
+                    solrServers.getSolrServer(recordId).deleteById(getIndexId(recordId, vtag));
                     metrics.incDeleteByIdCount();
                 }
 
@@ -142,7 +143,7 @@ public class Indexer {
      * @param record the correct version of the record, which has the versionTag applied to it
      * @param vtags the version tags under which to index
      */
-    protected void index(IdRecord record, Set<String> vtags) throws IOException, SolrServerException {
+    protected void index(IdRecord record, Set<String> vtags) throws IOException, SolrServerException, ShardSelectorException {
 
         // Note that it is important the the indexFields are evaluated in order, since multiple
         // indexFields can have the same name and the order of values for multi-value fields can be important.
@@ -175,7 +176,7 @@ public class Indexer {
                 // because with deref-expressions we are never sure) that we did.
 
                 // There can be a previous entry in the index which we should try to delete
-                solrServer.deleteById(getIndexId(record.getId(), vtag));
+                solrServers.getSolrServer(record.getId()).deleteById(getIndexId(record.getId(), vtag));
                 metrics.incDeleteByIdCount();
                 
                 if (log.isDebugEnabled()) {
@@ -195,7 +196,7 @@ public class Indexer {
                 solrDoc.setField("@@versionless", "true");
             }
 
-            solrServer.add(solrDoc);
+            solrServers.getSolrServer(record.getId()).add(solrDoc);
             metrics.incAddCount();
 
             if (log.isDebugEnabled()) {
@@ -207,13 +208,13 @@ public class Indexer {
     /**
      * Deletes all index entries (for all vtags) for the given record.
      */
-    public void delete(RecordId recordId) throws IOException, SolrServerException {
-        solrServer.deleteByQuery("@@id:" + ClientUtils.escapeQueryChars(recordId.toString()));
+    public void delete(RecordId recordId) throws IOException, SolrServerException, ShardSelectorException {
+        solrServers.getSolrServer(recordId).deleteByQuery("@@id:" + ClientUtils.escapeQueryChars(recordId.toString()));
         metrics.incDeleteByQueryCount();
     }
 
-    public void delete(RecordId recordId, String vtag) throws IOException, SolrServerException {
-        solrServer.deleteById(getIndexId(recordId, vtag));
+    public void delete(RecordId recordId, String vtag) throws IOException, SolrServerException, ShardSelectorException {
+        solrServers.getSolrServer(recordId).deleteById(getIndexId(recordId, vtag));
         metrics.incDeleteByQueryCount();
     }
 
