@@ -17,11 +17,11 @@ import java.util.TreeMap;
 import static junit.framework.Assert.*;
 
 public class ShardSelectorTest {
-    private static final String BASE_PATH = "org/lilycms/indexer/engine/sharding/test/";
+    private static final String BASE_PATH = "org/lilycms/indexer/model/sharding/test/";
 
     @Test
     public void testRecordIdListMapping() throws Exception {
-        byte[] mapping1Data = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "mapping1.json"));
+        byte[] mapping1Data = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "shardingconfig1.json"));
         ShardSelector selector = JsonShardSelectorBuilder.build(mapping1Data);
 
         IdGenerator idGenerator = new IdGeneratorImpl();
@@ -32,7 +32,7 @@ public class ShardSelectorTest {
 
     @Test
     public void testStringFieldListMapping() throws Exception {
-        byte[] mappingData = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "mapping2.json"));
+        byte[] mappingData = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "shardingconfig2.json"));
         ShardSelector selector = JsonShardSelectorBuilder.build(mappingData);
 
         IdGenerator idGenerator = new IdGeneratorImpl();
@@ -44,7 +44,7 @@ public class ShardSelectorTest {
 
     @Test
     public void testLongFieldRangeMapping() throws Exception {
-        byte[] mappingData = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "mapping3.json"));
+        byte[] mappingData = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(BASE_PATH + "shardingconfig3.json"));
         ShardSelector selector = JsonShardSelectorBuilder.build(mappingData);
 
         IdGenerator idGenerator = new IdGeneratorImpl();
