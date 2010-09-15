@@ -40,7 +40,7 @@ Define an index
 ---------------
 
 cd indexer/admin-cli
-./target/lily-add-index -n mail -s http://localhost:8983/solr/ -c ../../tools/mbox-import/mail_indexerconf.xml
+./target/lily-add-index -n mail -s shard1:http://localhost:8983/solr/ -c ../../tools/mbox-import/mail_indexerconf.xml
 
 Run the import
 --------------
@@ -53,3 +53,22 @@ cd tools/mbox-import
 
 Again, use -z to specify the ZooKeeper connection string:
 ./target/lily-mbox-import -z localhost:2181 -f {file name or directory name}
+
+
+FUTURE IDEAS
+============
+
+ * while it was not the intention to create a real mail archive, maybe with some
+   more effort we can make it better suited to be one: especially store the main
+   mail text with the message itself, and the remaining parts as 'attachment' records.
+   (see also http://en.wikipedia.org/wiki/MIME#Multipart_subtypes)
+
+ * when importing a directory of files, launch a number of threads to import files in parallel
+
+ * error handling: handle situations like bad input files or lost lily/zookeeper connections.
+   Maybe upon exit (in any situation except kill -9) try to write a file with how far we
+   got in the import (files + number of the message within the file), and allow to resume
+   from there upon next start.
+
+ * improve the indexer/solr configuration, e.g. with some fields suited for faceted queries
+ 
