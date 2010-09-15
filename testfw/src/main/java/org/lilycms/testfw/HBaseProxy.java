@@ -81,6 +81,7 @@ public class HBaseProxy {
             case EMBED:
                 addHBaseTestProps(CONF);
                 addUserProps(CONF);
+                System.clearProperty(HBaseTestingUtility.TEST_DIRECTORY_KEY);
                 TEST_UTIL = new HBaseTestingUtility(CONF);
                 TEST_UTIL.startMiniCluster(1);
                 CONF = TEST_UTIL.getConfiguration();
