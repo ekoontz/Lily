@@ -278,7 +278,7 @@ public class IndexerConfBuilder {
 
         if (fieldEl != null) {
             fieldType = getFieldType(DocumentHelper.getAttribute(fieldEl, "name", true), fieldEl);
-            value = new FieldValue(fieldType, extractContent, formatter, conf.getFormatters());
+            value = new FieldValue(fieldType, extractContent, formatter);
         } else if (derefEl != null) {
             Element[] children = DocumentHelper.getElementChildren(derefEl);
 
@@ -295,7 +295,7 @@ public class IndexerConfBuilder {
 
             fieldType = getFieldType(DocumentHelper.getAttribute(lastEl, "name", true), lastEl);
 
-            DerefValue deref = new DerefValue(fieldType, extractContent, formatter, conf.getFormatters());
+            DerefValue deref = new DerefValue(fieldType, extractContent, formatter);
 
             // Run over all children except the last
             for (int i = 0; i < children.length - 1; i++) {

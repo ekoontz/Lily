@@ -21,8 +21,7 @@ import org.lilycms.repository.api.ValueType;
 
 import java.util.*;
 
-public class
-        Formatters {
+public class Formatters {
     private List<FormatterEntry> formatters = new ArrayList<FormatterEntry>();
     private Map<String, FormatterEntry> formattersByName = new HashMap<String, FormatterEntry>();
 

@@ -28,6 +28,7 @@ import org.lilycms.indexer.conf.IndexCase;
 import org.lilycms.indexer.conf.IndexField;
 import org.lilycms.indexer.conf.IndexerConf;
 import org.lilycms.indexer.engine.SolrServers;
+import org.lilycms.indexer.engine.ValueEvaluator;
 import org.lilycms.indexer.model.sharding.ShardSelectorException;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
@@ -47,6 +48,7 @@ public class Indexer {
     private TypeManager typeManager;
     private SolrServers solrServers;
     private IndexerMetrics metrics;
+    private ValueEvaluator valueEvaluator;
 
     private Log log = LogFactory.getLog(getClass());
 
@@ -55,6 +57,7 @@ public class Indexer {
         this.repository = repository;
         this.solrServers = solrServers;
         this.typeManager = repository.getTypeManager();
+        this.valueEvaluator = new ValueEvaluator(conf);
 
         this.metrics = new IndexerMetrics();
     }
@@ -158,7 +161,7 @@ public class Indexer {
 
             boolean valueAdded = false;
             for (IndexField indexField : conf.getIndexFields()) {
-                List<String> values = indexField.getValue().eval(record, repository, vtag);
+                List<String> values = valueEvaluator.eval(indexField.getValue(), record, repository, vtag);
                 if (values != null) {
                     for (String value : values) {
                         solrDoc.addField(indexField.getName(), value);

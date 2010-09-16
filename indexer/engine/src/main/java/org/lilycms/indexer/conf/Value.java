@@ -15,19 +15,10 @@
  */
 package org.lilycms.indexer.conf;
 
-import java.util.List;
-
-import org.lilycms.repository.api.IdRecord;
-import org.lilycms.repository.api.Repository;
+import org.lilycms.repository.api.FieldType;
+import org.lilycms.repository.api.ValueType;
 
 public interface Value {
-    /**
-     * Evaluates this value for a given record & vtag.
-     *
-     * @return null if there is no value
-     */
-    List<String> eval(IdRecord record, Repository repository, String vtag);
-
     /**
      * Returns the field that is used from the record when evaluating this value. It is the value that is taken
      * from the current record, thus in the case of a dereference it is the first link field, not the field value
@@ -35,4 +26,23 @@ public interface Value {
      */
     String getFieldDependency();
 
+    /**
+     * Name of the formatter to use for this value, or null if no specific one.
+     */
+    String getFormatter();
+
+    boolean extractContent();
+
+    /**
+     * Returns the value type of the actual value to index. This does not necessarily correspond
+     * to the value type of the field type returned by {@link #getTargetFieldType()} since it
+     * might be 'corrected' to multi-value in case of multi-value link field dereferencing.
+     */
+    public abstract ValueType getValueType();
+
+    /**
+     * Get the FieldType of the field from which the actual data is taken, thus in case
+     * of a dereference the last field in the chain.
+     */
+    public abstract FieldType getTargetFieldType();
 }
