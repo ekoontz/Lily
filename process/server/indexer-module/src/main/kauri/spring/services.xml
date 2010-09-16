@@ -45,6 +45,7 @@
     <constructor-arg ref="indexerModel"/>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceConf"/></constructor-arg>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceJobConf"/></constructor-arg>
+    <constructor-arg ref="hbaseConf"/>
   </bean>
 
   <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">

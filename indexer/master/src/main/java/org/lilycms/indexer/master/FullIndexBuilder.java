@@ -3,6 +3,9 @@ package org.lilycms.indexer.master;
 import net.iharder.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
@@ -14,18 +17,25 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 
 public class FullIndexBuilder {
+    private static final byte[] DELETED_COLUMN_NAME = Bytes.toBytes("$Deleted");
+    private static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("NVSCF");
+
     /**
      *
      * @return the ID of the started job
      */
-    public static String startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf) throws Exception {
+    public static String startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf,
+            Configuration hbaseConf) throws Exception {
+
         Configuration conf = new Configuration(mapReduceConf);
         Job job = new Job(conf);
 
+        //
+        // Find and set the MapReduce job jar.
+        //
         Class mapperClass = IndexingMapper.class;
         String jobJar = findContainingJar(mapperClass);
         if (jobJar == null) {
@@ -35,6 +45,9 @@ public class FullIndexBuilder {
 
         job.getConfiguration().set("mapred.jar", jobJar);
 
+        //
+        // Pass information about the index to be built
+        //
         String indexerConfString = Base64.encodeBytes(index.getConfiguration(), Base64.GZIP);
         job.getConfiguration().set("org.lilycms.indexer.fullbuild.indexerconf", indexerConfString);
 
@@ -53,16 +66,24 @@ public class FullIndexBuilder {
         job.setNumReduceTasks(0);
         job.setOutputFormatClass(NullOutputFormat.class);
 
-        // TODO the scan should skip deleted records.
+        //
+        // Define the HBase scanner
+        //
+        FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+        filterList.addFilter(new SingleColumnValueFilter(NON_VERSIONED_SYSTEM_COLUMN_FAMILY,
+                DELETED_COLUMN_NAME, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
         Scan scan = new Scan();
-        scan.addColumn(Bytes.toBytes("NVSCF"), Bytes.toBytes("$NonVersionableRecordTypeId"));
+        scan.setFilter(filterList);
+        scan.addColumn(NON_VERSIONED_SYSTEM_COLUMN_FAMILY, DELETED_COLUMN_NAME);
 
         TableMapReduceUtil.initTableMapperJob("recordTable", scan,
             IndexingMapper.class, null, null, job);
 
-        // TODO get these from somewhere
-        job.getConfiguration().set("hbase.zookeeper.quorum", "localhost");
-        job.getConfiguration().set("hbase.zookeeper.property.clientPort", "2181");
+        //
+        // Provide properties to connect to HBase
+        //
+        job.getConfiguration().set("hbase.zookeeper.quorum", hbaseConf.get("hbase.zookeeper.quorum"));
+        job.getConfiguration().set("hbase.zookeeper.property.clientPort", hbaseConf.get("hbase.zookeeper.property.clientPort"));
 
         job.submit();
         return job.getJobID().toString();

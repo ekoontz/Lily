@@ -32,6 +32,8 @@ public class IndexerMaster {
 
     private Configuration mapReduceJobConf;
 
+    private Configuration hbaseConf;
+
     private IndexerModelListener listener = new MyListener();
 
     private int currentMaxConsumerId;
@@ -47,11 +49,12 @@ public class IndexerMaster {
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
-            Configuration mapReduceJobConf) {
+            Configuration mapReduceJobConf, Configuration hbaseConf) {
         this.zk = zk;
         this.indexerModel = indexerModel;
         this.mapReduceConf = mapReduceConf;
         this.mapReduceJobConf = mapReduceJobConf;
+        this.hbaseConf = hbaseConf;
     }
 
     @PostConstruct
@@ -189,7 +192,7 @@ public class IndexerMaster {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsFullBuildStart(index)) {
-                    String jobId = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf);
+                    String jobId = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf, hbaseConf);
 
                     ActiveBatchBuildInfo jobInfo = new ActiveBatchBuildInfo();
                     jobInfo.setSubmitTime(System.currentTimeMillis());
