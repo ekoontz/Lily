@@ -17,7 +17,7 @@ package org.lilycms.indexer.test;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.lilycms.indexer.formatter.DefaultFormatter;
+import org.lilycms.indexer.model.indexerconf.DefaultFormatter;
 import org.lilycms.repository.api.ValueType;
 
 import java.util.HashSet;

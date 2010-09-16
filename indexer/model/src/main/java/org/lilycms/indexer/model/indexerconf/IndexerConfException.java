@@ -13,22 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-public class IndexField {
-    private String name;
-    private Value value;
-
-    public IndexField(String name, Value value) {
-        this.name = name;
-        this.value = value;
+/**
+ * Thrown when there is an error in the user-provided configuration.
+ */
+public class IndexerConfException extends Exception {
+    public IndexerConfException() {
+        super();
     }
 
-    public String getName() {
-        return name;
+    public IndexerConfException(String message) {
+        super(message);
     }
 
-    public Value getValue() {
-        return value;
+    public IndexerConfException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public IndexerConfException(Throwable cause) {
+        super(cause);
     }
 }

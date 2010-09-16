@@ -37,7 +37,7 @@ public class AddIndexCli extends BaseIndexerAdminCli {
         return options;
     }
 
-    public void run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
+    public int run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
         WriteableIndexerModel model = new IndexerModelImpl(zk);
 
         IndexDefinition index = model.newIndex(indexName);
@@ -61,6 +61,8 @@ public class AddIndexCli extends BaseIndexerAdminCli {
         model.addIndex(index);
 
         System.out.println("Index created: " + indexName);
+
+        return 0;
     }
 
 }

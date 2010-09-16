@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-/**
- * Thrown when there is an error in the user-provided configuration.
- */
-public class IndexerConfException extends Exception {
-    public IndexerConfException() {
-        super();
+import org.lilycms.repository.api.*;
+
+public class FieldValue extends BaseValue {
+    private FieldType fieldType;
+
+    protected FieldValue(FieldType fieldType, boolean extractContent, String formatter) {
+        super(extractContent, formatter);
+        this.fieldType = fieldType;
     }
 
-    public IndexerConfException(String message) {
-        super(getMessage(message));
+    public ValueType getValueType() {
+        return fieldType.getValueType();
     }
 
-    public IndexerConfException(String message, Throwable cause) {
-        super(getMessage(message), cause);
+    public FieldType getFieldType() {
+        return fieldType;
     }
 
-    public IndexerConfException(Throwable cause) {
-        super(cause);
+    public String getFieldDependency() {
+        return fieldType.getId();
     }
 
-    private static String getMessage(String message) {
-        return "Indexer configuration: " + message;
+    public FieldType getTargetFieldType() {
+        return fieldType;
     }
 }

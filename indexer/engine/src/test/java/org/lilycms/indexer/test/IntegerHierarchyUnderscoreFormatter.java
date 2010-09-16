@@ -15,7 +15,7 @@
  */
 package org.lilycms.indexer.test;
 
-import org.lilycms.indexer.formatter.Formatter;
+import org.lilycms.indexer.model.indexerconf.Formatter;
 import org.lilycms.repository.api.HierarchyPath;
 import org.lilycms.repository.api.ValueType;
 

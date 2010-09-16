@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer;
+package org.lilycms.indexer.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.metrics.*;
-import org.lilycms.indexer.conf.DerefValue;
-import org.lilycms.indexer.conf.IndexCase;
-import org.lilycms.indexer.conf.IndexField;
+import org.lilycms.indexer.model.indexerconf.DerefValue;
+import org.lilycms.indexer.model.indexerconf.IndexCase;
+import org.lilycms.indexer.model.indexerconf.IndexField;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.RecordEvent;

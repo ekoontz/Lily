@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-import org.lilycms.repository.api.*;
+public abstract class BaseValue implements Value {
+    private String formatterName;
+    private boolean extractContent;
 
-public class FieldValue extends BaseValue {
-    private FieldType fieldType;
-
-    protected FieldValue(FieldType fieldType, boolean extractContent, String formatter) {
-        super(extractContent, formatter);
-        this.fieldType = fieldType;
+    public BaseValue(boolean extractContent, String formatter) {
+        this.extractContent = extractContent;
+        this.formatterName = formatter;
     }
 
-    public ValueType getValueType() {
-        return fieldType.getValueType();
+    public String getFormatter() {
+        return formatterName;
     }
 
-    public FieldType getFieldType() {
-        return fieldType;
+    public boolean extractContent() {
+        return extractContent;
     }
 
-    public String getFieldDependency() {
-        return fieldType.getId();
-    }
-
-    public FieldType getTargetFieldType() {
-        return fieldType;
-    }
 }

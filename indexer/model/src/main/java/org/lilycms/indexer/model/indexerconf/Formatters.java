@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-import org.lilycms.indexer.formatter.DefaultFormatter;
-import org.lilycms.indexer.formatter.Formatter;
 import org.lilycms.repository.api.ValueType;
 
 import java.util.*;

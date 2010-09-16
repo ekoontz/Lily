@@ -17,8 +17,10 @@ package org.lilycms.indexer.test;
 
 import static org.junit.Assert.assertEquals;
 
-import org.lilycms.indexer.IndexUpdater;
+import org.lilycms.indexer.engine.IndexUpdater;
+import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.engine.SolrServers;
+import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.rowlog.api.RowLogException;
@@ -39,9 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.hbaseindex.IndexManager;
-import org.lilycms.indexer.Indexer;
-import org.lilycms.indexer.conf.IndexerConf;
-import org.lilycms.indexer.conf.IndexerConfBuilder;
+import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.*;

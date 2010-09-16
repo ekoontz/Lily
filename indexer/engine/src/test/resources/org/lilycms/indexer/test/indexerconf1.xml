@@ -10,7 +10,7 @@
     <formatter class="org.lilycms.indexer.test.IntegerHierarchyUnderscoreFormatter"/>
 
     <!-- Default formatter: handles any kind of value. -->
-    <formatter class="org.lilycms.indexer.formatter.DefaultFormatter"/>
+    <formatter class="org.lilycms.indexer.model.indexerconf.DefaultFormatter"/>
 
     <!-- The formatters below will only be used when referred to explictly by name, because the
          above default formatter will handle all values. -->

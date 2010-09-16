@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-public abstract class BaseValue implements Value {
-    private String formatterName;
-    private boolean extractContent;
+public class IndexField {
+    private String name;
+    private Value value;
 
-    public BaseValue(boolean extractContent, String formatter) {
-        this.extractContent = extractContent;
-        this.formatterName = formatter;
+    public IndexField(String name, Value value) {
+        this.name = name;
+        this.value = value;
     }
 
-    public String getFormatter() {
-        return formatterName;
+    public String getName() {
+        return name;
     }
 
-    public boolean extractContent() {
-        return extractContent;
+    public Value getValue() {
+        return value;
     }
-
 }

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.conf;
+package org.lilycms.indexer.model.indexerconf;
 
-import org.lilycms.indexer.formatter.Formatter;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.util.location.LocationAttributes;
@@ -23,17 +22,19 @@ import org.lilycms.util.xml.DocumentHelper;
 import org.lilycms.util.xml.LocalXPathExpression;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
-
-// TODO: add some validation of the XML?
 
 // Terminology: the word "field" is usually used for a field from a repository record, while
 // the term "index field" is usually used for a field in the index, though sometimes these
@@ -411,12 +412,65 @@ public class IndexerConfBuilder {
     private void validate(Document document) throws IndexerConfException {
         try {
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            URL url = getClass().getClassLoader().getResource("org/lilycms/indexer/conf/indexerconf.xsd");
+            URL url = getClass().getClassLoader().getResource("org/lilycms/indexer/model/indexerconf/indexerconf.xsd");
             Schema schema = factory.newSchema(url);
             Validator validator = schema.newValidator();
             validator.validate(new DOMSource(document));
         } catch (Exception e) {
             throw new IndexerConfException("Error validating indexer configuration against XML Schema.", e);
+        }
+    }
+
+    public static void validate(InputStream is) throws IndexerConfException {
+        MyErrorHandler errorHandler = new MyErrorHandler();
+
+        try {
+            SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            URL url = IndexerConfBuilder.class.getClassLoader().getResource("org/lilycms/indexer/model/indexerconf/indexerconf.xsd");
+            Schema schema = factory.newSchema(url);
+            Validator validator = schema.newValidator();
+            validator.setErrorHandler(errorHandler);
+            validator.validate(new StreamSource(is));
+        } catch (Exception e) {
+            if (!errorHandler.hasErrors()) {
+                throw new IndexerConfException("Error validating indexer configuration.", e);
+            } // else it will be reported below
+        }
+
+        if (errorHandler.hasErrors()) {
+            throw new IndexerConfException("The following errors occurred validating the indexer configuration:\n" +
+                errorHandler.getMessage());
+        }
+    }
+
+    private static class MyErrorHandler implements ErrorHandler {
+        private StringBuilder builder = new StringBuilder();
+
+        public void warning(SAXParseException exception) throws SAXException {
+        }
+
+        public void error(SAXParseException exception) throws SAXException {
+            addException(exception);
+        }
+
+        public void fatalError(SAXParseException exception) throws SAXException {
+            addException(exception);
+        }
+
+        public boolean hasErrors() {
+            return builder.length() > 0;
+        }
+
+        public String getMessage() {
+            return builder.toString();
+        }
+
+        private void addException(SAXParseException exception) {
+            if (builder.length() > 0)
+                builder.append("\n");
+
+            builder.append("[").append(exception.getLineNumber()).append(":").append(exception.getColumnNumber());
+            builder.append("] ").append(exception.getMessage());
         }
     }
 }

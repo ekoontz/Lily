@@ -27,7 +27,7 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
         return Collections.emptyList();
     }
 
-    public void run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
+    public int run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
         WriteableIndexerModel model = new IndexerModelImpl(zk);
 
         List<IndexDefinition> indexes = new ArrayList<IndexDefinition>(model.getIndexes());
@@ -62,8 +62,8 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
                 System.out.println("    + Success: " + lastBatchBuild.getSuccess());
                 System.out.println("    + Job state: " + lastBatchBuild.getJobState());
             }
-
-            System.out.println();
         }
+
+        return 0;
     }
 }

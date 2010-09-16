@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.formatter;
+package org.lilycms.indexer.model.indexerconf;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

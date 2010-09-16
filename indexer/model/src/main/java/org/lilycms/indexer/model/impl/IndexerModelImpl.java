@@ -6,6 +6,8 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 import static org.apache.zookeeper.Watcher.Event.EventType.*;
 import org.lilycms.indexer.model.api.*;
+import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
+import org.lilycms.indexer.model.indexerconf.IndexerConfException;
 import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.indexer.model.sharding.ShardingConfigException;
@@ -13,6 +15,7 @@ import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.*;
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -159,6 +162,12 @@ public class IndexerModelImpl implements WriteableIndexerModel {
                     " in the set of available shards. Shard: " + shard);
                 }
             }
+        }
+
+        try {
+            IndexerConfBuilder.validate(new ByteArrayInputStream(index.getConfiguration()));
+        } catch (IndexerConfException e) {
+            throw new IndexValidityException("The indexer configuration is not XML well-formed or valid.", e);
         }
     }
 

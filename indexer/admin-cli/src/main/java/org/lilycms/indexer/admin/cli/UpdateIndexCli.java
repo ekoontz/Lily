@@ -38,12 +38,12 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         return options;
     }
 
-    public void run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
+    public int run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
         WriteableIndexerModel model = new IndexerModelImpl(zk);
 
         if (!model.hasIndex(indexName)) {
             System.out.println("Index does not exist: " + indexName);
-            System.exit(1);
+            return 1;
         }
 
         String lock = model.lockIndex(indexName);
@@ -93,5 +93,7 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         } finally {
             model.unlockIndex(lock);
         }
+
+        return 0;
     }
 }
