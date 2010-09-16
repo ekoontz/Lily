@@ -14,8 +14,7 @@ import org.lilycms.indexer.model.sharding.ShardingConfigException;
 import org.lilycms.util.zookeeper.ZooKeeperImpl;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -30,6 +29,7 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
     protected Option generalStateOption;
     protected Option updateStateOption;
     protected Option buildStateOption;
+    protected Option outputFileOption;
 
     protected String indexName;
     protected Map<String, String> solrShards;
@@ -39,6 +39,7 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
     protected byte[] indexerConfiguration;
     protected byte[] shardingConfiguration;
     protected WriteableIndexerModel model;
+    protected String outputFileName;
 
     public BaseIndexerAdminCli() {
         // Here we instantiate various options, but it is up to subclasses to decide which ones
@@ -96,6 +97,13 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
                 .withDescription("Build state, only: " + IndexBatchBuildState.BUILD_REQUESTED)
                 .withLongOpt("build-state")
                 .create("b");
+
+        outputFileOption = OptionBuilder
+                .withArgName("filename")
+                .hasArg()
+                .withDescription("Output file name")
+                .withLongOpt("output-file")
+                .create("o");
     }
 
     @Override
@@ -281,6 +289,18 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
             }
         }
 
+        if (cmd.hasOption(outputFileOption.getOpt())) {
+            outputFileName = cmd.getOptionValue(outputFileOption.getOpt());
+            File file = new File(outputFileName);
+
+            if (!cmd.hasOption(forceOption.getOpt()) && file.exists()) {
+                System.out.println("The specified output file already exists:");
+                System.out.println(file.getAbsolutePath());
+                System.out.println();
+                System.out.println("Use --" + forceOption.getLongOpt() + " to overwrite it.");
+            }
+        }
+
         return 0;
     }
 
@@ -308,6 +328,14 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
 
     private class MyWatcher implements Watcher {
         public void process(WatchedEvent event) {
+        }
+    }
+
+    protected OutputStream getOutput() throws FileNotFoundException {
+        if (outputFileName == null) {
+            return System.out;
+        } else {
+            return new FileOutputStream(outputFileName);
         }
     }
 }

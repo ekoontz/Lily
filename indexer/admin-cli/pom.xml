@@ -75,6 +75,14 @@
               <basename>lily-touch-index</basename>
               <mainClass>org.lilycms.indexer.admin.cli.TouchIndexCli</mainClass>
             </script>
+            <script>
+              <basename>lily-get-indexerconf</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.GetIndexerConfCli</mainClass>
+            </script>
+            <script>
+              <basename>lily-get-shardingconf</basename>
+              <mainClass>org.lilycms.indexer.admin.cli.GetShardingConfCli</mainClass>
+            </script>
           </scripts>
         </configuration>
         <executions>
