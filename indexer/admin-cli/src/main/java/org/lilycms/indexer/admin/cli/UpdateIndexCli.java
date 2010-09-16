@@ -3,12 +3,8 @@ package org.lilycms.indexer.admin.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.lilycms.indexer.model.api.IndexDefinition;
-import org.lilycms.indexer.model.api.WriteableIndexerModel;
-import org.lilycms.indexer.model.impl.IndexerModelImpl;
 import org.lilycms.util.ObjectUtils;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,14 +15,15 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
     }
 
     public static void main(String[] args) {
-        start(args, new UpdateIndexCli());
+        new UpdateIndexCli().start(args);
     }
 
     @Override
     public List<Option> getOptions() {
+        List<Option> options = super.getOptions();
+
         nameOption.setRequired(true);
 
-        List<Option> options = new ArrayList<Option>();
         options.add(nameOption);
         options.add(solrShardsOption);
         options.add(shardingConfigurationOption);
@@ -34,12 +31,16 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
         options.add(generalStateOption);
         options.add(updateStateOption);
         options.add(buildStateOption);
+        options.add(forceOption);
 
         return options;
     }
 
-    public int run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
-        WriteableIndexerModel model = new IndexerModelImpl(zk);
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
 
         if (!model.hasIndex(indexName)) {
             System.out.println("Index does not exist: " + indexName);

@@ -20,53 +20,29 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
-  <artifactId>lily-import</artifactId>
-  <name>Lily: import tool</name>
+  <artifactId>lily-cli-fw</artifactId>
+  <name>Lily: CLI tools framework</name>
 
   <parent>
     <groupId>org.lilycms</groupId>
-    <artifactId>lily</artifactId>
+    <artifactId>lily-indexer</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-client</artifactId>
+      <groupId>commons-cli</groupId>
+      <artifactId>commons-cli</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-cli-fw</artifactId>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>net.iharder</groupId>
-      <artifactId>base64</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.lilycms</groupId>
-        <artifactId>lily-genscript-plugin</artifactId>
-        <configuration>
-          <scripts>
-            <script>
-              <basename>lily-import</basename>
-              <mainClass>org.lilycms.tools.import_.cli.JsonImportTool</mainClass>
-            </script>
-          </scripts>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>genscript</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>

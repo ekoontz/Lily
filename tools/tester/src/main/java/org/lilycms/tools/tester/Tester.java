@@ -27,10 +27,7 @@ import org.joda.time.LocalDate;
 import org.lilycms.client.LilyClient;
 import org.lilycms.client.ServerUnavailableException;
 import org.lilycms.repository.api.*;
-import org.lilycms.tools.import_.cli.DefaultImportListener;
-import org.lilycms.tools.import_.cli.ImportConflictException;
-import org.lilycms.tools.import_.cli.ImportException;
-import org.lilycms.tools.import_.cli.JsonImportTool;
+import org.lilycms.tools.import_.cli.*;
 import org.lilycms.tools.import_.json.*;
 import org.lilycms.util.json.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
@@ -177,12 +174,12 @@ public class Tester {
     public void createSchema(JsonNode configNode) throws IOException, RepositoryException, ImportConflictException,
             ImportException, JsonFormatException {
 
-        JsonImportTool importTool = new JsonImportTool(repository, new DefaultImportListener());
+        JsonImport jsonImport = new JsonImport(repository, new DefaultImportListener());
 
         // Namespaces
         ObjectNode namespacesNode = JsonUtil.getObject(configNode, "namespaces", null);
         if (namespacesNode != null) {
-            importTool.readNamespaces(namespacesNode);
+            jsonImport.readNamespaces(namespacesNode);
         }
 
         // Fields
@@ -190,20 +187,20 @@ public class Tester {
         JsonNode fieldTypes = configNode.get("fieldTypes");
         if (fieldTypes != null && fieldTypes.isArray()) {
             for (JsonNode node : fieldTypes) {
-                FieldType importFieldType = importTool.importFieldType(node);
+                FieldType importFieldType = jsonImport.importFieldType(node);
                 fields.add(new Field(importFieldType));
             }
         }
 
         // Record type
         String recordTypeName = JsonUtil.getString(configNode, "recordTypeName");
-        QName recordTypeQName = QNameConverter.fromJson(recordTypeName, importTool.getNamespaces());
+        QName recordTypeQName = QNameConverter.fromJson(recordTypeName, jsonImport.getNamespaces());
         recordType = repository.getTypeManager().newRecordType(recordTypeQName);
         for (Field field : fields) {
             recordType.addFieldTypeEntry(field.fieldType.getId(), false);
         }
 
-        recordType = importTool.importRecordType(recordType);
+        recordType = jsonImport.importRecordType(recordType);
     }
 
     private void test() {

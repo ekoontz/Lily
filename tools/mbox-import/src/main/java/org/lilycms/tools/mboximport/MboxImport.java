@@ -14,16 +14,19 @@ import org.apache.james.mime4j.parser.Field;
 import org.apache.james.mime4j.parser.MimeEntityConfig;
 import org.apache.james.mime4j.parser.MimeTokenStream;
 import org.apache.james.mime4j.util.MimeUtil;
+import org.lilycms.cli.BaseZkCliTool;
 import org.lilycms.client.LilyClient;
 import org.lilycms.repository.api.*;
-import org.lilycms.tools.import_.cli.JsonImportTool;
+import org.lilycms.tools.import_.cli.JsonImport;
 import org.lilycms.util.io.Closer;
 
 import java.io.*;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-public class MboxImport {
+public class MboxImport extends BaseZkCliTool {
+
+    private Option fileOption;
 
     private LilyClient lilyClient;
 
@@ -37,57 +40,35 @@ public class MboxImport {
 
     private static final String NS = "org.lilycms.mail";
 
-    private static final String DEFAULT_ZK_CONNECT = "localhost:2181";
-
-    public static void main(String[] args) throws Exception {
-        new MboxImport().run(args);
+    @Override
+    protected String getCmdName() {
+        return "lily-mbox-import";
     }
 
-    public void run(String[] args) throws Exception {
-        Options cliOptions = new Options();
+    public static void main(String[] args) throws Exception {
+        new MboxImport().start(args);
+    }
 
-        Option helpOption = new Option("h", "help", false, "Shows help");
-        cliOptions.addOption(helpOption);
+    @Override
+    public List<Option> getOptions() {
+        List<Option> options = super.getOptions();
 
-        Option fileOption = OptionBuilder
+        fileOption = OptionBuilder
                 .withArgName("file")
                 .hasArg()
                 .withDescription("File or directory name")
                 .withLongOpt("file")
                 .create("f");
-        cliOptions.addOption(fileOption);
+        options.add(fileOption);
 
-        Option zkOption = OptionBuilder
-                .withArgName("connection-string")
-                .hasArg()
-                .withDescription("Zookeeper connection string: hostname1:port,hostname2:port,...")
-                .withLongOpt("zookeeper")
-                .create("z");
-        cliOptions.addOption(zkOption);
+        return options;
+    }
 
-
-        CommandLineParser parser = new PosixParser();
-        CommandLine cmd = null;
-        boolean showHelp = false;
-        try {
-            cmd = parser.parse(cliOptions, args);
-        } catch (org.apache.commons.cli.ParseException e) {
-            System.out.println(e.getMessage());
-            showHelp = true;
-        }
-
-        if (showHelp || cmd.hasOption(helpOption.getOpt())) {
-            printHelp(cliOptions);
-            System.exit(1);
-        }
-
-        String zkConnectionString;
-        if (!cmd.hasOption(zkOption.getOpt())) {
-            System.out.println("Zookeeper connection string not specified, using default: " + DEFAULT_ZK_CONNECT);
-            zkConnectionString = DEFAULT_ZK_CONNECT;
-        } else {
-            zkConnectionString = cmd.getOptionValue(zkOption.getOpt());
-        }
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
 
         lilyClient = new LilyClient(zkConnectionString);
 
@@ -100,7 +81,7 @@ public class MboxImport {
 
                 if (!file.exists()) {
                     System.out.println("File does not exist: " + file.getAbsolutePath());
-                    System.exit(1);
+                    return 1;
                 }
 
                 if (file.isDirectory()) {
@@ -128,11 +109,7 @@ public class MboxImport {
             }
         }
 
-    }
-
-    private void printHelp(Options cliOptions) {
-        HelpFormatter help = new HelpFormatter();
-        help.printHelp("lily-mbox-import", cliOptions, true);
+        return 0;
     }
 
     private void loadSchema() throws Exception {
@@ -140,7 +117,7 @@ public class MboxImport {
         System.out.println();
         Repository repository = lilyClient.getRepository();
         InputStream is = getClass().getClassLoader().getResourceAsStream("org/lilycms/tools/mboximport/mail_schema.json");
-        JsonImportTool.load(repository, is, false);
+        JsonImport.load(repository, is, false);
         System.out.println();
     }
 

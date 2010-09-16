@@ -2,17 +2,12 @@ package org.lilycms.indexer.admin.cli;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.lilycms.cli.BaseZkCliTool;
 import org.lilycms.client.LilyClient;
-import org.lilycms.indexer.model.api.IndexBatchBuildState;
-import org.lilycms.indexer.model.api.IndexGeneralState;
-import org.lilycms.indexer.model.api.IndexUpdateState;
-import org.lilycms.indexer.model.api.IndexValidityException;
+import org.lilycms.indexer.model.api.*;
+import org.lilycms.indexer.model.impl.IndexerModelImpl;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.indexer.model.indexerconf.IndexerConfException;
 import org.lilycms.indexer.model.sharding.ShardingConfigException;
@@ -25,9 +20,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public abstract class BaseIndexerAdminCli {
-    private static final String DEFAULT_ZK_CONNECT = "localhost:2181";
+public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
 
+    protected Option forceOption;
     protected Option nameOption;
     protected Option solrShardsOption;
     protected Option shardingConfigurationOption;
@@ -36,7 +31,6 @@ public abstract class BaseIndexerAdminCli {
     protected Option updateStateOption;
     protected Option buildStateOption;
 
-    protected String zkConnectionString;
     protected String indexName;
     protected Map<String, String> solrShards;
     protected IndexGeneralState generalState;
@@ -44,28 +38,79 @@ public abstract class BaseIndexerAdminCli {
     protected IndexBatchBuildState buildState;
     protected byte[] indexerConfiguration;
     protected byte[] shardingConfiguration;
+    protected WriteableIndexerModel model;
 
-    public static void start(String[] args, BaseIndexerAdminCli cli) {
-        setupLogging();
-        int result = 1;
-        try {
-            System.out.println();
-            result = cli.runBase(args);
-        } catch (IndexValidityException e) {
+    public BaseIndexerAdminCli() {
+        // Here we instantiate various options, but it is up to subclasses to decide which ones
+        // they acutally want to use (see getOptions() method).
+        forceOption = OptionBuilder
+                .withDescription("Skips optional validations.")
+                .withLongOpt("force")
+                .create("f");
+
+        nameOption = OptionBuilder
+                .withArgName("name")
+                .hasArg()
+                .withDescription("Index name.")
+                .withLongOpt("name")
+                .create("n");
+
+        solrShardsOption = OptionBuilder
+                .withArgName("solr-shards")
+                .hasArg()
+                .withDescription("Comma separated list of 'shardname:URL' pairs pointing to SOLR instances.")
+                .withLongOpt("solr-shards")
+                .create("s");
+
+        shardingConfigurationOption = OptionBuilder
+                .withArgName("shardingconfig.json")
+                .hasArg()
+                .withDescription("Sharding configuration.")
+                .withLongOpt("sharding-config")
+                .create("p");
+
+        configurationOption = OptionBuilder
+                .withArgName("indexerconfig.xml")
+                .hasArg()
+                .withDescription("Indexer configuration.")
+                .withLongOpt("indexer-config")
+                .create("c");
+
+        generalStateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("General state, one of: " + getStates(IndexGeneralState.values()))
+                .withLongOpt("state")
+                .create("i");
+
+        updateStateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("Update state, one of: " + getStates(IndexUpdateState.values()))
+                .withLongOpt("update-state")
+                .create("u");
+
+        buildStateOption = OptionBuilder
+                .withArgName("state")
+                .hasArg()
+                .withDescription("Build state, only: " + IndexBatchBuildState.BUILD_REQUESTED)
+                .withLongOpt("build-state")
+                .create("b");
+    }
+
+    @Override
+    protected void reportThrowable(Throwable throwable) {
+        if (throwable instanceof IndexValidityException) {
             System.out.println("ATTENTION");
             System.out.println("---------");
             System.out.println("The index could not be created or updated because:");
-            printExceptionMessages(e);
-        } catch (Throwable t) {
-            t.printStackTrace();
+            printExceptionMessages(throwable);
+        } else {
+            super.reportThrowable(throwable);
         }
-        System.out.println();
-
-        if (result != 0)
-            System.exit(result);
     }
 
-    private static void printExceptionMessages(Throwable throwable) {
+    protected static void printExceptionMessages(Throwable throwable) {
         Throwable cause = throwable;
         while (cause != null) {
             String prefix = "";
@@ -81,142 +126,21 @@ public abstract class BaseIndexerAdminCli {
         }
     }
 
-    private static void setupLogging() {
-        Logger rootLogger = Logger.getRootLogger();
-        rootLogger.setLevel(Level.WARN);
+    @Override
+    public List<Option> getOptions() {
+        List<Option> options = super.getOptions();
 
-        final String CONSOLE_LAYOUT = "[%-5p][%d{ABSOLUTE}][%-10.10t] %c - %m%n";
+        options.add(forceOption);
 
-        ConsoleAppender consoleAppender = new ConsoleAppender();
-        consoleAppender.setLayout(new PatternLayout(CONSOLE_LAYOUT));
-
-        consoleAppender.activateOptions();
-        rootLogger.addAppender(consoleAppender);
+        return options;
     }
 
-    public int runBase(String[] args) throws Exception {
-        Options cliOptions = new Options();
+    @Override
+    protected int processOptions(CommandLine cmd) throws Exception {
+        int result = super.processOptions(cmd);
+        if (result != 0)
+            return result;
 
-        //
-        // Fixed options
-        //
-        Option helpOption = new Option("h", "help", false, "Shows help");
-        cliOptions.addOption(helpOption);
-
-        Option zkOption = OptionBuilder
-                .withArgName("connection-string")
-                .hasArg()
-                .withDescription("Zookeeper connection string: hostname1:port,hostname2:port,...")
-                .withLongOpt("zookeeper")
-                .create("z");
-        cliOptions.addOption(zkOption);
-
-        Option forceOption = OptionBuilder
-                .withDescription("Skips optional validations.")
-                .withLongOpt("force")
-                .create("f");
-        cliOptions.addOption(forceOption);
-
-        //
-        // Instantiate default options, but don't add them to the options, it is up to subclasses to reuse
-        // some of these.
-        //
-        nameOption = OptionBuilder
-                .withArgName("name")
-                .hasArg()
-                .withDescription("Index name.")
-                .withLongOpt("name")
-                .create("n");
-        cliOptions.addOption(nameOption);
-
-        solrShardsOption = OptionBuilder
-                .withArgName("solr-shards")
-                .hasArg()
-                .withDescription("Comma separated list of 'shardname:URL' pairs pointing to SOLR instances.")
-                .withLongOpt("solr-shards")
-                .create("s");
-        cliOptions.addOption(solrShardsOption);
-
-        shardingConfigurationOption = OptionBuilder
-                .withArgName("shardingconfig.json")
-                .hasArg()
-                .withDescription("Sharding configuration.")
-                .withLongOpt("sharding-config")
-                .create("p");
-        cliOptions.addOption(shardingConfigurationOption);
-
-        configurationOption = OptionBuilder
-                .withArgName("indexerconfig.xml")
-                .hasArg()
-                .withDescription("Indexer configuration.")
-                .withLongOpt("indexer-config")
-                .create("c");
-        cliOptions.addOption(configurationOption);
-
-        generalStateOption = OptionBuilder
-                .withArgName("state")
-                .hasArg()
-                .withDescription("General state, one of: " + getStates(IndexGeneralState.values()))
-                .withLongOpt("state")
-                .create("i");
-        cliOptions.addOption(generalStateOption);
-
-        updateStateOption = OptionBuilder
-                .withArgName("state")
-                .hasArg()
-                .withDescription("Update state, one of: " + getStates(IndexUpdateState.values()))
-                .withLongOpt("update-state")
-                .create("u");
-        cliOptions.addOption(updateStateOption);
-
-        buildStateOption = OptionBuilder
-                .withArgName("state")
-                .hasArg()
-                .withDescription("Build state, only: " + IndexBatchBuildState.BUILD_REQUESTED)
-                .withLongOpt("build-state")
-                .create("b");
-        cliOptions.addOption(buildStateOption);
-
-        //
-        // Options of this specific CLI tool
-        //
-        for (Option option : getOptions()) {
-            cliOptions.addOption(option);
-        }
-
-        //
-        // Parse options
-        //
-        CommandLineParser parser = new PosixParser();
-        CommandLine cmd = null;
-        boolean showHelp = false;
-        try {
-            cmd = parser.parse(cliOptions, args);
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            System.out.println();
-            showHelp = true;
-        }
-
-        //
-        // Process fixed options
-        //
-        if (showHelp || cmd.hasOption(helpOption.getOpt())) {
-            printHelp(cliOptions);
-            return 1;
-        }
-
-        if (!cmd.hasOption(zkOption.getOpt())) {
-            System.out.println("ZooKeeper connection string not specified, using default: " + DEFAULT_ZK_CONNECT);
-            System.out.println();
-            zkConnectionString = DEFAULT_ZK_CONNECT;
-        } else {
-            zkConnectionString = cmd.getOptionValue(zkOption.getOpt());
-        }
-
-        //
-        // Process values for common options, if present
-        //
         if (cmd.hasOption(nameOption.getOpt())) {
             indexName = cmd.getOptionValue(nameOption.getOpt());
         }
@@ -357,9 +281,19 @@ public abstract class BaseIndexerAdminCli {
             }
         }
 
-        ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
+        return 0;
+    }
 
-        return run(zk, cmd);
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
+
+        ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
+        model = new IndexerModelImpl(zk);
+
+        return 0;
     }
 
     private String getStates(Enum[] values) {
@@ -372,19 +306,8 @@ public abstract class BaseIndexerAdminCli {
         return builder.toString();
     }
 
-    public abstract List<Option> getOptions();
-
-    public abstract int run(ZooKeeperItf zk, CommandLine cmd) throws Exception;
-
     private class MyWatcher implements Watcher {
         public void process(WatchedEvent event) {
         }
-    }
-
-    protected abstract String getCmdName();
-
-    private void printHelp(Options cliOptions) {
-        HelpFormatter help = new HelpFormatter();
-        help.printHelp(getCmdName(), cliOptions, true);
     }
 }

@@ -46,11 +46,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
-      <artifactId>lily-import</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.james</groupId>
       <artifactId>apache-mime4j</artifactId>
       <version>0.6</version>

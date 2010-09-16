@@ -4,8 +4,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.joda.time.DateTime;
 import org.lilycms.indexer.model.api.*;
-import org.lilycms.indexer.model.impl.IndexerModelImpl;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,16 +17,19 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
     }
 
     public static void main(String[] args) {
-        start(args, new ListIndexesCli());
+        new ListIndexesCli().start(args);
     }
 
     @Override
     public List<Option> getOptions() {
-        return Collections.emptyList();
+        return super.getOptions();
     }
 
-    public int run(ZooKeeperItf zk, CommandLine cmd) throws Exception {
-        WriteableIndexerModel model = new IndexerModelImpl(zk);
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
 
         List<IndexDefinition> indexes = new ArrayList<IndexDefinition>(model.getIndexes());
         Collections.sort(indexes, IndexDefinitionNameComparator.INSTANCE);

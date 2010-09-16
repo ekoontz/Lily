@@ -74,6 +74,7 @@
     <module>repository-api-tutorial</module>
     <module>rowlog</module>
     <module>process</module>
+    <module>cli-fw</module>
     <module>tools/import</module>
     <module>tools/tester</module>
     <module>tools/mbox-import</module>
@@ -209,6 +210,11 @@
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-hbase-client</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-cli-fw</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
