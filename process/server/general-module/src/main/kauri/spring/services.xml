@@ -24,9 +24,8 @@
 
   <bean id="hbaseConfiguration"
       class="org.lilycms.server.modules.general.HadoopConfigurationFactoryImpl">
-    <constructor-arg value="${hbase:zookeeperQuorum}"/>
-    <constructor-arg value="${hbase:zookeeperClientPort}"/>
-    <constructor-arg><kauri:conf path="mapreduce"/></constructor-arg>    
+    <constructor-arg><kauri:conf path="hbase"/></constructor-arg>
+    <constructor-arg><kauri:conf path="mapreduce"/></constructor-arg>
   </bean>
 
   <bean id="metrics"

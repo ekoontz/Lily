@@ -20,21 +20,25 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.kauriproject.conf.Conf;
 
 public class HadoopConfigurationFactoryImpl implements HadoopConfigurationFactory {
-    private String zkQuorum;
-    private String zkClientPort;
+    private Conf hbaseConf;
     private Conf mrConf;
 
-    public HadoopConfigurationFactoryImpl(String zkQuorum, String zkClientPort, Conf mrConf) {
-        this.zkQuorum = zkQuorum;
-        this.zkClientPort = zkClientPort;
+    public HadoopConfigurationFactoryImpl(Conf hbaseConf, Conf mrConf) {
+        this.hbaseConf = hbaseConf;
         this.mrConf = mrConf;
     }
 
     public Configuration getHBaseConf() {
-        Configuration config = HBaseConfiguration.create();
-        config.set("hbase.zookeeper.quorum", zkQuorum);
-        config.set("hbase.zookeeper.property.clientPort", zkClientPort);
-        return config;
+        Configuration hadoopConf = HBaseConfiguration.create();
+
+        for (Conf conf : hbaseConf.getChild("properties").getChildren("property")) {
+            String name = conf.getRequiredChild("name").getValue();
+            String value = conf.getRequiredChild("value").getValue();
+            System.out.println(" -- hbase prop: " + name + " : " + value);
+            hadoopConf.set(name, value);
+        }
+
+        return hadoopConf;
     }
 
     public Configuration getMapReduceConf() {

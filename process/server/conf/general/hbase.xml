@@ -1,6 +1,16 @@
 <?xml version="1.0"?>
 <hbase xmlns:conf="http://kauriproject.org/configuration"
-       conf:inherit="shallow">
-  <zookeeperQuorum>localhost</zookeeperQuorum>
-  <zookeeperClientPort>2181</zookeeperClientPort>
+       conf:inherit="deep">
+
+  <properties conf:inheritKey="string(name)">
+    <property>
+      <name>hbase.zookeeper.quorum</name>
+      <value>localhost</value>
+    </property>
+    <property>
+      <name>hbase.zookeeper.property.clientPort</name>
+      <value>2181</value>
+    </property>
+  </properties>
+
 </hbase>
