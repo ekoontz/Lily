@@ -106,9 +106,7 @@ public class LilyClient {
         configuration.set("hbase.zookeeper.quorum", getBlobHBaseZkQuorum());
         configuration.set("hbase.zookeeper.property.clientPort", getBlobHBaseZkPort());
         
-        FileSystem.get(getDfsUri(), configuration);
-
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(configuration));
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(getDfsUri(), configuration));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess();
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
