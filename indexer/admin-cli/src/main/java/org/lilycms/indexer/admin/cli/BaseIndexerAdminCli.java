@@ -192,9 +192,14 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
                 }
 
                 if (addresses.contains(shardAddress)) {
-                    System.out.println("!!!");
-                    System.out.println("Warning: you have two shards pointing to the same URI:");
-                    System.out.println(shardAddress);
+                    if (!cmd.hasOption(forceOption.getOpt())) {
+                        System.out.println("You have two shards pointing to the same URI:");
+                        System.out.println(shardAddress);
+                        System.out.println();
+                        System.out.println("If this is what you want, use the --" + forceOption.getLongOpt() +
+                                " option to bypass this check.");
+                        return 1;
+                    }
                 }
 
                 addresses.add(shardAddress);
@@ -312,6 +317,36 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
 
         ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
         model = new IndexerModelImpl(zk);
+
+        // Perform some extra validation which we can only do now that we have access
+        // to the indexer model: check that any specified SOLR shard URIs are not the
+        // same as those of other indexes.
+        if (solrShards != null) {
+            Collection<IndexDefinition> indexes = model.getIndexes();
+            for (String uri : solrShards.values()) {
+                for (IndexDefinition index : indexes) {
+                    if (indexName != null && index.getName().equals(indexName))
+                        continue;
+
+                    for (String uri2 : index.getSolrShards().values()) {
+                        if (uri.equals(uri2)) {
+                            System.out.println("The following SOLR shard URI:");
+                            System.out.println(uri);
+                            System.out.println("is already in use by the index " + index.getName());
+                            if (!cmd.hasOption(forceOption.getOpt())) {
+                                System.out.println("If you are ok with this, use the --" + forceOption.getLongOpt() +
+                                        " option to bypass this check.");
+                                return 1;
+                            } else {
+                                System.out.println("Since --" + forceOption.getLongOpt() +
+                                        " is specified, this will be ignored.");
+                                System.out.println();
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         return 0;
     }
