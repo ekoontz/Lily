@@ -114,9 +114,18 @@ public class KauriTestUtility {
                         "<blobFileSystem>" + blobFsUri + "/lily/blobs</blobFileSystem></repository>");
 
         writeConf(confDir, "general", "hbase.xml",
-                "<hbase xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"shallow\">" +
-                        "<zookeeperQuorum>" + zkServer + "</zookeeperQuorum>" +
-                        "<zookeeperClientPort>" + zkPort + "</zookeeperClientPort></hbase>");
+                "<hbase xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"deep\">" +
+                        "<properties conf:inheritKey='string(name)'>" +
+                        "  <property>" +
+                        "    <name>hbase.zookeeper.quorum</name>" +
+                        "    <value>" + zkServer + "</value>" +
+                        "  </property>" +
+                        "  <property>" +
+                        "    <name>hbase.zookeeper.property.clientPort</name>" +
+                        "    <value>" + zkPort + "</value>" +
+                        "  </property>" +
+                        "</properties>" +
+                        "</hbase>");
 
         writeConf(confDir, "kauri", "connectors.xml",
                 "<connectors xmlns:conf=\"http://kauriproject.org/configuration\" conf:inherit=\"shallow\">" +
