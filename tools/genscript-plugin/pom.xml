@@ -11,6 +11,7 @@
     <groupId>org.lilycms</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <dependencies>
