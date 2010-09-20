@@ -16,7 +16,12 @@
 package org.lilycms.rowlog.impl;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
@@ -31,7 +36,6 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageConsumer;
-import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 
 /**
@@ -48,7 +52,6 @@ public class RowLogImpl implements RowLog {
     private Map<Integer, RowLogMessageConsumer> consumers = new TreeMap<Integer, RowLogMessageConsumer>();
     private final long lockTimeout;
     private final String id;
-    private RowLogProcessor rowLogProcessor;
     private RowLogProcessorNotifier processorNotifier = null;
     private Log log = LogFactory.getLog(getClass());
     
@@ -68,7 +71,11 @@ public class RowLogImpl implements RowLog {
         this.executionStateColumnFamily = executionStateColumnFamily;
         this.lockTimeout = lockTimeout;
         if (zkConnectString != null) {
-            this.processorNotifier = new RowLogProcessorNotifier(zkConnectString);
+            try {
+                this.processorNotifier = new RowLogProcessorNotifier(zkConnectString);
+            } catch (RowLogException exception) {
+                // Don't use a processorNotifier
+            }
         }
     }
     
@@ -86,16 +93,10 @@ public class RowLogImpl implements RowLog {
     
     public void registerConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
         consumers.put(rowLogMessageConsumer.getId(), rowLogMessageConsumer);
-        if (rowLogProcessor != null) {
-            rowLogProcessor.consumerRegistered(rowLogMessageConsumer);
-        }
     }
     
     public void unRegisterConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
         consumers.remove(rowLogMessageConsumer.getId());
-        if (rowLogProcessor != null) {
-            rowLogProcessor.consumerUnregistered(rowLogMessageConsumer);
-        }
     }
     
     public Collection<RowLogMessageConsumer> getConsumers() {
@@ -249,7 +250,9 @@ public class RowLogImpl implements RowLog {
         get.addColumn(executionStateColumnFamily, qualifier);
         try {
             Result result = rowTable.get(get);
-            if (result.isEmpty()) return null;
+            if (result.isEmpty()) {
+                return null;
+            }
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
             RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
             byte[] previousLock = executionState.getLock(consumerId);
@@ -385,6 +388,24 @@ public class RowLogImpl implements RowLog {
             throw new RowLogException("Failed to put message to done", e);
         }
     }
+    
+    public boolean isMessageDone(RowLogMessage message, int consumerId) throws RowLogException {
+        byte[] rowKey = message.getRowKey();
+        long seqnr = message.getSeqNr();
+        byte[] qualifier = Bytes.toBytes(seqnr);
+        Get get = new Get(rowKey);
+        get.addColumn(executionStateColumnFamily, qualifier);
+        try {
+            Result result = rowTable.get(get);
+            if (result.isEmpty())
+                return true;
+            byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
+            RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+            return executionState.getState(consumerId);
+        } catch (IOException e) {
+            throw new RowLogException("Failed to check if message is done", e);
+        }
+    }
 
     private boolean updateExecutionState(byte[] rowKey, byte[] qualifier, RowLogMessageConsumerExecutionState executionState, byte[] previousValue) throws IOException {
         Put put = new Put(rowKey);
@@ -406,10 +427,6 @@ public class RowLogImpl implements RowLog {
             throw new RowLogException("No shards registerd");
         }
         return shard;
-    }
-
-    public void setProcessor(RowLogProcessor rowLogProcessor) {
-        this.rowLogProcessor = rowLogProcessor;
     }
 
     public List<RowLogMessage> getMessages(byte[] rowKey, int ... consumerId) throws RowLogException {
@@ -443,5 +460,13 @@ public class RowLogImpl implements RowLog {
     
     public List<RowLogMessage> getProblematic(int consumerId) throws RowLogException {
         return getShard().getProblematic(consumerId);
+    }
+    
+    public boolean isProblematic(RowLogMessage message, int consumerId) throws RowLogException {
+        return getShard().isProblematic(message, consumerId);
+    }
+    
+    public RowLogMessageConsumer getConsumer(int consumerId) {
+        return consumers.get(consumerId);
     }
  }

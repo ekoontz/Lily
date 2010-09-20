@@ -15,6 +15,8 @@
  */
 package org.lilycms.rowlog.api;
 
+import java.util.List;
+
 /**
  * A RowLogProcessor is responsible for monitoring the {@link RowLog} for incoming messages 
  * and hand them over for processing to the {@link RowLogMessageConsumer}s that are registered with the {@link RowLog} 
@@ -39,15 +41,5 @@ public interface RowLogProcessor {
      */
     boolean isRunning(int consumerId);
 
-    /**
-     * Notifies the processor that a new {@link RowLogMessageConsumer} has been registered.
-     * The processor will start processing messages for this consumer.
-     */
-    void consumerRegistered(RowLogMessageConsumer consumer);
-
-    /**
-     * Notifies the processor that a {@link RowLogMessageConsumer} has been unregistered.
-     * The processor will stop processing messages for this consumer.
-     */
-    void consumerUnregistered(RowLogMessageConsumer consumer);
+    void subscriptionsChanged(List<SubscriptionContext> andWatchSubscriptions);
 }

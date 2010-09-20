@@ -14,7 +14,15 @@ import org.apache.zookeeper.data.Stat;
 public class ZkUtil {
 
     public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
-        createPath(new ZooKeeperImpl(zk), path);
+        createPath(new ZooKeeperImpl(zk), path, null, CreateMode.PERSISTENT);
+    }
+
+    public static void createPath(ZooKeeper zk, String path, byte[] data, CreateMode createMode) throws ZkPathCreationException {
+        createPath(new ZooKeeperImpl(zk), path, data, createMode);
+    }
+
+    public static void createPath(final ZooKeeperItf zk, final String path) throws ZkPathCreationException {
+        createPath(zk, path, null, CreateMode.PERSISTENT);
     }
 
     /**
@@ -22,7 +30,7 @@ public class ZkUtil {
      * Keeps retrying in case of connection loss.
      *
      */
-    public static void createPath(final ZooKeeperItf zk, final String path) throws ZkPathCreationException {
+    public static void createPath(final ZooKeeperItf zk, final String path, final byte[] data, final CreateMode createMode) throws ZkPathCreationException {
         try {
             Stat stat = retryOperationForever(new ZooKeeperOperation<Stat>() {
                 public Stat execute() throws KeeperException, InterruptedException {
@@ -49,7 +57,7 @@ public class ZkUtil {
             try {
                 retryOperationForever(new ZooKeeperOperation<String>() {
                     public String execute() throws KeeperException, InterruptedException {
-                        return zk.create(subPath.toString(), null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                        return zk.create(subPath.toString(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
                     }
                 });
             } catch (KeeperException.NodeExistsException e) {

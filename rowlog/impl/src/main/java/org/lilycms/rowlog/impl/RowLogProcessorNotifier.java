@@ -1,17 +1,8 @@
 package org.lilycms.rowlog.impl;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
-import org.apache.zookeeper.data.Stat;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -23,19 +14,19 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.lilycms.rowlog.api.RowLogException;
 
 public class RowLogProcessorNotifier {
     
-    private final String zkConnectString;
     private ClientBootstrap bootstrap;
     private NioClientSocketChannelFactory channelFactory;
     private String[] processorHostAndPort;
+    private RowLogConfigurationManager rowLogConfigurationManager;
 
-    public RowLogProcessorNotifier(String zkConnectString) {
-        this.zkConnectString = zkConnectString;
+    public RowLogProcessorNotifier(String zkConnectString) throws RowLogException {
+        rowLogConfigurationManager = new RowLogConfigurationManager(zkConnectString);
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) {
@@ -54,6 +45,10 @@ public class RowLogProcessorNotifier {
             channelFactory.releaseExternalResources();
             channelFactory = null;
         }
+        try {
+            rowLogConfigurationManager.stop();
+        } catch (InterruptedException e) {
+        }
     }
     
     @Override
@@ -64,7 +59,9 @@ public class RowLogProcessorNotifier {
     
     private Channel getProcessorChannel(String rowLogId, String shardId) {
         if (processorHostAndPort == null) {
-            readProcessorHostAndPort(rowLogId, shardId);
+            String processorHost = rowLogConfigurationManager.getProcessorHost(rowLogId, shardId);
+            if (processorHost != null)
+                processorHostAndPort = processorHost.split(":");
         }
         if (processorHostAndPort != null) {
             initBootstrap();
@@ -86,53 +83,6 @@ public class RowLogProcessorNotifier {
         return null;
     }
     
-    private void readProcessorHostAndPort(String rowLogId, String shardId) {
-        ZooKeeper zookeeper = connectZookeeper();
-        if (zookeeper != null) {
-            String data = null;
-            try {
-                String shardIdPath = "/lily/rowLog/" + rowLogId + "/" + shardId; 
-                if (zookeeper.exists(shardIdPath, false) != null) {
-                    data = Bytes.toString(zookeeper.getData(shardIdPath, false, new Stat()));
-                } 
-            } catch (KeeperException e) {
-            } catch (InterruptedException e) {
-            } 
-            
-            if (data != null) {
-                processorHostAndPort = data.split(":");
-            }
-            try {
-                zookeeper.close();
-            } catch (InterruptedException e) {
-            } 
-        }
-    }
-
-    private ZooKeeper connectZookeeper() {
-        ZooKeeper zooKeeper;
-        final Semaphore semaphore = new Semaphore(0);
-        try {
-            zooKeeper = new ZooKeeper(zkConnectString, 5000, new Watcher() {
-                public void process(WatchedEvent event) {
-                    
-                    KeeperState keeperState = event.getState();
-                    if (KeeperState.SyncConnected.equals(keeperState)) {
-                        semaphore.release();
-                    }
-                }
-            });
-        } catch (IOException e) {
-            return null;
-        }
-        try {
-            semaphore.acquire(); // Wait for asynchronous zookeeper session establishment
-        } catch (InterruptedException e) {
-            return null;
-        }
-        return zooKeeper;
-    }
-
     private void initBootstrap() {
         if (bootstrap == null) {
             if (channelFactory == null) {

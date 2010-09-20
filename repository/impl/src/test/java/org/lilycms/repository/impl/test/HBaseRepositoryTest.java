@@ -38,12 +38,14 @@ import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.impl.RowLogConfigurationManager;
 import org.lilycms.testfw.TestHelper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
 
     private static BlobStoreAccessFactory blobStoreAccessFactory;
     private static Configuration configuration;
+    private static RowLogConfigurationManager rowLogConfigurationManager;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -55,12 +57,14 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
+        rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getZkConnectString());
         setupTypes();
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         ((HBaseRepository)repository).stop();
+        rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
     }
 

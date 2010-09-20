@@ -74,4 +74,6 @@ public interface RowLogShard {
      * @throws RowLogException when an unexpected exception occurs
      */
     List<RowLogMessage> getProblematic(int consumerId) throws RowLogException;
+
+    boolean isProblematic(RowLogMessage message, int consumerId) throws RowLogException;
 }

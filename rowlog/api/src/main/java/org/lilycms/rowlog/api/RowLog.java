@@ -176,18 +176,12 @@ public interface RowLog {
      */
     boolean messageDone(RowLogMessage message, int consumerId, byte[] lock) throws RowLogException;
     
+    boolean isMessageDone(RowLogMessage message, int consumerId) throws RowLogException;
+    
     /**
      * @return a collection of the {@link RowLogMessageConsumer}s that are registered on the RowLog
      */
     Collection<RowLogMessageConsumer> getConsumers();
-
-    /**
-     * This method allows a {@link RowLogProcessor} to be set on the {@link RowLog}.
-     * The RowLog can then inform the RowLogProcessor when a {@link RowLogMessageConsumer} is registered or unregistered.
-     * This will have to be changed once the Lily distributed node behaviour is implemented. See issue #52. 
-     * @param rowLogProcessor
-     */
-    void setProcessor(RowLogProcessor rowLogProcessor);
 
     /**
      * Return all messages that are still exist for the row, or if one or more consumerIds is given, 
@@ -212,4 +206,9 @@ public interface RowLog {
      * @throws RowLogException
      */
     List<RowLogMessage> getProblematic(int consumerId) throws RowLogException;
+    
+    boolean isProblematic(RowLogMessage message, int id) throws RowLogException;
+
+    RowLogMessageConsumer getConsumer(int consumerId);
+
 }

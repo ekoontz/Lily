@@ -141,7 +141,12 @@ public class HBaseRepository implements Repository {
         initializeWal(configuration);
 
         // Start Message Queue Processor
-        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, zkConnectString);
+        try {
+            messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, zkConnectString);
+        } catch (RowLogException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         messageQueueProcessor.start();
 
         rowLocker = new RowLocker(recordTable, HBaseTableUtil.NON_VERSIONED_SYSTEM_COLUMN_FAMILY, LOCK_COLUMN_NAME,

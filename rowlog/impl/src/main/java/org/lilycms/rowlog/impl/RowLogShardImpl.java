@@ -181,6 +181,15 @@ public class RowLogShardImpl implements RowLogShard {
     public List<RowLogMessage> getProblematic(int consumerId) throws RowLogException {
         return next(consumerId, true);
     }
+    
+    public boolean isProblematic(RowLogMessage message, int consumerId) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), consumerId, true);
+        try {
+            return table.exists(new Get(rowKey));
+        } catch (IOException e) {
+            throw new RowLogException("Failed if message is problematic", e);
+        }
+    }
 
     private byte[] createRowKey(byte[] messageId, int consumerId, boolean problematic) {
         byte[] rowKey = new byte[0];

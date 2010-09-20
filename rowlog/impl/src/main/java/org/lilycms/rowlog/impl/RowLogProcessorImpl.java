@@ -15,7 +15,6 @@
  */
 package org.lilycms.rowlog.impl;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -24,21 +23,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -56,21 +50,22 @@ import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.util.ArgumentValidator;
 
 public class RowLogProcessorImpl implements RowLogProcessor {
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
-    private Map<Integer, ConsumerThread> consumerThreads = new HashMap<Integer, ConsumerThread>();
+    private Map<Integer, SubscriptionThread> subscriptionThreads = new HashMap<Integer, SubscriptionThread>();
     private Channel channel;
     private ChannelFactory channelFactory;
+    private RowLogConfigurationManager rowLogConfigurationManager;
     private final String zkConnectString;
     
-    public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, String zkConnectString) {
+    public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, String zkConnectString) throws RowLogException {
         this.zkConnectString = zkConnectString;
         ArgumentValidator.notNull(rowLog, "rowLog");
         ArgumentValidator.notNull(shard, "shard");
@@ -87,48 +82,71 @@ public class RowLogProcessorImpl implements RowLogProcessor {
     public synchronized void start() {
         if (stop) {
             stop = false;
-            for (RowLogMessageConsumer consumer : rowLog.getConsumers()) {
-                startConsumerThread(consumer);
+            try {
+                rowLogConfigurationManager = new RowLogConfigurationManager(zkConnectString);
+                subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(this, rowLog));
+            } catch (KeeperException e) {
+                
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (RowLogException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
             startConsumerNotifyListener();
-            rowLog.setProcessor(this);
+        }
+    }
+    
+    public synchronized void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
+        List<Integer> newSubscriptionIds = new ArrayList<Integer>();
+        for (SubscriptionContext newSubscription : newSubscriptions) {
+            newSubscriptionIds.add(newSubscription.getId());
+            if (!subscriptionThreads.containsKey(newSubscription))
+                subscriptionRegistered(newSubscription);
+        }
+        for (Integer subscription : subscriptionThreads.keySet()) {
+            if (!newSubscriptionIds.contains(subscription))
+                subscriptionUnregistered(subscription);
         }
     }
 
-    public synchronized void consumerRegistered(RowLogMessageConsumer consumer) {
-        startConsumerThread(consumer);
+    private void subscriptionRegistered(SubscriptionContext subscription) {
+        startSubscriptionThread(subscription);
     }
     
-    public synchronized void consumerUnregistered(RowLogMessageConsumer consumer) {
-        stopConsumerThread(consumer.getId());
+    private void subscriptionUnregistered(int subscriptionId) {
+        stopSubscriptionThread(subscriptionId);
     }
     
-    private synchronized void startConsumerThread(RowLogMessageConsumer consumer) {
+    private void startSubscriptionThread(SubscriptionContext subscription) {
         if (!stop) {
-            if (consumerThreads.get(consumer.getId()) == null) {
-                ConsumerThread consumerThread = new ConsumerThread(consumer);
-                consumerThread.start();
-                consumerThreads.put(consumer.getId(), consumerThread);
+            int subscriptionId = subscription.getId();
+            if (subscriptionThreads.get(subscriptionId) == null) {
+                SubscriptionThread subscriptionThread = new SubscriptionThread(subscription);
+                subscriptionThread.start();
+                subscriptionThreads.put(subscriptionId, subscriptionThread);
             }
         }
     }
     
-    private synchronized void stopConsumerThread(int consumerId) {
-        ConsumerThread consumerThread = consumerThreads.get(consumerId);
-        consumerThread.interrupt();
+    private synchronized void stopSubscriptionThread(int consumerId) {
+        SubscriptionThread subscriptionThread = subscriptionThreads.get(consumerId);
+        subscriptionThread.interrupt();
         try {
-            consumerThread.join();
+            subscriptionThread.join();
         } catch (InterruptedException e) {
         }
-        consumerThreads.remove(consumerId);
+        subscriptionThreads.remove(consumerId);
     }
 
     public synchronized void stop() {
         stop = true;
         stopConsumerNotifyListener();
-        rowLog.setProcessor(null);
-        Collection<ConsumerThread> threads = new ArrayList<ConsumerThread>(consumerThreads.values());
-        consumerThreads.clear();
+        Collection<SubscriptionThread> threads = new ArrayList<SubscriptionThread>(subscriptionThreads.values());
+        subscriptionThreads.clear();
         for (Thread thread : threads) {
             if (thread != null) {
                 thread.interrupt();
@@ -144,10 +162,14 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                 }
             }
         }
+        try {
+            rowLogConfigurationManager.stop();
+        } catch (InterruptedException e) {
+        }
     }
 
     public synchronized boolean isRunning(int consumerId) {
-        return consumerThreads.get(consumerId) != null;
+        return subscriptionThreads.get(consumerId) != null;
     }
     
     private void startConsumerNotifyListener() {
@@ -173,108 +195,24 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                 InetSocketAddress inetSocketAddress = new InetSocketAddress(hostName, 0);
                 channel = bootstrap.bind(inetSocketAddress);
                 int port = ((InetSocketAddress)channel.getLocalAddress()).getPort();
-                publishHost(hostName, port);
+                rowLogConfigurationManager.publishProcessorHost(hostName, port, rowLog.getId(), shard.getId());
             } catch (UnknownHostException e) {
                 // Don't listen to any wakeup events
                 // Fallback on the default timeout behaviour
-            }
-            
-        }
-    }
-    
-    private void publishHost(String hostname, int port) {
-        if (zkConnectString == null) return;
-        
-        String lilyPath = "/lily";
-        String rowLogPath = lilyPath + "/rowLog";
-        String rowLogIdPath = rowLogPath + "/" + rowLog.getId();
-        String shardIdPath = rowLogIdPath + "/" + shard.getId();
-        ZooKeeper zookeeper;
-        final Semaphore semaphore = new Semaphore(0);
-        try {
-            zookeeper = new ZooKeeper(zkConnectString, 5000, new Watcher() {
-                public void process(WatchedEvent event) {
-                    if (KeeperState.SyncConnected.equals(event.getState())) {
-                        semaphore.release();
-                    }
-                }
-            });
-        } catch (IOException e) {
-            return;
-        }
-        try { 
-            semaphore.acquire();
-            try {
-                zookeeper.create(lilyPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            } catch (KeeperException.NodeExistsException e) {
-                // ignore
-            }
-            try {
-                zookeeper.create(rowLogPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            } catch (KeeperException.NodeExistsException e) {
-                // ignore
-            }
-            try {
-                zookeeper.create(rowLogIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            } catch (KeeperException.NodeExistsException e) {
-                // ignore
-            }
-            try {
-                zookeeper.create(shardIdPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            } catch (KeeperException.NodeExistsException e) {
-                // ignore
-            }
-            
-            zookeeper.setData(shardIdPath, Bytes.toBytes(hostname + ":" + port), -1);
-        } catch (InterruptedException e) {
-        } catch (KeeperException e) {
-        } finally {
-            try {
-                if (zookeeper != null) {
-                    zookeeper.close();
-                }
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-    
-    private void unPublishHost() {
-        if (zkConnectString == null) return;
-        
-        String lilyPath = "/lily";
-        String rowLogPath = lilyPath + "/rowLog";
-        String rowLogIdPath = rowLogPath + "/" + rowLog.getId();
-        String shardIdPath = rowLogIdPath + "/" + shard.getId();
-        ZooKeeper zookeeper = null;
-        final Semaphore semaphore = new Semaphore(0);
-        try {
-            zookeeper = new ZooKeeper(zkConnectString, 5000, new Watcher() {
-                public void process(WatchedEvent event) {
-                    if (KeeperState.SyncConnected.equals(event.getState())) {
-                        semaphore.release();
-                    }
-                }
-            });
-            semaphore.acquire(); // Wait for asynchronous zookeeper session establishment
-            zookeeper.delete(shardIdPath, -1);
-        } catch (IOException e) {
-        } catch (InterruptedException e) {
-        } catch (KeeperException e) {
-        } finally {
-            try {
-                if (zookeeper != null) {
-                    zookeeper.close();
-                }
-            } catch (InterruptedException e) {
             }
         }
     }
     
     private void stopConsumerNotifyListener() {
-        unPublishHost();
+        rowLogConfigurationManager.unPublishProcessorHost(rowLog.getId(), shard.getId());
         if (channel != null) {
             ChannelFuture channelFuture = channel.close();
-            channelFuture.awaitUninterruptibly();
+            try {
+                channelFuture.await();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             channel = null;
         }
         if (channelFactory != null) {
@@ -304,7 +242,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             ChannelBuffer buffer = (ChannelBuffer)e.getMessage();
             byte notifyByte = buffer.readByte(); // Does not contain any usefull information currently
-            for (ConsumerThread consumerThread : consumerThreads.values()) {
+            for (SubscriptionThread consumerThread : subscriptionThreads.values()) {
                 consumerThread.wakeup();
             }
             e.getChannel().close();
@@ -316,15 +254,32 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         }
     }
     
-    private class ConsumerThread extends Thread {
-        private final RowLogMessageConsumer consumer;
+    private class SubscriptionThread extends Thread {
         private long lastWakeup;
         private ProcessorMetrics metrics;
         private volatile boolean stopRequested = false;
+        private BlockingQueue<RowLogMessage> messageQueue = new ArrayBlockingQueue<RowLogMessage>(1);
+        private SubscriptionHandler subscriptionHandler;
+        private int subscriptionId;
 
-        public ConsumerThread(RowLogMessageConsumer consumer) {
-            this.consumer = consumer;
+        public SubscriptionThread(SubscriptionContext subscription) {
+            this.subscriptionId = subscription.getId();
             this.metrics = new ProcessorMetrics();
+            switch (subscription.getType()) {
+            case Embeded:
+                subscriptionHandler = new EmbededSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messageQueue, rowLog);
+                break;
+                
+            case Local:
+                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId,  subscription.getWorkerCount(), messageQueue, rowLog, rowLogConfigurationManager);
+                break;
+                
+            case Remote:
+                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messageQueue, rowLog, rowLogConfigurationManager);
+
+            default:
+                break;
+            }
         }
         
         public synchronized void wakeup() {
@@ -336,38 +291,35 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         @Override
         public synchronized void start() {
             stopRequested = false;
+            subscriptionHandler.start();
             super.start();
         }
         
         @Override
         public void interrupt() {
             stopRequested = true;
+            subscriptionHandler.interrupt();
             super.interrupt();
         }
                 
         public void run() {
-            if ((consumerThreads.get(consumer.getId()) == null)) return;
-            int i = 0;
+            if ((subscriptionThreads.get(subscriptionId) == null)) return;
             while (!isInterrupted() && !stopRequested) {
                 try {
-                    List<RowLogMessage> messages = shard.next(consumer.getId());
+                    List<RowLogMessage> messages = shard.next(subscriptionId);
                     metrics.setScannedMessages(messages != null ? messages.size() : 0);
                     if (messages != null && !messages.isEmpty()) {
                         for (RowLogMessage message : messages) {
                             if (isInterrupted())
                                 return;
 
-                            metrics.incMessageCount();
-
-                            byte[] lock = rowLog.lockMessage(message, consumer.getId());
-                            if (lock != null) {
-                                if (consumer.processMessage(message)) {
-                                    rowLog.messageDone(message, consumer.getId(), lock);
-                                    metrics.incSuccessCount();
-                                } else {
-                                    rowLog.unlockMessage(message, consumer.getId(), lock);
-                                    metrics.incFailureCount();
+                            try {
+                                if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
+                                    if (!messageQueue.contains(message))
+                                        messageQueue.offer(message, 1, TimeUnit.SECONDS);
                                 }
+                            } catch (InterruptedException e) {
+                                return;
                             }
                         }
                     } else {
@@ -401,7 +353,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
             public ProcessorMetrics() {
                 MetricsContext lilyContext = MetricsUtil.getContext("lily");
-                record = lilyContext.createRecord("rowLogProcessor." + consumer.getId());
+                record = lilyContext.createRecord("rowLogProcessor." + subscriptionId);
                 lilyContext.registerUpdater(this);
             }
 
@@ -444,4 +396,6 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             }
         }
     }
+
+    
 }
