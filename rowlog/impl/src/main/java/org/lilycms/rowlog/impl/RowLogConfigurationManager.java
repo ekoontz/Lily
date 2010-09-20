@@ -50,7 +50,7 @@ public class RowLogConfigurationManager {
         } catch (Exception e) {
             throw new RowLogException("Failed to connect with Zookeeper @ <"+connectString+">", e);
         }
-        long waitUntil = System.currentTimeMillis() + 1000;
+        long waitUntil = System.currentTimeMillis() + 5000;
         boolean connected = false;
         while (!connected && waitUntil > System.currentTimeMillis()) {
             connected = (States.CONNECTED).equals(zooKeeper.getState());
