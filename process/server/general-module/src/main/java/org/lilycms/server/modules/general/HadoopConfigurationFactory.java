@@ -23,4 +23,8 @@ public interface HadoopConfigurationFactory {
     Configuration getMapReduceConf();
 
     Configuration getMapReduceJobConf();
+
+    String getZooKeeperConnectString();
+
+    int getZooKeeperSessionTimeout();
 }

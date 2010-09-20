@@ -22,10 +22,14 @@ import org.kauriproject.conf.Conf;
 public class HadoopConfigurationFactoryImpl implements HadoopConfigurationFactory {
     private Conf hbaseConf;
     private Conf mrConf;
+    private String zkConnectString;
+    private int zkSessionTimeout;
 
-    public HadoopConfigurationFactoryImpl(Conf hbaseConf, Conf mrConf) {
+    public HadoopConfigurationFactoryImpl(Conf hbaseConf, Conf mrConf, String zkConnectString, int zkSessionTimeout) {
         this.hbaseConf = hbaseConf;
         this.mrConf = mrConf;
+        this.zkConnectString = zkConnectString;
+        this.zkSessionTimeout = zkSessionTimeout;
     }
 
     public Configuration getHBaseConf() {
@@ -68,5 +72,13 @@ public class HadoopConfigurationFactoryImpl implements HadoopConfigurationFactor
         }
 
         return hadoopConf;
+    }
+
+    public String getZooKeeperConnectString() {
+        return zkConnectString;
+    }
+
+    public int getZooKeeperSessionTimeout() {
+        return zkSessionTimeout;
     }
 }

@@ -41,8 +41,12 @@ public class ZooKeeperImpl implements ZooKeeperItf {
         delegate.register(watcher);
     }
 
-    public void close() throws InterruptedException {
-        delegate.close();
+    public void close() {
+        try {
+            delegate.close();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String create(String path, byte[] data, List<ACL> acl, CreateMode createMode) throws KeeperException, InterruptedException {

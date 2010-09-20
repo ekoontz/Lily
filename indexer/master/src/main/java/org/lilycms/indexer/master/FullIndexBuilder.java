@@ -28,7 +28,7 @@ public class FullIndexBuilder {
      * @return the ID of the started job
      */
     public static String startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf,
-            Configuration hbaseConf) throws Exception {
+            Configuration hbaseConf, String zkConnectString, int zkSessionTimeout) throws Exception {
 
         Configuration conf = new Configuration(mapReduceConf);
         Job job = new Job(conf);
@@ -84,6 +84,12 @@ public class FullIndexBuilder {
         //
         job.getConfiguration().set("hbase.zookeeper.quorum", hbaseConf.get("hbase.zookeeper.quorum"));
         job.getConfiguration().set("hbase.zookeeper.property.clientPort", hbaseConf.get("hbase.zookeeper.property.clientPort"));
+
+        //
+        // Provide Lily ZooKeeper props
+        //
+        job.getConfiguration().set("org.lilycms.indexer.fullbuild.zooKeeperConnectString", zkConnectString);
+        job.getConfiguration().set("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout", String.valueOf(zkSessionTimeout));
 
         job.submit();
         return job.getJobID().toString();

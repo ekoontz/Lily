@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class LinkIndexTest {
 
         IdGenerator idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, HBASE_PROXY.getConf());
         ids = repository.getIdGenerator();

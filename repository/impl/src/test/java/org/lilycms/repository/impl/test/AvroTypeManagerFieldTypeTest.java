@@ -20,6 +20,7 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,7 +53,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
         

@@ -16,6 +16,7 @@
 package org.lilycms.repository.impl.test;
 
 
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,7 +43,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGenerator idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(HBASE_PROXY.getConf());
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
         SizeBasedBlobStoreAccessFactory factory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);

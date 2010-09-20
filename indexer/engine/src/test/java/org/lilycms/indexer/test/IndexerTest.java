@@ -17,6 +17,7 @@ package org.lilycms.indexer.test;
 
 import static org.junit.Assert.assertEquals;
 
+import org.apache.hadoop.fs.Path;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.engine.SolrServers;
@@ -108,7 +109,7 @@ public class IndexerTest {
 
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, HBASE_PROXY.getConf());

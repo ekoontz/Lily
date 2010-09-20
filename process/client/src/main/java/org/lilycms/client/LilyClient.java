@@ -28,13 +28,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.repository.api.BlobStoreAccess;
+import org.lilycms.repository.api.BlobStoreAccessFactory;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.avro.AvroConverter;
@@ -45,6 +46,9 @@ import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
+import org.lilycms.util.repo.DfsUri;
+import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 /**
  * Provides remote repository implementations.
@@ -56,19 +60,19 @@ import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
  * request an new Repository object in order to avoid talking to the same server all the time.
  */
 public class LilyClient {
-    private ZooKeeper zk;
+    private ZooKeeperItf zk;
     private List<ServerNode> servers = new ArrayList<ServerNode>();
     private Set<String> serverAddresses = new HashSet<String>();
-    private String lilyPath = "/lily";
-    private String nodesPath = lilyPath + "/repositoryNodes";
-    private String blobDfsUriPath = lilyPath + "/blobStoresConfig/dfsUri";
-    private String blobHBaseZkQuorumPath = lilyPath + "/blobStoresConfig/hbaseZkQuorum";
-    private String blobHBaseZkPortPath = lilyPath + "/blobStoresConfig/hbaseZkPort";
+    private static final String lilyPath = "/lily";
+    private static final String nodesPath = lilyPath + "/repositoryNodes";
+    private static final String blobDfsUriPath = lilyPath + "/blobStoresConfig/dfsUri";
+    private static final String blobHBaseZkQuorumPath = lilyPath + "/blobStoresConfig/hbaseZkQuorum";
+    private static final String blobHBaseZkPortPath = lilyPath + "/blobStoresConfig/hbaseZkPort";
 
     private Log log = LogFactory.getLog(getClass());
 
     public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
-        zk = new ZooKeeper(zookeeperConnectString, 5000, new ZkWatcher());
+        zk = new ZooKeeperImpl(zookeeperConnectString, 5000, new ZkWatcher());
         refreshServers();
     }
 
@@ -92,7 +96,7 @@ public class LilyClient {
         TypeManager typeManager = new RemoteTypeManager(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, idGenerator);
         
-        SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = setupBlobStoreAccess();
+        BlobStoreAccessFactory blobStoreAccessFactory = getBlobStoreAccess(zk);
         
         Repository repository = new RemoteRepository(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
@@ -101,12 +105,16 @@ public class LilyClient {
         server.repository = repository;
     }
 
-    private SizeBasedBlobStoreAccessFactory setupBlobStoreAccess() throws IOException {
+    public static BlobStoreAccessFactory getBlobStoreAccess(ZooKeeperItf zk) throws IOException {
         Configuration configuration = HBaseConfiguration.create();
-        configuration.set("hbase.zookeeper.quorum", getBlobHBaseZkQuorum());
-        configuration.set("hbase.zookeeper.property.clientPort", getBlobHBaseZkPort());
-        
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(getDfsUri(), configuration));
+        configuration.set("hbase.zookeeper.quorum", getBlobHBaseZkQuorum(zk));
+        configuration.set("hbase.zookeeper.property.clientPort", getBlobHBaseZkPort(zk));
+
+        URI dfsUri = getDfsUri(zk);
+        FileSystem fs = FileSystem.get(DfsUri.getBaseDfsUri(dfsUri), configuration);
+        Path blobRootPath = new Path(DfsUri.getDfsPath(dfsUri));
+
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(fs, blobRootPath);
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess();
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
@@ -115,7 +123,7 @@ public class LilyClient {
         return blobStoreAccessFactory;
     }
     
-    private URI getDfsUri()  {
+    private static URI getDfsUri(ZooKeeperItf zk)  {
         try {
             return new URI(new String(zk.getData(blobDfsUriPath, false, new Stat())));
         } catch (Exception e) {
@@ -123,7 +131,7 @@ public class LilyClient {
         }
     }
 
-    private String getBlobHBaseZkQuorum() {
+    private static String getBlobHBaseZkQuorum(ZooKeeperItf zk) {
         try {
             return new String(zk.getData(blobHBaseZkQuorumPath, false, new Stat()));
         } catch (Exception e) {
@@ -131,7 +139,7 @@ public class LilyClient {
         }
     }
 
-    private String getBlobHBaseZkPort() {
+    private static String getBlobHBaseZkPort(ZooKeeperItf zk) {
         try {
             return new String(zk.getData(blobHBaseZkPortPath, false, new Stat()));
         } catch (Exception e) {

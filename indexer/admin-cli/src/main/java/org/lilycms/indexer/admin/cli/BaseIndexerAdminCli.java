@@ -173,6 +173,11 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
                     return 1;
                 }
 
+                if (shardName.equals("http")) {
+                    System.out.println("You forgot to specify a shard name for the SOLR shard " + shardEntry);
+                    return 1;
+                }
+
                 String shardAddress = shardEntry.substring(sep + 1).trim();
                 try {
                     URI uri = new URI(shardAddress);

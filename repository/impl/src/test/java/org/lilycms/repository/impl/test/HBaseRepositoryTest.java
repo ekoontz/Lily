@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -50,7 +51,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         typeManager = new HBaseTypeManager(idGenerator, configuration);
-        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);

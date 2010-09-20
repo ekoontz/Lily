@@ -26,6 +26,8 @@
       class="org.lilycms.server.modules.general.HadoopConfigurationFactoryImpl">
     <constructor-arg><kauri:conf path="hbase"/></constructor-arg>
     <constructor-arg><kauri:conf path="mapreduce"/></constructor-arg>
+    <constructor-arg value="${zookeeper:connectString}"/>
+    <constructor-arg value="${zookeeper:sessionTimeout}"/>
   </bean>
 
   <bean id="metrics"

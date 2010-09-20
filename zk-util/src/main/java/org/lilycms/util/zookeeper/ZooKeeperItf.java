@@ -4,12 +4,13 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
+import java.io.Closeable;
 import java.util.List;
 
 /**
  * An interface for ZooKeeper.
  */
-public interface ZooKeeperItf {
+public interface ZooKeeperItf extends Closeable {
     long getSessionId();
 
     byte[] getSessionPasswd();
@@ -20,7 +21,7 @@ public interface ZooKeeperItf {
 
     void register(Watcher watcher);
 
-    void close() throws InterruptedException;
+    void close();
 
     String create(String path, byte[] data, List<ACL> acl, CreateMode createMode) throws KeeperException, InterruptedException;
 

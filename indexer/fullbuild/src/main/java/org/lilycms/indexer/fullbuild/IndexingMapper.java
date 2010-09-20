@@ -4,10 +4,13 @@ import net.iharder.Base64;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.lilycms.client.LilyClient;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
@@ -17,6 +20,9 @@ import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.*;
+import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,35 +38,44 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
 
+        ZooKeeperItf zk = null;
+
         try {
-            Configuration conf = new Configuration();
-            conf.set("hbase.zookeeper.quorum", context.getConfiguration().get("hbase.zookeeper.quorum"));
-            conf.set("hbase.zookeeper.property.clientPort", context.getConfiguration().get("hbase.zookeeper.property.clientPort"));
+            Configuration jobConf = context.getConfiguration();
+
+            Configuration conf = HBaseConfiguration.create();
+            conf.set("hbase.zookeeper.quorum", jobConf.get("hbase.zookeeper.quorum"));
+            conf.set("hbase.zookeeper.property.clientPort", jobConf.get("hbase.zookeeper.property.clientPort"));
 
             idGenerator = new IdGeneratorImpl();
 
             TypeManager typeManager = new HBaseTypeManager(idGenerator, conf);
 
-            BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(FileSystem.get(conf));
-            BlobStoreAccess defaultBlobStoreAccess = dfsBlobStoreAccess;
-            SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(defaultBlobStoreAccess);
+            String zkConnectString = jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperConnectString");
+            int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout"));
+            zk = new ZooKeeperImpl(zkConnectString, zkSessionTimeout, new Watcher() {
+                public void process(WatchedEvent event) {
+                }
+            });
+
+            BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 
             Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, conf);
 
-            byte[] indexerConfBytes = Base64.decode(context.getConfiguration().get("org.lilycms.indexer.fullbuild.indexerconf"));
+            byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.fullbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);
 
             Map<String, String> solrShards = new HashMap<String, String>();
             for (int i = 1; true; i++) {
-                String shardName = context.getConfiguration().get("org.lilycms.indexer.fullbuild.solrshard.name." + i);
-                String shardAddress = context.getConfiguration().get("org.lilycms.indexer.fullbuild.solrshard.address." + i);
+                String shardName = jobConf.get("org.lilycms.indexer.fullbuild.solrshard.name." + i);
+                String shardAddress = jobConf.get("org.lilycms.indexer.fullbuild.solrshard.address." + i);
                 if (shardName == null)
                     break;
                 solrShards.put(shardName, shardAddress);
             }
 
             ShardSelector shardSelector;
-            String shardingConf = context.getConfiguration().get("org.lilycms.indexer.fullbuild.shardingconf");
+            String shardingConf = jobConf.get("org.lilycms.indexer.fullbuild.shardingconf");
             if (shardingConf != null) {
                 byte[] shardingConfBytes = Base64.decode(shardingConf);
                 shardSelector = JsonShardSelectorBuilder.build(shardingConfBytes);
@@ -78,6 +93,8 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             indexer = new Indexer(indexerConf, repository, solrServers);
         } catch (Exception e) {
             throw new IOException("Error in index build map task setup.", e);
+        } finally {
+            Closer.close(zk);
         }
     }
 

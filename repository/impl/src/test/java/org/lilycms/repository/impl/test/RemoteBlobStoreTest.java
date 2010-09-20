@@ -19,6 +19,7 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,7 +53,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(HBASE_PROXY.getConf());
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);

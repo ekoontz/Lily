@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Arrays;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -63,7 +64,7 @@ public class ValueTypeTest {
     public void setUp() throws Exception {
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
-        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS());
+        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
     }

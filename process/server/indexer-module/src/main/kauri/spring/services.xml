@@ -46,6 +46,8 @@
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceConf"/></constructor-arg>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceJobConf"/></constructor-arg>
     <constructor-arg ref="hbaseConf"/>
+    <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperConnectString"/></constructor-arg>
+    <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperSessionTimeout"/></constructor-arg>
   </bean>
 
   <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">

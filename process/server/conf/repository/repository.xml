@@ -3,5 +3,5 @@
             conf:inherit="shallow">
 
   <!-- Filesystem to use to store blobs -->
-  <blobFileSystem>hdfs://localhost:9000</blobFileSystem>
+  <blobFileSystem>hdfs://localhost:9000/lily/blobs</blobFileSystem>
 </repository>
