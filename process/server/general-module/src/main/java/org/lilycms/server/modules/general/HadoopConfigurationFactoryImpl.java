@@ -34,7 +34,6 @@ public class HadoopConfigurationFactoryImpl implements HadoopConfigurationFactor
         for (Conf conf : hbaseConf.getChild("properties").getChildren("property")) {
             String name = conf.getRequiredChild("name").getValue();
             String value = conf.getRequiredChild("value").getValue();
-            System.out.println(" -- hbase prop: " + name + " : " + value);
             hadoopConf.set(name, value);
         }
 
