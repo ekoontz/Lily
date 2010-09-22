@@ -18,6 +18,7 @@ package org.lilycms.indexer.engine;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.metrics.*;
+import org.apache.zookeeper.KeeperException;
 import org.lilycms.indexer.model.indexerconf.DerefValue;
 import org.lilycms.indexer.model.indexerconf.IndexCase;
 import org.lilycms.indexer.model.indexerconf.IndexField;
@@ -29,6 +30,8 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageConsumer;
 import org.lilycms.util.ObjectUtils;
+import org.lilycms.util.zookeeper.ZkPathCreationException;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;
 
@@ -48,16 +51,20 @@ public class IndexUpdater {
     private Indexer indexer;
     private IndexUpdaterMetrics metrics;
     private ClassLoader myContextClassLoader;
+    private IndexLocker indexLocker;
 
     private Log log = LogFactory.getLog(getClass());
 
-    public IndexUpdater(Indexer indexer, RowLog rowLog, int consumerId, Repository repository, LinkIndex linkIndex) {
+    public IndexUpdater(Indexer indexer, RowLog rowLog, int consumerId, Repository repository, LinkIndex linkIndex,
+            ZooKeeperItf zk) throws ZkPathCreationException {
         this.indexer = indexer;
         this.rowLog = rowLog;
         this.consumerId = consumerId;
         this.repository = repository;
         this.typeManager = repository.getTypeManager();
         this.linkIndex = linkIndex;
+
+        this.indexLocker = new IndexLocker(zk);
 
         this.myContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -102,7 +109,12 @@ public class IndexUpdater {
                 if (event.getType().equals(DELETE)) {
                     // For deleted records, we cannot determine the record type, so we do not know if there was
                     // an applicable index case, so we always perform a delete.
-                    indexer.delete(recordId);
+                    IndexLock indexLock = indexLocker.lock(recordId);
+                    try {
+                        indexer.delete(recordId, indexLock);
+                    } finally {
+                        indexLocker.unlockLogFailure(recordId, indexLock);
+                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("Record %1$s: deleted from index (if present) because of " +
@@ -112,12 +124,42 @@ public class IndexUpdater {
                     // After this we can go to update denormalized data
                     updateDenormalizedData(recordId, event, null, null);
                 } else {
-                    handleRecordCreateUpdate(recordId, event);
+                    Map<Long, Set<String>> vtagsByVersion;
+                    Map<Scope, Set<FieldType>> updatedFieldsByScope;
+
+                    IndexLock indexLock = indexLocker.lock(recordId);
+                    try {
+                        IdRecord record;
+                        try {
+                            record = repository.readWithIds(recordId, null, null);
+                        } catch (RecordNotFoundException e) {
+                            // The record has been deleted in the meantime.
+                            // For now, we do nothing, when the delete event is received the record will be removed
+                            // from the index.
+                            // TODO: we should process all outstanding messages for the record (up to delete) in one go
+                            return true;
+                        }
+
+                        // Read the vtags of the record. Note that while this algorithm is running, the record can meanwhile
+                        // undergo changes. However, we continuously work with the snapshot of the vtags mappings read here.
+                        // The processing of later events will bring the index up to date with any new changes.
+                        Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
+                        vtagsByVersion = VersionTag.tagsByVersion(vtags);
+
+                        updatedFieldsByScope = getFieldTypeAndScope(event.getUpdatedFields());
+
+                        handleRecordCreateUpdate(record, event, vtags, vtagsByVersion, updatedFieldsByScope, indexLock);
+                    } finally {
+                        indexLocker.unlockLogFailure(recordId, indexLock);
+                    }
+
+                    updateDenormalizedData(recordId, event, updatedFieldsByScope, vtagsByVersion);
                 }
 
 
             } catch (Exception e) {
                 // TODO
+                //  TODO if the error is an IndexLockException: indexing can be retried later thus rather return false
                 log.error("Error processing event in indexer.", e);
             } finally {
                 long after = System.currentTimeMillis();
@@ -128,25 +170,9 @@ public class IndexUpdater {
         }
     }
 
-    private void handleRecordCreateUpdate(RecordId recordId, RecordEvent event) throws Exception {
-        IdRecord record;
-        try {
-            record = repository.readWithIds(recordId, null, null);
-        } catch (RecordNotFoundException e) {
-            // The record has been deleted in the meantime.
-            // For now, we do nothing, when the delete event is received the record will be removed
-            // from the index.
-            // TODO: we should process all outstanding messages for the record (up to delete) in one go
-            return;
-        }
-
-        // Read the vtags of the record. Note that while this algorithm is running, the record can meanwhile
-        // undergo changes. However, we continuously work with the snapshot of the vtags mappings read here.
-        // The processing of later events will bring the index up to date with any new changes.
-        Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
-        Map<Long, Set<String>> vtagsByVersion = VersionTag.tagsByVersion(vtags);
-
-        Map<Scope, Set<FieldType>> updatedFieldsByScope = getFieldTypeAndScope(event.getUpdatedFields());
+    private void handleRecordCreateUpdate(IdRecord record, RecordEvent event, Map<String, Long> vtags,
+            Map<Long, Set<String>> vtagsByVersion, Map<Scope, Set<FieldType>> updatedFieldsByScope,
+            IndexLock indexLock) throws Exception {
 
         // Determine the IndexCase:
         //  The indexing of all versions is determined by the record type of the non-versioned scope.
@@ -171,7 +197,7 @@ public class IndexUpdater {
 
                 // Delete everything: we do not know the previous record type, so we do not know what
                 // version tags were indexed, so we simply delete everything
-                indexer.delete(record.getId());
+                indexer.delete(record.getId(), indexLock);
 
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Record %1$s: deleted existing entries from index (if present) " +
@@ -189,7 +215,7 @@ public class IndexUpdater {
                         && indexCase.getIndexVersionless()) {
                     // If the first version was created, but the record was not new, then there
                     // might already be an @@versionless index entry
-                    indexer.delete(record.getId(), VersionTag.VERSIONLESS_TAG);
+                    indexer.delete(record.getId(), VersionTag.VERSIONLESS_TAG, indexLock);
 
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("Record %1$s: deleted versionless entry from index (if present) " +
@@ -256,7 +282,7 @@ public class IndexUpdater {
                         vtagsToIndex.add(vtag);
                     } else {
                         // The vtag does not exist anymore on the document, or does not need to be indexed: delete from index
-                        indexer.delete(record.getId(), vtag);
+                        indexer.delete(record.getId(), vtag, indexLock);
                         if (log.isDebugEnabled()) {
                             log.debug(String.format("Record %1$s: deleted from index for deleted vtag %2$s",
                                     record.getId(), indexer.safeLoadTagName(vtag)));
@@ -269,11 +295,8 @@ public class IndexUpdater {
             //
             // Index
             //
-            indexer.index(record, vtagsToIndex, vtags);
+            indexer.index(record, vtagsToIndex, vtags, indexLock);
         }
-
-        updateDenormalizedData(recordId, event, updatedFieldsByScope, vtagsByVersion);
-
     }
 
     private void updateDenormalizedData(RecordId recordId, RecordEvent event,
@@ -512,36 +535,48 @@ public class IndexUpdater {
             RecordId referrer = entry.getKey();
             Set<String> vtagsToIndex = entry.getValue();
 
-            IdRecord record = null;
+            IndexLock lock = null;
             try {
-                // TODO optimize this: we are only interested to know the vtags and to know if the record has versions
-                record = repository.readWithIds(referrer, null, null);
-            } catch (Exception e) {
-                // TODO handle this
-                // One case to be expected here is that the record has been deleted since we read the list of referrers
-                e.printStackTrace();
-            }
+                lock = indexLocker.lock(referrer);
 
-            IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeName(), record.getId().getVariantProperties());
-            if (indexCase == null) {
-                continue nextReferrer;
-            }
-
-            try {
-                if (record.getVersion() == null) {
-                    if (indexCase.getIndexVersionless() && vtagsToIndex.contains(VersionTag.VERSIONLESS_TAG)) {
-                        indexer.index(record, Collections.singleton(VersionTag.VERSIONLESS_TAG));
-                    }
-                } else {
-                    Map<String, Long> recordVTags = VersionTag.getTagsById(record, typeManager);
-                    vtagsToIndex.retainAll(indexCase.getVersionTags());
-                    // Only keep vtags which exist on the record
-                    vtagsToIndex.retainAll(recordVTags.keySet());
-                    indexer.indexRecord(record.getId(), vtagsToIndex, recordVTags);
+                IdRecord record = null;
+                try {
+                    // TODO optimize this: we are only interested to know the vtags and to know if the record has versions
+                    record = repository.readWithIds(referrer, null, null);
+                } catch (Exception e) {
+                    // TODO handle this
+                    // One case to be expected here is that the record has been deleted since we read the list of referrers
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
+
+                IndexCase indexCase = indexer.getConf().getIndexCase(record.getRecordTypeName(), record.getId().getVariantProperties());
+                if (indexCase == null) {
+                    continue nextReferrer;
+                }
+
+                try {
+                    if (record.getVersion() == null) {
+                        if (indexCase.getIndexVersionless() && vtagsToIndex.contains(VersionTag.VERSIONLESS_TAG)) {
+                            indexer.index(record, Collections.singleton(VersionTag.VERSIONLESS_TAG), lock);
+                        }
+                    } else {
+                        Map<String, Long> recordVTags = VersionTag.getTagsById(record, typeManager);
+                        vtagsToIndex.retainAll(indexCase.getVersionTags());
+                        // Only keep vtags which exist on the record
+                        vtagsToIndex.retainAll(recordVTags.keySet());
+                        indexer.indexRecord(record.getId(), vtagsToIndex, recordVTags, lock);
+                    }
+                } catch (Exception e) {
+                    // TODO handle this
+                    e.printStackTrace();
+                }
+            } catch (IndexLockException e) {
                 // TODO handle this
                 e.printStackTrace();
+            } finally {
+                if (lock != null) {
+                    indexLocker.unlockLogFailure(referrer, lock);
+                }
             }
         }
 

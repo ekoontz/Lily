@@ -65,6 +65,7 @@
     <constructor-arg ref="repository"/>
     <constructor-arg ref="messageQueue"/>
     <constructor-arg ref="linkIndex"/>
+    <constructor-arg ref="zooKeeper"/>
   </bean>
 
 </beans>

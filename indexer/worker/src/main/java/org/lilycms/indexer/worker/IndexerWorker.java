@@ -17,6 +17,7 @@ import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.util.ObjectUtils;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
@@ -33,6 +34,8 @@ public class IndexerWorker {
     private Repository repository;
 
     private LinkIndex linkIndex;
+
+    private ZooKeeperItf zk;
 
     private RowLog rowLog;
 
@@ -52,11 +55,13 @@ public class IndexerWorker {
     
     private final Log log = LogFactory.getLog(getClass());
 
-    public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, LinkIndex linkIndex) {
+    public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, LinkIndex linkIndex,
+            ZooKeeperItf zk) {
         this.indexerModel = indexerModel;
         this.repository = repository;
         this.rowLog = rowLog;
         this.linkIndex = linkIndex;
+        this.zk = zk;
     }
 
     @PostConstruct
@@ -113,7 +118,7 @@ public class IndexerWorker {
             Indexer indexer = new Indexer(indexerConf, repository, solrServers);
 
             int consumerId = Integer.parseInt(index.getQueueSubscriptionId());
-            IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex);
+            IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex, zk);
 
             IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater);
 

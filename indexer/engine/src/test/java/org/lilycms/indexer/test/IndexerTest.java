@@ -18,6 +18,8 @@ package org.lilycms.indexer.test;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.engine.SolrServers;
@@ -49,6 +51,8 @@ import org.lilycms.repository.impl.*;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;
 
@@ -107,6 +111,11 @@ public class IndexerTest {
         HBASE_PROXY.start();
         SOLR_TEST_UTIL.start();
 
+        ZooKeeperItf zk = new ZooKeeperImpl(HBASE_PROXY.getZkConnectString(), 10000, new Watcher() {
+            public void process(WatchedEvent event) {
+            }
+        });
+
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
@@ -128,7 +137,7 @@ public class IndexerTest {
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/test/indexerconf1.xml"), repository);
         Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers);
-        indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex);
+        indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex, zk);
 
         repository.getWal().registerConsumer(messageVerifier);
     }
