@@ -28,16 +28,18 @@ public interface WriteableIndexerModel extends IndexerModel {
      * by taking a lock on the index before reading it. In fact, you are obliged to do so, and to pass your lock,
      * of which it will be validated that it really is the owner of the index lock.
      */
-    public void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
+    void updateIndex(final IndexDefinition index, String lock) throws InterruptedException, KeeperException,
             IndexNotFoundException, IndexConcurrentModificationException, ZkLockException, IndexUpdateException, IndexValidityException;
 
     /**
      * Internal index update method, <b>this method is only intended for internal Lily components</b>. It
      * is similar to the update method but bypasses some checks.
      */
-    public void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
+    void updateIndexInternal(final IndexDefinition index) throws InterruptedException, KeeperException,
             IndexNotFoundException, IndexConcurrentModificationException, IndexValidityException;
-    
+
+    void deleteIndex(final String indexName) throws IndexModelException;
+
     /**
      * Takes a lock on this index.
      *
@@ -46,7 +48,15 @@ public interface WriteableIndexerModel extends IndexerModel {
      * <p>TODO: can/should clients use this lock for their own purposes?
      */
     String lockIndex(String indexName) throws ZkLockException, IndexNotFoundException, InterruptedException,
-            KeeperException;
+            KeeperException, IndexModelException;
 
     void unlockIndex(String lock) throws ZkLockException;
+
+    void unlockIndex(String lock, boolean ignoreMissing) throws ZkLockException;
+
+    /**
+     * Internal index lock method, <b>this method is only intended for internal Lily components</b>.
+     */
+    String lockIndexInternal(String indexName, boolean checkDeleted) throws ZkLockException, IndexNotFoundException,
+            InterruptedException, KeeperException, IndexModelException;
 }

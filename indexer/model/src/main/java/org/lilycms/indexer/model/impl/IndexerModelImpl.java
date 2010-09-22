@@ -66,11 +66,14 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private static final String INDEX_COLLECTION_PATH = "/lily/indexer/index";
 
+    private static final String INDEX_TRASH_PATH = "/lily/indexer/index-trash";
+
     private static final String INDEX_COLLECTION_PATH_SLASH = INDEX_COLLECTION_PATH + "/";
 
     public IndexerModelImpl(ZooKeeperItf zk) throws ZkPathCreationException, InterruptedException, KeeperException {
         this.zk = zk;
         ZkUtil.createPath(zk, INDEX_COLLECTION_PATH);
+        ZkUtil.createPath(zk, INDEX_TRASH_PATH);
 
         synchronized(indexes_lock) {
             refreshIndexes();
@@ -203,6 +206,11 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
         IndexDefinition currentIndex = getMutableIndex(index.getName());
 
+        if (currentIndex.getGeneralState() == IndexGeneralState.DELETE_REQUESTED ||
+                currentIndex.getGeneralState() == IndexGeneralState.DELETING) {
+            throw new IndexUpdateException("An index in state " + index.getGeneralState() + " cannot be modified.");
+        }
+
         if (index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED &&
                 currentIndex.getBatchBuildState() != IndexBatchBuildState.INACTIVE) {
             throw new IndexUpdateException("Cannot move index build state from " + currentIndex.getBatchBuildState() +
@@ -226,8 +234,100 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     }
 
-    public String lockIndex(String indexName) throws ZkLockException, IndexNotFoundException, InterruptedException,
-            KeeperException {
+    public void deleteIndex(final String indexName) throws IndexModelException {
+        final String indexPath = INDEX_COLLECTION_PATH_SLASH + indexName;
+        final String indexLockPath = indexPath + "/lock";
+
+        try {
+            // Make a copy of the index data in the index trash
+            ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
+                public Object execute() throws KeeperException, InterruptedException {
+                    byte[] data = zk.getData(indexPath, false, null);
+
+                    String trashPath = INDEX_TRASH_PATH + "/" + indexName;
+
+                    // An index with the same name might have existed before and hence already exist
+                    // in the index trash, handle this by appending a sequence number until a unique
+                    // name is found.
+                    String baseTrashpath = trashPath;
+                    int count = 0;
+                    while (zk.exists(trashPath, false) != null) {
+                        count++;
+                        trashPath = baseTrashpath + "." + count;
+                    }
+
+                    zk.create(trashPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+
+                    return null;
+                }
+            });
+
+            // The loop below is normally not necessary, since we disallow taking new locks on indexes
+            // which are being deleted.
+            int tryCount = 0;
+            while (true) {
+                boolean success = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+                    public Boolean execute() throws KeeperException, InterruptedException {
+                        try {
+                            // Delete the index lock if it exists
+                            if (zk.exists(indexLockPath, false) != null) {
+                                List<String> children = Collections.emptyList();
+                                try {
+                                    children = zk.getChildren(indexLockPath, false);
+                                } catch (KeeperException.NoNodeException e) {
+                                    // ok
+                                }
+
+                                for (String child : children) {
+                                    try {
+                                        zk.delete(indexLockPath + "/" + child, -1);
+                                    } catch (KeeperException.NoNodeException e) {
+                                        // ignore, node was already removed
+                                    }
+                                }
+
+                                try {
+                                    zk.delete(indexLockPath, -1);
+                                } catch (KeeperException.NoNodeException e) {
+                                    // ignore
+                                }
+                            }
+
+
+                            zk.delete(indexPath, -1);
+
+                            return true;
+                        } catch (KeeperException.NotEmptyException e) {
+                            // Someone again took a lock on the index, retry
+                        }
+                        return false;
+                    }
+                });
+
+                if (success)
+                    break;
+                
+                tryCount++;
+                if (tryCount > 10) {
+                    throw new IndexModelException("Failed to delete index because it still has child data. Index: " + indexName);
+                }
+            }
+        } catch (Throwable t) {
+            throw new IndexModelException("Failed to delete index " + indexName, t);
+        }
+    }
+
+    public String lockIndexInternal(String indexName, boolean checkDeleted) throws ZkLockException, IndexNotFoundException, InterruptedException,
+            KeeperException, IndexModelException {
+
+        IndexDefinition index = getIndex(indexName);
+
+        if (checkDeleted) {
+            if (index.getGeneralState() == IndexGeneralState.DELETE_REQUESTED ||
+                    index.getGeneralState() == IndexGeneralState.DELETING) {
+                throw new IndexModelException("An index in state " + index.getGeneralState() + " cannot be locked.");
+            }
+        }
 
         final String lockPath = INDEX_COLLECTION_PATH_SLASH + indexName + "/lock";
 
@@ -261,10 +361,21 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         // Take the actual lock
         //
         return ZkLock.lock(zk, INDEX_COLLECTION_PATH_SLASH + indexName + "/lock");
+
+    }
+
+
+    public String lockIndex(String indexName) throws ZkLockException, IndexNotFoundException, InterruptedException,
+            KeeperException, IndexModelException {
+        return lockIndexInternal(indexName, true);
     }
 
     public void unlockIndex(String lock) throws ZkLockException {
         ZkLock.unlock(zk, lock);
+    }
+
+    public void unlockIndex(String lock, boolean ignoreMissing) throws ZkLockException {
+        ZkLock.unlock(zk, lock, ignoreMissing);
     }
 
     public IndexDefinition getIndex(String name) throws IndexNotFoundException {

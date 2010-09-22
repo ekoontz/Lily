@@ -3,7 +3,9 @@ package org.lilycms.indexer.admin.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.lilycms.indexer.model.api.IndexDefinition;
+import org.lilycms.indexer.model.api.IndexGeneralState;
 import org.lilycms.util.ObjectUtils;
+import org.lilycms.util.zookeeper.ZkLockException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -92,7 +94,10 @@ public class UpdateIndexCli extends BaseIndexerAdminCli {
 
 
         } finally {
-            model.unlockIndex(lock);
+            // In case we requested deletion of an index, it might be that the lock is already removed
+            // by the time we get here as part of the index deletion.
+            boolean ignoreMissing = generalState != null && generalState == IndexGeneralState.DELETE_REQUESTED;
+            model.unlockIndex(lock, ignoreMissing);
         }
 
         return 0;

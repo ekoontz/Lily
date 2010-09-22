@@ -80,7 +80,8 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
         generalStateOption = OptionBuilder
                 .withArgName("state")
                 .hasArg()
-                .withDescription("General state, one of: " + getStates(IndexGeneralState.values()))
+                .withDescription("General state, one of: " + IndexGeneralState.ACTIVE + ", " +
+                        IndexGeneralState.DISABLED + ", " + IndexGeneralState.DELETE_REQUESTED)
                 .withLongOpt("state")
                 .create("i");
 

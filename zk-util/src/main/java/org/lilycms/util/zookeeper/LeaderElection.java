@@ -29,6 +29,7 @@ public class LeaderElection {
     private LeaderElectionCallback callback;
     private boolean elected = false;
     private ZkWatcher watcher = new ZkWatcher();
+    private boolean stopped = false;
 
     private Log log = LogFactory.getLog(this.getClass());
 
@@ -45,6 +46,11 @@ public class LeaderElection {
         this.electionPath = electionPath;
         this.callback = callback;
         proposeAsLeader();
+    }
+
+    public void stop() {
+        // Note that ZooKeeper does not have a way to remove watches (see ZOOKEEPER-422)
+        stopped = true;
     }
 
     private void proposeAsLeader() throws LeaderElectionSetupException {
@@ -121,6 +127,10 @@ public class LeaderElection {
 
     public class ZkWatcher implements Watcher {
         public void process(WatchedEvent event) {
+            if (stopped) {
+                return;
+            }
+
             if (event.getState().equals(Event.KeeperState.Disconnected) ||
                     event.getState().equals(Event.KeeperState.Expired)) {
 

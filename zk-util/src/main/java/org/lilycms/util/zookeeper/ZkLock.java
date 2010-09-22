@@ -126,11 +126,19 @@ public class ZkLock {
     }
 
     /**
-     * Releases a lock.
-     * 
-     * @param lockId the string returned by {@link ZkLock#lock}.
+     * Releases a lock. Calls {@link #unlock(ZooKeeperItf, String, boolean) unlock(zk, lockId, false)}.
      */
     public static void unlock(final ZooKeeperItf zk, final String lockId) throws ZkLockException {
+        unlock(zk, lockId, false);
+    }
+
+    /**
+     * Releases a lock.
+     *
+     * @param lockId the string returned by {@link ZkLock#lock}.
+     * @param ignoreMissing if true, do not throw an exception if the lock does not exist
+     */
+    public static void unlock(final ZooKeeperItf zk, final String lockId, boolean ignoreMissing) throws ZkLockException {
         try {
             ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
                 public Object execute() throws KeeperException, InterruptedException {
@@ -138,6 +146,10 @@ public class ZkLock {
                     return null;
                 }
             });
+        } catch (KeeperException.NoNodeException e) {
+            if (!ignoreMissing) {
+                throw new ZkLockException("Error releasing lock: the lock does not exist. Path: " + lockId, e);
+            }
         } catch (Throwable t) {
             throw new ZkLockException("Error releasing lock, path: " + lockId, t);
         }

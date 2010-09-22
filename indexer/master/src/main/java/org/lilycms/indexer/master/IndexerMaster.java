@@ -8,10 +8,8 @@ import org.apache.hadoop.mapred.JobStatus;
 import org.apache.hadoop.mapred.JobTracker;
 import org.apache.hadoop.mapred.RunningJob;
 import org.lilycms.indexer.model.api.*;
-import org.lilycms.util.zookeeper.LeaderElection;
-import org.lilycms.util.zookeeper.LeaderElectionCallback;
-import org.lilycms.util.zookeeper.LeaderElectionSetupException;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.util.zookeeper.*;
+
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
 import javax.annotation.PostConstruct;
@@ -37,6 +35,8 @@ public class IndexerMaster {
     private String zkConnectString;
 
     private int zkSessionTimeout;
+
+    private LeaderElection leaderElection;
 
     private IndexerModelListener listener = new MyListener();
 
@@ -67,12 +67,14 @@ public class IndexerMaster {
     public void start() throws LeaderElectionSetupException, IOException {
         jobStatusWatcher = new JobStatusWatcher();
 
-        LeaderElection leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",
+        leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",
                 new MyLeaderElectionCallback());
     }
 
     @PreDestroy
     public void stop() {
+        leaderElection.stop();
+        
         if (eventWorkerThread != null) {
             eventWorkerThread.interrupt();
             try {
@@ -146,11 +148,13 @@ public class IndexerMaster {
     }
 
     private boolean needsSubscriptionIdAssigned(IndexDefinition index) {
-        return index.getUpdateState() != IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() == null;
+        return !index.getGeneralState().isDeleteState() &&
+                index.getUpdateState() != IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() == null;
     }
 
     private boolean needsFullBuildStart(IndexDefinition index) {
-        return index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
+        return !index.getGeneralState().isDeleteState() &&
+                index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
     }
 
     /**
@@ -220,6 +224,76 @@ public class IndexerMaster {
         }
     }
 
+    private void prepareDeleteIndex(String indexName) {
+        // We do not have to take a lock on the index, since once in delete state the index cannot
+        // be modified anymore by ordinary users.
+        boolean canBeDeleted = false;
+        try {
+            // Read current situation of record and assure it is still actual
+            IndexDefinition index = indexerModel.getMutableIndex(indexName);
+            if (index.getGeneralState() == IndexGeneralState.DELETE_REQUESTED) {
+                canBeDeleted = true;
+
+                String queueSubscriptionId = index.getQueueSubscriptionId();
+                if (queueSubscriptionId != null) {
+                    // TODO unregister message queue subscription once the subscription/listener distinction
+                    //      is in place
+
+                    // We can leave the subscription ID in the index definition FYI
+                }
+
+                if (index.getActiveBatchBuildInfo() != null) {
+                    JobClient jobClient = new JobClient(JobTracker.getAddress(mapReduceConf), mapReduceConf);
+                    String jobId = index.getActiveBatchBuildInfo().getJobId();
+                    RunningJob job = jobClient.getJob(jobId);
+                    if (job != null) {
+                        job.killJob();
+                        log.info("Kill index build job for index " + indexName + ", job ID =  " + jobId);
+                    }
+                    // Just to be sure...
+                    jobStatusWatcher.assureWatching(index.getName(), index.getActiveBatchBuildInfo().getJobId());
+                    canBeDeleted = false;
+                }
+
+                if (!canBeDeleted) {
+                    index.setGeneralState(IndexGeneralState.DELETING);
+                    indexerModel.updateIndexInternal(index);
+                }
+            } else if (index.getGeneralState() == IndexGeneralState.DELETING) {
+                // Check if the build job is already finished, if so, allow delete
+                if (index.getActiveBatchBuildInfo() == null) {
+                    canBeDeleted = true;
+                }
+            }
+        } catch (Throwable t) {
+            log.error("Error preparing deletion of index " + indexName, t);
+        }
+
+        if (canBeDeleted){
+            deleteIndex(indexName);
+        }
+    }
+
+    private void deleteIndex(String indexName) {
+        boolean success = false;
+        try {
+            indexerModel.deleteIndex(indexName);
+            success = true;
+        } catch (Throwable t) {
+            log.error("Failed to delete index.", t);
+        }
+
+        if (!success) {
+            try {
+                IndexDefinition index = indexerModel.getMutableIndex(indexName);
+                index.setGeneralState(IndexGeneralState.DELETE_FAILED);
+                indexerModel.updateIndexInternal(index);
+            } catch (Throwable t) {
+                log.error("Failed to set index state to " + IndexGeneralState.DELETE_FAILED, t);
+            }
+        }
+    }
+
     private class MyListener implements IndexerModelListener {
         public void process(IndexerModelEvent event) {
             try {
@@ -256,6 +330,14 @@ public class IndexerMaster {
                         }
 
                         if (index != null) {
+                            if (index.getGeneralState() == IndexGeneralState.DELETE_REQUESTED ||
+                                    index.getGeneralState() == IndexGeneralState.DELETING) {
+                                prepareDeleteIndex(index.getName());
+
+                                // in case of delete, we do not need to handle any other cases
+                                continue;
+                            }
+
                             if (needsSubscriptionIdAssigned(index)) {
                                 assignSubscription(index.getName());
                             }
@@ -334,7 +416,9 @@ public class IndexerMaster {
 
         private void markJobComplete(String indexName, String jobId, boolean success, String jobState) {
             try {
-                String lock = indexerModel.lockIndex(indexName);
+                // Lock internal bypasses the index-in-delete-state check, which does not matter (and might cause
+                // failure) in our case.
+                String lock = indexerModel.lockIndexInternal(indexName, false);
                 try {
                     // Read current situation of record and assure it is still actual
                     IndexDefinition index = indexerModel.getMutableIndex(indexName);
@@ -375,7 +459,7 @@ public class IndexerMaster {
                     log.info("Marked index build job as finished for index " + indexName + ", job ID =  " + jobId);
 
                 } finally {
-                    indexerModel.unlockIndex(lock);
+                    indexerModel.unlockIndex(lock, true);
                 }
             } catch (Throwable t) {
                 log.error("Error trying to mark index build job as finished for index " + indexName, t);

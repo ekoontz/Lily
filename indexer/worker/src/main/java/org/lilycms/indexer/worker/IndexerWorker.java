@@ -186,7 +186,8 @@ public class IndexerWorker {
 
     private boolean shouldRunIndexUpdater(IndexDefinition index) {
         return index.getUpdateState() == IndexUpdateState.SUBSCRIBE_AND_LISTEN &&
-                index.getQueueSubscriptionId() != null;
+                index.getQueueSubscriptionId() != null &&
+                !index.getGeneralState().isDeleteState();
     }
 
     private class IndexUpdaterHandle {
