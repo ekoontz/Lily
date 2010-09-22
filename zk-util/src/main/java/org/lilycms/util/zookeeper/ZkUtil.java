@@ -1,18 +1,47 @@
 package org.lilycms.util.zookeeper;
 
+import java.io.IOException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooKeeper.States;
 import org.apache.zookeeper.data.Stat;
 
 /**
  * Various ZooKeeper utility methods.
  */
 public class ZkUtil {
-
+    
+    public static ZooKeeperItf connect(String connectString, int sessionTimeout) throws ZkConnectException {
+        try {
+            ZooKeeperImpl zooKeeper = new ZooKeeperImpl(new ZooKeeper(connectString, sessionTimeout, new Watcher(){
+                public void process(WatchedEvent event) {
+                }}));
+            long waitUntil = System.currentTimeMillis() + sessionTimeout;
+            boolean connected = (States.CONNECTED).equals(zooKeeper.getState());
+            while (!connected && waitUntil > System.currentTimeMillis()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    connected = (States.CONNECTED).equals(zooKeeper.getState());
+                    break;
+                }
+                connected = (States.CONNECTED).equals(zooKeeper.getState());
+            }
+            if (!connected)
+                throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+"> within timeout <"+sessionTimeout+">", null);
+            return zooKeeper;
+        } catch (IOException e) {
+            throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+">", e);
+        }
+    }
+    
     public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
         createPath(new ZooKeeperImpl(zk), path, null, CreateMode.PERSISTENT);
     }

@@ -29,8 +29,18 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.*;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.RowLock;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
@@ -60,9 +70,6 @@ import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.ValueType;
 import org.lilycms.repository.api.VersionNotFoundException;
 import org.lilycms.repository.impl.lock.RowLocker;
-import org.lilycms.util.repo.RecordEvent;
-import org.lilycms.util.repo.VersionTag;
-import org.lilycms.util.repo.RecordEvent.Type;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
@@ -74,6 +81,9 @@ import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.Pair;
 import org.lilycms.util.io.Closer;
+import org.lilycms.util.repo.RecordEvent;
+import org.lilycms.util.repo.VersionTag;
+import org.lilycms.util.repo.RecordEvent.Type;
 
 /**
  * Repository implementation.
@@ -136,13 +146,13 @@ public class HBaseRepository implements Repository {
 
         zkConnectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
 
+        try {
         // Initialize Wal and Message Queue
-        initializeMessageQueue(configuration);
-        initializeWal(configuration);
+            initializeMessageQueue(configuration);
+            initializeWal(configuration);
 
         // Start Message Queue Processor
-        try {
-            messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, zkConnectString);
+            messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, configuration);
         } catch (RowLogException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -157,15 +167,15 @@ public class HBaseRepository implements Repository {
         messageQueueProcessor.stop();
     }
 
-    private void initializeMessageQueue(Configuration configuration) throws IOException {
+    private void initializeMessageQueue(Configuration configuration) throws IOException, RowLogException {
         messageQueue = new RowLogImpl("MQ", recordTable, HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, zkConnectString); 
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration); 
         messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
         messageQueue.registerShard(messageQueueShard);
     }
 
-    private void initializeWal(Configuration configuration) throws IOException {
-        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, null);
+    private void initializeWal(Configuration configuration) throws IOException, RowLogException {
+        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, configuration);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);

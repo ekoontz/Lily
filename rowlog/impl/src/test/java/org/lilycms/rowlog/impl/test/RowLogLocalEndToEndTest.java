@@ -28,7 +28,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     @Before
     public void setUp() throws Exception {
         try {
-            rowLogConfigurationManager = new RowLogConfigurationManager(zkConnectString);
+            rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getConf());
             consumer = new TestMessageConsumer(0);
             rowLog.registerConsumer(consumer);
             rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.Local, 5);

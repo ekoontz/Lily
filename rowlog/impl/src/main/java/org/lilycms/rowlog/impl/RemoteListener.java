@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferInputStream;
@@ -22,8 +23,6 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.frame.DelimiterBasedFrameDecoder;
-import org.jboss.netty.handler.codec.frame.Delimiters;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.lilycms.rowlog.api.RowLog;
@@ -39,12 +38,12 @@ public class RemoteListener {
     private Channel channel;
     private RowLogConfigurationManager rowLogConfigurationManager;
     private String listenerId;
-    private final String connectString;
+    private final Configuration configuration;
 
-    public RemoteListener(RowLog rowLog, RowLogMessageConsumer consumer, String connectString) throws RowLogException {
+    public RemoteListener(RowLog rowLog, RowLogMessageConsumer consumer, Configuration configuration) throws RowLogException {
         this.rowLog = rowLog;
         this.consumer = consumer;
-        this.connectString = connectString;
+        this.configuration = configuration;
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -62,7 +61,7 @@ public class RemoteListener {
     }
     
     public void start() throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManager(connectString);
+        rowLogConfigurationManager = new RowLogConfigurationManager(configuration);
         InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();

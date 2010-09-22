@@ -73,7 +73,7 @@ public class RowLogTest {
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, null);
+        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, HBASE_PROXY.getConf());
         consumer = control.createMock(RowLogMessageConsumer.class);
         consumer.getId();
         expectLastCall().andReturn(consumerId).anyTimes();
@@ -217,7 +217,7 @@ public class RowLogTest {
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, null);
+        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, HBASE_PROXY.getConf());
         
         shard.putMessage(isA(RowLogMessage.class));
         

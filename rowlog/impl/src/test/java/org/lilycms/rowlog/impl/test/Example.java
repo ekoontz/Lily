@@ -39,7 +39,6 @@ public class Example {
     public static void main(String[] args) throws Exception {
         TEST_UTIL.startMiniCluster(1);
         Configuration configuration = TEST_UTIL.getConfiguration();
-        String zkConnectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
         // Create the row table
         final String ROW_TABLE = "rowTable";
         final byte[] DATA_COLUMN_FAMILY = Bytes.toBytes("DataCF");
@@ -55,7 +54,7 @@ public class Example {
         HTable rowTable = new HTable(configuration, ROW_TABLE);
         
         // Create a RowLog instance
-        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, zkConnectString);
+        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, configuration);
         
         // Create a shard and register it with the rowlog
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
@@ -80,7 +79,7 @@ public class Example {
         // The MQ use case
         
         // Create a processor and start it
-        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, shard, zkConnectString);
+        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, shard, configuration);
         processor.start();
         
         message  = rowLog.putMessage(row1, Bytes.toBytes("SomeMoreInfo"), Bytes.toBytes("Re-evaluate:AUserField"), null);

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
@@ -60,10 +61,10 @@ public class RowLogProcessorImpl implements RowLogProcessor {
     private Channel channel;
     private ChannelFactory channelFactory;
     private RowLogConfigurationManager rowLogConfigurationManager;
-    private final String zkConnectString;
+    private final Configuration configuration;
     
-    public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, String zkConnectString) throws RowLogException {
-        this.zkConnectString = zkConnectString;
+    public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, Configuration configuration) throws RowLogException {
+        this.configuration = configuration;
         ArgumentValidator.notNull(rowLog, "rowLog");
         ArgumentValidator.notNull(shard, "shard");
         this.rowLog = rowLog;
@@ -80,7 +81,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         if (stop) {
             stop = false;
             try {
-                rowLogConfigurationManager = new RowLogConfigurationManager(zkConnectString);
+                rowLogConfigurationManager = new RowLogConfigurationManager(configuration);
                 subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(this, rowLog));
             } catch (KeeperException e) {
                 

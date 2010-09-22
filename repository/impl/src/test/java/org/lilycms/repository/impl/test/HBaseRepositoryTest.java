@@ -57,7 +57,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
-        rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getZkConnectString());
+        rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getConf());
         setupTypes();
     }
 

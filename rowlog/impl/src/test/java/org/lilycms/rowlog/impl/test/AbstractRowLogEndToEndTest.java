@@ -27,7 +27,7 @@ import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 
 public abstract class AbstractRowLogEndToEndTest {
-    private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     protected static RowLog rowLog;
     protected static TestMessageConsumer consumer;
     protected static RowLogShard shard;
@@ -43,9 +43,9 @@ public abstract class AbstractRowLogEndToEndTest {
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
         zkConnectString = HBASE_PROXY.getZkConnectString();
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
-                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, zkConnectString);
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, HBASE_PROXY.getConf());
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
-        processor = new RowLogProcessorImpl(rowLog, shard, zkConnectString);
+        processor = new RowLogProcessorImpl(rowLog, shard, HBASE_PROXY.getConf());
         rowLog.registerShard(shard);
     }    
     
@@ -124,8 +124,8 @@ public abstract class AbstractRowLogEndToEndTest {
         consumer.expectMessages(3);
         processor.start();
         consumer.waitUntilMessagesConsumed(120000);
-        Assert.assertTrue(rowLog.isProblematic(message, consumer.getId()));
         processor.stop();
+        Assert.assertTrue(rowLog.isProblematic(message, consumer.getId()));
     }
 
     protected class TestMessageConsumer implements RowLogMessageConsumer {

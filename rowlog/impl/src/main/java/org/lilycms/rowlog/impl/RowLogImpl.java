@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -63,20 +64,15 @@ public class RowLogImpl implements RowLog {
      * @param payloadColumnFamily the column family in which the payload of the messages can be stored
      * @param executionStateColumnFamily the column family in which the execution state of the messages can be stored
      * @param lockTimeout the timeout to be used for the locks that are put on the messages
+     * @throws RowLogException 
      */
-    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, String zkConnectString) {
+    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, Configuration configuration) throws RowLogException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
         this.executionStateColumnFamily = executionStateColumnFamily;
         this.lockTimeout = lockTimeout;
-        if (zkConnectString != null) {
-            try {
-                this.processorNotifier = new RowLogProcessorNotifier(zkConnectString);
-            } catch (RowLogException exception) {
-                // Don't use a processorNotifier
-            }
-        }
+        this.processorNotifier = new RowLogProcessorNotifier(configuration);
     }
     
     @Override

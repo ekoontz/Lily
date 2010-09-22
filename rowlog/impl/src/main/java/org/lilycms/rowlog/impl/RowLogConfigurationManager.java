@@ -5,30 +5,31 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.apache.zookeeper.ZooKeeper.States;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.util.zookeeper.ZkConnectException;
 import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogConfigurationManager {
     private Log log = LogFactory.getLog(getClass());
     private String lilyPath = "/lily";
     private String rowLogPath = lilyPath + "/rowlog";
     
-    private ZooKeeper zooKeeper;
+    private ZooKeeperItf zooKeeper;
     
     @Override
     protected void finalize() throws Throwable {
@@ -44,20 +45,14 @@ public class RowLogConfigurationManager {
         }
     }
     
-    public RowLogConfigurationManager(String connectString) throws RowLogException {
+    public RowLogConfigurationManager(Configuration configuration) throws RowLogException {
         try {
-            zooKeeper = new ZooKeeper(connectString, 5000, new ZkWatcher());
-        } catch (Exception e) {
-            throw new RowLogException("Failed to connect with Zookeeper @ <"+connectString+">", e);
+            int sessionTimeout = configuration.getInt("zookeeper.session.timeout", 60 * 1000);
+            String connectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
+            zooKeeper = ZkUtil.connect(connectString, sessionTimeout);
+        } catch (ZkConnectException e) {
+            throw new RowLogException("Failed to instantiate RowLogConfigurationManager", e);
         }
-        long waitUntil = System.currentTimeMillis() + 5000;
-        boolean connected = false;
-        while (!connected && waitUntil > System.currentTimeMillis()) {
-            connected = (States.CONNECTED).equals(zooKeeper.getState());
-        }
-        if (!connected)
-            throw new RowLogException("Failed to connect with Zookeeper @ <"+connectString+">");
-        log.info("Connected to zookeeper with sessionId 0x"+Long.toHexString(zooKeeper.getSessionId()));
     }
     
     // Subscriptions
