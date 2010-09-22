@@ -3,10 +3,10 @@ package org.lilycms.rowlog.impl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
@@ -57,10 +57,18 @@ public class EmbededSubscriptionHandler extends AbstractSubscriptionHandler {
             this.i = i;
         }
         
-        public Object call() throws Exception {
-            future.get(6, TimeUnit.SECONDS);
-            if (!future.isDone() && !future.isCancelled())
-                future.cancel(true);
+        public Object call() {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                // Stop 
+                futures.remove(i);
+                return null;
+            } 
+            futures.remove(i);
             if (!stop)
                 submitWorker(i);
             return null;

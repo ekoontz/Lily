@@ -32,7 +32,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
         }
         
         public Object call() throws InterruptedException {
-            RowLogMessage message = messagesWorkQueue.poll();
+            RowLogMessage message = messagesWorkQueue.take();
             if (message != null) {
                 try {
                     byte[] lock = rowLog.lockMessage(message, subscriptionId);
@@ -56,6 +56,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                     messagesWorkQueue.done(message);
                 }
             }
+            
             return null;
         }
     }

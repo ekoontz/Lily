@@ -20,11 +20,13 @@ public class MessagesWorkQueue {
         return false;
     }
     
-    public RowLogMessage poll() throws InterruptedException {
-        if (messageQueue.isEmpty()) return null;
+    public RowLogMessage take() throws InterruptedException {
+        RowLogMessage message = messageQueue.take();
         synchronized (messageQueue) {
-            RowLogMessage message = messageQueue.poll(1, TimeUnit.SECONDS);
-            if (message == null) return null;
+            if (messageQueue.contains(message)) {
+             // Too late, the message has been put on the queue already again after the take() call.                
+                return null; 
+            }
             messagesWorkingOn.add(message);
             return message;
         }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -81,10 +82,16 @@ public abstract class AbstractListenersSubscriptionHandler extends AbstractSubsc
             this.future = future;
         }
         
-        public Object call() throws Exception {
-            future.get(2, TimeUnit.SECONDS);
-            if (!future.isDone() && !future.isCancelled())
-                future.cancel(true);
+        public Object call() {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                // Stop 
+                return null;
+            } 
             if (!stop)
                 submitWorker(listenerId);
             return null;

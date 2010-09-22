@@ -19,27 +19,32 @@ import org.apache.zookeeper.data.Stat;
 public class ZkUtil {
     
     public static ZooKeeperItf connect(String connectString, int sessionTimeout) throws ZkConnectException {
+        ZooKeeperImpl zooKeeper;
         try {
-            ZooKeeperImpl zooKeeper = new ZooKeeperImpl(new ZooKeeper(connectString, sessionTimeout, new Watcher(){
+            zooKeeper = new ZooKeeperImpl(new ZooKeeper(connectString, sessionTimeout, new Watcher(){
                 public void process(WatchedEvent event) {
                 }}));
-            long waitUntil = System.currentTimeMillis() + sessionTimeout;
-            boolean connected = (States.CONNECTED).equals(zooKeeper.getState());
-            while (!connected && waitUntil > System.currentTimeMillis()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    connected = (States.CONNECTED).equals(zooKeeper.getState());
-                    break;
-                }
-                connected = (States.CONNECTED).equals(zooKeeper.getState());
-            }
-            if (!connected)
-                throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+"> within timeout <"+sessionTimeout+">", null);
-            return zooKeeper;
         } catch (IOException e) {
             throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+">", e);
         }
+        long waitUntil = System.currentTimeMillis() + 10000;
+        boolean connected = (States.CONNECTED).equals(zooKeeper.getState());
+        while (!connected && waitUntil > System.currentTimeMillis()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                connected = (States.CONNECTED).equals(zooKeeper.getState());
+                break;
+            }
+            connected = (States.CONNECTED).equals(zooKeeper.getState());
+        }
+        if (!connected) {
+            System.out.println("Failed to connect to Zookeeper within timeout: Dumping stack: ");
+            Thread.dumpStack();
+            zooKeeper.close();
+            throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+"> within timeout <"+sessionTimeout+">", null);
+        }
+        return zooKeeper;
     }
     
     public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
