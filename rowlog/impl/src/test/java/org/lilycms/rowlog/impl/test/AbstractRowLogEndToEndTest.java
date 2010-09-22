@@ -124,15 +124,10 @@ public abstract class AbstractRowLogEndToEndTest {
         consumer.expectMessages(3);
         processor.start();
         consumer.waitUntilMessagesConsumed(120000);
-        List<RowLogMessage> problematic = rowLog.getProblematic(0);
-        Assert.assertTrue(problematic.contains(message));
+        Assert.assertTrue(rowLog.isProblematic(message, consumer.getId()));
         processor.stop();
     }
 
-    protected void assertHostAndPortRemovedFromZK() throws Exception {
-        Assert.assertTrue(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
-    }
-    
     protected class TestMessageConsumer implements RowLogMessageConsumer {
 
         private Map<RowLogMessage, Integer> expectedMessages = new HashMap<RowLogMessage, Integer>();

@@ -2,7 +2,6 @@ package org.lilycms.rowlog.impl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -12,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogMessage;
 
 public abstract class AbstractListenersSubscriptionHandler extends AbstractSubscriptionHandler implements ListenersWatcherCallBack {
     protected ExecutorService executorService;
@@ -21,8 +19,8 @@ public abstract class AbstractListenersSubscriptionHandler extends AbstractSubsc
     private Map<String, Future<?>> listeners = new ConcurrentHashMap<String, Future<?>>();
     protected volatile boolean stop = false;
 
-    public AbstractListenersSubscriptionHandler(int subscriptionId, BlockingQueue<RowLogMessage> messageQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
-        super(subscriptionId, messageQueue, rowLog);
+    public AbstractListenersSubscriptionHandler(int subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
+        super(subscriptionId, messagesWorkQueue, rowLog);
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
 

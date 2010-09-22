@@ -140,7 +140,9 @@ public class RowLogShardImpl implements RowLogShard {
             scanner = table.getScanner(scan);
             boolean keepScanning = problematic;
             do {
+                long startTime = System.currentTimeMillis();
                 Result[] results = scanner.next(batchSize);
+                long endTime = System.currentTimeMillis();
                 if (results.length == 0) {
                     keepScanning = false;
                 }
@@ -187,7 +189,7 @@ public class RowLogShardImpl implements RowLogShard {
         try {
             return table.exists(new Get(rowKey));
         } catch (IOException e) {
-            throw new RowLogException("Failed if message is problematic", e);
+            throw new RowLogException("Failed to check if message is problematic", e);
         }
     }
 

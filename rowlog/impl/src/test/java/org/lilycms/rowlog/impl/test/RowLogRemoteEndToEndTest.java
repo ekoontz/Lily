@@ -41,7 +41,6 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @After
     public void tearDown() throws Exception {
-        assertHostAndPortRemovedFromZK();
         consumer.validate();
         remoteListener.interrupt();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), consumer.getId());

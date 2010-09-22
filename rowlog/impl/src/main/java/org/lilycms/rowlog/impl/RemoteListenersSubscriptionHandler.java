@@ -1,7 +1,6 @@
 package org.lilycms.rowlog.impl;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -30,8 +29,8 @@ public class RemoteListenersSubscriptionHandler extends AbstractListenersSubscri
     private boolean messageProcessSuccess = false;
 
     
-    public RemoteListenersSubscriptionHandler(int subscriptionId, int workerCount, BlockingQueue<RowLogMessage> messageQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
-        super(subscriptionId, messageQueue, rowLog, rowLogConfigurationManager);
+    public RemoteListenersSubscriptionHandler(int subscriptionId, int workerCount, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
+        super(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
         executorService = Executors.newFixedThreadPool(workerCount);
         initBootstrap();
     }

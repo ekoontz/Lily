@@ -23,10 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
@@ -258,7 +255,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         private long lastWakeup;
         private ProcessorMetrics metrics;
         private volatile boolean stopRequested = false;
-        private BlockingQueue<RowLogMessage> messageQueue = new ArrayBlockingQueue<RowLogMessage>(1);
+        private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
         private int subscriptionId;
 
@@ -267,15 +264,15 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             this.metrics = new ProcessorMetrics();
             switch (subscription.getType()) {
             case Embeded:
-                subscriptionHandler = new EmbededSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messageQueue, rowLog);
+                subscriptionHandler = new EmbededSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messagesWorkQueue, rowLog);
                 break;
                 
             case Local:
-                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId,  subscription.getWorkerCount(), messageQueue, rowLog, rowLogConfigurationManager);
+                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId,  subscription.getWorkerCount(), messagesWorkQueue, rowLog, rowLogConfigurationManager);
                 break;
                 
             case Remote:
-                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messageQueue, rowLog, rowLogConfigurationManager);
+                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messagesWorkQueue, rowLog, rowLogConfigurationManager);
 
             default:
                 break;
@@ -315,8 +312,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
 
                             try {
                                 if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
-                                    if (!messageQueue.contains(message))
-                                        messageQueue.offer(message, 1, TimeUnit.SECONDS);
+                                    messagesWorkQueue.offer(message);
                                 }
                             } catch (InterruptedException e) {
                                 return;

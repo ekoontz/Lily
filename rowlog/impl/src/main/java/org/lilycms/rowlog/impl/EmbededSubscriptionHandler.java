@@ -1,8 +1,7 @@
 package org.lilycms.rowlog.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,12 +14,12 @@ import org.lilycms.rowlog.api.RowLogMessage;
 public class EmbededSubscriptionHandler extends AbstractSubscriptionHandler {
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private ExecutorService futuresExecutorService = Executors.newCachedThreadPool();
-    List<Future<?>> futures = new ArrayList<Future<?>>();
+    Map<Integer, Future<?>> futures = new HashMap<Integer, Future<?>>();
     private int numberOfWorkers ;
     private boolean stop = false;
     
-    public EmbededSubscriptionHandler(int subscriptionId, int numberOfWorkers, BlockingQueue<RowLogMessage> messageQueue, RowLog rowLog) {
-        super(subscriptionId, messageQueue, rowLog);
+    public EmbededSubscriptionHandler(int subscriptionId, int numberOfWorkers, MessagesWorkQueue messagesWorkQueue, RowLog rowLog) {
+        super(subscriptionId, messagesWorkQueue, rowLog);
         this.numberOfWorkers = numberOfWorkers;
     }
     
@@ -32,14 +31,15 @@ public class EmbededSubscriptionHandler extends AbstractSubscriptionHandler {
 
     protected void submitWorker(int i) {
         Future<?> future = executorService.submit(new Worker(Integer.toString(i)));
-        futures.add(future);
+        futures.put(i, future);
         futuresExecutorService.submit(new Resubmitter(future, i));
     }
     
     public void interrupt() {
         stop = true;
-        for (Future<?> future : futures) {
-            future.cancel(true);
+        for (Future<?> future : futures.values()) {
+            if (future != null)
+                future.cancel(true);
         }
     }
     
