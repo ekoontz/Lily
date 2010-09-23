@@ -1,4 +1,4 @@
-package org.lilycms.indexer.test;
+package org.lilycms.indexer.engine.test;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

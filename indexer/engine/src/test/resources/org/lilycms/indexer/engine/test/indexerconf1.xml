@@ -7,14 +7,14 @@
   </cases>
 
   <formatters>
-    <formatter class="org.lilycms.indexer.test.IntegerHierarchyUnderscoreFormatter"/>
+    <formatter class="org.lilycms.indexer.engine.test.IntegerHierarchyUnderscoreFormatter"/>
 
     <!-- Default formatter: handles any kind of value. -->
     <formatter class="org.lilycms.indexer.model.indexerconf.DefaultFormatter"/>
 
     <!-- The formatters below will only be used when referred to explictly by name, because the
          above default formatter will handle all values. -->
-    <formatter name="year" class="org.lilycms.indexer.test.DateYearFormatter"/>
+    <formatter name="year" class="org.lilycms.indexer.engine.test.DateYearFormatter"/>
   </formatters>
 
   <indexFields>

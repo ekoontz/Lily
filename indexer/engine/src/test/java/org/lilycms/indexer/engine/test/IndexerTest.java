@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.test;
+package org.lilycms.indexer.engine.test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -105,7 +105,7 @@ public class IndexerTest {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
-        SOLR_TEST_UTIL = new SolrTestingUtility("org/lilycms/indexer/test/schema1.xml");
+        SOLR_TEST_UTIL = new SolrTestingUtility("org/lilycms/indexer/engine/test/schema1.xml");
 
         TestHelper.setupLogging("org.lilycms.indexer", "org.lilycms.linkindex");
         HBASE_PROXY.start();
@@ -135,7 +135,7 @@ public class IndexerTest {
         setupSchema();
 
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
-        INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/test/indexerconf1.xml"), repository);
+        INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/indexerconf1.xml"), repository);
         Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers);
         indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex, zk);
 
@@ -960,10 +960,10 @@ public class IndexerTest {
         //
         {
             log.debug("Begin test V70");
-            Blob blob1 = createBlob("org/lilycms/indexer/test/blob1_msword.doc", "application/msword", "blob1_msword.doc");
-            Blob blob2 = createBlob("org/lilycms/indexer/test/blob2.pdf", "application/pdf", "blob2.pdf");
-            Blob blob3 = createBlob("org/lilycms/indexer/test/blob3_oowriter.odt", "application/vnd.oasis.opendocument.text", "blob3_oowriter.odt");
-            Blob blob4 = createBlob("org/lilycms/indexer/test/blob4_excel.xls", "application/excel", "blob4_excel.xls");
+            Blob blob1 = createBlob("org/lilycms/indexer/engine/test/blob1_msword.doc", "application/msword", "blob1_msword.doc");
+            Blob blob2 = createBlob("org/lilycms/indexer/engine/test/blob2.pdf", "application/pdf", "blob2.pdf");
+            Blob blob3 = createBlob("org/lilycms/indexer/engine/test/blob3_oowriter.odt", "application/vnd.oasis.opendocument.text", "blob3_oowriter.odt");
+            Blob blob4 = createBlob("org/lilycms/indexer/engine/test/blob4_excel.xls", "application/excel", "blob4_excel.xls");
 
             // Single-valued blob field
             Record record1 = repository.newRecord();

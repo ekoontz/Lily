@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.test;
+package org.lilycms.indexer.engine.test;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;

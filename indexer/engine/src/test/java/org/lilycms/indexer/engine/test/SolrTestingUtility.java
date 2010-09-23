@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.indexer.test;
+package org.lilycms.indexer.engine.test;
 
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.webapp.WebAppContext;
@@ -92,19 +92,19 @@ public class SolrTestingUtility {
         copyStream(getClass().getClassLoader().getResourceAsStream(schemaLocation),
                 new File(solrConfDir, "schema.xml"));
 
-        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/test/solrconfig.xml"),
+        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/solrconfig.xml"),
                 new File(solrConfDir, "solrconfig.xml"));
 
-        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/test/synonyms.txt"),
+        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/synonyms.txt"),
                 new File(solrConfDir, "synonyms.txt"));
 
-        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/test/synonyms.txt"),
+        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/synonyms.txt"),
                 new File(solrConfDir, "stopwords.txt"));
 
-        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/test/synonyms.txt"),
+        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/synonyms.txt"),
                 new File(solrConfDir, "protwords.txt"));
 
-        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/test/elevate.xml"),
+        copyStream(getClass().getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/elevate.xml"),
                 new File(solrConfDir, "elevate.xml"));
 
         return solrHomeDir;
