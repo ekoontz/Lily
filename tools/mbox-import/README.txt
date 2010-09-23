@@ -19,6 +19,12 @@ curl -f http://hadoop.apache.org/mail/mapreduce-user/[2008-2010][01-12].gz -o "#
 
 curl -f http://cocoon.apache.org/mail/dev/[2000-2010][01-12].gz -o "#1#2.gz"
 
+Other mbox sources:
+ * Gmane allows getting mbox archives (but warns about overusing the service):
+   http://gmane.org/export.php
+ * Linux kernel list archives:
+   http://userweb.kernel.org/~akpm/lkml-mbox-archives/
+
 Create the schema
 -----------------
 
