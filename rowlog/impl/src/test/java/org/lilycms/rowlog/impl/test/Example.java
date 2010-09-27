@@ -26,7 +26,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
@@ -61,7 +61,7 @@ public class Example {
         rowLog.registerShard(shard);
         
         // Create a consumer and register it with the RowLog
-        RowLogMessageConsumer consumer = new FooBarConsumer();
+        RowLogMessageListener consumer = new FooBarConsumer();
         rowLog.registerConsumer(consumer);
         
         // The WAL use case 
@@ -91,7 +91,7 @@ public class Example {
         TEST_UTIL.shutdownMiniCluster();
     }
     
-    private static class FooBarConsumer implements RowLogMessageConsumer {
+    private static class FooBarConsumer implements RowLogMessageListener {
 
         public static final int ID = 1;
         private static final int MAX_TRIES = 10;

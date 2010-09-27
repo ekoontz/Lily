@@ -37,15 +37,15 @@ import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
-import org.lilycms.rowlog.impl.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.testfw.TestHelper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
 
     private static BlobStoreAccessFactory blobStoreAccessFactory;
     private static Configuration configuration;
-    private static RowLogConfigurationManager rowLogConfigurationManager;
+    private static RowLogConfigurationManagerImpl rowLogConfigurationManager;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -57,7 +57,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
-        rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getConf());
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
         setupTypes();
     }
 
@@ -77,7 +77,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     @Test
     public void testUpdateProcessesRemainingMessages() throws Exception {
         IMocksControl control = EasyMock.createControl();
-        RowLogMessageConsumer testConsumer = control.createMock(RowLogMessageConsumer.class); 
+        RowLogMessageListener testConsumer = control.createMock(RowLogMessageListener.class); 
 
         testConsumer.getId();
         EasyMock.expectLastCall().andReturn(2).anyTimes();

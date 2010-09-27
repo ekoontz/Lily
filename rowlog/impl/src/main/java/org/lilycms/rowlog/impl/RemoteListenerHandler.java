@@ -28,19 +28,19 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 
-public class RemoteListener {
+public class RemoteListenerHandler {
     private final Log log = LogFactory.getLog(getClass());
-    private final RowLogMessageConsumer consumer;
+    private final RowLogMessageListener consumer;
     private ServerBootstrap bootstrap;
     private final RowLog rowLog;
     private Channel channel;
-    private RowLogConfigurationManager rowLogConfigurationManager;
+    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private String listenerId;
     private final Configuration configuration;
 
-    public RemoteListener(RowLog rowLog, RowLogMessageConsumer consumer, Configuration configuration) throws RowLogException {
+    public RemoteListenerHandler(RowLog rowLog, RowLogMessageListener consumer, Configuration configuration) throws RowLogException {
         this.rowLog = rowLog;
         this.consumer = consumer;
         this.configuration = configuration;
@@ -61,7 +61,7 @@ public class RemoteListener {
     }
     
     public void start() throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManager(configuration);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
         InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();

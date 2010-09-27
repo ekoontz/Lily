@@ -28,7 +28,7 @@ import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -1204,7 +1204,7 @@ public class IndexerTest {
         messageVerifier.setExpectedEvent(recordId, event);
     }
 
-    private static class MessageVerifier implements RowLogMessageConsumer {
+    private static class MessageVerifier implements RowLogMessageListener {
         private RecordId expectedId;
         private RecordEvent expectedEvent;
         private int failures = 0;

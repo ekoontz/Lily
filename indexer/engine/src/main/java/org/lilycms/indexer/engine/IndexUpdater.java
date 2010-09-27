@@ -28,7 +28,7 @@ import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -80,7 +80,7 @@ public class IndexUpdater {
         rowLog.unRegisterConsumer(indexerListener);
     }
 
-    private class IndexerListener implements RowLogMessageConsumer {
+    private class IndexerListener implements RowLogMessageListener {
         public int getId() {
             return consumerId;
         }

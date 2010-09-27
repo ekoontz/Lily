@@ -121,7 +121,6 @@ public class HBaseRepository implements Repository {
     private RowLogShard messageQueueShard;
     private RowLogProcessor messageQueueProcessor;
     private RowLocker rowLocker;
-    private String zkConnectString;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
             BlobStoreAccessFactory blobStoreAccessFactory, Configuration configuration) throws IOException {
@@ -143,8 +142,6 @@ public class HBaseRepository implements Repository {
         recordTypeVersionColumnNames.put(Scope.NON_VERSIONED, NON_VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
         recordTypeVersionColumnNames.put(Scope.VERSIONED, VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
         recordTypeVersionColumnNames.put(Scope.VERSIONED_MUTABLE, VERSIONED_MUTABLE_RECORDTYPEVERSION_COLUMN_NAME);
-
-        zkConnectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
 
         try {
         // Initialize Wal and Message Queue

@@ -29,9 +29,8 @@ public class RemoteListenersSubscriptionHandler extends AbstractListenersSubscri
     private boolean messageProcessSuccess = false;
 
     
-    public RemoteListenersSubscriptionHandler(int subscriptionId, int workerCount, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
+    public RemoteListenersSubscriptionHandler(int subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManagerImpl rowLogConfigurationManager) {
         super(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
-        executorService = Executors.newFixedThreadPool(workerCount);
         initBootstrap();
     }
     

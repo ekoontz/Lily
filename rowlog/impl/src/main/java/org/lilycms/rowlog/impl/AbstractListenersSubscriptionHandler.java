@@ -8,19 +8,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.rowlog.api.RowLog;
 
 public abstract class AbstractListenersSubscriptionHandler extends AbstractSubscriptionHandler implements ListenersWatcherCallBack {
-    protected ExecutorService executorService;
+    protected ExecutorService executorService = Executors.newCachedThreadPool();
     private ExecutorService futuresExecutorService = Executors.newCachedThreadPool();
-    protected RowLogConfigurationManager rowLogConfigurationManager;
+    protected RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private Map<String, Future<?>> listeners = new ConcurrentHashMap<String, Future<?>>();
     protected volatile boolean stop = false;
 
-    public AbstractListenersSubscriptionHandler(int subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
+    public AbstractListenersSubscriptionHandler(int subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManagerImpl rowLogConfigurationManager) {
         super(subscriptionId, messagesWorkQueue, rowLog);
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
@@ -63,7 +62,8 @@ public abstract class AbstractListenersSubscriptionHandler extends AbstractSubsc
     protected void submitWorker(String listener) {
         Future<?> future = executorService.submit(new Worker(listener));
         listeners.put(listener, future);
-        futuresExecutorService.submit(new Resubmitter(listener, future));
+        // TODO resubmit ?
+//        futuresExecutorService.submit(new Resubmitter(listener, future));
     }
 
     private void listenerUnregistered(String listenerId) {

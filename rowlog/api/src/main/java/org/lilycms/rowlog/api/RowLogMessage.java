@@ -17,7 +17,7 @@ package org.lilycms.rowlog.api;
 
 /**
  * The RowLogMessage is the message object that should be put on 
- * the {@link RowLog} and processed by a {@link RowLogMessageConsumer}
+ * the {@link RowLog} and processed by a {@link RowLogMessageListener}
  * 
  * <p> A RowLogMessage is created by the {@link RowLog} when calling {@link RowLog#putMessage(byte[], byte[], byte[], org.apache.hadoop.hbase.client.Put)}
  * 
@@ -53,7 +53,7 @@ public interface RowLogMessage {
     byte[] getData();
     
     /**
-     * The payload contains all information about a message for a {@link RowLogMessageConsumer} to be able to process a message.
+     * The payload contains all information about a message for a {@link RowLogMessageListener} to be able to process a message.
      * @return the payload
      * @throws RowLogException 
      */

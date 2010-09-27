@@ -24,10 +24,10 @@ public class RowLogProcessorNotifier {
     private ClientBootstrap bootstrap;
     private NioClientSocketChannelFactory channelFactory;
     private String[] processorHostAndPort;
-    private RowLogConfigurationManager rowLogConfigurationManager;
+    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
 
     public RowLogProcessorNotifier(Configuration configuration) throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManager(configuration);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) {

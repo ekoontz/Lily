@@ -27,14 +27,14 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 
-public class RowLogMessageConsumerExecutionState {
+public class SubscriptionExecutionState {
 
     private final byte[] messageId;
     Map<Integer, Boolean> states = new HashMap<Integer, Boolean>();
     Map<Integer, Integer> tryCounts = new HashMap<Integer, Integer>();
     Map<Integer, byte[]> locks = new HashMap<Integer, byte[]>();
 
-    public RowLogMessageConsumerExecutionState(byte[] messageId) {
+    public SubscriptionExecutionState(byte[] messageId) {
         this.messageId = messageId;
     }
     
@@ -120,10 +120,10 @@ public class RowLogMessageConsumerExecutionState {
         return os.toByteArray();
     }
     
-    public static RowLogMessageConsumerExecutionState fromBytes(byte[] bytes) throws IOException {
+    public static SubscriptionExecutionState fromBytes(byte[] bytes) throws IOException {
         
         JsonNode node = new ObjectMapper().readValue(bytes, 0, bytes.length, JsonNode.class);
-        RowLogMessageConsumerExecutionState executionState = new RowLogMessageConsumerExecutionState(node.get("id").getBinaryValue());
+        SubscriptionExecutionState executionState = new SubscriptionExecutionState(node.get("id").getBinaryValue());
         
         JsonNode consumerStatesNode = node.get("states");
         for (int i = 0; i < consumerStatesNode.size(); i++) {

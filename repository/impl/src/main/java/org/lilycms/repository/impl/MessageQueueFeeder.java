@@ -18,9 +18,9 @@ package org.lilycms.repository.impl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 
-public class MessageQueueFeeder implements RowLogMessageConsumer {
+public class MessageQueueFeeder implements RowLogMessageListener {
 
     public static final int ID = 10;
     private static final int MAX_TRIES = 10;

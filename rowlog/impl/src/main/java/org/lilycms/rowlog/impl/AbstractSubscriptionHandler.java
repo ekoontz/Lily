@@ -31,32 +31,38 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
             this.context = context;
         }
         
-        public Object call() throws InterruptedException {
-            RowLogMessage message = messagesWorkQueue.take();
-            if (message != null) {
+        public Object call() {
+            while(!Thread.interrupted()) {
+                RowLogMessage message;
                 try {
-                    byte[] lock = rowLog.lockMessage(message, subscriptionId);
-                    if (lock != null) {
-                        boolean messageDone = rowLog.isMessageDone(message, subscriptionId);
-                        boolean problematic = rowLog.isProblematic(message, subscriptionId);
-                        if (!messageDone && !problematic) {
-                            if (processMessage(context, message)) {
-                                if(rowLog.messageDone(message, subscriptionId, lock)) {
+                    message = messagesWorkQueue.take();
+                } catch (InterruptedException e) {
+                    break;
+                }
+                if (message != null) {
+                    try {
+                        byte[] lock = rowLog.lockMessage(message, subscriptionId);
+                        if (lock != null) {
+                            boolean messageDone = rowLog.isMessageDone(message, subscriptionId);
+                            boolean problematic = rowLog.isProblematic(message, subscriptionId);
+                            if (!messageDone && !problematic) {
+                                if (processMessage(context, message)) {
+                                    if(rowLog.messageDone(message, subscriptionId, lock)) {
+                                    }
+                                } else {
+                                    rowLog.unlockMessage(message, subscriptionId, lock);
                                 }
                             } else {
                                 rowLog.unlockMessage(message, subscriptionId, lock);
                             }
-                        } else {
-                            rowLog.unlockMessage(message, subscriptionId, lock);
-                        }
-                    } 
-                } catch (RowLogException e) {
-                    log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
-                } finally {
-                    messagesWorkQueue.done(message);
+                        } 
+                    } catch (RowLogException e) {
+                        log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
+                    } finally {
+                        messagesWorkQueue.done(message);
+                    }
                 }
             }
-            
             return null;
         }
     }

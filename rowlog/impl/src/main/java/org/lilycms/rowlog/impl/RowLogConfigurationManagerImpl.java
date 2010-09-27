@@ -15,6 +15,7 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.SubscriptionContext;
@@ -24,7 +25,7 @@ import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
-public class RowLogConfigurationManager {
+public class RowLogConfigurationManagerImpl implements RowLogConfigurationManager {
     private Log log = LogFactory.getLog(getClass());
     private String lilyPath = "/lily";
     private String rowLogPath = lilyPath + "/rowlog";
@@ -45,7 +46,7 @@ public class RowLogConfigurationManager {
         }
     }
     
-    public RowLogConfigurationManager(Configuration configuration) throws RowLogException {
+    public RowLogConfigurationManagerImpl(Configuration configuration) throws RowLogException {
         try {
             int sessionTimeout = configuration.getInt("zookeeper.session.timeout", 60 * 1000);
             String connectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
@@ -63,11 +64,8 @@ public class RowLogConfigurationManager {
             List<String> subscriptionIds = zooKeeper.getChildren(subscriptionsPath(rowLogId), new SubscriptionsWatcher(processor, rowLog));
             for (String subscriptionId : subscriptionIds) {
                 byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, Integer.valueOf(subscriptionId)), false, new Stat());
-                String dataString = Bytes.toString(data);
-                String[] splitData = dataString.split(",");
-                Type type = Type.valueOf(splitData[0]);
-                int workerCount = Integer.valueOf(splitData[1]);
-                subscriptions.add(new SubscriptionContext(Integer.valueOf(subscriptionId), type, workerCount));
+                Type type = Type.valueOf(Bytes.toString(data));
+                subscriptions.add(new SubscriptionContext(Integer.valueOf(subscriptionId), type));
             }
         } catch (NoNodeException exception) {
             // TODO Do we need to put another watcher here? How to cope with non-existing paths? Make them mandatory?
@@ -77,9 +75,9 @@ public class RowLogConfigurationManager {
         return subscriptions;
     }
     
-    public void addSubscription(String rowLogId, int subscriptionId, SubscriptionContext.Type type, int workerCount) throws KeeperException, InterruptedException {
+    public void addSubscription(String rowLogId, int subscriptionId, SubscriptionContext.Type type) throws KeeperException, InterruptedException {
         String path = subscriptionPath(rowLogId, subscriptionId);
-        String dataString = type.name() + "," + workerCount;
+        String dataString = type.name();
         byte[] data = Bytes.toBytes(dataString);
         if (zooKeeper.exists(path, false) == null) { // TODO currently not possible to update a subscription or add it twice
             try {

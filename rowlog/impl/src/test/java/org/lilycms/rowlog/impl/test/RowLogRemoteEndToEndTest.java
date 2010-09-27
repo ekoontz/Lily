@@ -21,21 +21,21 @@ import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.impl.RemoteListener;
-import org.lilycms.rowlog.impl.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RemoteListenerHandler;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
-    private RemoteListener remoteListener;
+    private RemoteListenerHandler remoteListener;
     
     // Not in separate VM yet, but at least communication goes over channels.
     @Before
     public void setUp() throws Exception {
-        rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getConf());
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
         consumer = new TestMessageConsumer(0);
         rowLog.registerConsumer(consumer);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.Remote, 5);
-        remoteListener = new RemoteListener(rowLog, consumer, HBASE_PROXY.getConf());
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.Netty);
+        remoteListener = new RemoteListenerHandler(rowLog, consumer, HBASE_PROXY.getConf());
         remoteListener.start();
     }
 
@@ -52,8 +52,8 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     public void testMultipleConsumers() throws Exception {
         TestMessageConsumer consumer2 = new TestMessageConsumer(1);
         rowLog.registerConsumer(consumer2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.Remote, 5);
-        RemoteListener remoteListener2 = new RemoteListener(rowLog, consumer2, HBASE_PROXY.getConf());
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.Netty);
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, consumer2, HBASE_PROXY.getConf());
         remoteListener2.start();
         consumer.expectMessages(10);
         consumer2.expectMessages(10);

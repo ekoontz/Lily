@@ -16,9 +16,9 @@
 package org.lilycms.repository.impl;
 
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 
-public class DevNull implements RowLogMessageConsumer {
+public class DevNull implements RowLogMessageListener {
 
     public static final int ID = 2;
     private static final int MAX_TRIES = 10;

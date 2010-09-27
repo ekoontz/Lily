@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
@@ -54,7 +54,7 @@ public class RowLogTest {
     private static byte[] payloadColumnFamily = RowLogTableUtil.PAYLOAD_COLUMN_FAMILY;
     private static byte[] rowLogColumnFamily = RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY;
     private static HTableInterface rowTable;
-    private RowLogMessageConsumer consumer;
+    private RowLogMessageListener consumer;
     private int consumerId = 0;
     private RowLogShard shard;
 
@@ -74,7 +74,7 @@ public class RowLogTest {
     @Before
     public void setUp() throws Exception {
         rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, HBASE_PROXY.getConf());
-        consumer = control.createMock(RowLogMessageConsumer.class);
+        consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(consumerId).anyTimes();
         
@@ -96,7 +96,7 @@ public class RowLogTest {
 
         control.replay();
         rowLog.registerConsumer(consumer);
-        Collection<RowLogMessageConsumer> consumers = rowLog.getConsumers();
+        Collection<RowLogMessageListener> consumers = rowLog.getConsumers();
         assertTrue(consumers.size() == 1);
         assertEquals(consumer, consumers.iterator().next());
         control.verify();
@@ -241,12 +241,12 @@ public class RowLogTest {
     
     @Test
     public void testLockingMultipleConsumers() throws Exception {
-        RowLogMessageConsumer consumer1 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
         consumer1.getId();
         expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
         consumer1.getMaxTries();
         expectLastCall().andReturn(5).anyTimes();
-        RowLogMessageConsumer consumer2 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
         consumer2.getId();
         expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
         consumer2.getMaxTries();
@@ -280,12 +280,12 @@ public class RowLogTest {
     
     @Test
     public void testgetMessages() throws Exception {
-        RowLogMessageConsumer consumer1 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
         consumer1.getId();
         expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
         consumer1.getMaxTries();
         expectLastCall().andReturn(5).anyTimes();
-        RowLogMessageConsumer consumer2 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
         consumer2.getId();
         expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
         consumer2.getMaxTries();

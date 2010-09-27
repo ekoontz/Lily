@@ -23,7 +23,7 @@ import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 
 import java.util.*;
 
@@ -74,7 +74,7 @@ public class LinkIndexUpdater {
         rowLog.unRegisterConsumer(listener);
     }
 
-    private class  MyListener implements RowLogMessageConsumer {
+    private class  MyListener implements RowLogMessageListener {
 
         public int getId() {
             // This is selected so as to come before the MessageQueueFeeder 

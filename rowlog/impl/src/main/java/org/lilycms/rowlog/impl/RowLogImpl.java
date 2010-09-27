@@ -36,7 +36,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
 
 /**
@@ -50,7 +50,7 @@ public class RowLogImpl implements RowLog {
     private final byte[] payloadColumnFamily;
     private final byte[] executionStateColumnFamily;
     
-    private Map<Integer, RowLogMessageConsumer> consumers = new TreeMap<Integer, RowLogMessageConsumer>();
+    private Map<Integer, RowLogMessageListener> consumers = new TreeMap<Integer, RowLogMessageListener>();
     private final long lockTimeout;
     private final String id;
     private RowLogProcessorNotifier processorNotifier = null;
@@ -87,15 +87,15 @@ public class RowLogImpl implements RowLog {
         return id;
     }
     
-    public void registerConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
+    public void registerConsumer(RowLogMessageListener rowLogMessageConsumer) {
         consumers.put(rowLogMessageConsumer.getId(), rowLogMessageConsumer);
     }
     
-    public void unRegisterConsumer(RowLogMessageConsumer rowLogMessageConsumer) {
+    public void unRegisterConsumer(RowLogMessageListener rowLogMessageConsumer) {
         consumers.remove(rowLogMessageConsumer.getId());
     }
     
-    public Collection<RowLogMessageConsumer> getConsumers() {
+    public Collection<RowLogMessageListener> getConsumers() {
         return consumers.values();
     }
     
@@ -168,7 +168,7 @@ public class RowLogImpl implements RowLog {
 
     
     private void initializeConsumers(RowLogMessage message, Put put) throws IOException {
-        RowLogMessageConsumerExecutionState executionState = new RowLogMessageConsumerExecutionState(message.getId());
+        SubscriptionExecutionState executionState = new SubscriptionExecutionState(message.getId());
         for (Integer consumerId : consumers.keySet()) {
             executionState.setState(consumerId, false);
             executionState.incTryCount(consumerId);
@@ -191,7 +191,7 @@ public class RowLogImpl implements RowLog {
             try {
                 Result result = rowTable.get(get);
                 byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-                RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+                SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
 
                 boolean allDone = processMessage(message, executionState);
                 
@@ -206,9 +206,9 @@ public class RowLogImpl implements RowLog {
             }
     }
 
-    private boolean processMessage(RowLogMessage message, RowLogMessageConsumerExecutionState executionState) throws RowLogException {
+    private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException {
         boolean allDone = true;
-        for (Entry<Integer, RowLogMessageConsumer> entry : consumers.entrySet()) {
+        for (Entry<Integer, RowLogMessageListener> entry : consumers.entrySet()) {
             int consumerId = entry.getKey();
             if (!executionState.getState(consumerId)) {
                 boolean done = false;
@@ -250,7 +250,7 @@ public class RowLogImpl implements RowLog {
                 return null;
             }
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-            RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
             byte[] previousLock = executionState.getLock(consumerId);
             long now = System.currentTimeMillis();
             if (previousLock == null) {
@@ -269,7 +269,7 @@ public class RowLogImpl implements RowLog {
     }
 
     private byte[] putLock(RowLogMessage message, int consumerId, byte[] rowKey, byte[] qualifier, byte[] previousValue,
-            RowLogMessageConsumerExecutionState executionState, long now, int count) throws RowLogException {
+            SubscriptionExecutionState executionState, long now, int count) throws RowLogException {
         byte[] lock = Bytes.toBytes(now);
         executionState.setLock(consumerId, lock);
         executionState.incTryCount(consumerId);
@@ -299,7 +299,7 @@ public class RowLogImpl implements RowLog {
             if (result.isEmpty()) return false; // The execution state does not exist anymore, thus no lock to unlock
             
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-            RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
             byte[] previousLock = executionState.getLock(consumerId);
             if (!Bytes.equals(lock, previousLock)) return false; // The lock was lost  
             
@@ -317,7 +317,7 @@ public class RowLogImpl implements RowLog {
     }
 
     private void checkAndMarkProblematic(RowLogMessage message, int consumerId,
-            RowLogMessageConsumerExecutionState executionState) throws RowLogException {
+            SubscriptionExecutionState executionState) throws RowLogException {
         int maxTries = consumers.get(consumerId).getMaxTries();
         if (executionState.getTryCount(consumerId) >= maxTries) {
             getShard().markProblematic(message, consumerId);
@@ -335,7 +335,7 @@ public class RowLogImpl implements RowLog {
             Result result = rowTable.get(get);
             if (result.isEmpty()) return false;
             
-            RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(result.getValue(executionStateColumnFamily, qualifier));
+            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(result.getValue(executionStateColumnFamily, qualifier));
             byte[] lock = executionState.getLock(consumerId);
             if (lock == null) return false;
         
@@ -363,7 +363,7 @@ public class RowLogImpl implements RowLog {
             Result result = rowTable.get(get);
             if (!result.isEmpty()) {
                 byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-                RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+                SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
                 if (!Bytes.equals(lock,executionState.getLock(consumerId))) {
                     return false; // Not owning the lock
                 }
@@ -396,14 +396,14 @@ public class RowLogImpl implements RowLog {
             if (result.isEmpty())
                 return true;
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-            RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(previousValue);
+            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
             return executionState.getState(consumerId);
         } catch (IOException e) {
             throw new RowLogException("Failed to check if message is done", e);
         }
     }
 
-    private boolean updateExecutionState(byte[] rowKey, byte[] qualifier, RowLogMessageConsumerExecutionState executionState, byte[] previousValue) throws IOException {
+    private boolean updateExecutionState(byte[] rowKey, byte[] qualifier, SubscriptionExecutionState executionState, byte[] previousValue) throws IOException {
         Put put = new Put(rowKey);
         put.add(executionStateColumnFamily, qualifier, executionState.toBytes());
         return rowTable.checkAndPut(rowKey, executionStateColumnFamily, qualifier, previousValue, put);
@@ -434,7 +434,7 @@ public class RowLogImpl implements RowLog {
             if (!result.isEmpty()) {
                 NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(executionStateColumnFamily);
                 for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
-                    RowLogMessageConsumerExecutionState executionState = RowLogMessageConsumerExecutionState.fromBytes(entry.getValue());
+                    SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(entry.getValue());
                     boolean add = false;
                     if (consumerId.length == 0)
                         add = true;
@@ -462,7 +462,7 @@ public class RowLogImpl implements RowLog {
         return getShard().isProblematic(message, consumerId);
     }
     
-    public RowLogMessageConsumer getConsumer(int consumerId) {
+    public RowLogMessageListener getConsumer(int consumerId) {
         return consumers.get(consumerId);
     }
  }

@@ -35,10 +35,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.impl.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
@@ -48,12 +48,12 @@ public class RowLogProcessorTest {
 //    private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static Configuration configuration;
     private static String zkConnectString;
-    private static RowLogConfigurationManager rowLogConfigurationManager;
+    private static RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private IMocksControl control;
     private RowLog rowLog;
     private RowLogShard rowLogShard;
     private int consumerId;
-    private RowLogMessageConsumer consumer;
+    private RowLogMessageListener consumer;
 
 //    @BeforeClass
 //    public static void setUpBeforeClass() throws Exception {

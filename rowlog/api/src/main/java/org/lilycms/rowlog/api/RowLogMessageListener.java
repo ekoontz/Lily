@@ -25,7 +25,7 @@ package org.lilycms.rowlog.api;
  * with the {@link RowLog} before the message was put on the {@link RowLog}. 
  *
  */
-public interface RowLogMessageConsumer {
+public interface RowLogMessageListener {
 
     /**
      * An id which should be unique across all registered consumers on the {@link RowLog} 

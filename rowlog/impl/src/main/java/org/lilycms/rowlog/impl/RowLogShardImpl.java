@@ -36,7 +36,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
@@ -73,7 +73,7 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void putMessage(RowLogMessage message) throws RowLogException {
-        for (RowLogMessageConsumer consumer : rowLog.getConsumers()) {
+        for (RowLogMessageListener consumer : rowLog.getConsumers()) {
             putMessage(message, consumer.getId());
         }
     }
@@ -140,9 +140,7 @@ public class RowLogShardImpl implements RowLogShard {
             scanner = table.getScanner(scan);
             boolean keepScanning = problematic;
             do {
-                long startTime = System.currentTimeMillis();
                 Result[] results = scanner.next(batchSize);
-                long endTime = System.currentTimeMillis();
                 if (results.length == 0) {
                     keepScanning = false;
                 }

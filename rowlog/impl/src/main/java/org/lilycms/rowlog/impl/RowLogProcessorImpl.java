@@ -60,7 +60,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
     private Map<Integer, SubscriptionThread> subscriptionThreads = new HashMap<Integer, SubscriptionThread>();
     private Channel channel;
     private ChannelFactory channelFactory;
-    private RowLogConfigurationManager rowLogConfigurationManager;
+    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private final Configuration configuration;
     
     public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, Configuration configuration) throws RowLogException {
@@ -81,7 +81,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         if (stop) {
             stop = false;
             try {
-                rowLogConfigurationManager = new RowLogConfigurationManager(configuration);
+                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
                 subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(this, rowLog));
             } catch (KeeperException e) {
                 
@@ -264,16 +264,12 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             this.subscriptionId = subscription.getId();
             this.metrics = new ProcessorMetrics();
             switch (subscription.getType()) {
-            case Embeded:
-                subscriptionHandler = new EmbededSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messagesWorkQueue, rowLog);
+            case VM:
+                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
                 break;
                 
-            case Local:
-                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId,  subscription.getWorkerCount(), messagesWorkQueue, rowLog, rowLogConfigurationManager);
-                break;
-                
-            case Remote:
-                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId, subscription.getWorkerCount(), messagesWorkQueue, rowLog, rowLogConfigurationManager);
+            case Netty:
+                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId,  messagesWorkQueue, rowLog, rowLogConfigurationManager);
 
             default:
                 break;

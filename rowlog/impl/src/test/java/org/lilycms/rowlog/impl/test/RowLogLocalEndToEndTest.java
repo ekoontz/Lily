@@ -21,17 +21,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.impl.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     
     @Before
     public void setUp() throws Exception {
         try {
-            rowLogConfigurationManager = new RowLogConfigurationManager(HBASE_PROXY.getConf());
+            rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
             consumer = new TestMessageConsumer(0);
             rowLog.registerConsumer(consumer);
-            rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.Local, 5);
+            rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.VM);
             rowLogConfigurationManager.addListener(rowLog.getId(), consumer.getId(), "listener1");
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,7 +57,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     public void testMultipleConsumers() throws Exception {
         TestMessageConsumer consumer2 = new TestMessageConsumer(1);
         rowLog.registerConsumer(consumer2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.Local, 5);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.VM);
         rowLogConfigurationManager.addListener(rowLog.getId(), consumer2.getId(), "Listener2");
         consumer.expectMessages(10);
         consumer2.expectMessages(10);

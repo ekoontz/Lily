@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageConsumer;
+import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -75,12 +75,12 @@ public class RowLogShardTest {
     public void testSingleMessage() throws Exception {
         int consumerId = 1;
 
-        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(new Integer(consumerId));
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer}));
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer}));
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -100,12 +100,12 @@ public class RowLogShardTest {
     public void testMultipleMessages() throws Exception {
         int consumerId = 1;
         
-        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(new Integer(consumerId)).anyTimes();
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer})).anyTimes();
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -132,12 +132,12 @@ public class RowLogShardTest {
     public void testBatchSize() throws Exception {
         int consumerId = 1;
         
-        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(new Integer(consumerId)).anyTimes();
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer})).anyTimes();
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
         
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
@@ -172,16 +172,16 @@ public class RowLogShardTest {
         int consumerId1 = 1;
         int consumerId2 = 2;
 
-        RowLogMessageConsumer consumer1 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
         consumer1.getId();
         expectLastCall().andReturn(new Integer(consumerId1)).anyTimes();
 
-        RowLogMessageConsumer consumer2 = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
         consumer2.getId();
         expectLastCall().andReturn(new Integer(consumerId2)).anyTimes();
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer1, consumer2})).anyTimes();
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer1, consumer2})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -215,12 +215,12 @@ public class RowLogShardTest {
         int consumerId1 = 1;
         int consumerId2 = 2;
         
-        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(new Integer(consumerId1)).anyTimes();
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer})).anyTimes();
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -242,12 +242,12 @@ public class RowLogShardTest {
     public void testProblematicMessage() throws Exception {
         int consumerId = 1;
 
-        RowLogMessageConsumer consumer = control.createMock(RowLogMessageConsumer.class);
+        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
         consumer.getId();
         expectLastCall().andReturn(new Integer(consumerId));
         
         rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageConsumer[]{consumer}));
+        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer}));
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
