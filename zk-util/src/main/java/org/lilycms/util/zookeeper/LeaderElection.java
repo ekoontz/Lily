@@ -25,7 +25,6 @@ public class LeaderElection {
     private ZooKeeperItf zk;
     private String position;
     private String electionPath;
-    private String electionNodeName;
     private LeaderElectionCallback callback;
     private boolean elected = false;
     private ZkWatcher watcher = new ZkWatcher();
@@ -60,9 +59,15 @@ public class LeaderElection {
             throw new LeaderElectionSetupException("Error creating ZooKeeper path " + electionPath, e);
         }
 
-        String path;
         try {
-            path = zk.create(electionPath + "/n_", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+            // In case of connection loss, a node might have been created for us (we do not know it). Therefore,
+            // retrying upon connection loss is important, so that we can continue with watching the leaders.
+            // Later on, we do not look at the name of the node we created here, but at the owner.
+            ZkUtil.retryOperationForever(new ZooKeeperOperation<String>() {
+                public String execute() throws KeeperException, InterruptedException {
+                    return zk.create(electionPath + "/n_", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+                }
+            });
         } catch (KeeperException e) {
             throw new LeaderElectionSetupException("Error creating leader election zookeeper node below " +
                     electionPath, e);
@@ -70,8 +75,6 @@ public class LeaderElection {
             throw new LeaderElectionSetupException("Error creating leader election zookeeper node below " +
                     electionPath, e);
         }
-
-        electionNodeName = path.substring((electionPath + "/").length());
 
         watchLeaders();
     }
@@ -89,7 +92,7 @@ public class LeaderElection {
             Collections.sort(children);
 
             if (log.isDebugEnabled()) {
-                log.debug("Leaders changed for the position of " + position + ", they are now: (me = " + electionNodeName + ")");
+                log.debug("Leaders changed for the position of " + position + ", they are now:");
                 for (String child : children) {
                     log.debug(child);
                 }
@@ -98,8 +101,10 @@ public class LeaderElection {
             // This list should never be empty, at least we are in it
             final String leader = children.get(0);
 
-            // While we could compare the leader name with our own ephemeral node name, it seems
-            // more defensive to use the Stat.ephemeralOwner field
+            // While we could compare the leader name with our own ephemeral node name, it is safer to compare
+            // with the Stat.ephemeralOwner field. This is because the creation of the ephemeral node might have
+            // failed with a ConnectionLoss exception, in which case we might have retried and hence have two
+            // leader nodes allocated.
             Stat stat = ZkUtil.retryOperationForever(new ZooKeeperOperation<Stat>() {
                 public Stat execute() throws KeeperException, InterruptedException {
                     return zk.exists(electionPath + "/" + leader, false);
