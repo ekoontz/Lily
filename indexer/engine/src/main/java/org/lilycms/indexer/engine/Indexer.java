@@ -30,7 +30,6 @@ import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.indexer.model.sharding.ShardSelectorException;
 import org.lilycms.repository.api.*;
 import org.lilycms.util.repo.VersionTag;
-import org.lilycms.util.zookeeper.ZkPathCreationException;
 
 import java.io.IOException;
 import java.util.*;
@@ -52,8 +51,7 @@ public class Indexer {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public Indexer(IndexerConf conf, Repository repository, SolrServers solrServers, IndexLocker indexLocker)
-            throws ZkPathCreationException {
+    public Indexer(IndexerConf conf, Repository repository, SolrServers solrServers, IndexLocker indexLocker) {
         this.conf = conf;
         this.repository = repository;
         this.solrServers = solrServers;

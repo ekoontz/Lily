@@ -39,7 +39,7 @@ public class LeaderElection {
      *                     will be created if it does not exist. The path should not end on a slash.
      */
     public LeaderElection(ZooKeeperItf zk, String position, String electionPath, LeaderElectionCallback callback)
-            throws LeaderElectionSetupException {
+            throws LeaderElectionSetupException, InterruptedException, KeeperException {
         this.zk = zk;
         this.position = position;
         this.electionPath = electionPath;
@@ -52,12 +52,8 @@ public class LeaderElection {
         stopped = true;
     }
 
-    private void proposeAsLeader() throws LeaderElectionSetupException {
-        try {
-            ZkUtil.createPath(zk, electionPath);
-        } catch (ZkPathCreationException e) {
-            throw new LeaderElectionSetupException("Error creating ZooKeeper path " + electionPath, e);
-        }
+    private void proposeAsLeader() throws LeaderElectionSetupException, InterruptedException, KeeperException {
+        ZkUtil.createPath(zk, electionPath);
 
         try {
             // In case of connection loss, a node might have been created for us (we do not know it). Therefore,

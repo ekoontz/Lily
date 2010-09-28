@@ -23,7 +23,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
-import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 import org.lilycms.util.zookeeper.ZooKeeperOperation;
@@ -53,7 +52,7 @@ public class ZKPublisher {
     }
 
     @PostConstruct
-    public void start() throws IOException, InterruptedException, KeeperException, ZkPathCreationException {
+    public void start() throws IOException, InterruptedException, KeeperException {
         publishBlobSetup();
 
         // Publish our address
@@ -67,7 +66,7 @@ public class ZKPublisher {
         });
     }
 
-    private void publishBlobSetup() throws ZkPathCreationException, InterruptedException, KeeperException {
+    private void publishBlobSetup() throws InterruptedException, KeeperException {
         // The below serves as a stop-gap solution for the blob configuration: we store the information in ZK
         // that clients need to know how to access the blob store locations, but the actual setup of the
         // BlobStoreAccessFactory is currently hardcoded

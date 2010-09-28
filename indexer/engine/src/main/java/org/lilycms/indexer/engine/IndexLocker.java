@@ -8,7 +8,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.repository.api.RecordId;
-import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 import org.lilycms.util.zookeeper.ZooKeeperOperation;
@@ -41,12 +40,12 @@ public class IndexLocker {
 
     private static final String LOCK_PATH = "/lily/indexer/recordlock";        
 
-    public IndexLocker(ZooKeeperItf zk) throws ZkPathCreationException {
+    public IndexLocker(ZooKeeperItf zk) throws InterruptedException, KeeperException {
         this.zk = zk;
         ZkUtil.createPath(zk, LOCK_PATH);
     }
 
-    public IndexLocker(ZooKeeperItf zk, int waitBetweenTries, int maxWaitTime) throws ZkPathCreationException {
+    public IndexLocker(ZooKeeperItf zk, int waitBetweenTries, int maxWaitTime) throws InterruptedException, KeeperException {
         this.zk = zk;
         this.waitBetweenTries = waitBetweenTries;
         this.maxWaitTime = maxWaitTime;

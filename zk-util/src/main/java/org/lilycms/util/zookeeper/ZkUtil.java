@@ -47,15 +47,17 @@ public class ZkUtil {
         return zooKeeper;
     }
     
-    public static void createPath(ZooKeeper zk, String path) throws ZkPathCreationException {
+    public static void createPath(ZooKeeper zk, String path) throws InterruptedException, KeeperException {
         createPath(new ZooKeeperImpl(zk), path, null, CreateMode.PERSISTENT);
     }
 
-    public static void createPath(ZooKeeper zk, String path, byte[] data, CreateMode createMode) throws ZkPathCreationException {
+    public static void createPath(ZooKeeper zk, String path, byte[] data, CreateMode createMode)
+            throws InterruptedException, KeeperException {
         createPath(new ZooKeeperImpl(zk), path, data, createMode);
     }
 
-    public static void createPath(final ZooKeeperItf zk, final String path) throws ZkPathCreationException {
+    public static void createPath(final ZooKeeperItf zk, final String path)
+            throws InterruptedException, KeeperException {
         createPath(zk, path, null, CreateMode.PERSISTENT);
     }
 
@@ -64,21 +66,17 @@ public class ZkUtil {
      * Keeps retrying in case of connection loss.
      *
      */
-    public static void createPath(final ZooKeeperItf zk, final String path, final byte[] data, final CreateMode createMode) throws ZkPathCreationException {
-        try {
-            Stat stat = retryOperationForever(new ZooKeeperOperation<Stat>() {
-                public Stat execute() throws KeeperException, InterruptedException {
-                    return zk.exists(path, null);
-                }
-            });
+    public static void createPath(final ZooKeeperItf zk, final String path, final byte[] data,
+            final CreateMode createMode) throws InterruptedException, KeeperException {
 
-            if (stat != null)
-                return;
-        } catch (KeeperException e) {
-            throw new ZkPathCreationException("Error testing path for existence: " + path, e);
-        } catch (InterruptedException e) {
-            throw new ZkPathCreationException("Error testing path for existence: " + path, e);
-        }
+        Stat stat = retryOperationForever(new ZooKeeperOperation<Stat>() {
+            public Stat execute() throws KeeperException, InterruptedException {
+                return zk.exists(path, null);
+            }
+        });
+
+        if (stat != null)
+            return;
 
         if (!path.startsWith("/"))
             throw new IllegalArgumentException("Path should start with a slash.");
@@ -96,10 +94,6 @@ public class ZkUtil {
                 });
             } catch (KeeperException.NodeExistsException e) {
                 // ignore
-            } catch (InterruptedException e) {
-                throw new ZkPathCreationException(getPathCreateFailureMessage(subPath.toString(), path), e);
-            } catch (KeeperException e) {
-                throw new ZkPathCreationException(getPathCreateFailureMessage(subPath.toString(), path), e);
             }
         }
     }

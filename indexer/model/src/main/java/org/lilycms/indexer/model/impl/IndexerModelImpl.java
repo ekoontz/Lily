@@ -70,7 +70,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private static final String INDEX_COLLECTION_PATH_SLASH = INDEX_COLLECTION_PATH + "/";
 
-    public IndexerModelImpl(ZooKeeperItf zk) throws ZkPathCreationException, InterruptedException, KeeperException {
+    public IndexerModelImpl(ZooKeeperItf zk) throws InterruptedException, KeeperException {
         this.zk = zk;
         ZkUtil.createPath(zk, INDEX_COLLECTION_PATH);
         ZkUtil.createPath(zk, INDEX_TRASH_PATH);

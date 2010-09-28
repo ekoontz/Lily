@@ -7,6 +7,7 @@ import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobStatus;
 import org.apache.hadoop.mapred.JobTracker;
 import org.apache.hadoop.mapred.RunningJob;
+import org.apache.zookeeper.KeeperException;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.util.zookeeper.*;
 
@@ -64,7 +65,7 @@ public class IndexerMaster {
     }
 
     @PostConstruct
-    public void start() throws LeaderElectionSetupException, IOException {
+    public void start() throws LeaderElectionSetupException, IOException, InterruptedException, KeeperException {
         jobStatusWatcher = new JobStatusWatcher();
 
         leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",

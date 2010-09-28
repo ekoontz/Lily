@@ -21,7 +21,6 @@ import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.util.zookeeper.ZkConnectException;
-import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -80,12 +79,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         String dataString = type.name();
         byte[] data = Bytes.toBytes(dataString);
         if (zooKeeper.exists(path, false) == null) { // TODO currently not possible to update a subscription or add it twice
-            try {
-                ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);
-            } catch (ZkPathCreationException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);
         }
     }
     
