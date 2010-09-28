@@ -22,6 +22,10 @@
       id="hadoopConfFactory"
       service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
 
+  <kauri:import-service
+      id="zooKeeper"
+      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+
   <kauri:export-service
       ref="repository"
       service="org.lilycms.repository.api.Repository"/>
@@ -82,7 +86,7 @@
   </bean>
 
   <bean class="org.lilycms.server.modules.repository.ZKPublisher">
-    <constructor-arg value="${repository:zookeeperConnectString}"/>
+    <constructor-arg ref="zooKeeper"/>
     <constructor-arg>
       <bean factory-bean="address" factory-method="getHostAddress"/>
     </constructor-arg>

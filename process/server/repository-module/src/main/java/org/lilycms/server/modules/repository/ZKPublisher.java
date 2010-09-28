@@ -18,29 +18,24 @@ package org.lilycms.server.modules.repository;
 import java.io.IOException;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.util.zookeeper.ZooKeeperOperation;
 
 /**
  * Publishes this Lily repository node to Zookeeper.
  *
- * <p>TODO this should do more than publishing, e.g. in case connection to ZK is lost
- * we should probably stop handling client requests?
  */
 public class ZKPublisher {
-    private String zkConnectString;
+    private ZooKeeperItf zk;
     private String hostAddress;
     private int port;
-    private ZooKeeper zk;
     private String lilyPath = "/lily";
     private String nodesPath = lilyPath + "/repositoryNodes";
     private String blobDfsUriPath = lilyPath + "/blobStoresConfig/dfsUri";
@@ -49,8 +44,8 @@ public class ZKPublisher {
     private final String dfsUri;
     private final Configuration hbaseConf;
 
-    public ZKPublisher(String zkConnectString, String hostAddress, int port, String dfsUri, Configuration hbaseConf) {
-        this.zkConnectString = zkConnectString;
+    public ZKPublisher(ZooKeeperItf zk, String hostAddress, int port, String dfsUri, Configuration hbaseConf) {
+        this.zk = zk;
         this.hostAddress = hostAddress;
         this.port = port;
         this.dfsUri = dfsUri;
@@ -59,31 +54,25 @@ public class ZKPublisher {
 
     @PostConstruct
     public void start() throws IOException, InterruptedException, KeeperException, ZkPathCreationException {
-        zk = new ZooKeeper(zkConnectString, 5000, new ZkWatcher());
+        publishBlobSetup();
 
+        // Publish our address
         ZkUtil.createPath(zk, nodesPath);
-        String repoAddressAndPort = hostAddress + ":" + port;
-        zk.create(nodesPath + "/" + repoAddressAndPort, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        final String repoAddressAndPort = hostAddress + ":" + port;
+        ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
+            public Object execute() throws KeeperException, InterruptedException {
+                zk.create(nodesPath + "/" + repoAddressAndPort, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                return null;
+            }
+        });
+    }
 
+    private void publishBlobSetup() throws ZkPathCreationException, InterruptedException, KeeperException {
         // The below serves as a stop-gap solution for the blob configuration: we store the information in ZK
         // that clients need to know how to access the blob store locations, but the actual setup of the
         // BlobStoreAccessFactory is currently hardcoded
-        ZkUtil.createPath(zk, blobDfsUriPath);
-        zk.setData(blobDfsUriPath, dfsUri.getBytes(), -1);
-        ZkUtil.createPath(zk, blobHBaseZkQuorumPath);
-        zk.setData(blobHBaseZkQuorumPath, hbaseConf.get("hbase.zookeeper.quorum").getBytes(), -1);
-        ZkUtil.createPath(zk, blobHBaseZkPortPath);
-        zk.setData(blobHBaseZkPortPath, hbaseConf.get("hbase.zookeeper.property.clientPort").getBytes(), -1);
-    }
-
-    @PreDestroy
-    public void stop() throws InterruptedException {
-        zk.close();
-    }
-
-    private static class ZkWatcher implements Watcher {
-        public void process(WatchedEvent watchedEvent) {
-            System.out.println("Got zookeeper event: " + watchedEvent);
-        }
+        ZkUtil.createPath(zk, blobDfsUriPath, dfsUri.getBytes(), CreateMode.PERSISTENT);
+        ZkUtil.createPath(zk, blobHBaseZkQuorumPath, hbaseConf.get("hbase.zookeeper.quorum").getBytes(), CreateMode.PERSISTENT);
+        ZkUtil.createPath(zk, blobHBaseZkPortPath, hbaseConf.get("hbase.zookeeper.property.clientPort").getBytes(), CreateMode.PERSISTENT);
     }
 }

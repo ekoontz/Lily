@@ -2,7 +2,6 @@
 <repository>
   <interface>default</interface>
   <nameserver>default</nameserver>
-  <zookeeperConnectString>localhost:2181</zookeeperConnectString>
 
   <!-- Port on which to bind the avro server, 0 will bind to an ephemeral port. -->
   <port>0</port>
