@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import org.apache.hadoop.fs.Path;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.engine.SolrServers;
@@ -136,8 +137,9 @@ public class IndexerTest {
 
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/indexerconf1.xml"), repository);
-        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers);
-        indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex, zk);
+        IndexLocker indexLocker = new IndexLocker(zk);
+        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers, indexLocker);
+        indexUpdater = new IndexUpdater(indexer, repository.getWal(), 9000, repository, linkIndex, indexLocker);
 
         repository.getWal().registerConsumer(messageVerifier);
     }

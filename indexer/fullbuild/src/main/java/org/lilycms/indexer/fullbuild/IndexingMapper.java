@@ -11,7 +11,6 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.lilycms.client.LilyClient;
-import org.lilycms.indexer.engine.IndexLock;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
@@ -92,9 +91,10 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             SolrServers solrServers = new SolrServers(solrShards, shardSelector, httpClient);
 
-            indexer = new Indexer(indexerConf, repository, solrServers);
-
             indexLocker = new IndexLocker(zk);
+
+            indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
+
         } catch (Exception e) {
             throw new IOException("Error in index build map task setup.", e);
         }
@@ -114,15 +114,16 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
         RecordId recordId = idGenerator.fromBytes(key.get());
 
-        IndexLock indexLock = null;
+        boolean locked = false;
         try {
-            indexLock = indexLocker.lock(recordId);
-            indexer.index(recordId, indexLock);
+            indexLocker.lock(recordId);
+            locked = true;
+            indexer.index(recordId);
         } catch (Exception e) {
             throw new IOException("Error indexing record " + recordId, e);
         } finally {
-            if (indexLock != null)
-                indexLocker.unlockLogFailure(recordId, indexLock);
+            if (locked)
+                indexLocker.unlockLogFailure(recordId);
         }
     }
 }

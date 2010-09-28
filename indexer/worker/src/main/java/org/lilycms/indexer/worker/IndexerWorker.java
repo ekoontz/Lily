@@ -4,6 +4,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
@@ -115,10 +116,11 @@ public class IndexerWorker {
             checkShardUsage(index.getName(), index.getSolrShards().keySet(), shardSelector.getShards());
 
             SolrServers solrServers = new SolrServers(index.getSolrShards(), shardSelector, httpClient);
-            Indexer indexer = new Indexer(indexerConf, repository, solrServers);
+            IndexLocker indexLocker = new IndexLocker(zk);
+            Indexer indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
             int consumerId = Integer.parseInt(index.getQueueSubscriptionId());
-            IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex, zk);
+            IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex, indexLocker);
 
             IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater);
 

@@ -115,6 +115,20 @@ public class ZkUtil {
     /**
      * Perform the given operation, retrying in case of connection loss.
      *
+     * <p>Note that in case of connection loss, you are never sure if the operation succeeded or not,
+     * so it might be executed twice. Therefore:
+     *
+     * <ul>
+     *   <li>in case of a delete operation, be prepared to deal with a NoNode exception
+     *   <li>in case of a create operation, be prepared to deal with a NodeExists exception
+     *   <li>in case of creation of a sequential node, two nodes might have been created. If they are ephemeral,
+     *       you can use Stat.ephemeralOwner to find out the ones that belong to the current session. Otherwise,
+     *       embed the necessary identification into the name or data.
+     * </ul>
+     *
+     * <p>Do not call this method from within a ZooKeeper watcher callback, as it might block for a longer
+     * time and hence block the delivery of other events, including the Disconnected event.
+     *
      * @retryCount if -1, retries forever
      */
     public static <T> T retryOperation(ZooKeeperOperation<T> operation, int retryCount)

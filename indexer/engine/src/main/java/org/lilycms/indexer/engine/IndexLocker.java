@@ -6,11 +6,14 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.Stat;
 import org.lilycms.repository.api.RecordId;
 import org.lilycms.util.zookeeper.ZkPathCreationException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 import org.lilycms.util.zookeeper.ZooKeeperOperation;
+
+import java.util.Arrays;
 
 // About the IndexLocker:
 //
@@ -50,15 +53,20 @@ public class IndexLocker {
         ZkUtil.createPath(zk, LOCK_PATH);
     }
 
-    public IndexLock lock(RecordId recordId) throws IndexLockException {
+    /**
+     * Obtain a lock for the given record. The lock is thread-based, i.e. it is re-entrant, obtaining
+     * a lock for the same record twice from the same {ZK session, thread} will silently succeed.
+     *
+     * <p>If this method returns without failure, you obtained the lock
+     *
+     * @throws IndexLockTimeoutException if the lock could not be obtained within the given timeout.
+     */
+    public void lock(RecordId recordId) throws IndexLockException {
         try {
             long startTime = System.currentTimeMillis();
             final String lockPath = getPath(recordId);
 
-            // The token generation is simplistic but is not meant against hackers, only to protect against potential
-            // programming errors.
-            String randomToken = String.valueOf(Math.random() * 1000000);
-            final byte[] token = Bytes.toBytes(randomToken);
+            final byte[] data = Bytes.toBytes(Thread.currentThread().getId());
 
             while (true) {
                 if (System.currentTimeMillis() - startTime > maxWaitTime) {
@@ -70,17 +78,37 @@ public class IndexLocker {
                 try {
                     ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
                         public Object execute() throws KeeperException, InterruptedException {
-                            zk.create(lockPath, token, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                            zk.create(lockPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                             return null;
                         }
                     });
-                    break;
+                    // We successfully created the node, hence we have the lock.
+                    return;
                 } catch (KeeperException.NodeExistsException e) {
-                    Thread.sleep(waitBetweenTries);
+                    // ignore, see next
                 }
-            }
 
-            return new IndexLock(recordId, token);
+                // In case creating the node failed, it does not mean we do not have the lock: in case
+                // of connection loss, we might not know if we actually succeeded creating the node, therefore
+                // read the owner and thread id to check.
+                boolean hasLock = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+                    public Boolean execute() throws KeeperException, InterruptedException {
+                        try {
+                            Stat stat = new Stat();
+                            byte[] currentData = zk.getData(lockPath, false, stat);
+                            return (stat.getEphemeralOwner() == zk.getSessionId() && Arrays.equals(currentData, data));
+                        } catch (KeeperException.NoNodeException e) {
+                            return false;
+                        }
+                    }
+                });
+
+                if (hasLock) {
+                    return;
+                }
+
+                Thread.sleep(waitBetweenTries);
+            }
         } catch (Throwable throwable) {
             if (throwable instanceof IndexLockException)
                 throw (IndexLockException)throwable;
@@ -88,21 +116,21 @@ public class IndexLocker {
         }
     }
 
-    public void unlock(final RecordId recordId, final IndexLock indexLock) throws IndexLockException, InterruptedException,
+    public void unlock(final RecordId recordId) throws IndexLockException, InterruptedException,
             KeeperException {
         final String lockPath = getPath(recordId);
 
         boolean tokenOk = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
             public Boolean execute() throws KeeperException, InterruptedException {
-                byte[] data = zk.getData(lockPath, false, null);
+                Stat stat = new Stat();
+                byte[] data = zk.getData(lockPath, false, stat);
 
-                if (indexLock.equals(new IndexLock(recordId, data))) {
+                if (stat.getEphemeralOwner() == zk.getSessionId() && Bytes.toLong(data) == Thread.currentThread().getId()) {
                     zk.delete(lockPath, -1);
                     return true;
                 } else {
                     return false;
                 }
-
             }
         });
 
@@ -112,12 +140,31 @@ public class IndexLocker {
         }
     }
 
-    public void unlockLogFailure(final RecordId recordId, final IndexLock token) {
+    public void unlockLogFailure(final RecordId recordId) {
         try {
-            unlock(recordId, token);
+            unlock(recordId);
         } catch (Throwable t) {
             log.error("Error releasing lock on record " + recordId, t);
         }
+    }
+
+    public boolean hasLock(final RecordId recordId) throws IndexLockException, InterruptedException,
+            KeeperException {
+        final String lockPath = getPath(recordId);
+
+        return ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+            public Boolean execute() throws KeeperException, InterruptedException {
+                try {
+                    Stat stat = new Stat();
+                    byte[] data = zk.getData(lockPath, false, stat);
+                    return stat.getEphemeralOwner() == zk.getSessionId() &&
+                            Bytes.toLong(data) == Thread.currentThread().getId();
+                } catch (KeeperException.NoNodeException e) {
+                    return false;
+                }
+
+            }
+        });
     }
 
     private String getPath(RecordId recordId) {

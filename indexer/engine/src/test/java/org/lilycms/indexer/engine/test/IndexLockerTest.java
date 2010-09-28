@@ -8,7 +8,6 @@ import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.indexer.engine.IndexLock;
 import org.lilycms.indexer.engine.IndexLockException;
 import org.lilycms.indexer.engine.IndexLockTimeoutException;
 import org.lilycms.indexer.engine.IndexLocker;
@@ -22,6 +21,7 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 import java.io.File;
 import java.util.*;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -58,46 +58,61 @@ public class IndexLockerTest {
     }
 
     @Test
-    public void testUnlockRequiresCorrectLock() throws Exception {
+    public void testObtainAndReleaseLock() throws Exception {
         IndexLocker indexLocker = new IndexLocker(ZK);
         RecordId recordId1 = new IdGeneratorImpl().newRecordId();
         RecordId recordId2 = new IdGeneratorImpl().newRecordId();
 
-        IndexLock lock1 = indexLocker.lock(recordId1);
-        IndexLock lock2 = indexLocker.lock(recordId2);
+        // working with two records just to illustrate that one thread can take
+        // a lock on more than one record at the same time.
 
-        try {
-            indexLocker.unlock(recordId1, lock2);
-            fail("Expected exception");
-        } catch (IndexLockException e) {
-            // expected
-        }
+        indexLocker.lock(recordId1);
+        indexLocker.lock(recordId2);
 
-        indexLocker.unlock(recordId1, lock1);
-        indexLocker.unlock(recordId2, lock2);
+        indexLocker.unlock(recordId1);
+        indexLocker.unlock(recordId2);
     }
 
     @Test
     public void testLockTimeout() throws Exception {
         int maxWaitTime = 500;
-        IndexLocker indexLocker = new IndexLocker(ZK, 2, maxWaitTime);
-        RecordId recordId = new IdGeneratorImpl().newRecordId();
+        final IndexLocker indexLocker = new IndexLocker(ZK, 2, maxWaitTime);
+        final RecordId recordId = new IdGeneratorImpl().newRecordId();
 
         // take a lock and do not release it, another attempt to take a lock on the same record
         // should then fail after a certain timeout
         indexLocker.lock(recordId);
 
-        long before = System.currentTimeMillis();
-        try {
-            indexLocker.lock(recordId);
-            fail("expected exception");
-        } catch (IndexLockTimeoutException e) {
-            // expected
-        }
-        long after = System.currentTimeMillis();
+        // since locks are re-entrant, we need to obtain the lock a second time on a different thread
+        final Variable<Long> before = new Variable<Long>();
+        final Variable<Long> after = new Variable<Long>();
+        final Variable<Throwable> throwable = new Variable<Throwable>();
 
-        assertTrue(after - before > maxWaitTime);
-        assertTrue(after - before < maxWaitTime + 200);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                try {
+                    before.value = System.currentTimeMillis();
+                    try {
+                        indexLocker.lock(recordId);
+                        fail("expected exception");
+                    } catch (IndexLockTimeoutException e) {
+                        // expected
+                    }
+                    after.value = System.currentTimeMillis();
+                } catch (Throwable t) {
+                    throwable.value = t;
+                }
+            }
+        };
+
+        assertNull(throwable.value);
+
+        Thread thread = new Thread(runnable);
+        thread.start();
+        thread.join();
+
+        assertTrue(after.value - before.value > maxWaitTime);
+        assertTrue(after.value - before.value < maxWaitTime + 200);
     }
 
     @Test
@@ -158,12 +173,12 @@ public class IndexLockerTest {
         public void run() {
             try {
                 log.info("Thread " + number + " waiting to obtain lock");
-                IndexLock lock = indexLocker.lock(recordId);
+                indexLocker.lock(recordId);
                 log.debug("Thread " + number + " obtained lock");
                 info.lockObtainTime = System.currentTimeMillis();
                 Thread.sleep((long)Math.floor(Math.random() * 1000));
                 info.lockReleaseTime = System.currentTimeMillis();
-                indexLocker.unlock(recordId, lock);
+                indexLocker.unlock(recordId);
                 log.debug("Thread " + number + " released lock");
             } catch (Throwable t) {
                 log.error("Thread " + number + " failed", t);
@@ -179,4 +194,7 @@ public class IndexLockerTest {
         Throwable throwable;
     }
 
+    public static class Variable<T> {
+        public T value;
+    }
 }

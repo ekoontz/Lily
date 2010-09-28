@@ -89,7 +89,11 @@ public class ZkLock {
                                 // never be released.
                                 ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
                                     public Object execute() throws KeeperException, InterruptedException {
-                                        zk.delete(childPath, -1);
+                                        try {
+                                            zk.delete(childPath, -1);
+                                        } catch (KeeperException.NoNodeException e) {
+                                            // ignore
+                                        }
                                         return null;
                                     }
                                 });
