@@ -9,6 +9,11 @@ import java.util.List;
 
 /**
  * Default implementation of {@link ZooKeeperItf}.
+ *
+ * <p>To wait until the ZK connection is established, use {@link ZkUtil#connect(String, int)}.
+ *
+ * <p>For a global ZK handle to be used by a ZK-dependent application, see rather
+ * {@link org.lilycms.util.zookeeper.StateWatchingZooKeeper}.
  */
 public class ZooKeeperImpl implements ZooKeeperItf {
     private ZooKeeper delegate;
@@ -23,6 +28,10 @@ public class ZooKeeperImpl implements ZooKeeperItf {
 
     public ZooKeeperImpl(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
         this.delegate = new ZooKeeper(connectString, sessionTimeout, watcher);
+    }
+
+    public ZooKeeperImpl(String connectString, int sessionTimeout) throws IOException {
+        this.delegate = new ZooKeeper(connectString, sessionTimeout, new DefaultZkWatcher());
     }
 
     public void setDelegate(ZooKeeper delegate) {

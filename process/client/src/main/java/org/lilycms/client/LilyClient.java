@@ -15,6 +15,7 @@
  */
 package org.lilycms.client;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -47,7 +48,8 @@ import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.util.repo.DfsUri;
-import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZkConnectException;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 /**
@@ -59,8 +61,9 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
  * number of clients is limited and clients are long-running (e.g. some front-end servers), you should frequently
  * request an new Repository object in order to avoid talking to the same server all the time.
  */
-public class LilyClient {
+public class LilyClient implements Closeable {
     private ZooKeeperItf zk;
+    private boolean managedZk;
     private List<ServerNode> servers = new ArrayList<ServerNode>();
     private Set<String> serverAddresses = new HashSet<String>();
     private static final String lilyPath = "/lily";
@@ -71,9 +74,25 @@ public class LilyClient {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public LilyClient(String zookeeperConnectString) throws IOException, InterruptedException, KeeperException {
-        zk = new ZooKeeperImpl(zookeeperConnectString, 5000, new ZkWatcher());
+    private ZkWatcher watcher = new ZkWatcher();
+
+    public LilyClient(ZooKeeperItf zk) throws IOException, InterruptedException, KeeperException,
+            ZkConnectException {
+        this.zk = zk;
         refreshServers();
+    }
+
+    public LilyClient(String zookeeperConnectString, int sessionTimeout) throws IOException, InterruptedException, KeeperException,
+            ZkConnectException {
+        managedZk = true;
+        zk = ZkUtil.connect(zookeeperConnectString, sessionTimeout);
+        refreshServers();
+    }
+
+    public void close() throws IOException {
+        if (managedZk && zk != null) {
+            zk.close();
+        }
     }
 
     public synchronized Repository getRepository() throws IOException, ServerUnavailableException {
@@ -172,7 +191,7 @@ public class LilyClient {
     private synchronized void refreshServers() {
         Set<String> currentServers = new HashSet<String>();
         try {
-            currentServers.addAll(zk.getChildren(nodesPath, true));
+            currentServers.addAll(zk.getChildren(nodesPath, watcher));
         } catch (Exception e) {
             log.error("Error querying list of Lily server nodes from Zookeeper.", e);
             return;

@@ -6,8 +6,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
@@ -21,11 +19,9 @@ public class ZkUtil {
     public static ZooKeeperItf connect(String connectString, int sessionTimeout) throws ZkConnectException {
         ZooKeeperImpl zooKeeper;
         try {
-            zooKeeper = new ZooKeeperImpl(new ZooKeeper(connectString, sessionTimeout, new Watcher(){
-                public void process(WatchedEvent event) {
-                }}));
+            zooKeeper = new ZooKeeperImpl(new ZooKeeper(connectString, sessionTimeout, new DefaultZkWatcher()));
         } catch (IOException e) {
-            throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+">", e);
+            throw new ZkConnectException("Failed to connect with Zookeeper @ <" + connectString + ">", e);
         }
         long waitUntil = System.currentTimeMillis() + 10000;
         boolean connected = (States.CONNECTED).equals(zooKeeper.getState());
@@ -42,18 +38,10 @@ public class ZkUtil {
             System.out.println("Failed to connect to Zookeeper within timeout: Dumping stack: ");
             Thread.dumpStack();
             zooKeeper.close();
-            throw new ZkConnectException("Failed to connect with Zookeeper @ <"+connectString+"> within timeout <"+sessionTimeout+">", null);
+            throw new ZkConnectException("Failed to connect with Zookeeper @ <" + connectString +
+                    "> within timeout <" + sessionTimeout + ">");
         }
         return zooKeeper;
-    }
-    
-    public static void createPath(ZooKeeper zk, String path) throws InterruptedException, KeeperException {
-        createPath(new ZooKeeperImpl(zk), path, null, CreateMode.PERSISTENT);
-    }
-
-    public static void createPath(ZooKeeper zk, String path, byte[] data, CreateMode createMode)
-            throws InterruptedException, KeeperException {
-        createPath(new ZooKeeperImpl(zk), path, data, createMode);
     }
 
     public static void createPath(final ZooKeeperItf zk, final String path)

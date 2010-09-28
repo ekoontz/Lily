@@ -40,10 +40,7 @@ public class ZkLockTest {
         ZK_CLUSTER.setClientPort(ZK_CLIENT_PORT);
         ZK_CLUSTER.startup(ZK_DIR);
 
-        ZK = new ZooKeeperImpl("localhost:" + ZK_CLIENT_PORT, 3000, new Watcher() {
-            public void process(WatchedEvent event) {
-            }
-        });
+        ZK = ZkUtil.connect("localhost:" + ZK_CLIENT_PORT, 3000);
     }
 
     @AfterClass

@@ -70,7 +70,7 @@ public class MboxImport extends BaseZkCliTool {
         if (result != 0)
             return result;
 
-        lilyClient = new LilyClient(zkConnectionString);
+        lilyClient = new LilyClient(zkConnectionString, 10000);
 
         loadSchema();
 

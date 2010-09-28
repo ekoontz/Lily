@@ -3,19 +3,16 @@ package org.lilycms.indexer.engine.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.indexer.engine.IndexLockException;
 import org.lilycms.indexer.engine.IndexLockTimeoutException;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.repository.api.RecordId;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.net.NetUtils;
-import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.File;
@@ -44,10 +41,7 @@ public class IndexLockerTest {
         ZK_CLUSTER.setClientPort(ZK_CLIENT_PORT);
         ZK_CLUSTER.startup(ZK_DIR);
 
-        ZK = new ZooKeeperImpl("localhost:" + ZK_CLIENT_PORT, 3000, new Watcher() {
-            public void process(WatchedEvent event) {
-            }
-        });
+        ZK = ZkUtil.connect("localhost:" + ZK_CLIENT_PORT, 3000);
     }
 
     @AfterClass

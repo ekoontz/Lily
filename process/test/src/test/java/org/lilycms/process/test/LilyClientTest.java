@@ -46,7 +46,7 @@ public class LilyClientTest {
      */
     @Test
     public void testBlob() throws Exception {
-        LilyClient client = new LilyClient(HBASE_PROXY.getZkConnectString());
+        LilyClient client = new LilyClient(HBASE_PROXY.getZkConnectString(), 10000);
 
         // Obtain a repository
         Repository repository = client.getRepository();

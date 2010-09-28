@@ -8,8 +8,6 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.lilycms.client.LilyClient;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.Indexer;
@@ -22,7 +20,7 @@ import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.*;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.ByteArrayInputStream;
@@ -54,10 +52,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             String zkConnectString = jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperConnectString");
             int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout"));
-            zk = new ZooKeeperImpl(zkConnectString, zkSessionTimeout, new Watcher() {
-                public void process(WatchedEvent event) {
-                }
-            });
+            zk = ZkUtil.connect(zkConnectString, zkSessionTimeout);
 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 

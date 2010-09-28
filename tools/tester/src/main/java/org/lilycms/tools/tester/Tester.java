@@ -32,6 +32,7 @@ import org.lilycms.tools.import_.json.*;
 import org.lilycms.util.json.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
 import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.ZkConnectException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -83,7 +84,7 @@ public class Tester {
 
     public void run(String configFileName) throws IOException, InterruptedException, KeeperException,
             ServerUnavailableException, RepositoryException, ImportConflictException, ImportException,
-            JsonFormatException {
+            JsonFormatException, ZkConnectException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
@@ -92,7 +93,7 @@ public class Tester {
 
         readConfig(configNode);
 
-        LilyClient client = new LilyClient(zookeeperConnectString);
+        LilyClient client = new LilyClient(zookeeperConnectString, 10000);
         repository = client.getRepository();
 
         createSchema(configNode);

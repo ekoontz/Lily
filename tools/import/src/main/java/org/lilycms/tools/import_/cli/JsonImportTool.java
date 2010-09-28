@@ -62,7 +62,7 @@ public class JsonImportTool extends BaseZkCliTool {
 
         boolean schemaOnly = cmd.hasOption(schemaOnlyOption.getOpt());
 
-        LilyClient client = new LilyClient(zkConnectionString);
+        LilyClient client = new LilyClient(zkConnectionString, 10000);
 
         JsonImport jsonImport = new JsonImport(client.getRepository(), new DefaultImportListener());
         

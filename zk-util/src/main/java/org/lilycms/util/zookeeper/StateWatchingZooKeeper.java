@@ -42,6 +42,8 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
 
     private volatile boolean connected;
 
+    private boolean firstConnect = true;
+
     private Thread stateWatcherThread;
 
     public StateWatchingZooKeeper(String connectString, int sessionTimeout) throws IOException {
@@ -113,7 +115,12 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                     stateWatcherThread = new Thread(new StateWatcher());
                     stateWatcherThread.start();
                 } else if (event.getState() == SyncConnected) {
-                    log.warn("Connected to ZooKeeper");
+                    if (firstConnect) {
+                        firstConnect = false;
+                        // For the initial connection, it is not interesting to log that we are connected.
+                    } else {
+                        log.warn("Connected to ZooKeeper");
+                    }
                     connected = true;
                     waitForZk();
                     if (stateWatcherThread != null) {
@@ -122,7 +129,7 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                     }
                     sessionTimeout = getSessionTimeout();
                     if (sessionTimeout != requestedSessionTimeout) {
-                        log.warn("The negotatiated ZooKeeper session timeout is different from the requested one." +
+                        log.info("The negotatiated ZooKeeper session timeout is different from the requested one." +
                                 " Requested: " + requestedSessionTimeout + ", negotiated: " + sessionTimeout);
                     }
                 }
@@ -156,7 +163,9 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                     return;
                 }
 
-                int margin = sessionTimeout + 2000; // The session timeout plus a bit of a margin
+                // Using a margin of twice the session timeout per
+                // http://markmail.org/thread/uvefxjnuliuqwwph
+                int margin = sessionTimeout * 2;
                 if (startNotConnected + margin < System.currentTimeMillis()) {
                     endProcess("ZooKeeper connection lost for longer than " + margin +
                             " ms. Session will already be expired by server so shutting down.");

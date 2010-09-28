@@ -2,8 +2,7 @@ package org.lilycms.indexer.admin.cli;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.KeeperException;
 import org.lilycms.cli.BaseZkCliTool;
 import org.lilycms.client.LilyClient;
 import org.lilycms.indexer.model.api.*;
@@ -11,8 +10,11 @@ import org.lilycms.indexer.model.impl.IndexerModelImpl;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.indexer.model.indexerconf.IndexerConfException;
 import org.lilycms.indexer.model.sharding.ShardingConfigException;
-import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.util.zookeeper.ZooKeeperOperation;
 
 import java.io.*;
 import java.net.URI;
@@ -244,8 +246,9 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
             indexerConfiguration = FileUtils.readFileToByteArray(configurationFile);
 
             if (!cmd.hasOption(forceOption.getOpt())) {
+                LilyClient lilyClient = null;
                 try {
-                    LilyClient lilyClient = new LilyClient(zkConnectionString);
+                    lilyClient = new LilyClient(zkConnectionString, 10000);
                     IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfiguration), lilyClient.getRepository());
                 } catch (Exception e) {
                     System.out.println(); // separator line because LilyClient might have produced some error logs
@@ -261,6 +264,8 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
                         e.printStackTrace();
                     }
                     return 1;
+                } finally {
+                    Closer.close(lilyClient);
                 }
             }
         }
@@ -321,7 +326,27 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
         if (result != 0)
             return result;
 
-        ZooKeeperItf zk = new ZooKeeperImpl(zkConnectionString, 3000, new MyWatcher());
+        final ZooKeeperItf zk = new StateWatchingZooKeeper(zkConnectionString, 10000);
+
+        boolean lilyNodeExists = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+            public Boolean execute() throws KeeperException, InterruptedException {
+                return zk.exists("/lily", false) != null;
+            }
+        });
+
+        if (!lilyNodeExists) {
+            if (!cmd.hasOption(forceOption.getOpt())) {
+                System.out.println("No /lily node found in ZooKeeper. Are you sure you are connecting to the right");
+                System.out.println("ZooKeeper? If so, use the option --" + forceOption.getLongOpt() +
+                        " to bypass this check.");
+                return 1;
+            } else {
+                System.out.println("No /lily node found in ZooKeeper. Will continue anyway since you supplied --" +
+                        forceOption.getLongOpt());
+                System.out.println();
+            }
+        }
+
         model = new IndexerModelImpl(zk);
 
         // Perform some extra validation which we can only do now that we have access
@@ -365,11 +390,6 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
             builder.append(value);
         }
         return builder.toString();
-    }
-
-    private class MyWatcher implements Watcher {
-        public void process(WatchedEvent event) {
-        }
     }
 
     protected OutputStream getOutput() throws FileNotFoundException {

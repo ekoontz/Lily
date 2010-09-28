@@ -18,8 +18,6 @@ package org.lilycms.indexer.engine.test;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
@@ -52,7 +50,7 @@ import org.lilycms.repository.impl.*;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
-import org.lilycms.util.zookeeper.ZooKeeperImpl;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;
@@ -112,10 +110,7 @@ public class IndexerTest {
         HBASE_PROXY.start();
         SOLR_TEST_UTIL.start();
 
-        ZooKeeperItf zk = new ZooKeeperImpl(HBASE_PROXY.getZkConnectString(), 10000, new Watcher() {
-            public void process(WatchedEvent event) {
-            }
-        });
+        ZooKeeperItf zk = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
 
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
