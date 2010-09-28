@@ -13,12 +13,20 @@ import java.util.List;
 public class ZooKeeperImpl implements ZooKeeperItf {
     private ZooKeeper delegate;
 
+    public ZooKeeperImpl() {
+
+    }
+
     public ZooKeeperImpl(ZooKeeper delegate) {
         this.delegate = delegate;
     }
 
     public ZooKeeperImpl(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
         this.delegate = new ZooKeeper(connectString, sessionTimeout, watcher);
+    }
+
+    public void setDelegate(ZooKeeper delegate) {
+        this.delegate = delegate;
     }
 
     public long getSessionId() {

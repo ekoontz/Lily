@@ -36,14 +36,9 @@
   </bean>
 
   <bean id="zooKeeper"
-        class="org.lilycms.util.zookeeper.ZooKeeperImpl">
-    <constructor-arg>
-      <bean class="org.apache.zookeeper.ZooKeeper" destroy-method="close">
-        <constructor-arg value="${zookeeper:connectString}"/>
-        <constructor-arg value="${zookeeper:sessionTimeout}"/>
-        <constructor-arg><bean class="org.lilycms.server.modules.general.DummyWatcher"/></constructor-arg>
-      </bean>      
-    </constructor-arg>
+        class="org.lilycms.util.zookeeper.StateWatchingZooKeeper">
+    <constructor-arg value="${zookeeper:connectString}"/>
+    <constructor-arg value="${zookeeper:sessionTimeout}"/>
   </bean>
 
 </beans>
