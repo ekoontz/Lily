@@ -14,10 +14,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
-import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.util.zookeeper.ZkConnectException;
@@ -56,17 +54,18 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     // Subscriptions
-    public List<SubscriptionContext> getAndMonitorSubscriptions(RowLogProcessor processor, RowLog rowLog) throws KeeperException, InterruptedException {
+    public synchronized List<SubscriptionContext> getAndMonitorSubscriptions(String rowLogId, SubscriptionsWatcherCallBack callBack) throws KeeperException, InterruptedException {
         List<SubscriptionContext> subscriptions = new ArrayList<SubscriptionContext>();
         try {
-            String rowLogId = rowLog.getId();
-            List<String> subscriptionIds = zooKeeper.getChildren(subscriptionsPath(rowLogId), new SubscriptionsWatcher(processor, rowLog));
+            List<String> subscriptionIds = zooKeeper.getChildren(subscriptionsPath(rowLogId), new SubscriptionsWatcher(rowLogId, callBack));
             for (String subscriptionId : subscriptionIds) {
-                byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, Integer.valueOf(subscriptionId)), false, new Stat());
-                Type type = Type.valueOf(Bytes.toString(data));
-                subscriptions.add(new SubscriptionContext(Integer.valueOf(subscriptionId), type));
+                byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, subscriptionId), false, new Stat());
+                int maxTries = Bytes.toInt(data);
+                Type type = Type.valueOf(Bytes.toString(data, Bytes.SIZEOF_INT, data.length - Bytes.SIZEOF_INT));
+                subscriptions.add(new SubscriptionContext(subscriptionId, type, maxTries));
             }
         } catch (NoNodeException exception) {
+            zooKeeper.exists(subscriptionsPath(rowLogId), new SubscriptionsWatcher(rowLogId, callBack));
             // TODO Do we need to put another watcher here? How to cope with non-existing paths? Make them mandatory?
         } catch (SessionExpiredException exception) {
             // TODO ok to ignore this? Should I rather throw an exception
@@ -74,16 +73,16 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         return subscriptions;
     }
     
-    public void addSubscription(String rowLogId, int subscriptionId, SubscriptionContext.Type type) throws KeeperException, InterruptedException {
+    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type, int maxTries) throws KeeperException, InterruptedException {
         String path = subscriptionPath(rowLogId, subscriptionId);
-        String dataString = type.name();
-        byte[] data = Bytes.toBytes(dataString);
+        byte[] data = Bytes.toBytes(maxTries);
+        data = Bytes.add(data, Bytes.toBytes(type.name()));
         if (zooKeeper.exists(path, false) == null) { // TODO currently not possible to update a subscription or add it twice
             ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);
         }
     }
     
-    public void removeSubscription(String rowLogId, int subscriptionId) throws InterruptedException, KeeperException {
+    public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException {
         String path = subscriptionPath(rowLogId, subscriptionId);
         try {
             zooKeeper.delete(path, -1);
@@ -95,19 +94,19 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     // Listeners
-    public List<String> getAndMonitorListeners(ListenersWatcherCallBack callBack, String rowLogId, int subscriptionId) throws KeeperException, InterruptedException {
+    public List<String> getAndMonitorListeners(String rowLogId, String subscriptionId, ListenersWatcherCallBack callBack) throws KeeperException, InterruptedException {
         List<String> listeners = new ArrayList<String>();
         try {
-            return zooKeeper.getChildren(subscriptionPath(rowLogId, subscriptionId), new ListenersWatcher(callBack, rowLogId, subscriptionId));
+            return zooKeeper.getChildren(subscriptionPath(rowLogId, subscriptionId), new ListenersWatcher(rowLogId, subscriptionId, callBack));
         } catch (NoNodeException exception) {
-            // TODO Do we need to put another watcher here? How to cope with non-existing paths? Make them mandatory?
+            zooKeeper.exists(subscriptionPath(rowLogId, subscriptionId), new ListenersWatcher(rowLogId, subscriptionId, callBack));
         } catch (SessionExpiredException exception) {
             // TODO ok to ignore this? Should I rather throw an exception
         }
         return listeners;
     }
     
-    public void addListener(String rowLogId, int subscriptionId, String listenerId) throws RowLogException {
+    public void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException {
         String path = listenerPath(rowLogId, subscriptionId, listenerId);
         try {
             if (zooKeeper.exists(path, false) == null) {
@@ -118,7 +117,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         }
     }
     
-    public void removeListener(String rowLogId, int subscriptionId, String listenerId) throws RowLogException {
+    public void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException {
         String path = listenerPath(rowLogId, subscriptionId, listenerId);
         try {
             zooKeeper.delete(path, -1);
@@ -158,7 +157,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     // Paths
-    private String subscriptionPath(String rowLogId, int subscriptionId) {
+    private String subscriptionPath(String rowLogId, String subscriptionId) {
         return subscriptionsPath(rowLogId) + "/" + subscriptionId;
     }
     
@@ -174,19 +173,19 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         return shardPath(rowLogId, shardId) + "/" + "processorHost";
     }
     
-    private String listenerPath(String rowLogId, int subscriptionId, String listenerId) {
+    private String listenerPath(String rowLogId, String subscriptionId, String listenerId) {
         return subscriptionPath(rowLogId, subscriptionId) + "/" + listenerId;
     }
     
 
     // Watchers
     private class SubscriptionsWatcher implements Watcher {
-        private final RowLogProcessor processor;
-        private final RowLog rowLog;
+        private final SubscriptionsWatcherCallBack callBack;
+        private final String rowLogId;
 
-        public SubscriptionsWatcher(RowLogProcessor processor, RowLog rowLog) {
-            this.processor = processor;
-            this.rowLog = rowLog;
+        public SubscriptionsWatcher(String rowLogId, SubscriptionsWatcherCallBack callBack) {
+            this.rowLogId = rowLogId;
+            this.callBack = callBack;
         }
         
         public void process(WatchedEvent event) {
@@ -195,7 +194,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     return;
                 if (event.getState() == Event.KeeperState.Expired)
                     return;
-                processor.subscriptionsChanged(getAndMonitorSubscriptions(processor, rowLog));
+                callBack.subscriptionsChanged(getAndMonitorSubscriptions(rowLogId, callBack));
             } catch (KeeperException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -209,13 +208,13 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     private class ListenersWatcher implements Watcher {
 
         private final String rowLogId;
-        private final int subscriptionId;
+        private final String subscriptionId;
         private final ListenersWatcherCallBack callBack;
 
-        public ListenersWatcher(ListenersWatcherCallBack callBack, String rowLogId, int subscriptionId) {
-            this.callBack = callBack;
+        public ListenersWatcher(String rowLogId, String subscriptionId, ListenersWatcherCallBack callBack) {
             this.rowLogId = rowLogId;
             this.subscriptionId = subscriptionId;
+            this.callBack = callBack;
         }
         
         public void process(WatchedEvent event) {
@@ -224,7 +223,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     return;
                 if (event.getState() == Event.KeeperState.Expired)
                     return;
-                callBack.listenersChanged(getAndMonitorListeners(callBack, rowLogId, subscriptionId));
+                callBack.listenersChanged(getAndMonitorListeners(rowLogId, subscriptionId, callBack));
             } catch (KeeperException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -232,11 +231,6 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-        }
-    }
-    
-    private class ZkWatcher implements Watcher {
-        public void process(WatchedEvent event) {
         }
     }
 }

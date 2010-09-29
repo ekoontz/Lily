@@ -36,7 +36,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
@@ -73,13 +72,13 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void putMessage(RowLogMessage message) throws RowLogException {
-        for (RowLogMessageListener consumer : rowLog.getConsumers()) {
-            putMessage(message, consumer.getId());
+        for (String subscriptionId: rowLog.getSubscriptionIds()) {
+            putMessage(message, subscriptionId);
         }
     }
 
-    private void putMessage(RowLogMessage message, int consumerId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId, false);
+    private void putMessage(RowLogMessage message, String subscription) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), subscription, false);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {
@@ -89,16 +88,16 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    public void removeMessage(RowLogMessage message, int consumerId) throws RowLogException {
+    public void removeMessage(RowLogMessage message, String subscription) throws RowLogException {
         // There is a slight chance that when marking a message as problematic,
         // the problematic message was put on the table, but the non-problematic
         // message was not removed. So we always try to remove both.
-        removeMessage(message, consumerId, false);
-        removeMessage(message, consumerId, true);
+        removeMessage(message, subscription, false);
+        removeMessage(message, subscription, true);
     }
 
-    private void removeMessage(RowLogMessage message, int consumerId, boolean problematic) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId, problematic);
+    private void removeMessage(RowLogMessage message, String subscription, boolean problematic) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), subscription, problematic);
 
         RowLock rowLock = null;
         try {
@@ -120,17 +119,18 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    public List<RowLogMessage> next(int consumerId) throws RowLogException {
-        return next(consumerId, false);
+    public List<RowLogMessage> next(String subscription) throws RowLogException {
+        return next(subscription, false);
     }
     
-    public List<RowLogMessage> next(int consumerId, boolean problematic) throws RowLogException {
+    public List<RowLogMessage> next(String subscription, boolean problematic) throws RowLogException {
         byte[] rowPrefix = null;
+        byte[] subscriptionBytes = Bytes.toBytes(subscription);
         if (problematic) {
             rowPrefix = PROBLEMATIC_MARKER;
-            rowPrefix = Bytes.add(rowPrefix, Bytes.toBytes(consumerId));
+            rowPrefix = Bytes.add(rowPrefix, subscriptionBytes);
         } else {
-            rowPrefix = Bytes.toBytes(consumerId);
+            rowPrefix = subscriptionBytes;
         }
         Scan scan = new Scan(rowPrefix);
         scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
@@ -154,7 +154,7 @@ public class RowLogShardImpl implements RowLogShard {
                         rowKey = Bytes.tail(rowKey, rowKey.length - PROBLEMATIC_MARKER.length);
                     }
                     byte[] value = next.getValue(MESSAGES_CF, MESSAGE_COLUMN);
-                    byte[] messageId = Bytes.tail(rowKey, rowKey.length - Bytes.SIZEOF_INT);
+                    byte[] messageId = Bytes.tail(rowKey, rowKey.length - subscriptionBytes.length);
                     rowLogMessages.add(decodeMessage(messageId, value));
                 }
             } while(keepScanning);
@@ -166,8 +166,8 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    public void markProblematic(RowLogMessage message, int consumerId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId, true);
+    public void markProblematic(RowLogMessage message, String subscription) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), subscription, true);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {
@@ -175,15 +175,15 @@ public class RowLogShardImpl implements RowLogShard {
         } catch (IOException e) {
             throw new RowLogException("Failed to mark message as problematic", e);
         }
-        removeMessage(message, consumerId, false);
+        removeMessage(message, subscription, false);
     }
 
-    public List<RowLogMessage> getProblematic(int consumerId) throws RowLogException {
-        return next(consumerId, true);
+    public List<RowLogMessage> getProblematic(String subscription) throws RowLogException {
+        return next(subscription, true);
     }
     
-    public boolean isProblematic(RowLogMessage message, int consumerId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), consumerId, true);
+    public boolean isProblematic(RowLogMessage message, String subscription) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), subscription, true);
         try {
             return table.exists(new Get(rowKey));
         } catch (IOException e) {
@@ -191,12 +191,12 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    private byte[] createRowKey(byte[] messageId, int consumerId, boolean problematic) {
+    private byte[] createRowKey(byte[] messageId, String subscription, boolean problematic) {
         byte[] rowKey = new byte[0];
         if (problematic) {
             rowKey = PROBLEMATIC_MARKER;
         }
-        rowKey = Bytes.add(rowKey, Bytes.toBytes(consumerId));
+        rowKey = Bytes.add(rowKey, Bytes.toBytes(subscription));
         rowKey = Bytes.add(rowKey, messageId);
         return rowKey;
     }

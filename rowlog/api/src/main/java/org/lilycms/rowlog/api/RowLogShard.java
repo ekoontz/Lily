@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * A RowLogShard manages the actual RowLogMessages on a HBase table. It needs to be registered to a RowLog.
  * 
- * <p> This API will be changed so that the putMessage can be called once for all related consumers.
+ * <p> This API will be changed so that the putMessage can be called once for all related subscriptions.
  */
 public interface RowLogShard {
 
@@ -38,42 +38,42 @@ public interface RowLogShard {
     void putMessage(RowLogMessage message) throws RowLogException;
     
     /**
-     * Removes the RowLogMessage from the table for the indicated consumer.
+     * Removes the RowLogMessage from the table for the indicated subscription.
      * 
      * <p>This also removes any messages that might have been marked as problematic.
      * 
      * @param message the {@link RowLogMessage} to be removed from the table
-     * @param consumerId the id of the {@link RowLogConsumer} for which the message needs to be removed
+     * @param subscription the id of the subscription for which the message needs to be removed
      * @throws RowLogException when an unexpected exception occurs
      */
-    void removeMessage(RowLogMessage message, int consumerId) throws RowLogException;
+    void removeMessage(RowLogMessage message, String subscription) throws RowLogException;
     
     
     /**
-     * Retrieves the next messages to be processed by the indicated consumer.
+     * Retrieves the next messages to be processed by the indicated subscription.
      * 
-     * @param consumerId the id of the {@link RowLogConsumer} for which the next messages should be retrieved
+     * @param subscription the id of the subscription for which the next messages should be retrieved
      * @return the next 100, or less {@link RowLogMessage}s to be processed
      * @throws RowLogException when an unexpected exception occurs
      */
-    List<RowLogMessage> next(int consumerId) throws RowLogException;
+    List<RowLogMessage> next(String subscription) throws RowLogException;
 
     /**
-     * Marks a RowLogMessage as problematic for the indicated consumer.
-     * The message won't be returned when {@link #next(int)} is called.
-     * See {@link #nextProblematic(int)}
+     * Marks a RowLogMessage as problematic for the indicated subscription.
+     * The message won't be returned when {@link #next(String)} is called.
+     * See {@link #nextProblematic(String)}
      * 
      * <p>A message should be marked as problematic when it has failed to be processed after multiple retries.  
      */
-    void markProblematic(RowLogMessage message, int consumerId) throws RowLogException;
+    void markProblematic(RowLogMessage message, String subscription) throws RowLogException;
     
     /**
-     * Retrieves the messages that have been marked as problematic for the indicated consumer.
-     * @param consumerId the id of the {@link RowLogConsumer} for which the problematic messages should be retrieved
+     * Retrieves the messages that have been marked as problematic for the indicated subscription.
+     * @param subscription the id of the subscription for which the problematic messages should be retrieved
      * @return all {@link RowLogMessage}s that have been marked as problematic
      * @throws RowLogException when an unexpected exception occurs
      */
-    List<RowLogMessage> getProblematic(int consumerId) throws RowLogException;
+    List<RowLogMessage> getProblematic(String subscription) throws RowLogException;
 
-    boolean isProblematic(RowLogMessage message, int consumerId) throws RowLogException;
+    boolean isProblematic(RowLogMessage message, String subscription) throws RowLogException;
 }

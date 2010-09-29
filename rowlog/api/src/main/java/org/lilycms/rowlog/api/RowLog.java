@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.lilycms.rowlog.api.RowLogProcessor;
 
 /**
  * The RowLog helps managing the execution of synchronous and asynchronous actions in response to
@@ -76,16 +75,6 @@ public interface RowLog {
     void unRegisterShard(RowLogShard shard);
     
     /**
-     * Registers a consumer on the RowLog.
-     * @param rowLogMessageConsumer a {@link RowLogMessageListener}
-     */
-    void registerConsumer(RowLogMessageListener rowLogMessageConsumer);
-    /**
-     * Unregisters a consumer from the RowLog
-     * @param rowLogMessageConsumer a {@link RowLogMessageListener}
-     */
-    void unRegisterConsumer(RowLogMessageListener rowLogMessageConsumer);
-    /**
      * Retrieves the payload of a {@link RowLogMessage} from the RowLog.
      * The preferred way to get the payload for a message is to request this through the message itself 
      * with the call {@link RowLogMessage#getPayload()} .
@@ -124,91 +113,87 @@ public interface RowLog {
     boolean processMessage(RowLogMessage message) throws RowLogException;
     
     /**
-     * Locks a {@link RowLogMessage} for a certain {@link RowLogMessageListener}. This lock can be used if a consumer wants
+     * Locks a {@link RowLogMessage} for a certain subscription. This lock can be used if a subscription wants
      * to indicate that it is busy processing a message. 
-     * The lock can be released either by calling {@link #unlockMessage(RowLogMessage, int, byte[])}, 
-     * {@link #messageDone(RowLogMessage, int, byte[])}, or when the lock's timeout expires.
-     * This lock only locks the message for a certain consumer, other consumers can still process the message in parallel.
-     * <p>This call increases the try count of the message for this consumer.
+     * The lock can be released either by calling {@link #unlockMessage(RowLogMessage, String, byte[])}, 
+     * {@link #messageDone(RowLogMessage, String, byte[])}, or when the lock's timeout expires.
+     * This lock only locks the message for a certain subscription, other subscriptions can still process the message in parallel.
+     * <p>This call increases the try count of the message for this subscription.
      * @param message the {@link RowLogMessage} for which to take the lock
-     * @param consumerId the id of the {@link RowLogMessageListener} for which to lock the message
+     * @param subscriptionId the id of the subscription for which to lock the message
      * @return a lock when the message was successfully locked or null when locking the message failed for instance when
      * it was locked by another instance of the same consumer
      * @throws RowLogException
      */
-    byte[] lockMessage(RowLogMessage message, int consumerId) throws RowLogException;
+    byte[] lockMessage(RowLogMessage message, String subscriptionId) throws RowLogException;
 
     /**
-     * Unlocks a {@link RowLogMessage} for a certain {@link RowLogMessageListener} 
-     * <p>This checks the try count of the message. If the maximum amount of tries allowed for the consumer has been reached,
+     * Unlocks a {@link RowLogMessage} for a certain subscription 
+     * <p>This checks the try count of the message. If the maximum amount of tries allowed for the subscription has been reached,
      * the message will be marked as problematic. 'Problematic' messages will no longer be picked up by a {@link RowLogProcessor}
      * for processing.
      * @param message the {@link RowLogMessage} for which to release the lock
-     * @param consumerId the id of the {@link RowLogMessageListener} for which to release the lock
-     * @param lock the lock that was received when calling {@link #lockMessage(RowLogMessage, int)}
+     * @param subscriptionId the id of the subscription for which to release the lock
+     * @param lock the lock that was received when calling {@link #lockMessage(RowLogMessage, String)}
      * @return true if releasing the lock was successful. False if releasing the lock failed, for instance because the
      * given lock does not match the lock that is currently on the message 
      * @throws RowLogException
      */
-    boolean unlockMessage(RowLogMessage message, int consumerId, byte[] lock) throws RowLogException;
+    boolean unlockMessage(RowLogMessage message, String subscriptionId, byte[] lock) throws RowLogException;
     
     /**
-     * Checks if a {@link RowLogMessage} is locked for a certain {@link RowLogMessageListener}
+     * Checks if a {@link RowLogMessage} is locked for a certain subscription
      * @param message the {@link RowLogMessage} for which to check if there is a lock present
-     * @param consumerId the id of the {@link RowLogMessageListener} for which to check if there is a lock present
+     * @param subscriptionId the id of the subscription for which to check if there is a lock present
      * @return true if a lock is present on the message
      * @throws RowLogException
      */
-    boolean isMessageLocked(RowLogMessage message, int consumerId) throws RowLogException;
+    boolean isMessageLocked(RowLogMessage message, String subscriptionId) throws RowLogException;
     
     /**
-     * Indicates that a {@link RowLogMessage} is done for a certain {@link RowLogMessageListener} 
-     * and should not be processed anymore. This will remove the message for a certain consumer from the {@link RowLogShard} 
-     * and update the execution state of this message on the row. When the execution state for all consumers is put to
+     * Indicates that a {@link RowLogMessage} is done for a certain subscription
+     * and should not be processed anymore. This will remove the message for a certain subscription from the {@link RowLogShard} 
+     * and update the execution state of this message on the row. When the execution state for all subscriptions is put to
      * done, the payload and execution state will be removed from the row.
      * A message can only be put to done when the given lock matches the lock that is present on the message, this lock
      * will then also be released.  
-     * @param message the {@link RowLogMessage} to be put to done for a certain {@link RowLogMessageListener}
-     * @param consumerId the id of the {@link RowLogMessageListener} for which to put the message to done
+     * @param message the {@link RowLogMessage} to be put to done for a certain subscription
+     * @param subscriptionId the id of the subscription for which to put the message to done
      * @param lock the lock that should match the lock that is present on the message, before it can be put to done
      * @return true if the message has been successfully put to done
      * @throws RowLogException
      */
-    boolean messageDone(RowLogMessage message, int consumerId, byte[] lock) throws RowLogException;
+    boolean messageDone(RowLogMessage message, String subscriptionId, byte[] lock) throws RowLogException;
     
-    boolean isMessageDone(RowLogMessage message, int consumerId) throws RowLogException;
+    boolean isMessageDone(RowLogMessage message, String subscriptionId) throws RowLogException;
     
     /**
-     * @return a collection of the {@link RowLogMessageListener}s that are registered on the RowLog
-     */
-    Collection<RowLogMessageListener> getConsumers();
-
-    /**
-     * Return all messages that are still exist for the row, or if one or more consumerIds is given, 
-     * only the messages that are still open for one or more of those consumers.
+     * Return all messages that are still exist for the row, or if one or more subscriptions is given, 
+     * only the messages that are still open for one or more of those subscriptions.
      * <p>This call ignores if messages have been marked as problematic.
      * @param rowKey the row for which to return the messages
-     * @param consumerId one or more consumerIds for which to return the messages that are open
+     * @param subscriptionId one or more subscriptions for which to return the messages that are open
      * @return a list of (open)messages of the row
      * @throws RowLogException
      */
-    List<RowLogMessage> getMessages(byte[] rowKey, int ... consumerId) throws RowLogException;
+    List<RowLogMessage> getMessages(byte[] rowKey, String ... subscriptionId) throws RowLogException;
 
     /**
-     * Return all messages that have been marked as problematic for a certain consumer.
-     * <p>Messages have a try count for each consumer for the number of times the message has been 
+     * Return all messages that have been marked as problematic for a certain subscription.
+     * <p>Messages have a try count for each subscription for the number of times the message has been 
      * processed unsuccessfully. This try count is increased either when calling {@link #processMessage(RowLogMessage)}
-     * or {@link #lockMessage(RowLogMessage, int)}. When the try count reaches the maximum allowed
-     * by the consumer it is marked as 'problematic'. Problematic messages are no longer picked up
+     * or {@link #lockMessage(RowLogMessage, String)}. When the try count reaches the maximum allowed
+     * by the subscription it is marked as 'problematic'. Problematic messages are no longer picked up
      * by a {@link RowLogProcessor}, but can still be processed by calling {@link #processMessage(RowLogMessage)}.
-     * @param consumerId the id of the consumer
+     * @param subscriptionId the id of the subscription
      * @return a list of problematic messages
      * @throws RowLogException
      */
-    List<RowLogMessage> getProblematic(int consumerId) throws RowLogException;
+    List<RowLogMessage> getProblematic(String subscriptionId) throws RowLogException;
     
-    boolean isProblematic(RowLogMessage message, int id) throws RowLogException;
+    boolean isProblematic(RowLogMessage message, String subscriptionId) throws RowLogException;
+    
+    Collection<String> getSubscriptionIds();
 
-    RowLogMessageListener getConsumer(int consumerId);
-
+    List<RowLogShard> getShards();
 }

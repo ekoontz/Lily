@@ -28,6 +28,7 @@ import org.lilycms.util.repo.VersionTag;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.impl.ConsumerClassMapping;
 import org.lilycms.util.ObjectUtils;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;

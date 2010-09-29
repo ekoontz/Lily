@@ -21,18 +21,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
+import org.lilycms.rowlog.impl.ListenerClassMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
-    
+
     @Before
     public void setUp() throws Exception {
+        ValidationMessageConsumer.reset();
         try {
             rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-            consumer = new TestMessageConsumer(0);
-            rowLog.registerConsumer(consumer);
-            rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.VM);
-            rowLogConfigurationManager.addListener(rowLog.getId(), consumer.getId(), "listener1");
+            ListenerClassMapping.INSTANCE.put(subscriptionId , ValidationMessageConsumer.class.getName());
+            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3);
+            rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -42,10 +43,9 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     @After
     public void tearDown() throws Exception {
         try {
-            consumer.validate();
-            rowLogConfigurationManager.removeListener(rowLog.getId(), consumer.getId(), "listener1");
-            rowLogConfigurationManager.removeSubscription(rowLog.getId(), consumer.getId());
-            rowLog.unRegisterConsumer(consumer);
+            ValidationMessageConsumer.validate();
+            rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
+            rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
             rowLogConfigurationManager.stop();
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,29 +55,28 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @Test
     public void testMultipleConsumers() throws Exception {
-        TestMessageConsumer consumer2 = new TestMessageConsumer(1);
-        rowLog.registerConsumer(consumer2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.VM);
-        rowLogConfigurationManager.addListener(rowLog.getId(), consumer2.getId(), "Listener2");
-        consumer.expectMessages(10);
-        consumer2.expectMessages(10);
+        String subscriptionId2 = "Subscription2";
+        ListenerClassMapping.INSTANCE.put(subscriptionId2  , ValidationMessageConsumer2.class.getName());
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3);
+        rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
+        ValidationMessageConsumer.expectMessages(10);
+        ValidationMessageConsumer2.expectMessages(10);
         RowLogMessage message;
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-                consumer.expectMessage(message);
-                consumer2.expectMessage(message);
+                ValidationMessageConsumer.expectMessage(message);
+                ValidationMessageConsumer2.expectMessage(message);
             }
         }
         processor.start();
-        consumer.waitUntilMessagesConsumed(120000);
-        consumer2.waitUntilMessagesConsumed(120000);
+        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        consumer2.validate();
-        rowLog.unRegisterConsumer(consumer2);
-        rowLogConfigurationManager.removeListener(rowLog.getId(), consumer2.getId(), "Listener2");
-        rowLogConfigurationManager.removeSubscription(rowLog.getId(), consumer2.getId());
+        ValidationMessageConsumer2.validate();
+        rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
     }
 }

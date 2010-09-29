@@ -26,22 +26,10 @@ package org.lilycms.rowlog.api;
  *
  */
 public interface RowLogMessageListener {
-
-    /**
-     * An id which should be unique across all registered consumers on the {@link RowLog} 
-     */
-    int getId();
-    
-    /**
-     * Indicates the number of times the processing of a message should be tried before it should be marked as problematic. 
-     */
-    int getMaxTries();
-
     /**
      * Request a consumer to process a {@link RowLogMessage}. 
      * @param message the {@link RowLogMessage} to process
      * @return true if the consumer could successfully process the {@link RowLogMessage}
      */
     boolean processMessage(RowLogMessage message);
-
 }

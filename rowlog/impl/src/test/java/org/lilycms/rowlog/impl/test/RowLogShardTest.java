@@ -16,9 +16,10 @@
 package org.lilycms.rowlog.impl.test;
 
 
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.classextension.EasyMock.createControl;
-import static org.junit.Assert.*;
-import static org.easymock.EasyMock.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -73,39 +73,29 @@ public class RowLogShardTest {
     
     @Test
     public void testSingleMessage() throws Exception {
-        int consumerId = 1;
-
-        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(new Integer(consumerId));
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer}));
+        String subscriptionId = "Subscription1";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
         shard.putMessage(message1);
         
-        List<RowLogMessage> messages = shard.next(consumerId);
+        List<RowLogMessage> messages = shard.next(subscriptionId);
         assertEquals(1, messages.size());
         assertEquals(message1, messages.get(0));
         
-        shard.removeMessage(message1, consumerId);
-        assertTrue(shard.next(consumerId).isEmpty());
+        shard.removeMessage(message1, subscriptionId);
+        assertTrue(shard.next(subscriptionId).isEmpty());
         control.verify();
     }
     
     @Test
     public void testMultipleMessages() throws Exception {
-        int consumerId = 1;
-        
-        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(new Integer(consumerId)).anyTimes();
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
+        String subscriptionId = "Subscription1";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -116,28 +106,23 @@ public class RowLogShardTest {
         shard.putMessage(message1);
         shard.putMessage(message2);
 
-        List<RowLogMessage> messages = shard.next(consumerId);
+        List<RowLogMessage> messages = shard.next(subscriptionId);
         assertEquals(2, messages.size());
         assertEquals(message1, messages.get(0));
 
-        shard.removeMessage(message1, consumerId);
+        shard.removeMessage(message1, subscriptionId);
         assertEquals(message2, messages.get(1));
         
-        shard.removeMessage(message2, consumerId);
-        assertTrue(shard.next(consumerId).isEmpty());
+        shard.removeMessage(message2, subscriptionId);
+        assertTrue(shard.next(subscriptionId).isEmpty());
         control.verify();
     }
     
     @Test
     public void testBatchSize() throws Exception {
-        int consumerId = 1;
-        
-        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(new Integer(consumerId)).anyTimes();
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
+        String subscriptionId = "Subscription1";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId})).anyTimes();
         
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
@@ -147,41 +132,32 @@ public class RowLogShardTest {
             shard.putMessage(message);
         }
 
-        List<RowLogMessage> messages = shard.next(consumerId);
+        List<RowLogMessage> messages = shard.next(subscriptionId);
         assertEquals(batchSize , messages.size());
 
         int i = 0;
         for (RowLogMessage message : messages) {
             assertEquals(expectedMessages[i++], message);
-            shard.removeMessage(message, consumerId);
+            shard.removeMessage(message, subscriptionId);
         }
-        messages = shard.next(consumerId);
+        messages = shard.next(subscriptionId);
         assertEquals(2, messages.size());
         for (RowLogMessage message : messages) {
             assertEquals(expectedMessages[i++], message);
-            shard.removeMessage(message, consumerId);
+            shard.removeMessage(message, subscriptionId);
         }
         
-        assertTrue(shard.next(consumerId).isEmpty());
+        assertTrue(shard.next(subscriptionId).isEmpty());
         control.verify();
     }
     
     
     @Test
     public void testMultipleConsumers() throws Exception {
-        int consumerId1 = 1;
-        int consumerId2 = 2;
-
-        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
-        consumer1.getId();
-        expectLastCall().andReturn(new Integer(consumerId1)).anyTimes();
-
-        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
-        consumer2.getId();
-        expectLastCall().andReturn(new Integer(consumerId2)).anyTimes();
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer1, consumer2})).anyTimes();
+        String subscriptionId1 = "Subscription1";
+        String subscriptionId2 = "Subscription2";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId1, subscriptionId2})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -191,81 +167,70 @@ public class RowLogShardTest {
         
         shard.putMessage(message1);
         shard.putMessage(message2);
-        List<RowLogMessage> messages = shard.next(consumerId1);
+        List<RowLogMessage> messages = shard.next(subscriptionId1);
         assertEquals(2, messages.size());
         assertEquals(message1, messages.get(0));
-        shard.removeMessage(message1, consumerId1);
+        shard.removeMessage(message1, subscriptionId1);
         assertEquals(message2, messages.get(1));
-        shard.removeMessage(message2, consumerId1);
+        shard.removeMessage(message2, subscriptionId1);
         
-        messages = shard.next(consumerId2);
+        messages = shard.next(subscriptionId2);
         assertEquals(2, messages.size());
         assertEquals(message1, messages.get(0));
-        shard.removeMessage(message1, consumerId2);
+        shard.removeMessage(message1, subscriptionId2);
         assertEquals(message2, messages.get(1));
-        shard.removeMessage(message2, consumerId2);
+        shard.removeMessage(message2, subscriptionId2);
         
-        assertTrue(shard.next(consumerId1).isEmpty());
-        assertTrue(shard.next(consumerId2).isEmpty());
+        assertTrue(shard.next(subscriptionId1).isEmpty());
+        assertTrue(shard.next(subscriptionId2).isEmpty());
         control.verify();
     }
     
     @Test
     public void testMessageDoesNotExistForConsumer() throws Exception {
-        int consumerId1 = 1;
-        int consumerId2 = 2;
-        
-        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(new Integer(consumerId1)).anyTimes();
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer})).anyTimes();
+        String subscriptionId1 = "Subscription1";
+        String subscriptionId2 = "Subscription2";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId1})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 1L, null, rowLog);
 
         shard.putMessage(message1);
-        assertTrue(shard.next(consumerId2).isEmpty());
+        assertTrue(shard.next(subscriptionId2).isEmpty());
 
-        shard.removeMessage(message1, consumerId2);
-        List<RowLogMessage> messages = shard.next(consumerId1);
+        shard.removeMessage(message1, subscriptionId2);
+        List<RowLogMessage> messages = shard.next(subscriptionId1);
         assertEquals(message1, messages.get(0));
         // Cleanup
-        shard.removeMessage(message1, consumerId1);
-        assertTrue(shard.next(consumerId1).isEmpty());
+        shard.removeMessage(message1, subscriptionId1);
+        assertTrue(shard.next(subscriptionId1).isEmpty());
         control.verify();
     }
 
     @Test
     public void testProblematicMessage() throws Exception {
-        int consumerId = 1;
-
-        RowLogMessageListener consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(new Integer(consumerId));
-        
-        rowLog.getConsumers();
-        expectLastCall().andReturn(Arrays.asList(new RowLogMessageListener[]{consumer}));
+        String subscriptionId = "Subscription1";
+        rowLog.getSubscriptions();
+        expectLastCall().andReturn(Arrays.asList(new String[]{subscriptionId})).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
         shard.putMessage(message1);
         
-        shard.markProblematic(message1, consumerId);
+        shard.markProblematic(message1, subscriptionId);
         
-        List<RowLogMessage> messages = shard.getProblematic(consumerId);
+        List<RowLogMessage> messages = shard.getProblematic(subscriptionId);
         assertEquals(1, messages.size());
         assertEquals(message1, messages.get(0));
         
-        assertTrue(shard.next(consumerId).isEmpty());
+        assertTrue(shard.next(subscriptionId).isEmpty());
         
-        shard.removeMessage(message1, consumerId);
-        assertTrue(shard.getProblematic(consumerId).isEmpty());
-        assertTrue(shard.next(consumerId).isEmpty());
+        shard.removeMessage(message1, subscriptionId);
+        assertTrue(shard.getProblematic(subscriptionId).isEmpty());
+        assertTrue(shard.next(subscriptionId).isEmpty());
         control.verify();
     }
-
 }

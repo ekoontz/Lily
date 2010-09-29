@@ -17,14 +17,9 @@ package org.lilycms.repository.impl.test;
 
 
 import static org.junit.Assert.assertEquals;
-import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.easymock.Capture;
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.easymock.IMocksControl;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,12 +28,17 @@ import org.lilycms.repository.api.Record;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
+import org.lilycms.repository.impl.MessageQueueFeeder;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.impl.ListenerClassMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogProcessorImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.TestHelper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
@@ -46,6 +46,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     private static BlobStoreAccessFactory blobStoreAccessFactory;
     private static Configuration configuration;
     private static RowLogConfigurationManagerImpl rowLogConfigurationManager;
+    private static RowLogProcessorImpl messageQueueProcessor;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -58,11 +59,21 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3);
+        MessageQueueFeeder.configuration = configuration;
+        ListenerClassMapping listenerClassMapping = ListenerClassMapping.INSTANCE;
+        listenerClassMapping.put("MQFeeder", MessageQueueFeeder.class.getName());
         setupTypes();
+        RowLog messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration);
+        messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
+        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, configuration);
+        messageQueueProcessor.start();
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        messageQueueProcessor.stop();
         ((HBaseRepository)repository).stop();
         rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
@@ -76,42 +87,10 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     
     @Test
     public void testUpdateProcessesRemainingMessages() throws Exception {
-        IMocksControl control = EasyMock.createControl();
-        RowLogMessageListener testConsumer = control.createMock(RowLogMessageListener.class); 
-
-        testConsumer.getId();
-        EasyMock.expectLastCall().andReturn(2).anyTimes();
+        HBaseRepositoryTestConsumer.reset();
+        ListenerClassMapping.INSTANCE.put("TestSubscription", HBaseRepositoryTestConsumer.class.getName());
+        rowLogConfigurationManager.addSubscription("WAL", "TestSubscription", Type.VM, 3);
         
-        testConsumer.getMaxTries();
-        EasyMock.expectLastCall().andReturn(5).anyTimes();
-        
-        final Capture<RowLogMessage> capturedMessage = new Capture<RowLogMessage>();
-        testConsumer.processMessage(EasyMock.capture(capturedMessage));
-        EasyMock.expectLastCall().andReturn(false);
-        
-        testConsumer.processMessage(EasyMock.isA(RowLogMessage.class));
-        EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
-            public Object answer() throws Throwable {
-                Object[] currentArguments = EasyMock.getCurrentArguments();
-                RowLogMessage rowLogMessage = (RowLogMessage)currentArguments[0];
-                Assert.assertEquals(capturedMessage.getValue(), rowLogMessage);
-                return true;
-            }
-        });
-        
-        testConsumer.processMessage(EasyMock.isA(RowLogMessage.class));
-        EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
-            public Object answer() throws Throwable {
-                Object[] currentArguments = EasyMock.getCurrentArguments();
-                RowLogMessage rowLogMessage = (RowLogMessage)currentArguments[0];
-                Assert.assertFalse(capturedMessage.getValue().equals(rowLogMessage));
-                return true;
-            }
-        });
-        
-        control.replay();
-        RowLog wal = ((HBaseRepository)repository).getWal();
-        wal.registerConsumer(testConsumer);
         Record record = repository.newRecord();
         record.setRecordType(recordType1.getName(), recordType1.getVersion());
         record.setField(fieldType1.getName(), "value1");
@@ -122,7 +101,9 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         assertEquals("value2", record.getField(fieldType1.getName()));
 
         assertEquals(record, repository.read(record.getId()));
-        wal.unRegisterConsumer(testConsumer);
-        control.verify();
+        rowLogConfigurationManager.removeSubscription("WAL", "TestSubscription");
+        ListenerClassMapping.INSTANCE.remove("TestSubscription");
     }
+    
+    
 }

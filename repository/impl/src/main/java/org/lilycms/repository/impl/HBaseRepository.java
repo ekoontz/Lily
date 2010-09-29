@@ -73,10 +73,8 @@ import org.lilycms.repository.impl.lock.RowLocker;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
-import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.Pair;
@@ -117,9 +115,6 @@ public class HBaseRepository implements Repository {
     private Map<Scope, byte[]> recordTypeVersionColumnNames = new HashMap<Scope, byte[]>();
     private BlobStoreAccessRegistry blobStoreAccessRegistry;
     private RowLog wal;
-    private RowLog messageQueue;
-    private RowLogShard messageQueueShard;
-    private RowLogProcessor messageQueueProcessor;
     private RowLocker rowLocker;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
@@ -144,31 +139,19 @@ public class HBaseRepository implements Repository {
         recordTypeVersionColumnNames.put(Scope.VERSIONED_MUTABLE, VERSIONED_MUTABLE_RECORDTYPEVERSION_COLUMN_NAME);
 
         try {
-        // Initialize Wal and Message Queue
-            initializeMessageQueue(configuration);
+        // Initialize Wal 
             initializeWal(configuration);
 
-        // Start Message Queue Processor
-            messageQueueProcessor = new RowLogProcessorImpl(messageQueue, messageQueueShard, configuration);
         } catch (RowLogException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        messageQueueProcessor.start();
 
         rowLocker = new RowLocker(recordTable, HBaseTableUtil.NON_VERSIONED_SYSTEM_COLUMN_FAMILY, LOCK_COLUMN_NAME,
                 10000);
     }
 
     public void stop() {
-        messageQueueProcessor.stop();
-    }
-
-    private void initializeMessageQueue(Configuration configuration) throws IOException, RowLogException {
-        messageQueue = new RowLogImpl("MQ", recordTable, HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration); 
-        messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
-        messageQueue.registerShard(messageQueueShard);
     }
 
     private void initializeWal(Configuration configuration) throws IOException, RowLogException {
@@ -176,7 +159,6 @@ public class HBaseRepository implements Repository {
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
-        wal.registerConsumer(new MessageQueueFeeder(messageQueue));
     }
 
     public IdGenerator getIdGenerator() {
@@ -189,10 +171,6 @@ public class HBaseRepository implements Repository {
 
     public RowLog getWal() {
         return wal;
-    }
-
-    public RowLog getMessageQueue() {
-        return messageQueue;
     }
 
     public Record newRecord() {

@@ -30,9 +30,9 @@ import org.codehaus.jackson.node.ObjectNode;
 public class SubscriptionExecutionState {
 
     private final byte[] messageId;
-    Map<Integer, Boolean> states = new HashMap<Integer, Boolean>();
-    Map<Integer, Integer> tryCounts = new HashMap<Integer, Integer>();
-    Map<Integer, byte[]> locks = new HashMap<Integer, byte[]>();
+    Map<String, Boolean> states = new HashMap<String, Boolean>();
+    Map<String, Integer> tryCounts = new HashMap<String, Integer>();
+    Map<String, byte[]> locks = new HashMap<String, byte[]>();
 
     public SubscriptionExecutionState(byte[] messageId) {
         this.messageId = messageId;
@@ -42,37 +42,37 @@ public class SubscriptionExecutionState {
         return messageId;
     }
     
-    public void setState(int consumerId, boolean state) {
-        states.put(consumerId, state);
+    public void setState(String subscription, boolean state) {
+        states.put(subscription, state);
     }
     
-    public boolean getState(int consumerId) {
-        Boolean state = states.get(consumerId);
+    public boolean getState(String subscription) {
+        Boolean state = states.get(subscription);
         if (state == null) return true;
         return state;
     }
     
-    public void incTryCount(int consumerId) {
-        Integer count = tryCounts.get(consumerId);
+    public void incTryCount(String subscription) {
+        Integer count = tryCounts.get(subscription);
         
         if (count == null)
-            tryCounts.put(consumerId, 0);
+            tryCounts.put(subscription, 0);
         else 
-            tryCounts.put(consumerId, ++count);
+            tryCounts.put(subscription, ++count);
     }
     
-    public int getTryCount(int consumerId) {
-        Integer count = tryCounts.get(consumerId);
+    public int getTryCount(String subscription) {
+        Integer count = tryCounts.get(subscription);
         if (count == null) return 0;
         return count;
     }
     
-    public void setLock(int consumerId, byte[] lock) {
-        locks.put(consumerId, lock);
+    public void setLock(String subscription, byte[] lock) {
+        locks.put(subscription, lock);
     }
     
-    public byte[] getLock(int consumerId) {
-        return locks.get(consumerId);
+    public byte[] getLock(String subscription) {
+        return locks.get(subscription);
     }
 
     public byte[] toBytes() {
@@ -82,7 +82,7 @@ public class SubscriptionExecutionState {
         object.put("id", messageId);
         
         ArrayNode consumerStatesNode = object.putArray("states");
-        for (Entry<Integer, Boolean> entry : states.entrySet()) {
+        for (Entry<String, Boolean> entry : states.entrySet()) {
             ObjectNode consumerStateNode = factory.objectNode();
             consumerStateNode.put("id", entry.getKey());
             consumerStateNode.put("state", entry.getValue());
@@ -90,7 +90,7 @@ public class SubscriptionExecutionState {
         }
 
         ArrayNode consumerTryCountsNode = object.putArray("counts");
-        for (Entry<Integer, Integer> entry : tryCounts.entrySet()) {
+        for (Entry<String, Integer> entry : tryCounts.entrySet()) {
             ObjectNode consumerTryCountNode = factory.objectNode();
             consumerTryCountNode.put("id", entry.getKey());
             consumerTryCountNode.put("count", entry.getValue());
@@ -98,7 +98,7 @@ public class SubscriptionExecutionState {
         }
 
         ArrayNode consumerLocksNode = object.putArray("locks");
-        for (Entry<Integer, byte[]> entry : locks.entrySet()) {
+        for (Entry<String, byte[]> entry : locks.entrySet()) {
             ObjectNode consumerLockNode = factory.objectNode();
             consumerLockNode.put("id", entry.getKey());
             consumerLockNode.put("lock", entry.getValue());
@@ -128,7 +128,7 @@ public class SubscriptionExecutionState {
         JsonNode consumerStatesNode = node.get("states");
         for (int i = 0; i < consumerStatesNode.size(); i++) {
             JsonNode consumerStateNode = consumerStatesNode.get(i);
-            Integer id = consumerStateNode.get("id").getIntValue();
+            String id = consumerStateNode.get("id").getTextValue();
             Boolean state = consumerStateNode.get("state").getBooleanValue();
             executionState.setState(id, state);
         }
@@ -136,7 +136,7 @@ public class SubscriptionExecutionState {
         JsonNode consumerTryCountsNode = node.get("counts");
         for (int i = 0; i < consumerTryCountsNode.size(); i++) {
             JsonNode consumerTryCountNode = consumerTryCountsNode.get(i);
-            Integer id = consumerTryCountNode.get("id").getIntValue();
+            String id = consumerTryCountNode.get("id").getTextValue();
             Integer tryCount = consumerTryCountNode.get("count").getIntValue();
             executionState.tryCounts.put(id, tryCount);
         }
@@ -144,7 +144,7 @@ public class SubscriptionExecutionState {
         JsonNode consumerLocksNode = node.get("locks");
         for (int i = 0; i < consumerLocksNode.size(); i++) {
             JsonNode consumerLockNode = consumerLocksNode.get(i);
-            Integer id = consumerLockNode.get("id").getIntValue();
+            String id = consumerLockNode.get("id").getTextValue();
             byte[] lock = consumerLockNode.get("lock").getBinaryValue();
             executionState.setLock(id, lock);
         }

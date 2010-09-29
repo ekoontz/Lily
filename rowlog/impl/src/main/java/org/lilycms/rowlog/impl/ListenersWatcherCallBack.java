@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface ListenersWatcherCallBack {
 
-    void listenersChanged(List<String> andMonitorListeners);
+    void listenersChanged(List<String> listeners);
 
 }

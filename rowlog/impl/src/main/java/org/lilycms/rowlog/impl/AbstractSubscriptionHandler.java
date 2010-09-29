@@ -11,11 +11,11 @@ import org.lilycms.rowlog.api.RowLogMessage;
 public abstract class AbstractSubscriptionHandler implements SubscriptionHandler {
     protected final RowLog rowLog;
     protected final String rowLogId;
-    protected final int subscriptionId;
+    protected final String subscriptionId;
     protected final MessagesWorkQueue messagesWorkQueue;
     private Log log = LogFactory.getLog(getClass());
     
-    public AbstractSubscriptionHandler(int subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog) {
+    public AbstractSubscriptionHandler(String subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog) {
         this.rowLog = rowLog;
         this.rowLogId = rowLog.getId();
         this.subscriptionId = subscriptionId;
@@ -43,9 +43,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                     try {
                         byte[] lock = rowLog.lockMessage(message, subscriptionId);
                         if (lock != null) {
-                            boolean messageDone = rowLog.isMessageDone(message, subscriptionId);
-                            boolean problematic = rowLog.isProblematic(message, subscriptionId);
-                            if (!messageDone && !problematic) {
+                            if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
                                 if (processMessage(context, message)) {
                                     if(rowLog.messageDone(message, subscriptionId, lock)) {
                                     }
@@ -55,7 +53,9 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                             } else {
                                 rowLog.unlockMessage(message, subscriptionId, lock);
                             }
-                        } 
+                        } else {
+                            System.out.println("Message <"+message+"> locked");
+                        }
                     } catch (RowLogException e) {
                         log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
                     } finally {

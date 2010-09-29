@@ -39,9 +39,11 @@ public class RemoteListenerHandler {
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private String listenerId;
     private final Configuration configuration;
+    private final String subscriptionId;
 
-    public RemoteListenerHandler(RowLog rowLog, RowLogMessageListener consumer, Configuration configuration) throws RowLogException {
+    public RemoteListenerHandler(RowLog rowLog, String subscriptionId, RowLogMessageListener consumer, Configuration configuration) throws RowLogException {
         this.rowLog = rowLog;
+        this.subscriptionId = subscriptionId;
         this.consumer = consumer;
         this.configuration = configuration;
         bootstrap = new ServerBootstrap(
@@ -51,7 +53,6 @@ public class RemoteListenerHandler {
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() throws Exception {
                 ChannelPipeline pipeline = Channels.pipeline();
-//                pipeline.addLast("frameDecoder", new DelimiterBasedFrameDecoder(80, Delimiters.nulDelimiter()));
                 pipeline.addLast("messageDecoder", new MessageDecoder());
                 pipeline.addLast("messageHandler", new MessageHandler());
                 pipeline.addLast("resultEncoder", new ResultEncoder());
@@ -73,7 +74,7 @@ public class RemoteListenerHandler {
         channel = bootstrap.bind(inetSocketAddress);
         int port = ((InetSocketAddress)channel.getLocalAddress()).getPort();
         listenerId = hostName + ":" + port;
-        rowLogConfigurationManager.addListener(rowLog.getId(), consumer.getId(), listenerId);
+        rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, listenerId);
     }
     
     public void interrupt() {
@@ -84,7 +85,7 @@ public class RemoteListenerHandler {
         }
         bootstrap.releaseExternalResources();
         try {
-            rowLogConfigurationManager.removeListener(rowLog.getId(), consumer.getId(), listenerId);
+            rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, listenerId);
         } catch (RowLogException e) {
             // TODO log
             e.printStackTrace();

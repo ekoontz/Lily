@@ -15,26 +15,29 @@
  */
 package org.lilycms.repository.impl;
 
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 
 public class MessageQueueFeeder implements RowLogMessageListener {
-
-    public static final int ID = 10;
-    private static final int MAX_TRIES = 10;
-    private final RowLog messageQueue;
+    public static Configuration configuration;
+    private RowLog messageQueue = null;
     public MessageQueueFeeder(RowLog messageQueue) {
         this.messageQueue = messageQueue;
     }
     
-    public int getId() {
-        return ID;
-    }
-    
-    public int getMaxTries() {
-        return MAX_TRIES;
+    public MessageQueueFeeder() throws RowLogException, IOException {
+        messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration); 
+        RowLogShard messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
+        messageQueue.registerShard(messageQueueShard);
     }
     
     public boolean processMessage(RowLogMessage message) {

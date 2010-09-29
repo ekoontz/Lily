@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -40,8 +39,9 @@ import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -54,14 +54,17 @@ public class RowLogTest {
     private static byte[] payloadColumnFamily = RowLogTableUtil.PAYLOAD_COLUMN_FAMILY;
     private static byte[] rowLogColumnFamily = RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY;
     private static HTableInterface rowTable;
-    private RowLogMessageListener consumer;
-    private int consumerId = 0;
+    private static String subscriptionId1 = "SubscriptionId";
+    private static String RowLogId = "RowLogTest";
     private RowLogShard shard;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3);
+        configurationManager.stop();
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
     }
@@ -73,14 +76,7 @@ public class RowLogTest {
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, HBASE_PROXY.getConf());
-        consumer = control.createMock(RowLogMessageListener.class);
-        consumer.getId();
-        expectLastCall().andReturn(consumerId).anyTimes();
-        
-        consumer.getMaxTries();
-        expectLastCall().andReturn(5).anyTimes();
-        
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, HBASE_PROXY.getConf());
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -91,56 +87,39 @@ public class RowLogTest {
         control.reset();
     }
     
-    @Test
-    public void testRegisterConsumer() throws Exception {
-
-        control.replay();
-        rowLog.registerConsumer(consumer);
-        Collection<RowLogMessageListener> consumers = rowLog.getConsumers();
-        assertTrue(consumers.size() == 1);
-        assertEquals(consumer, consumers.iterator().next());
-        control.verify();
-    }
-    
-    @Test
-    public void testPutMessage() throws Exception {
-
-        shard.putMessage(isA(RowLogMessage.class));
-        
-        control.replay();
-        rowLog.registerConsumer(consumer);
-        rowLog.registerShard(shard);
-        byte[] rowKey = Bytes.toBytes("row1");
-        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
-        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
-        assertEquals(1, messages.size());
-        assertEquals(message, messages.get(0));
-        control.verify();
-    }
+//    @Test
+//    public void testPutMessage() throws Exception {
+//        shard.putMessage(isA(RowLogMessage.class));
+//        control.replay();
+//        rowLog.registerShard(shard);
+//        byte[] rowKey = Bytes.toBytes("row1");
+//        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
+//        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
+//        assertEquals(1, messages.size());
+//        assertEquals(message, messages.get(0));
+//        control.verify();
+//    }
     
     @Test
     public void testMultipleMessages() throws Exception {
-
         shard.putMessage(isA(RowLogMessage.class));
         expectLastCall().times(3);
-        shard.removeMessage(isA(RowLogMessage.class), eq(consumerId));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
         
         control.replay();
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row2");
         RowLogMessage message1 = rowLog.putMessage(rowKey, null, null, null);
         RowLogMessage message2 = rowLog.putMessage(rowKey, null, null, null);
         RowLogMessage message3 = rowLog.putMessage(rowKey, null, null, null);
-        rowLog.messageDone(message2, consumerId, null);
+        rowLog.messageDone(message2, subscriptionId1, null);
         
-        List<RowLogMessage> messages = rowLog.getMessages(rowKey, consumerId);
+        List<RowLogMessage> messages = rowLog.getMessages(rowKey, subscriptionId1);
         assertEquals(2, messages.size());
         assertEquals(message1, messages.get(0));
         assertEquals(message3, messages.get(1));
         control.verify();
     }
-    
     
     @Test
     public void testNoShardsRegistered() throws Exception {
@@ -154,7 +133,7 @@ public class RowLogTest {
         
         RowLogMessage message = new RowLogMessageImpl(Bytes.toBytes("id"), Bytes.toBytes("row1"), 0L, null, rowLog);
         try {
-            rowLog.messageDone(message , 1, null);
+            rowLog.messageDone(message , subscriptionId1, null);
             fail("Expected a MessageQueueException since no shards are registered");
         } catch (RowLogException expected) {
         }
@@ -167,16 +146,15 @@ public class RowLogTest {
     public void testMessageConsumed() throws Exception {
 
         shard.putMessage(isA(RowLogMessage.class));
-        shard.removeMessage(isA(RowLogMessage.class), eq(consumerId));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
         
         control.replay();
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
 
-        byte[] lock = rowLog.lockMessage(message, consumerId);
-        rowLog.messageDone(message, consumerId, lock);
-        assertFalse(rowLog.isMessageLocked(message, consumerId));
+        byte[] lock = rowLog.lockMessage(message, subscriptionId1);
+        rowLog.messageDone(message, subscriptionId1, lock);
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
         control.verify();
     }
     
@@ -185,13 +163,12 @@ public class RowLogTest {
         shard.putMessage(isA(RowLogMessage.class));
         
         control.replay();
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
         
-        assertNotNull(rowLog.lockMessage(message, consumerId));
-        assertTrue(rowLog.isMessageLocked(message, consumerId));
-        assertNull(rowLog.lockMessage(message, consumerId));
+        assertNotNull(rowLog.lockMessage(message, subscriptionId1));
+        assertTrue(rowLog.isMessageLocked(message, subscriptionId1));
+        assertNull(rowLog.lockMessage(message, subscriptionId1));
         control.verify();
     }
     
@@ -200,129 +177,129 @@ public class RowLogTest {
         shard.putMessage(isA(RowLogMessage.class));
         
         control.replay();
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         
-        byte[] lock = rowLog.lockMessage(message, consumerId);
+        byte[] lock = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock);
-        assertTrue(rowLog.unlockMessage(message, consumerId, lock));
-        assertFalse(rowLog.isMessageLocked(message, consumerId));
-        byte[] lock2 = rowLog.lockMessage(message, consumerId);
+        assertTrue(rowLog.unlockMessage(message, subscriptionId1, lock));
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
+        byte[] lock2 = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock2);
         control.verify();
         //Cleanup 
-        rowLog.unlockMessage(message, consumerId, lock2);
+        rowLog.unlockMessage(message, subscriptionId1, lock2);
     }
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl("RowLogTest", rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, HBASE_PROXY.getConf());
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, HBASE_PROXY.getConf());
         
         shard.putMessage(isA(RowLogMessage.class));
         
         control.replay();
-        rowLog.registerConsumer(consumer);
         rowLog.registerShard(shard);
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         
-        byte[] lock = rowLog.lockMessage(message, consumerId );
+        byte[] lock = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock);
         Thread.sleep(10L);
-        assertFalse(rowLog.isMessageLocked(message, consumerId ));
-        byte[] lock2 = rowLog.lockMessage(message, consumerId );
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
+        byte[] lock2 = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock2);
         
-        assertFalse(rowLog.unlockMessage(message, consumerId , lock));
+        assertFalse(rowLog.unlockMessage(message, subscriptionId1, lock));
         control.verify();
         //Cleanup
-        rowLog.unlockMessage(message, consumerId , lock2);
+        rowLog.unlockMessage(message, subscriptionId1, lock2);
     }
     
     @Test
     public void testLockingMultipleConsumers() throws Exception {
-        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
-        consumer1.getId();
-        expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
-        consumer1.getMaxTries();
-        expectLastCall().andReturn(5).anyTimes();
-        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
-        consumer2.getId();
-        expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
-        consumer2.getMaxTries();
-        expectLastCall().andReturn(5).anyTimes();
-
+        String subscriptionId2 = "subscriptionId2";
+        
         shard.putMessage(isA(RowLogMessage.class));
-        shard.removeMessage(isA(RowLogMessage.class), eq(2));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId2));
         
         control.replay();
-        rowLog.registerConsumer(consumer1);
-        rowLog.registerConsumer(consumer2);
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3);
+        long waitUntil = System.currentTimeMillis() + 10000;
+        while (waitUntil > System.currentTimeMillis()) {
+            if (rowLog.getSubscriptions().size() > 1)
+                break;
+        }
+        
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row2");
         RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
         
-        byte[] lock = rowLog.lockMessage(message, 1);
+        byte[] lock = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock);
-        assertFalse(rowLog.isMessageLocked(message, 2));
-        assertTrue(rowLog.unlockMessage(message, 1, lock));
-        assertFalse(rowLog.isMessageLocked(message, 1));
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId2));
+        assertTrue(rowLog.unlockMessage(message, subscriptionId1, lock));
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
         
-        byte[] lock2 = rowLog.lockMessage(message, 2);
+        byte[] lock2 = rowLog.lockMessage(message, subscriptionId2);
         assertNotNull(lock2);
-        rowLog.messageDone(message, 2, lock2);
-        assertFalse(rowLog.isMessageLocked(message, 2));
+        rowLog.messageDone(message, subscriptionId2, lock2);
+        assertFalse(rowLog.isMessageLocked(message, subscriptionId2));
         
         control.verify();
         //Cleanup 
-        rowLog.unlockMessage(message, 1, lock2);
+        rowLog.unlockMessage(message, subscriptionId2, lock2);
+        configurationManager.removeSubscription(RowLogId, subscriptionId2);
+        configurationManager.stop();
     }
     
     @Test
     public void testgetMessages() throws Exception {
-        RowLogMessageListener consumer1 = control.createMock(RowLogMessageListener.class);
-        consumer1.getId();
-        expectLastCall().andReturn(Integer.valueOf(1)).anyTimes();
-        consumer1.getMaxTries();
-        expectLastCall().andReturn(5).anyTimes();
-        RowLogMessageListener consumer2 = control.createMock(RowLogMessageListener.class);
-        consumer2.getId();
-        expectLastCall().andReturn(Integer.valueOf(2)).anyTimes();
-        consumer2.getMaxTries();
-        expectLastCall().andReturn(5).anyTimes();
+        String subscriptionId3 = "subscriptionId2";
         
         shard.putMessage(isA(RowLogMessage.class));
         expectLastCall().times(2);
-        shard.removeMessage(isA(RowLogMessage.class), eq(1));
-        shard.removeMessage(isA(RowLogMessage.class), eq(2));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId3));
         
         control.replay();
-        rowLog.registerConsumer(consumer1);
-        rowLog.registerConsumer(consumer2);
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5);
+        
+        long waitUntil = System.currentTimeMillis() + 10000;
+        while (waitUntil > System.currentTimeMillis()) {
+            if (rowLog.getSubscriptions().size() > 1)
+                break;
+        }
+        
+        assertEquals(2, rowLog.getSubscriptions().size());
+        
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row3");
         RowLogMessage message1 = rowLog.putMessage(rowKey, null, null, null);
         RowLogMessage message2 = rowLog.putMessage(rowKey, null, null, null);
 
-        byte[] lock = rowLog.lockMessage(message1, consumer1.getId());
-        rowLog.messageDone(message1, consumer1.getId(), lock);
-        lock = rowLog.lockMessage(message2, consumer2.getId());
-        rowLog.messageDone(message2, consumer2.getId(), lock);
+        byte[] lock = rowLog.lockMessage(message1, subscriptionId1);
+        rowLog.messageDone(message1, subscriptionId1, lock);
+        lock = rowLog.lockMessage(message2, subscriptionId3);
+        rowLog.messageDone(message2, subscriptionId3, lock);
         
-        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
+        List<RowLogMessage> messages;
+        messages = rowLog.getMessages(rowKey);
         assertEquals(2, messages.size());
         
-        messages = rowLog.getMessages(rowKey, consumer1.getId());
+        messages = rowLog.getMessages(rowKey, subscriptionId1);
         assertEquals(1, messages.size());
         assertEquals(message2, messages.get(0));
         
-        messages = rowLog.getMessages(rowKey, consumer2.getId());
+        messages = rowLog.getMessages(rowKey, subscriptionId3);
         assertEquals(1, messages.size());
         assertEquals(message1, messages.get(0));
         
-        messages = rowLog.getMessages(rowKey, consumer1.getId(), consumer2.getId());
+        messages = rowLog.getMessages(rowKey, subscriptionId1, subscriptionId3);
         assertEquals(2, messages.size());
         
         control.verify();
+        configurationManager.removeSubscription(RowLogId, subscriptionId3);
+        configurationManager.stop();
     }
 }

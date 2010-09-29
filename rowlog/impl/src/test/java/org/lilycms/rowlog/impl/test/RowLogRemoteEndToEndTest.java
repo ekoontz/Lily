@@ -31,49 +31,46 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     // Not in separate VM yet, but at least communication goes over channels.
     @Before
     public void setUp() throws Exception {
+        ValidationMessageConsumer.reset();
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-        consumer = new TestMessageConsumer(0);
-        rowLog.registerConsumer(consumer);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer.getId(),  SubscriptionContext.Type.Netty);
-        remoteListener = new RemoteListenerHandler(rowLog, consumer, HBASE_PROXY.getConf());
+        subscriptionId = "Test";
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3);
+        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, new ValidationMessageConsumer(), HBASE_PROXY.getConf());
         remoteListener.start();
     }
 
     @After
     public void tearDown() throws Exception {
-        consumer.validate();
+        ValidationMessageConsumer.validate();
         remoteListener.interrupt();
-        rowLogConfigurationManager.removeSubscription(rowLog.getId(), consumer.getId());
-        rowLog.unRegisterConsumer(consumer);
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
         rowLogConfigurationManager.stop();
     }
 
     @Test
     public void testMultipleConsumers() throws Exception {
-        TestMessageConsumer consumer2 = new TestMessageConsumer(1);
-        rowLog.registerConsumer(consumer2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), consumer2.getId(), SubscriptionContext.Type.Netty);
-        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, consumer2, HBASE_PROXY.getConf());
+        ValidationMessageConsumer2.reset();
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3);
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", new ValidationMessageConsumer2(), HBASE_PROXY.getConf());
         remoteListener2.start();
-        consumer.expectMessages(10);
-        consumer2.expectMessages(10);
+        ValidationMessageConsumer.expectMessages(10);
+        ValidationMessageConsumer2.expectMessages(10);
         RowLogMessage message;
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-                consumer.expectMessage(message);
-                consumer2.expectMessage(message);
+                ValidationMessageConsumer.expectMessage(message);
+                ValidationMessageConsumer2.expectMessage(message);
             }
         }
         processor.start();
-        consumer.waitUntilMessagesConsumed(120000);
-        consumer2.waitUntilMessagesConsumed(120000);
+        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        consumer2.validate();
+        ValidationMessageConsumer2.validate();
         remoteListener2.interrupt();
-        rowLogConfigurationManager.removeSubscription(rowLog.getId(), consumer2.getId());
-        rowLog.unRegisterConsumer(consumer2);
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), "Test2");
     }
 }

@@ -20,7 +20,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -51,24 +54,21 @@ import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.util.ArgumentValidator;
 
-public class RowLogProcessorImpl implements RowLogProcessor {
+public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatcherCallBack {
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
-    private Map<Integer, SubscriptionThread> subscriptionThreads = new HashMap<Integer, SubscriptionThread>();
+    private Map<String, SubscriptionThread> subscriptionThreads = Collections.synchronizedMap(new HashMap<String, SubscriptionThread>());
     private Channel channel;
     private ChannelFactory channelFactory;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private final Configuration configuration;
     
-    public RowLogProcessorImpl(RowLog rowLog, RowLogShard shard, Configuration configuration) throws RowLogException {
+    public RowLogProcessorImpl(RowLog rowLog, Configuration configuration) throws RowLogException {
         this.configuration = configuration;
-        ArgumentValidator.notNull(rowLog, "rowLog");
-        ArgumentValidator.notNull(shard, "shard");
         this.rowLog = rowLog;
-        this.shard = shard;
+        this.shard = rowLog.getShards().get(0); // TODO: For now we only work with one shard
     }
     
     @Override
@@ -82,7 +82,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
             stop = false;
             try {
                 rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
-                subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(this, rowLog));
+                subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLog.getId(), this));
             } catch (KeeperException e) {
                 
                 // TODO Auto-generated catch block
@@ -98,59 +98,56 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         }
     }
     
-    public synchronized void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
-        List<Integer> newSubscriptionIds = new ArrayList<Integer>();
-        for (SubscriptionContext newSubscription : newSubscriptions) {
-            newSubscriptionIds.add(newSubscription.getId());
-            if (!subscriptionThreads.containsKey(newSubscription))
-                subscriptionRegistered(newSubscription);
-        }
-        for (Integer subscription : subscriptionThreads.keySet()) {
-            if (!newSubscriptionIds.contains(subscription))
-                subscriptionUnregistered(subscription);
-        }
-    }
-
-    private void subscriptionRegistered(SubscriptionContext subscription) {
-        startSubscriptionThread(subscription);
-    }
-    
-    private void subscriptionUnregistered(int subscriptionId) {
-        stopSubscriptionThread(subscriptionId);
-    }
-    
-    private void startSubscriptionThread(SubscriptionContext subscription) {
-        if (!stop) {
-            int subscriptionId = subscription.getId();
-            if (subscriptionThreads.get(subscriptionId) == null) {
-                SubscriptionThread subscriptionThread = new SubscriptionThread(subscription);
-                subscriptionThread.start();
-                subscriptionThreads.put(subscriptionId, subscriptionThread);
+    public void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
+        synchronized (subscriptionThreads) {
+            List<String> newSubscriptionIds = new ArrayList<String>();
+            for (SubscriptionContext newSubscription : newSubscriptions) {
+                newSubscriptionIds.add(newSubscription.getId());
+                if (!subscriptionThreads.containsKey(newSubscription)) {
+                    SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
+                    subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
+                }
+            }
+            Iterator<String> iterator = subscriptionThreads.keySet().iterator();
+            while (iterator.hasNext()) {
+                String subscriptionId = iterator.next();
+                if (!newSubscriptionIds.contains(subscriptionId)) {
+                    stopSubscriptionThread(subscriptionId);
+                    iterator.remove();
+                }
             }
         }
     }
+
+    private SubscriptionThread startSubscriptionThread(SubscriptionContext subscription) {
+        SubscriptionThread subscriptionThread = new SubscriptionThread(subscription);
+        subscriptionThread.start();
+        return subscriptionThread;
+    }
     
-    private synchronized void stopSubscriptionThread(int consumerId) {
-        SubscriptionThread subscriptionThread = subscriptionThreads.get(consumerId);
+    private void stopSubscriptionThread(String subscriptionId) {
+        SubscriptionThread subscriptionThread = subscriptionThreads.get(subscriptionId);
         subscriptionThread.interrupt();
         try {
             subscriptionThread.join();
         } catch (InterruptedException e) {
         }
-        subscriptionThreads.remove(consumerId);
     }
 
     public synchronized void stop() {
         stop = true;
         stopConsumerNotifyListener();
-        Collection<SubscriptionThread> threads = new ArrayList<SubscriptionThread>(subscriptionThreads.values());
-        subscriptionThreads.clear();
-        for (Thread thread : threads) {
+        Collection<SubscriptionThread> threadsToStop;
+        synchronized (subscriptionThreads) {
+            threadsToStop = new ArrayList<SubscriptionThread>(subscriptionThreads.values());
+            subscriptionThreads.clear();
+        }
+        for (Thread thread : threadsToStop) {
             if (thread != null) {
                 thread.interrupt();
             }
         }
-        for (Thread thread : threads) {
+        for (Thread thread : threadsToStop) {
             if (thread != null) {
                 try {
                     if (thread.isAlive()) {
@@ -166,7 +163,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         }
     }
 
-    public synchronized boolean isRunning(int consumerId) {
+    public boolean isRunning(int consumerId) {
         return subscriptionThreads.get(consumerId) != null;
     }
     
@@ -240,7 +237,11 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             ChannelBuffer buffer = (ChannelBuffer)e.getMessage();
             byte notifyByte = buffer.readByte(); // Does not contain any usefull information currently
-            for (SubscriptionThread consumerThread : subscriptionThreads.values()) {
+            Collection<SubscriptionThread> threadsToWakeup;
+            synchronized (subscriptionThreads) {
+                threadsToWakeup = new HashSet<SubscriptionThread>(subscriptionThreads.values());
+            }
+            for (SubscriptionThread consumerThread : threadsToWakeup) {
                 consumerThread.wakeup();
             }
             e.getChannel().close();
@@ -258,7 +259,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         private volatile boolean stopRequested = false;
         private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
-        private int subscriptionId;
+        private String subscriptionId;
 
         public SubscriptionThread(SubscriptionContext subscription) {
             this.subscriptionId = subscription.getId();
@@ -297,7 +298,6 @@ public class RowLogProcessorImpl implements RowLogProcessor {
         }
                 
         public void run() {
-            if ((subscriptionThreads.get(subscriptionId) == null)) return;
             while (!isInterrupted() && !stopRequested) {
                 try {
                     List<RowLogMessage> messages = shard.next(subscriptionId);
@@ -310,7 +310,7 @@ public class RowLogProcessorImpl implements RowLogProcessor {
                             try {
                                 if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
                                     messagesWorkQueue.offer(message);
-                                }
+                                } 
                             } catch (InterruptedException e) {
                                 return;
                             }

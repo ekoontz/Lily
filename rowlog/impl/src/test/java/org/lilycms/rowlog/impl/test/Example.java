@@ -29,6 +29,9 @@ import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
@@ -60,10 +63,12 @@ public class Example {
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
         
-        // Create a consumer and register it with the RowLog
-        RowLogMessageListener consumer = new FooBarConsumer();
-        rowLog.registerConsumer(consumer);
+        // Register a consumer class on the ConsumerClassMapping
+        ListenerClassMapping.INSTANCE.put("FooBar", FooBarConsumer.class.getName());
         
+        // Add a subscription to the configuration manager for the example Rowlog
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(configuration);
+        configurationManager.addSubscription("Example", "FooBar", Type.VM, 3);
         // The WAL use case 
         
         // Update a row with some user data
@@ -79,7 +84,7 @@ public class Example {
         // The MQ use case
         
         // Create a processor and start it
-        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, shard, configuration);
+        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, configuration);
         processor.start();
         
         message  = rowLog.putMessage(row1, Bytes.toBytes("SomeMoreInfo"), Bytes.toBytes("Re-evaluate:AUserField"), null);
@@ -92,21 +97,6 @@ public class Example {
     }
     
     private static class FooBarConsumer implements RowLogMessageListener {
-
-        public static final int ID = 1;
-        private static final int MAX_TRIES = 10;
-        
-        public FooBarConsumer() {
-        }
-        
-        public int getId() {
-            return ID;
-        }
-        
-        public int getMaxTries() {
-            return MAX_TRIES;
-        }
-        
         public boolean processMessage(RowLogMessage message) {
                 System.out.println("= Received a message =");
                 System.out.println(Bytes.toString(message.getRowKey()));
