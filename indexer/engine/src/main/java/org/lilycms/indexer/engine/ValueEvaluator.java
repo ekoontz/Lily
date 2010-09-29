@@ -174,7 +174,11 @@ public class ValueEvaluator {
             if (item.hasField(fieldType.getId())) {
                 Object value = item.getField(fieldType.getId());
                 if (value != null) {
-                    result.add(value);
+                    if (deref.getTargetField().getValueType().isMultiValue()) {
+                        result.addAll((List)value);
+                    } else {
+                        result.add(value);
+                    }
                 }
             }
         }
