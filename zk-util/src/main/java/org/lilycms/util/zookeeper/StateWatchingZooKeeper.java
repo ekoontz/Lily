@@ -36,6 +36,9 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
 
     private int sessionTimeout;
 
+    /**
+     * Ready becomes true once the ZooKeeper delegate has been set.
+     */
     private volatile boolean ready;
 
     private volatile boolean stopping;
@@ -50,8 +53,7 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
         this.requestedSessionTimeout = sessionTimeout;
         this.sessionTimeout = sessionTimeout;
 
-        MyWatcher watcher = new MyWatcher();
-        ZooKeeper zk = new ZooKeeper(connectString, sessionTimeout, watcher);
+        ZooKeeper zk = new ZooKeeper(connectString, sessionTimeout, new MyWatcher());
         setDelegate(zk);
         ready = true;
 
@@ -114,7 +116,7 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                     if (stateWatcherThread != null) {
                         stateWatcherThread.interrupt();
                     }
-                    stateWatcherThread = new Thread(new StateWatcher());
+                    stateWatcherThread = new Thread(new StateWatcher(), "LilyZkStateWatcher");
                     stateWatcherThread.start();
                 } else if (event.getState() == SyncConnected) {
                     if (firstConnect) {

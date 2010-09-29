@@ -21,7 +21,12 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * The indexer master is active on only one Lily node and is responsible for things such as launching
+ * index batch build jobs, assigning or removing message queue subscriptions, and the like.
+ */
 public class IndexerMaster {
     private ZooKeeperItf zk;
 
@@ -43,15 +48,15 @@ public class IndexerMaster {
 
     private int currentMaxConsumerId;
 
-    private JobStatusWatcher jobStatusWatcher;
+    private MasterProvisioner masterProvisioner = new MasterProvisioner();
 
-    private Thread jobStatusWatcherThread;
+    private JobStatusWatcher jobStatusWatcher = new JobStatusWatcher();
 
-    private BlockingQueue<IndexerModelEvent> eventQueue = new LinkedBlockingQueue<IndexerModelEvent>();
-
-    private Thread eventWorkerThread;
+    private EventWorker eventWorker = new EventWorker();
 
     private final Log log = LogFactory.getLog(getClass());
+
+    enum MasterState { I_AM_MASTER, I_AM_NOT_MASTER }
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
             Configuration mapReduceJobConf, Configuration hbaseConf, String zkConnectString, int zkSessionTimeout) {
@@ -66,7 +71,7 @@ public class IndexerMaster {
 
     @PostConstruct
     public void start() throws LeaderElectionSetupException, IOException, InterruptedException, KeeperException {
-        jobStatusWatcher = new JobStatusWatcher();
+        masterProvisioner.start();
 
         leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",
                 new MyLeaderElectionCallback());
@@ -75,75 +80,130 @@ public class IndexerMaster {
     @PreDestroy
     public void stop() {
         leaderElection.stop();
-        
-        if (eventWorkerThread != null) {
-            eventWorkerThread.interrupt();
-            try {
-                eventWorkerThread.join();
-            } catch (InterruptedException e) {
-                log.info("Interrupted while joining eventWorkerThread.");
-            }
+
+        try {
+            eventWorker.shutdown(true);
+        } catch (InterruptedException e) {
+            log.info("Interrupted while shutting down event worker.");
         }
 
-        if (jobStatusWatcherThread != null) {
-            jobStatusWatcherThread.interrupt();
-            try {
-                jobStatusWatcherThread.join();
-            } catch (InterruptedException e) {
-                log.info("Interrupted while joining jobStatusWatcherThread.");
-            }
+        try {
+            jobStatusWatcher.shutdown(true);
+        } catch (InterruptedException e) {
+            log.info("Interrupted while shutting down job status watcher.");
+        }
+
+        try {
+            masterProvisioner.shutdown();
+        } catch (InterruptedException e) {
+            log.info("Interrupted while shutting down master provisioner.");
         }
     }
 
     private class MyLeaderElectionCallback implements LeaderElectionCallback {
         public void elected() {
-            log.info("I am elected as the IndexerMaster.");
-
-            // We do not need to worry about events already arriving, since this code is called
-            // from a ZK callback.
-            jobStatusWatcher.reset();
-
-            eventQueue.clear(); // Just to be sure
-            eventWorkerThread = new Thread(new EventWorker());
-            eventWorkerThread.start();
-
-            initMaxConsumerId();
-
-            Collection<IndexDefinition> indexes = indexerModel.getIndexes(listener);
-
-            // Rather than performing any work that might to be done for the indexes here,
-            // we push out fake events. This is important because we do not want to do this
-            // processing in this callback method (which blocks the ZK watcher and conflicts
-            // with the ZkLock use)
-            try {
-                for (IndexDefinition index : indexes) {
-                    eventQueue.put(new IndexerModelEvent(IndexerModelEventType.INDEX_UPDATED, index.getName()));
-                }
-            } catch (InterruptedException e) {
-                log.info("Interrupted during initialisation following election as master.");
-                return;
-            }
-
-            jobStatusWatcherThread = new Thread(jobStatusWatcher);
-            jobStatusWatcherThread.start();
+            log.info("Got notified that I am elected as the indexer master.");
+            masterProvisioner.setRequiredState(MasterState.I_AM_MASTER);
         }
 
         public void noLongerElected() {
-            log.info("I am no longer the IndexerMaster.");
+            log.info("Got notified that I am no longer the indexer master.");
+            masterProvisioner.setRequiredState(MasterState.I_AM_NOT_MASTER);
+        }
+    }
 
-            indexerModel.unregisterListener(listener);
+    /**
+     * Activates or disactivates this node as master. This is done in a separate thread, rather than in the
+     * LeaderElectionCallback, in order not to block delivery of messages to other ZK watchers. A simple solution
+     * to this would be to simply launch a thread in the LeaderElectionCallback methods. But then the handling
+     * of the elected() and noLongerElected() could run in parallel, which is not allowed. An improvement would
+     * be to put their processing in a queue. But when we have a lot of disconnected/connected events in a short
+     * time frame, faster than we can process them, it would not make sense to process them one by one, we are
+     * only interested in bringing the master to latest requested state.
+     *
+     * Therefore, the solution used here just keeps a 'requiredState' variable and notifies a monitor when
+     * it is changed.
+     */
+    private class MasterProvisioner implements Runnable {
+        private volatile MasterState currentState = MasterState.I_AM_NOT_MASTER;
+        private volatile MasterState requiredState = MasterState.I_AM_NOT_MASTER;
+        private final Object stateMonitor = new Object();
+        private Thread thread;
 
-            eventQueue.clear();
-            if (eventWorkerThread != null) {
-                eventWorkerThread.interrupt();
-                eventWorkerThread = null;
+        public synchronized void shutdown() throws InterruptedException {
+            if (!thread.isAlive()) {
+                return;
             }
 
-            if (jobStatusWatcherThread != null) {
-                jobStatusWatcherThread.interrupt();
-                jobStatusWatcherThread = null;
-                // We don't wait for it to finish, since otherwise we will block further dispatching
-                // of ZK events.
+            thread.interrupt();
+            thread.join();
+            thread = null;
+        }
+
+        public synchronized void start() {
+            thread = new Thread(this, "IndexerMasterProvisioner");
+            thread.start();
+        }
+
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    if (currentState != requiredState) {
+                        if (requiredState == MasterState.I_AM_MASTER) {
+                            log.info("Starting up as indexer master.");
+
+                            // Start these processes, but it is not until we have registered our model listener
+                            // that these will receive work.
+                            eventWorker.start();
+                            jobStatusWatcher.start();
+
+                            initMaxConsumerId();
+
+                            Collection<IndexDefinition> indexes = indexerModel.getIndexes(listener);
+
+                            // Rather than performing any work that might to be done for the indexes here,
+                            // we push out fake events. This way there's only one place where these actions
+                            // need to be performed.
+                            for (IndexDefinition index : indexes) {
+                                eventWorker.putEvent(new IndexerModelEvent(IndexerModelEventType.INDEX_UPDATED, index.getName()));
+                            }
+
+                            currentState = MasterState.I_AM_MASTER;
+                            log.info("Startup as indexer master successful.");
+                        } else if (requiredState == MasterState.I_AM_NOT_MASTER) {
+                            log.info("Shutting down as indexer master.");
+
+                            indexerModel.unregisterListener(listener);
+
+                            // Argument false for shutdown: we do not interrupt the event worker thread: if there
+                            // was something running there that is blocked until the ZK connection comes back up
+                            // we want it to finish (e.g. a lock taken that should be released again)
+                            eventWorker.shutdown(false);
+                            jobStatusWatcher.shutdown(false);
+
+                            currentState = MasterState.I_AM_NOT_MASTER;
+                            log.info("Shutdown as indexer master successful.");
+                        }
+                    }
+
+                    synchronized (stateMonitor) {
+                        if (currentState == requiredState) {
+                            stateMonitor.wait();
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    // we stop working
+                    return;
+                } catch (Throwable t) {
+                    log.error("Error in indexer master provisioner.", t);
+                }
+            }
+        }
+
+        public void setRequiredState(MasterState state) {
+            synchronized (stateMonitor) {
+                this.requiredState = state;
+                stateMonitor.notifyAll();
             }
         }
     }
@@ -300,7 +360,7 @@ public class IndexerMaster {
             try {
                 // Let the events be processed by another thread. Especially important since
                 // we take ZkLock's in the event handlers (see ZkLock javadoc).
-                eventQueue.put(event);
+                eventWorker.putEvent(event);
             } catch (InterruptedException e) {
                 log.info("IndexerMaster.IndexerModelListener interrupted.");
             }
@@ -308,19 +368,67 @@ public class IndexerMaster {
     }
 
     private class EventWorker implements Runnable {
+
+        private BlockingQueue<IndexerModelEvent> eventQueue = new LinkedBlockingQueue<IndexerModelEvent>();
+
+        private boolean stop;
+
+        private Thread thread;
+
+        public synchronized void shutdown(boolean interrupt) throws InterruptedException {
+            stop = true;
+            eventQueue.clear();
+
+            if (!thread.isAlive()) {
+                return;
+            }
+
+            if (interrupt)
+                thread.interrupt();
+            thread.join();
+            thread = null;
+        }
+
+        public synchronized void start() throws InterruptedException {
+            if (thread != null) {
+                log.warn("EventWorker start was requested, but old thread was still there. Stopping it now.");
+                thread.interrupt();
+                thread.join();
+            }
+            eventQueue.clear();
+            stop = false;
+            thread = new Thread(this, "IndexerMasterEventWorker");
+            thread.start();
+        }
+
+        public void putEvent(IndexerModelEvent event) throws InterruptedException {
+            if (stop) {
+                throw new RuntimeException("This EventWorker is stopped, no events should be added.");
+            }
+            eventQueue.put(event);
+        }
+
         public void run() {
-            while (true) {
+            long startedAt = System.currentTimeMillis();
+
+            while (!stop && !Thread.interrupted()) {
                 try {
-                    if (Thread.interrupted()) {
+                    IndexerModelEvent event = null;
+                    while (!stop && event == null) {
+                        event = eventQueue.poll(1000, TimeUnit.MILLISECONDS);
+                    }
+
+                    if (stop || event == null || Thread.interrupted()) {
                         return;
                     }
 
+                    // Warn if the queue is getting large, but do not do this just after we started, because
+                    // on initial startup a fake update event is added for every defined index, which would lead
+                    // to this message always being printed on startup when more than 10 indexes are defined.
                     int queueSize = eventQueue.size();
-                    if (queueSize >= 10) {
+                    if (queueSize >= 10 && (System.currentTimeMillis() - startedAt > 5000)) {
                         log.warn("EventWorker queue getting large, size = " + queueSize);
                     }
-                    
-                    IndexerModelEvent event = eventQueue.take();
 
                     if (event.getType() == INDEX_ADDED || event.getType() == INDEX_UPDATED) {
                         IndexDefinition index = null;
@@ -354,7 +462,6 @@ public class IndexerMaster {
                     }
 
                 } catch (InterruptedException e) {
-                    log.info("IndexerMaster.EventWorker interrupted.");
                     return;
                 } catch (Throwable t) {
                     log.error("Error processing indexer model event in IndexerMaster.", t);
@@ -369,21 +476,47 @@ public class IndexerMaster {
          */
         private Map<String, String> runningJobs = new ConcurrentHashMap<String, String>(10, 0.75f, 2);
 
-        public JobStatusWatcher() throws IOException {
+        private boolean stop;
+
+        private Thread thread;
+
+        public JobStatusWatcher() {
         }
 
-        public void reset() {
+        public synchronized void shutdown(boolean interrupt) throws InterruptedException {
+            stop = true;
             runningJobs.clear();
+
+            if (!thread.isAlive()) {
+                return;
+            }
+
+            if (interrupt)
+                thread.interrupt();
+            thread.join();
+            thread = null;
+        }
+
+        public synchronized void start() throws InterruptedException {
+            if (thread != null) {
+                log.warn("JobStatusWatcher start was requested, but old thread was still there. Stopping it now.");
+                thread.interrupt();
+                thread.join();
+            }
+            runningJobs.clear();
+            stop = false;
+            thread = new Thread(this, "IndexerBatchJobWatcher");
+            thread.start();
         }
 
         public void run() {
             JobClient jobClient = null;
-            while (true) {
+            while (!stop && !Thread.interrupted()) {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(1000);
 
                     for (Map.Entry<String, String> jobEntry : runningJobs.entrySet()) {
-                        if (Thread.interrupted()) {
+                        if (stop || Thread.interrupted()) {
                             return;
                         }
 
@@ -412,6 +545,9 @@ public class IndexerMaster {
         }
 
         public synchronized void assureWatching(String indexName, String jobName) {
+            if (stop) {
+                throw new RuntimeException("Job Status Watcher is stopped, should not be asked to monitor jobs anymore.");
+            }
             runningJobs.put(indexName, jobName);
         }
 

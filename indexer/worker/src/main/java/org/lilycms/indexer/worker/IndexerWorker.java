@@ -72,7 +72,7 @@ public class IndexerWorker {
         connectionManager.getParams().setMaxTotalConnections(50);
       	httpClient = new HttpClient(connectionManager);
 
-        eventWorkerThread = new Thread(new EventWorker());
+        eventWorkerThread = new Thread(new EventWorker(), "IndexerWorkerEventWorker");
         eventWorkerThread.start();
 
         synchronized (indexUpdatersLock) {
