@@ -76,6 +76,8 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
             throw new IOException("Failed to connect with Zookeeper within timeout " + sessionTimeout +
                     ", connection string: " + connectString);
         }
+
+        log.info("ZooKeeper session ID is 0x" + Long.toHexString(zk.getSessionId()));
     }
 
     @PreDestroy
