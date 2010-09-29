@@ -39,16 +39,16 @@ import org.lilycms.testfw.TestHelper;
 
 public class AvroRepositoryTest extends AbstractRepositoryTest {
     private static HBaseRepository serverRepository;
-
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
-        TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
+        configuration = HBASE_PROXY.getConf();
+        TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
+        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , configuration);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
@@ -61,12 +61,17 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
+        
         setupTypes();
+        setupMessageQueue();
+        setupMessageQueueProcessor();
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        messageQueueProcessor.stop();
         serverRepository.stop();
+        rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
     }
 }

@@ -22,12 +22,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.zookeeper.KeeperException;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
@@ -48,13 +51,24 @@ import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
+import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.IdGeneratorImpl;
+import org.lilycms.repository.impl.MessageQueueFeeder;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogProcessorImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.repo.VersionTag;
 
 public abstract class AbstractRepositoryTest {
 
     protected static final HBaseProxy HBASE_PROXY = new HBaseProxy();
+    protected static RowLog messageQueue;
     protected static IdGenerator idGenerator = new IdGeneratorImpl();
     protected static TypeManager typeManager;
     protected static Repository repository;
@@ -70,6 +84,9 @@ public abstract class AbstractRepositoryTest {
     private static RecordType recordType1B;
     private static RecordType recordType2;
     private static RecordType recordType3;
+    protected static RowLogConfigurationManagerImpl rowLogConfigurationManager;
+    protected static RowLogProcessorImpl messageQueueProcessor;
+    protected static Configuration configuration;
 
     @Before
     public void setUp() throws Exception {
@@ -130,6 +147,23 @@ public abstract class AbstractRepositoryTest {
         recordType3 = typeManager.updateRecordType(recordType3);
         recordType3.addFieldTypeEntry(typeManager.newFieldTypeEntry(fieldType6.getId(), false));
         recordType3 = typeManager.updateRecordType(recordType3);
+    }
+
+    protected static void setupMessageQueue() throws RowLogException, KeeperException,
+            InterruptedException, IOException {
+                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+                rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3);
+                MessageQueueFeeder.configuration = configuration;
+                ListenerClassMapping listenerClassMapping = ListenerClassMapping.INSTANCE;
+                listenerClassMapping.put("MQFeeder", MessageQueueFeeder.class.getName());
+                messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
+                        HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration);
+                messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
+            }
+
+    protected static void setupMessageQueueProcessor() throws RowLogException {
+        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, configuration);
+        messageQueueProcessor.start();
     }
 
     @Test

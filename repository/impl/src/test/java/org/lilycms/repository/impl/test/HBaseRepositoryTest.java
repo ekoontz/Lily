@@ -18,7 +18,6 @@ package org.lilycms.repository.impl.test;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,26 +27,15 @@ import org.lilycms.repository.api.Record;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
-import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
-import org.lilycms.repository.impl.MessageQueueFeeder;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
-import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.rowlog.impl.ListenerClassMapping;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.rowlog.impl.RowLogImpl;
-import org.lilycms.rowlog.impl.RowLogProcessorImpl;
-import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.TestHelper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
 
     private static BlobStoreAccessFactory blobStoreAccessFactory;
-    private static Configuration configuration;
-    private static RowLogConfigurationManagerImpl rowLogConfigurationManager;
-    private static RowLogProcessorImpl messageQueueProcessor;
-
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
@@ -56,19 +44,11 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         typeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-        rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3);
-        MessageQueueFeeder.configuration = configuration;
-        ListenerClassMapping listenerClassMapping = ListenerClassMapping.INSTANCE;
-        listenerClassMapping.put("MQFeeder", MessageQueueFeeder.class.getName());
+
         setupTypes();
-        RowLog messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration);
-        messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
-        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, configuration);
-        messageQueueProcessor.start();
+        setupMessageQueue();
+        setupMessageQueueProcessor();
     }
 
     @AfterClass
