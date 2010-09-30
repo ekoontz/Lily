@@ -37,7 +37,7 @@ public abstract class AbstractRowLogEndToEndTest {
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
         zkConnectString = HBASE_PROXY.getZkConnectString();
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
-                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, HBASE_PROXY.getConf());
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, HBASE_PROXY.getConf());
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
         processor = new RowLogProcessorImpl(rowLog, HBASE_PROXY.getConf());
@@ -58,6 +58,7 @@ public abstract class AbstractRowLogEndToEndTest {
         processor.start();
         ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
         processor.stop();
+        ValidationMessageConsumer.validate();
     }
 
     @Test
@@ -67,6 +68,7 @@ public abstract class AbstractRowLogEndToEndTest {
         assertNotNull(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()));
         processor.stop();
         Assert.assertTrue(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
+        ValidationMessageConsumer.validate();
     }
 
     @Test
@@ -77,6 +79,7 @@ public abstract class AbstractRowLogEndToEndTest {
         ValidationMessageConsumer.expectMessages(1);
         ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
         processor.stop();
+        ValidationMessageConsumer.validate();
     }
 
     @Test
@@ -91,6 +94,7 @@ public abstract class AbstractRowLogEndToEndTest {
         processor.start();
         ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
         processor.stop();
+        ValidationMessageConsumer.validate();
     }
 
     @Test
@@ -108,6 +112,7 @@ public abstract class AbstractRowLogEndToEndTest {
         processor.start();
         ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
         processor.stop();
+        ValidationMessageConsumer.validate();
     }
 
     @Test
@@ -120,5 +125,6 @@ public abstract class AbstractRowLogEndToEndTest {
         ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
         processor.stop();
         Assert.assertTrue(rowLog.isProblematic(message, subscriptionId));
+        ValidationMessageConsumer.validate();
     }
 }

@@ -60,14 +60,14 @@ public class RowLogConfigurationManagerTest {
         Assert.assertTrue(callBack.subscriptions.isEmpty());
         Assert.assertTrue(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLogId, callBack).isEmpty());
         // Add subscription
-        SubscriptionContext expectedSubscriptionContext = new SubscriptionContext(subscriptionId1, Type.VM, 3);
+        SubscriptionContext expectedSubscriptionContext = new SubscriptionContext(subscriptionId1, Type.VM, 3, 1);
         callBack.expect(Arrays.asList(new SubscriptionContext[]{expectedSubscriptionContext}));
-        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3);
+        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.validate();
 
-        SubscriptionContext expectedSubscriptionContext2 = new SubscriptionContext(subscriptionId2, Type.Netty, 5);
+        SubscriptionContext expectedSubscriptionContext2 = new SubscriptionContext(subscriptionId2, Type.Netty, 5, 2);
         callBack.expect(Arrays.asList(new SubscriptionContext[]{expectedSubscriptionContext, expectedSubscriptionContext2}));
-        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5);
+        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.validate();
 
         // Remove subscription
@@ -117,7 +117,7 @@ public class RowLogConfigurationManagerTest {
         Assert.assertTrue(rowLogConfigurationManager.getAndMonitorListeners(rowLogId, subscriptionId1, callBack).isEmpty());
 
         // Add subscription
-        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3);
+        rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.expect(Collections.EMPTY_LIST);
         callBack.validate();
         // Add listener

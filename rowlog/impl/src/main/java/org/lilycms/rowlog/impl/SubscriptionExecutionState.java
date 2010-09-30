@@ -42,37 +42,46 @@ public class SubscriptionExecutionState {
         return messageId;
     }
     
-    public void setState(String subscription, boolean state) {
-        states.put(subscription, state);
+    public void setState(String subscriptionId, boolean state) {
+        states.put(subscriptionId, state);
     }
     
-    public boolean getState(String subscription) {
-        Boolean state = states.get(subscription);
+    public boolean getState(String subscriptionId) {
+        Boolean state = states.get(subscriptionId);
         if (state == null) return true;
         return state;
     }
     
-    public void incTryCount(String subscription) {
-        Integer count = tryCounts.get(subscription);
-        
-        if (count == null)
-            tryCounts.put(subscription, 0);
-        else 
-            tryCounts.put(subscription, ++count);
+    public void incTryCount(String subscriptionId) {
+        Integer count = tryCounts.get(subscriptionId);
+        if (count == null) {
+            tryCounts.put(subscriptionId, 0);
+        } else {
+            tryCounts.put(subscriptionId, count+1);
+        }
     }
     
-    public int getTryCount(String subscription) {
-        Integer count = tryCounts.get(subscription);
+    public void decTryCount(String subscriptionId) {
+        Integer count = tryCounts.get(subscriptionId);
+        if (count == null || count <= 0) {
+            tryCounts.put(subscriptionId, 0);
+        } else {
+            tryCounts.put(subscriptionId, count-1);
+        }
+    }
+    
+    public int getTryCount(String subscriptionId) {
+        Integer count = tryCounts.get(subscriptionId);
         if (count == null) return 0;
         return count;
     }
     
-    public void setLock(String subscription, byte[] lock) {
-        locks.put(subscription, lock);
+    public void setLock(String subscriptionId, byte[] lock) {
+        locks.put(subscriptionId, lock);
     }
     
-    public byte[] getLock(String subscription) {
-        return locks.get(subscription);
+    public byte[] getLock(String subscriptionId) {
+        return locks.get(subscriptionId);
     }
 
     public byte[] toBytes() {
@@ -159,4 +168,6 @@ public class SubscriptionExecutionState {
         }
         return true;
     }
+
+    
 }

@@ -58,6 +58,7 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
     private final String id;
     private RowLogProcessorNotifier processorNotifier = null;
     private Log log = LogFactory.getLog(getClass());
+    private final boolean respectOrder;
     
     /**
      * The RowLog should be instantiated with information about the table that contains the rows the messages are 
@@ -67,14 +68,17 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
      * @param payloadColumnFamily the column family in which the payload of the messages can be stored
      * @param executionStateColumnFamily the column family in which the execution state of the messages can be stored
      * @param lockTimeout the timeout to be used for the locks that are put on the messages
+     * @param respectOrder true if the order of the subscriptions needs to be followed
+     * @param configuration hadoop configuration
      * @throws RowLogException 
      */
-    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, Configuration configuration) throws RowLogException {
+    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, boolean respectOrder, Configuration configuration) throws RowLogException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
         this.executionStateColumnFamily = executionStateColumnFamily;
         this.lockTimeout = lockTimeout;
+        this.respectOrder = respectOrder;
         this.processorNotifier = new RowLogProcessorNotifier(configuration);
         RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
         try {
@@ -211,14 +215,19 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
 
     private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException {
         boolean allDone = true;
-        for (String subscriptionId : getSubscriptionIds()) {
+        List<SubscriptionContext> subscriptionsSnapshot = getSubscriptions();
+        if (respectOrder) {
+            Collections.sort(subscriptionsSnapshot);
+        }
+        for (SubscriptionContext subscription : getSubscriptions()) {
+            String subscriptionId = subscription.getId();
             if (!executionState.getState(subscriptionId)) {
                 boolean done = false;
+                executionState.incTryCount(subscriptionId);
                 try {
-                    executionState.incTryCount(subscriptionId);
-                    RowLogMessageListener consumer = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
-                    if (consumer != null)
-                        done = consumer.processMessage(message);
+                    RowLogMessageListener listener = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
+                    if (listener != null) 
+                        done = listener.processMessage(message);
                 } catch (Throwable t) {
                     executionState.setState(subscriptionId, false);
                     return false;
@@ -226,7 +235,10 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
                 executionState.setState(subscriptionId, done);
                 if (!done) {
                     allDone = false;
-                    checkAndMarkProblematic(message, subscriptionId, executionState);
+                    checkAndMarkProblematic(message, subscription, executionState);
+                    if (respectOrder) {
+                        break;
+                    }
                 } else {
                     shard.removeMessage(message, subscriptionId);
                 }
@@ -235,14 +247,10 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
         return allDone;
     }
     
-    public List<String> getSubscriptionIds() {
-        List<String> subscriptionIds = new ArrayList<String>();
+    public List<SubscriptionContext> getSubscriptions() {
         synchronized (subscriptions) {
-            for (String subscriptionId: subscriptions.keySet()) {
-                subscriptionIds.add(subscriptionId);
-            }
+            return new ArrayList<SubscriptionContext>(subscriptions.values());
         }
-        return subscriptionIds;
     }
     
     public byte[] lockMessage(RowLogMessage message, String subscriptionId) throws RowLogException {
@@ -266,6 +274,7 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
             SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
             byte[] previousLock = executionState.getLock(subscriptionId);
+            executionState.incTryCount(subscriptionId);
             long now = System.currentTimeMillis();
             if (previousLock == null) {
                 return putLock(message, subscriptionId, rowKey, qualifier, previousValue, executionState, now, count);
@@ -286,7 +295,6 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
             SubscriptionExecutionState executionState, long now, int count) throws RowLogException {
         byte[] lock = Bytes.toBytes(now);
         executionState.setLock(subscriptionId, lock);
-        executionState.incTryCount(subscriptionId);
         Put put = new Put(rowKey);
         put.add(executionStateColumnFamily, qualifier, executionState.toBytes());
         try {
@@ -300,7 +308,7 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
         }
     }
     
-    public boolean unlockMessage(RowLogMessage message, String subscriptionId, byte[] lock) throws RowLogException {
+    public boolean unlockMessage(RowLogMessage message, String subscriptionId, boolean realTry, byte[] lock) throws RowLogException {
         byte[] rowKey = message.getRowKey();
         long seqnr = message.getSeqNr();
         byte[] qualifier = Bytes.toBytes(seqnr);
@@ -318,7 +326,11 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
             if (!Bytes.equals(lock, previousLock)) return false; // The lock was lost  
             
             executionState.setLock(subscriptionId, null);
-            checkAndMarkProblematic(message, subscriptionId, executionState);
+            if (realTry) {
+                checkAndMarkProblematic(message, subscriptions.get(subscriptionId), executionState);
+            } else { 
+                executionState.decTryCount(subscriptionId);
+            }
             Put put = new Put(rowKey);
             put.add(executionStateColumnFamily, qualifier, executionState.toBytes());
             return rowTable.checkAndPut(rowKey, executionStateColumnFamily, qualifier, previousValue, put);
@@ -327,12 +339,24 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
         }
     }
 
-    private void checkAndMarkProblematic(RowLogMessage message, String subscriptionId,
+    private void checkAndMarkProblematic(RowLogMessage message, SubscriptionContext subscription,
             SubscriptionExecutionState executionState) throws RowLogException {
-        int maxTries = subscriptions.get(subscriptionId).getMaxTries();
-        if (executionState.getTryCount(subscriptionId) >= maxTries) {
-            getShard().markProblematic(message, subscriptionId);
-            log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, and it has been marked as problematic", subscriptionId, message.getId(), maxTries));
+        int maxTries = subscription.getMaxTries();
+        RowLogShard rowLogShard = getShard();
+        if (executionState.getTryCount(subscription.getId()) >= maxTries) {
+            if (respectOrder) {
+                List<SubscriptionContext> subscriptionContexts = getSubscriptions();
+                Collections.sort(subscriptionContexts);
+                for (SubscriptionContext subscriptionContext : subscriptionContexts) {
+                    if (subscriptionContext.getOrderNr() >= subscription.getOrderNr()) {
+                        rowLogShard.markProblematic(message, subscriptionContext.getId());
+                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, and it has been marked as problematic", subscriptionContext.getId(), message.getId(), maxTries));
+                    }
+                }
+            } else {
+                getShard().markProblematic(message, subscription.getId());
+            }
+            log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, and it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
         }
     }
     
@@ -379,7 +403,6 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
                     return false; // Not owning the lock
                 }
                 executionState.setState(subscriptionId, true);
-                executionState.incTryCount(subscriptionId);
                 executionState.setLock(subscriptionId, null);
                 if (executionState.allDone()) {
                     removeExecutionStateAndPayload(rowKey, qualifier, previousValue);
@@ -397,23 +420,48 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
     }
     
     public boolean isMessageDone(RowLogMessage message, String subscriptionId) throws RowLogException {
+        SubscriptionExecutionState executionState = getExecutionState(message);
+        if (executionState == null)
+            return true;
+        return executionState.getState(subscriptionId);
+    }
+
+    private SubscriptionExecutionState getExecutionState(RowLogMessage message) throws RowLogException {
         byte[] rowKey = message.getRowKey();
         long seqnr = message.getSeqNr();
         byte[] qualifier = Bytes.toBytes(seqnr);
         Get get = new Get(rowKey);
         get.addColumn(executionStateColumnFamily, qualifier);
+        SubscriptionExecutionState executionState = null;
         try {
             Result result = rowTable.get(get);
-            if (result.isEmpty())
-                return true;
             byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
-            return executionState.getState(subscriptionId);
+            if (previousValue != null)
+                executionState = SubscriptionExecutionState.fromBytes(previousValue);
         } catch (IOException e) {
             throw new RowLogException("Failed to check if message is done", e);
         }
+        return executionState;
     }
 
+    public boolean isMessageAvailable(RowLogMessage message, String subscriptionId) throws RowLogException {
+        SubscriptionExecutionState executionState = getExecutionState(message);
+        if (executionState == null)
+            return false;
+        if (respectOrder) {
+            List<SubscriptionContext> subscriptionsContexts = getSubscriptions();
+            Collections.sort(subscriptionsContexts);
+            for (SubscriptionContext subscriptionContext : subscriptionsContexts) {
+                if (subscriptionId.equals(subscriptionContext.getId()))
+                    break;
+                if (!executionState.getState(subscriptionContext.getId())) {
+                    return false; // There is a previous subscription to be processed first
+                }
+            }
+        }
+        return !executionState.getState(subscriptionId);
+    }
+    
     private boolean updateExecutionState(byte[] rowKey, byte[] qualifier, SubscriptionExecutionState executionState, byte[] previousValue) throws IOException {
         Put put = new Put(rowKey);
         put.add(executionStateColumnFamily, qualifier, executionState.toBytes());

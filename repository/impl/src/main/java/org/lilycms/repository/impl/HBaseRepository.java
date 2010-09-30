@@ -155,7 +155,7 @@ public class HBaseRepository implements Repository {
     }
 
     private void initializeWal(Configuration configuration) throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, configuration);
+        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);

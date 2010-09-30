@@ -61,8 +61,9 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             for (String subscriptionId : subscriptionIds) {
                 byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, subscriptionId), false, new Stat());
                 int maxTries = Bytes.toInt(data);
-                Type type = Type.valueOf(Bytes.toString(data, Bytes.SIZEOF_INT, data.length - Bytes.SIZEOF_INT));
-                subscriptions.add(new SubscriptionContext(subscriptionId, type, maxTries));
+                int orderNr = Bytes.toInt(data, Bytes.SIZEOF_INT);
+                Type type = Type.valueOf(Bytes.toString(data, Bytes.SIZEOF_INT * 2, data.length - (Bytes.SIZEOF_INT*2)));
+                subscriptions.add(new SubscriptionContext(subscriptionId, type, maxTries, orderNr));
             }
         } catch (NoNodeException exception) {
             zooKeeper.exists(subscriptionsPath(rowLogId), new SubscriptionsWatcher(rowLogId, callBack));
@@ -73,9 +74,10 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         return subscriptions;
     }
     
-    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type, int maxTries) throws KeeperException, InterruptedException {
+    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type, int maxTries, int orderNr) throws KeeperException, InterruptedException {
         String path = subscriptionPath(rowLogId, subscriptionId);
         byte[] data = Bytes.toBytes(maxTries);
+        data = Bytes.add(data, Bytes.toBytes(orderNr));
         data = Bytes.add(data, Bytes.toBytes(type.name()));
         if (zooKeeper.exists(path, false) == null) { // TODO currently not possible to update a subscription or add it twice
             ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);

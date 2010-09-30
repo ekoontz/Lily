@@ -11,10 +11,10 @@ public class LocalListenersSubscriptionHandler extends AbstractListenersSubscrip
     }
     
     protected boolean processMessage(String listenerId, RowLogMessage message) {
-        RowLogMessageListener consumer = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
-        if (consumer == null)
+        RowLogMessageListener listener = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
+        if (listener == null)
             return false;
-        return consumer.processMessage(message);
+        return listener.processMessage(message);
     }
     
     

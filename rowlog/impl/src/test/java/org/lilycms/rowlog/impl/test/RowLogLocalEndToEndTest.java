@@ -17,6 +17,7 @@ package org.lilycms.rowlog.impl.test;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
@@ -32,7 +33,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         try {
             rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
             ListenerClassMapping.INSTANCE.put(subscriptionId , ValidationMessageConsumer.class.getName());
-            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3);
+            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3, 1);
             rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,7 +44,6 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     @After
     public void tearDown() throws Exception {
         try {
-            ValidationMessageConsumer.validate();
             rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
             rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
             rowLogConfigurationManager.stop();
@@ -54,10 +54,11 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     }
 
     @Test
-    public void testMultipleConsumers() throws Exception {
+    public void testMultipleSubscriptions() throws Exception {
+        ValidationMessageConsumer2.reset();
         String subscriptionId2 = "Subscription2";
         ListenerClassMapping.INSTANCE.put(subscriptionId2  , ValidationMessageConsumer2.class.getName());
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 2);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         ValidationMessageConsumer.expectMessages(10);
         ValidationMessageConsumer2.expectMessages(10);
@@ -76,6 +77,35 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
         processor.stop();
         ValidationMessageConsumer2.validate();
+        rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
+        ValidationMessageConsumer.validate();
+    }
+    
+    @Test
+    public void testMultipleSubscriptionsOrder() throws Exception {
+        ValidationMessageConsumer2.reset();
+        String subscriptionId2 = "Subscription2";
+        ListenerClassMapping.INSTANCE.put(subscriptionId2  , ValidationMessageConsumer2.class.getName());
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 0);
+        rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
+        int rownr = 222;
+        byte[] data = Bytes.toBytes(222);
+        data = Bytes.add(data, Bytes.toBytes(0));
+        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
+        ValidationMessageConsumer.expectMessages(1);
+        ValidationMessageConsumer.expectMessage(message);
+        ValidationMessageConsumer2.expectMessage(message, 3);
+        ValidationMessageConsumer2.expectMessages(3);
+        ValidationMessageConsumer2.problematicMessages.add(message);
+
+        processor.start();
+        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
+        processor.stop();
+        ValidationMessageConsumer2.validate();
+     // The message was not processed by subscription1 (last in order) and was marked problematic 
+     // since subscription2 (first in order) became problematic
+        Assert.assertTrue(rowLog.isProblematic(message, subscriptionId)); 
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
     }

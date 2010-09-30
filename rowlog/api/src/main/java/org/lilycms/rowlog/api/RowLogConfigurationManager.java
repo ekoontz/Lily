@@ -5,7 +5,7 @@ import org.lilycms.rowlog.api.SubscriptionContext.Type;
 
 public interface RowLogConfigurationManager {
 
-    void addSubscription(String rowLogId, String subscriptionId, Type type, int maxTries) throws KeeperException,
+    void addSubscription(String rowLogId, String subscriptionId, Type type, int maxTries, int orderNr) throws KeeperException,
             InterruptedException;
 
     void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;

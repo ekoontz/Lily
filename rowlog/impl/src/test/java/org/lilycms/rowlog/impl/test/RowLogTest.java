@@ -63,7 +63,7 @@ public class RowLogTest {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-        configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3);
+        configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
         configurationManager.stop();
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
@@ -76,7 +76,7 @@ public class RowLogTest {
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, HBASE_PROXY.getConf());
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, HBASE_PROXY.getConf());
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -87,18 +87,18 @@ public class RowLogTest {
         control.reset();
     }
     
-//    @Test
-//    public void testPutMessage() throws Exception {
-//        shard.putMessage(isA(RowLogMessage.class));
-//        control.replay();
-//        rowLog.registerShard(shard);
-//        byte[] rowKey = Bytes.toBytes("row1");
-//        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
-//        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
-//        assertEquals(1, messages.size());
-//        assertEquals(message, messages.get(0));
-//        control.verify();
-//    }
+    @Test
+    public void testPutMessage() throws Exception {
+        shard.putMessage(isA(RowLogMessage.class));
+        control.replay();
+        rowLog.registerShard(shard);
+        byte[] rowKey = Bytes.toBytes("row1");
+        RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
+        List<RowLogMessage> messages = rowLog.getMessages(rowKey);
+        assertEquals(1, messages.size());
+        assertEquals(message, messages.get(0));
+        control.verify();
+    }
     
     @Test
     public void testMultipleMessages() throws Exception {
@@ -182,18 +182,18 @@ public class RowLogTest {
         
         byte[] lock = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock);
-        assertTrue(rowLog.unlockMessage(message, subscriptionId1, lock));
+        assertTrue(rowLog.unlockMessage(message, subscriptionId1, true, lock));
         assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
         byte[] lock2 = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock2);
         control.verify();
         //Cleanup 
-        rowLog.unlockMessage(message, subscriptionId1, lock2);
+        rowLog.unlockMessage(message, subscriptionId1, true, lock2);
     }
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, HBASE_PROXY.getConf());
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, HBASE_PROXY.getConf());
         
         shard.putMessage(isA(RowLogMessage.class));
         
@@ -208,10 +208,10 @@ public class RowLogTest {
         byte[] lock2 = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock2);
         
-        assertFalse(rowLog.unlockMessage(message, subscriptionId1, lock));
+        assertFalse(rowLog.unlockMessage(message, subscriptionId1, true, lock));
         control.verify();
         //Cleanup
-        rowLog.unlockMessage(message, subscriptionId1, lock2);
+        rowLog.unlockMessage(message, subscriptionId1, true, lock2);
     }
     
     @Test
@@ -223,7 +223,7 @@ public class RowLogTest {
         
         control.replay();
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-        configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3);
+        configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3, 2);
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
             if (rowLog.getSubscriptions().size() > 1)
@@ -237,7 +237,7 @@ public class RowLogTest {
         byte[] lock = rowLog.lockMessage(message, subscriptionId1);
         assertNotNull(lock);
         assertFalse(rowLog.isMessageLocked(message, subscriptionId2));
-        assertTrue(rowLog.unlockMessage(message, subscriptionId1, lock));
+        assertTrue(rowLog.unlockMessage(message, subscriptionId1, true, lock));
         assertFalse(rowLog.isMessageLocked(message, subscriptionId1));
         
         byte[] lock2 = rowLog.lockMessage(message, subscriptionId2);
@@ -247,7 +247,7 @@ public class RowLogTest {
         
         control.verify();
         //Cleanup 
-        rowLog.unlockMessage(message, subscriptionId2, lock2);
+        rowLog.unlockMessage(message, subscriptionId2, true, lock2);
         configurationManager.removeSubscription(RowLogId, subscriptionId2);
         configurationManager.stop();
     }
@@ -263,7 +263,7 @@ public class RowLogTest {
         
         control.replay();
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-        configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5);
+        configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5, 3);
         
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {

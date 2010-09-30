@@ -57,7 +57,7 @@ public class Example {
         HTable rowTable = new HTable(configuration, ROW_TABLE);
         
         // Create a RowLog instance
-        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, configuration);
+        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, configuration);
         
         // Create a shard and register it with the rowlog
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
@@ -68,7 +68,7 @@ public class Example {
         
         // Add a subscription to the configuration manager for the example Rowlog
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(configuration);
-        configurationManager.addSubscription("Example", "FooBar", Type.VM, 3);
+        configurationManager.addSubscription("Example", "FooBar", Type.VM, 3, 0);
         // The WAL use case 
         
         // Update a row with some user data

@@ -152,12 +152,12 @@ public abstract class AbstractRepositoryTest {
     protected static void setupMessageQueue() throws RowLogException, KeeperException,
             InterruptedException, IOException {
                 rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
-                rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3);
+                rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
                 MessageQueueFeeder.configuration = configuration;
                 ListenerClassMapping listenerClassMapping = ListenerClassMapping.INSTANCE;
                 listenerClassMapping.put("MQFeeder", MessageQueueFeeder.class.getName());
                 messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                        HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration);
+                        HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration);
                 messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
             }
 

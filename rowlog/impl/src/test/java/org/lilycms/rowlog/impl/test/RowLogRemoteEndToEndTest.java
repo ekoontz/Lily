@@ -34,14 +34,13 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         ValidationMessageConsumer.reset();
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
         subscriptionId = "Test";
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3, 1);
         remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, new ValidationMessageConsumer(), HBASE_PROXY.getConf());
         remoteListener.start();
     }
 
     @After
     public void tearDown() throws Exception {
-        ValidationMessageConsumer.validate();
         remoteListener.interrupt();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
         rowLogConfigurationManager.stop();
@@ -50,7 +49,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     @Test
     public void testMultipleConsumers() throws Exception {
         ValidationMessageConsumer2.reset();
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3, 2);
         RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", new ValidationMessageConsumer2(), HBASE_PROXY.getConf());
         remoteListener2.start();
         ValidationMessageConsumer.expectMessages(10);
@@ -72,5 +71,6 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         ValidationMessageConsumer2.validate();
         remoteListener2.interrupt();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), "Test2");
+        ValidationMessageConsumer.validate();
     }
 }

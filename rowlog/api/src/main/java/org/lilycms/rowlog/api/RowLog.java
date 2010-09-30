@@ -15,7 +15,6 @@
  */
 package org.lilycms.rowlog.api;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.hbase.client.Put;
@@ -139,7 +138,7 @@ public interface RowLog {
      * given lock does not match the lock that is currently on the message 
      * @throws RowLogException
      */
-    boolean unlockMessage(RowLogMessage message, String subscriptionId, byte[] lock) throws RowLogException;
+    boolean unlockMessage(RowLogMessage message, String subscriptionId, boolean realTry, byte[] lock) throws RowLogException;
     
     /**
      * Checks if a {@link RowLogMessage} is locked for a certain subscription
@@ -193,7 +192,9 @@ public interface RowLog {
     
     boolean isProblematic(RowLogMessage message, String subscriptionId) throws RowLogException;
     
-    Collection<String> getSubscriptionIds();
+    List<SubscriptionContext> getSubscriptions();
 
     List<RowLogShard> getShards();
+
+    boolean isMessageAvailable(RowLogMessage message, String subscriptionId) throws RowLogException;
 }

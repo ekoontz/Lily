@@ -43,19 +43,16 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                     try {
                         byte[] lock = rowLog.lockMessage(message, subscriptionId);
                         if (lock != null) {
-                            if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
-                                if (processMessage(context, message)) {
-                                    if(rowLog.messageDone(message, subscriptionId, lock)) {
-                                    }
-                                } else {
-                                    rowLog.unlockMessage(message, subscriptionId, lock);
-                                }
+                            if (!rowLog.isMessageAvailable(message, subscriptionId) || rowLog.isProblematic(message, subscriptionId)) {
+                                rowLog.unlockMessage(message, subscriptionId, false, lock);
                             } else {
-                                rowLog.unlockMessage(message, subscriptionId, lock);
+                                if (processMessage(context, message)) {
+                                    rowLog.messageDone(message, subscriptionId, lock);
+                                } else {
+                                    rowLog.unlockMessage(message, subscriptionId, true, lock);
+                                }
                             }
-                        } else {
-                            System.out.println("Message <"+message+"> locked");
-                        }
+                        } 
                     } catch (RowLogException e) {
                         log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
                     } finally {

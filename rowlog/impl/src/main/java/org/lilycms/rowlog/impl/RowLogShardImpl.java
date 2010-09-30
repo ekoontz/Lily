@@ -37,6 +37,7 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
 
@@ -72,13 +73,13 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void putMessage(RowLogMessage message) throws RowLogException {
-        for (String subscriptionId: rowLog.getSubscriptionIds()) {
-            putMessage(message, subscriptionId);
+        for (SubscriptionContext subscription : rowLog.getSubscriptions()) {
+            putMessage(message, subscription.getId());
         }
     }
 
-    private void putMessage(RowLogMessage message, String subscription) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), subscription, false);
+    private void putMessage(RowLogMessage message, String subscriptionId) throws RowLogException {
+        byte[] rowKey = createRowKey(message.getId(), subscriptionId, false);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {

@@ -29,13 +29,10 @@ import org.lilycms.rowlog.impl.RowLogShardImpl;
 public class MessageQueueFeeder implements RowLogMessageListener {
     public static Configuration configuration;
     private RowLog messageQueue = null;
-    public MessageQueueFeeder(RowLog messageQueue) {
-        this.messageQueue = messageQueue;
-    }
     
     public MessageQueueFeeder() throws RowLogException, IOException {
         messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, configuration); 
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration); 
         RowLogShard messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
         messageQueue.registerShard(messageQueueShard);
     }
