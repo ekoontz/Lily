@@ -17,10 +17,12 @@ package org.lilycms.repository.impl.test;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Arrays;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.joda.time.DateTime;
@@ -30,13 +32,28 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.repository.api.*;
+import org.lilycms.repository.api.Blob;
+import org.lilycms.repository.api.BlobStoreAccessFactory;
+import org.lilycms.repository.api.FieldType;
+import org.lilycms.repository.api.HierarchyPath;
+import org.lilycms.repository.api.Link;
+import org.lilycms.repository.api.PrimitiveValueType;
+import org.lilycms.repository.api.QName;
+import org.lilycms.repository.api.Record;
+import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.impl.AbstractTypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 
@@ -60,13 +77,21 @@ public class ValueTypeTest {
         HBASE_PROXY.stop();
     }
 
+    private RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        // Work with only one shard for now
+        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
+        wal.registerShard(walShard);
+        return wal;
+    }
+    
     @Before
     public void setUp() throws Exception {
         idGenerator = new IdGeneratorImpl();
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , HBASE_PROXY.getConf());
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, initializeWal(HBASE_PROXY.getConf()), HBASE_PROXY.getConf());
     }
 
     @After

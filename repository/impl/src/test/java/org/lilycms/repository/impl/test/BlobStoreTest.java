@@ -36,20 +36,21 @@ import org.lilycms.testfw.TestHelper;
 public class BlobStoreTest extends AbstractBlobStoreTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
-
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         IdGenerator idGenerator = new IdGeneratorImpl();
-        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
+        configuration = HBASE_PROXY.getConf();
+        typeManager = new HBaseTypeManager(idGenerator, configuration);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
-        BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(HBASE_PROXY.getConf());
+        BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
         SizeBasedBlobStoreAccessFactory factory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         factory.addBlobStoreAccess(50, inlineBlobStoreAccess);
         factory.addBlobStoreAccess(1024, hbaseBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, factory, HBASE_PROXY.getConf());
+        setupWal();
+        repository = new HBaseRepository(typeManager, idGenerator, factory, wal, configuration);
     }
 
     @AfterClass

@@ -18,6 +18,9 @@ package org.lilycms.repository.impl.test;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -27,10 +30,16 @@ import org.lilycms.repository.api.Record;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.TestHelper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
@@ -44,7 +53,8 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         typeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory , configuration);
+        setupWal();
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
 
         setupTypes();
         setupMessageQueue();
@@ -58,6 +68,14 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
     }
+    
+    private RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        // Work with only one shard for now
+        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
+        wal.registerShard(walShard);
+        return wal;
+    }
 
     @Test
     public void testFieldTypeCacheInitialization() throws Exception {
@@ -68,7 +86,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     @Test
     public void testUpdateProcessesRemainingMessages() throws Exception {
         HBaseRepositoryTestConsumer.reset();
-        ListenerClassMapping.INSTANCE.put("TestSubscription", HBaseRepositoryTestConsumer.class.getName());
+        RowLogMessageListenerMapping.INSTANCE.put("TestSubscription", new HBaseRepositoryTestConsumer());
         rowLogConfigurationManager.addSubscription("WAL", "TestSubscription", Type.VM, 3, 2);
         
         Record record = repository.newRecord();
@@ -82,7 +100,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
 
         assertEquals(record, repository.read(record.getId()));
         rowLogConfigurationManager.removeSubscription("WAL", "TestSubscription");
-        ListenerClassMapping.INSTANCE.remove("TestSubscription");
+        RowLogMessageListenerMapping.INSTANCE.remove("TestSubscription");
     }
     
     

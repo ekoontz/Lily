@@ -48,7 +48,8 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , configuration);
+        setupWal();
+        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , wal, configuration);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);

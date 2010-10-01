@@ -73,9 +73,6 @@ import org.lilycms.repository.impl.lock.RowLocker;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.impl.RowLogImpl;
-import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.Pair;
 import org.lilycms.util.io.Closer;
@@ -118,9 +115,10 @@ public class HBaseRepository implements Repository {
     private RowLocker rowLocker;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
-            BlobStoreAccessFactory blobStoreAccessFactory, Configuration configuration) throws IOException {
+            BlobStoreAccessFactory blobStoreAccessFactory, RowLog wal, Configuration configuration) throws IOException {
         this.typeManager = typeManager;
         this.idGenerator = idGenerator;
+        this.wal = wal;
         blobStoreAccessRegistry = new BlobStoreAccessRegistry();
         blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
         recordTable = HBaseTableUtil.getRecordTable(configuration);
@@ -138,27 +136,11 @@ public class HBaseRepository implements Repository {
         recordTypeVersionColumnNames.put(Scope.VERSIONED, VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
         recordTypeVersionColumnNames.put(Scope.VERSIONED_MUTABLE, VERSIONED_MUTABLE_RECORDTYPEVERSION_COLUMN_NAME);
 
-        try {
-        // Initialize Wal 
-            initializeWal(configuration);
-
-        } catch (RowLogException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
         rowLocker = new RowLocker(recordTable, HBaseTableUtil.NON_VERSIONED_SYSTEM_COLUMN_FAMILY, LOCK_COLUMN_NAME,
                 10000);
     }
 
     public void stop() {
-    }
-
-    private void initializeWal(Configuration configuration) throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", recordTable, HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
-        // Work with only one shard for now
-        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
-        wal.registerShard(walShard);
     }
 
     public IdGenerator getIdGenerator() {
@@ -167,10 +149,6 @@ public class HBaseRepository implements Repository {
 
     public TypeManager getTypeManager() {
         return typeManager;
-    }
-
-    public RowLog getWal() {
-        return wal;
     }
 
     public Record newRecord() {
@@ -224,7 +202,7 @@ public class HBaseRepository implements Repository {
             if (newRecord.getVersion() != null)
                 recordEvent.setVersionCreated(newRecord.getVersion());
 
-            walMessage = getWal().putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+            walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
             recordTable.put(put);
             
             // Take Custom RowLock before releasing the HBase RowLock
@@ -251,7 +229,7 @@ public class HBaseRepository implements Repository {
 
         if (customRowLock != null) {
             try {
-                getWal().processMessage(walMessage);
+                wal.processMessage(walMessage);
             } catch (RowLogException e) {
                 // Processing the message failed, it will be retried later
             }
@@ -361,7 +339,7 @@ public class HBaseRepository implements Repository {
     private void putMessageOnWalAndProcess(RecordId recordId, org.lilycms.repository.impl.lock.RowLock rowLock,
             Put put, RecordEvent recordEvent) throws RowLogException, IOException, RecordException {
         RowLogMessage walMessage;
-        walMessage = getWal().putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+        walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
         if (!rowLocker.put(put, rowLock)) {
             throw new RecordException("Exception occurred while putting updated record <" + recordId
                     + "> on HBase table", null);
@@ -369,7 +347,7 @@ public class HBaseRepository implements Repository {
 
         if (walMessage != null) {
             try {
-                getWal().processMessage(walMessage);
+                wal.processMessage(walMessage);
             } catch (RowLogException e) {
                 // Processing the message failed, it will be retried later.
             }
@@ -1094,13 +1072,13 @@ public class HBaseRepository implements Repository {
     private boolean checkAndProcessOpenMessages(RecordId recordId) throws RecordException {
         byte[] rowKey = recordId.toBytes();
         try {
-            List<RowLogMessage> messages = getWal().getMessages(rowKey);
+            List<RowLogMessage> messages = wal.getMessages(rowKey);
             if (messages.isEmpty())
                return true;
             for (RowLogMessage rowLogMessage : messages) {
-                getWal().processMessage(rowLogMessage);
+                wal.processMessage(rowLogMessage);
             }
-            return (getWal().getMessages(rowKey).isEmpty());
+            return (wal.getMessages(rowKey).isEmpty());
         } catch (RowLogException e) {
             throw new RecordException("Failed to check for open WAL message for record <" + recordId + ">", e);
         }

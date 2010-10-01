@@ -56,8 +56,9 @@ import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.MessageQueueFeeder;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
@@ -87,6 +88,7 @@ public abstract class AbstractRepositoryTest {
     protected static RowLogConfigurationManagerImpl rowLogConfigurationManager;
     protected static RowLogProcessorImpl messageQueueProcessor;
     protected static Configuration configuration;
+    protected static RowLog wal;
 
     @Before
     public void setUp() throws Exception {
@@ -99,6 +101,12 @@ public abstract class AbstractRepositoryTest {
     protected static void setupTypes() throws Exception {
         setupFieldTypes();
         setupRecordTypes();
+    }
+    
+    protected static void setupWal() throws IOException, RowLogException {
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
+        wal.registerShard(walShard);
     }
 
     private static void setupFieldTypes() throws Exception {
@@ -153,9 +161,8 @@ public abstract class AbstractRepositoryTest {
             InterruptedException, IOException {
                 rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
                 rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
-                MessageQueueFeeder.configuration = configuration;
-                ListenerClassMapping listenerClassMapping = ListenerClassMapping.INSTANCE;
-                listenerClassMapping.put("MQFeeder", MessageQueueFeeder.class.getName());
+                RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
+                listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(configuration));
                 messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
                         HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration);
                 messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));

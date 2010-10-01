@@ -3,11 +3,13 @@ package org.lilycms.repository.impl.test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
 import org.lilycms.repository.api.Blob;
@@ -21,10 +23,24 @@ import org.lilycms.repository.api.RecordType;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
+import org.lilycms.repository.impl.HBaseTableUtil;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 
 public abstract class AbstractBlobStoreTest {
+    protected static RowLog wal;
     protected static Repository repository;
     protected static TypeManager typeManager;
+    protected static Configuration configuration;
+    
+    protected static void setupWal() throws IOException, RowLogException {
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
+        wal.registerShard(walShard);
+    }
     
     @Test
     public void testCreate() throws Exception {
