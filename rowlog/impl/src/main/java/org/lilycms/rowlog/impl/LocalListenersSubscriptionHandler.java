@@ -11,7 +11,7 @@ public class LocalListenersSubscriptionHandler extends AbstractListenersSubscrip
     }
     
     protected boolean processMessage(String listenerId, RowLogMessage message) {
-        RowLogMessageListener listener = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
+        RowLogMessageListener listener = RowLogMessageListenerMapping.INSTANCE.get(subscriptionId);
         if (listener == null)
             return false;
         return listener.processMessage(message);

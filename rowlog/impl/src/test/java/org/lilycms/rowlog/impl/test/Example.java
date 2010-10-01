@@ -30,7 +30,7 @@ import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
@@ -64,7 +64,7 @@ public class Example {
         rowLog.registerShard(shard);
         
         // Register a consumer class on the ConsumerClassMapping
-        ListenerClassMapping.INSTANCE.put("FooBar", FooBarConsumer.class.getName());
+        RowLogMessageListenerMapping.INSTANCE.put("FooBar", new FooBarConsumer());
         
         // Add a subscription to the configuration manager for the example Rowlog
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(configuration);

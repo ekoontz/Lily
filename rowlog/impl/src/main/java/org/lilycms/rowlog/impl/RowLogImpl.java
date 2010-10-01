@@ -225,7 +225,7 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
                 boolean done = false;
                 executionState.incTryCount(subscriptionId);
                 try {
-                    RowLogMessageListener listener = ListenerClassMapping.INSTANCE.getListener(subscriptionId);
+                    RowLogMessageListener listener = RowLogMessageListenerMapping.INSTANCE.get(subscriptionId);
                     if (listener != null) 
                         done = listener.processMessage(message);
                 } catch (Throwable t) {

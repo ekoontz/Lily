@@ -9,27 +9,19 @@ import org.junit.Assert;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
 
-public class ValidationMessageConsumer implements RowLogMessageListener {
+public class ValidationMessageListener implements RowLogMessageListener {
 
-    private static Map<RowLogMessage, Integer> expectedMessages = new HashMap<RowLogMessage, Integer>();
-    private static Map<RowLogMessage, Integer> earlyMessages = new HashMap<RowLogMessage, Integer>();
-    public static List<RowLogMessage> problematicMessages = new ArrayList<RowLogMessage>();
-    private static int count = 0;
-    private static int numberOfMessagesToBeExpected = 0;
+    private Map<RowLogMessage, Integer> expectedMessages = new HashMap<RowLogMessage, Integer>();
+    private Map<RowLogMessage, Integer> earlyMessages = new HashMap<RowLogMessage, Integer>();
+    public List<RowLogMessage> problematicMessages = new ArrayList<RowLogMessage>();
+    private int count = 0;
+    private int numberOfMessagesToBeExpected = 0;
 
-    public static void reset() {
-        expectedMessages = new HashMap<RowLogMessage, Integer>();
-        earlyMessages = new HashMap<RowLogMessage, Integer>();
-        problematicMessages = new ArrayList<RowLogMessage>();
-        count = 0;
-        numberOfMessagesToBeExpected = 0;
-    }
-    
-    public static void expectMessage(RowLogMessage message) throws Exception {
+    public void expectMessage(RowLogMessage message) throws Exception {
         expectMessage(message, 1);
     }
 
-    public static void expectMessage(RowLogMessage message, int times) throws Exception {
+    public void expectMessage(RowLogMessage message, int times) throws Exception {
         if (earlyMessages.containsKey(message)) {
             int timesEarlyReceived = earlyMessages.get(message);
             count = count + timesEarlyReceived;
@@ -45,7 +37,7 @@ public class ValidationMessageConsumer implements RowLogMessageListener {
         }
     }
 
-    public static void expectMessages(int i) {
+    public void expectMessages(int i) {
         numberOfMessagesToBeExpected = i;
     }
 
@@ -72,7 +64,7 @@ public class ValidationMessageConsumer implements RowLogMessageListener {
         return result;
     }
 
-    public static void waitUntilMessagesConsumed(long timeout) throws Exception {
+    public void waitUntilMessagesConsumed(long timeout) throws Exception {
         long waitUntil = System.currentTimeMillis() + timeout;
         while ((!expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected))
                 && System.currentTimeMillis() < waitUntil) {
@@ -80,7 +72,7 @@ public class ValidationMessageConsumer implements RowLogMessageListener {
         }
     }
 
-    public static void validate() throws Exception {
+    public void validate() throws Exception {
         Assert.assertFalse("Received less messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count < numberOfMessagesToBeExpected));
         Assert.assertFalse("Received more messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count > numberOfMessagesToBeExpected));
         Assert.assertTrue("EarlyMessages list is not empty <"+earlyMessages.keySet()+">", earlyMessages.isEmpty());

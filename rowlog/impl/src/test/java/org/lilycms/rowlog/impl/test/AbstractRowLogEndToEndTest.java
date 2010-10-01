@@ -28,6 +28,7 @@ public abstract class AbstractRowLogEndToEndTest {
     protected static String zkConnectString;
     protected static RowLogConfigurationManagerImpl rowLogConfigurationManager;
     protected String subscriptionId = "Subscription1";
+    protected ValidationMessageListener validationListener;
     
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -53,12 +54,12 @@ public abstract class AbstractRowLogEndToEndTest {
     @Test
     public void testSingleMessage() throws Exception {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
-        ValidationMessageConsumer.expectMessage(message);
-        ValidationMessageConsumer.expectMessages(1);
+        validationListener.expectMessage(message);
+        validationListener.expectMessages(1);
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 
     @Test
@@ -68,63 +69,62 @@ public abstract class AbstractRowLogEndToEndTest {
         assertNotNull(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()));
         processor.stop();
         Assert.assertTrue(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
-        ValidationMessageConsumer.validate();
     }
 
     @Test
     public void testSingleMessageProcessorStartsFirst() throws Exception {
         processor.start();
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
-        ValidationMessageConsumer.expectMessage(message);
-        ValidationMessageConsumer.expectMessages(1);
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        validationListener.expectMessage(message);
+        validationListener.expectMessages(1);
+        validationListener.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 
     @Test
     public void testMultipleMessagesSameRow() throws Exception {
         RowLogMessage message;
-        ValidationMessageConsumer.expectMessages(10);
+        validationListener.expectMessages(10);
         for (int i = 0; i < 10; i++) {
             byte[] rowKey = Bytes.toBytes("row3");
             message = rowLog.putMessage(rowKey, null, "aPayload".getBytes(), null);
-            ValidationMessageConsumer.expectMessage(message);
+            validationListener.expectMessage(message);
         }
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 
     @Test
     public void testMultipleMessagesMultipleRows() throws Exception {
         RowLogMessage message;
-        ValidationMessageConsumer.expectMessages(25);
+        validationListener.expectMessages(25);
         for (long seqnr = 0L; seqnr < 5; seqnr++) {
             for (int rownr = 10; rownr < 15; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-                ValidationMessageConsumer.expectMessage(message);
+                validationListener.expectMessage(message);
             }
         }
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 
     @Test
     public void testProblematicMessage() throws Exception {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
-        ValidationMessageConsumer.problematicMessages.add(message);
-        ValidationMessageConsumer.expectMessage(message, 3);
-        ValidationMessageConsumer.expectMessages(3);
+        validationListener.problematicMessages.add(message);
+        validationListener.expectMessage(message, 3);
+        validationListener.expectMessages(3);
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
         processor.stop();
         Assert.assertTrue(rowLog.isProblematic(message, subscriptionId));
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 }

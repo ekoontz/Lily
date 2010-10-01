@@ -31,11 +31,11 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     // Not in separate VM yet, but at least communication goes over channels.
     @Before
     public void setUp() throws Exception {
-        ValidationMessageConsumer.reset();
+        validationListener = new ValidationMessageListener();
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
         subscriptionId = "Test";
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3, 1);
-        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, new ValidationMessageConsumer(), HBASE_PROXY.getConf());
+        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, HBASE_PROXY.getConf());
         remoteListener.start();
     }
 
@@ -48,29 +48,29 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @Test
     public void testMultipleConsumers() throws Exception {
-        ValidationMessageConsumer2.reset();
+        ValidationMessageListener validationListener2 = new ValidationMessageListener();
         rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3, 2);
-        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", new ValidationMessageConsumer2(), HBASE_PROXY.getConf());
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, HBASE_PROXY.getConf());
         remoteListener2.start();
-        ValidationMessageConsumer.expectMessages(10);
-        ValidationMessageConsumer2.expectMessages(10);
+        validationListener.expectMessages(10);
+        validationListener2.expectMessages(10);
         RowLogMessage message;
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-                ValidationMessageConsumer.expectMessage(message);
-                ValidationMessageConsumer2.expectMessage(message);
+                validationListener.expectMessage(message);
+                validationListener2.expectMessage(message);
             }
         }
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
-        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
+        validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer2.validate();
+        validationListener2.validate();
         remoteListener2.interrupt();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), "Test2");
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
 }

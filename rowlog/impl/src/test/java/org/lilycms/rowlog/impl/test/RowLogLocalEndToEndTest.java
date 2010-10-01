@@ -22,17 +22,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.impl.ListenerClassMapping;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
+    private ValidationMessageListener validationListener2;
+
     @Before
     public void setUp() throws Exception {
-        ValidationMessageConsumer.reset();
         try {
+            validationListener = new ValidationMessageListener();
             rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
-            ListenerClassMapping.INSTANCE.put(subscriptionId , ValidationMessageConsumer.class.getName());
+            RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
             rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3, 1);
             rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
         } catch (Exception e) {
@@ -55,55 +57,55 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @Test
     public void testMultipleSubscriptions() throws Exception {
-        ValidationMessageConsumer2.reset();
+        validationListener2 = new ValidationMessageListener();
         String subscriptionId2 = "Subscription2";
-        ListenerClassMapping.INSTANCE.put(subscriptionId2  , ValidationMessageConsumer2.class.getName());
+        RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 2);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
-        ValidationMessageConsumer.expectMessages(10);
-        ValidationMessageConsumer2.expectMessages(10);
+        validationListener.expectMessages(10);
+        validationListener2.expectMessages(10);
         RowLogMessage message;
         for (long seqnr = 0L; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
                 message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-                ValidationMessageConsumer.expectMessage(message);
-                ValidationMessageConsumer2.expectMessage(message);
+                validationListener.expectMessage(message);
+                validationListener2.expectMessage(message);
             }
         }
         processor.start();
-        ValidationMessageConsumer.waitUntilMessagesConsumed(120000);
-        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
+        validationListener.waitUntilMessagesConsumed(120000);
+        validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer2.validate();
+        validationListener2.validate();
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
-        ValidationMessageConsumer.validate();
+        validationListener.validate();
     }
     
     @Test
     public void testMultipleSubscriptionsOrder() throws Exception {
-        ValidationMessageConsumer2.reset();
+        validationListener2 = new ValidationMessageListener();
         String subscriptionId2 = "Subscription2";
-        ListenerClassMapping.INSTANCE.put(subscriptionId2  , ValidationMessageConsumer2.class.getName());
+        RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 0);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         int rownr = 222;
         byte[] data = Bytes.toBytes(222);
         data = Bytes.add(data, Bytes.toBytes(0));
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
-        ValidationMessageConsumer.expectMessages(1);
-        ValidationMessageConsumer.expectMessage(message);
-        ValidationMessageConsumer2.expectMessage(message, 3);
-        ValidationMessageConsumer2.expectMessages(3);
-        ValidationMessageConsumer2.problematicMessages.add(message);
+        validationListener.expectMessages(1);
+        validationListener.expectMessage(message);
+        validationListener2.expectMessage(message, 3);
+        validationListener2.expectMessages(3);
+        validationListener2.problematicMessages.add(message);
 
         processor.start();
-        ValidationMessageConsumer2.waitUntilMessagesConsumed(120000);
+        validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
-        ValidationMessageConsumer2.validate();
-     // The message was not processed by subscription1 (last in order) and was marked problematic 
+        validationListener2.validate();
+     // Assert the message was not processed by subscription1 (last in order) and was marked problematic 
      // since subscription2 (first in order) became problematic
         Assert.assertTrue(rowLog.isProblematic(message, subscriptionId)); 
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
