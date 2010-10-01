@@ -66,12 +66,14 @@ public class LinkIndexUpdater {
 
         if (rowLog != null) {
             this.rowLog = rowLog;
-            rowLog.registerConsumer(listener);
+            // TODO
+            //rowLog.registerConsumer(listener);
         }
     }
 
     public void stop() {
-        rowLog.unRegisterConsumer(listener);
+        // TODO
+        //rowLog.unRegisterConsumer(listener);
     }
 
     private class  MyListener implements RowLogMessageListener {

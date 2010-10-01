@@ -75,6 +75,7 @@ import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.Pair;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;

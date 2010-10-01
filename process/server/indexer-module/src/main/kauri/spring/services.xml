@@ -32,6 +32,10 @@
       id="zooKeeper"
       service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
 
+  <kauri:import-service
+      id="rowLogConfigurationMgr"
+      service="org.lilycms.rowlog.api.RowLogConfigurationManager"/>
+
   <bean id="hbaseConf"
       factory-bean="hadoopConfFactory"
       factory-method="getHBaseConf"/>
@@ -48,6 +52,7 @@
     <constructor-arg ref="hbaseConf"/>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperConnectString"/></constructor-arg>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperSessionTimeout"/></constructor-arg>
+    <constructor-arg ref="rowLogConfigurationMgr"/>
   </bean>
 
   <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">

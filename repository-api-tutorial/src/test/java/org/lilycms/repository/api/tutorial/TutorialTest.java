@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
-import org.lilycms.repository.impl.HBaseTableUtil;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;

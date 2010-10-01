@@ -119,8 +119,8 @@ public class IndexerWorker {
             IndexLocker indexLocker = new IndexLocker(zk);
             Indexer indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
-            int consumerId = Integer.parseInt(index.getQueueSubscriptionId());
-            IndexUpdater indexUpdater = new IndexUpdater(indexer, rowLog, consumerId, repository, linkIndex, indexLocker);
+            IndexUpdater indexUpdater = new IndexUpdater(index.getQueueSubscriptionId(), indexer, rowLog,
+                    repository, linkIndex, indexLocker, zk);
 
             IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater);
 

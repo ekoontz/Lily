@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.repository.impl;
+package org.lilycms.util.hbase;
 
 import java.io.IOException;
 
@@ -25,7 +25,6 @@ import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.lilycms.util.hbase.LocalHTable;
 
 public class HBaseTableUtil {
     

@@ -49,7 +49,7 @@ import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
-import org.lilycms.repository.impl.HBaseTableUtil;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;

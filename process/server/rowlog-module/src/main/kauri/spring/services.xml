@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<beans              xmlns = "http://www.springframework.org/schema/beans"
+                xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:kauri = "http://kauriproject.org/runtime/1.0#springext"
+            xmlns:context = "http://www.springframework.org/schema/context"
+       xsi:schemaLocation = "http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+                             http://www.springframework.org/schema/context
+                             http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                             http://kauriproject.org/runtime/1.0#springext
+                             http://www.kauriproject.org/schemas/runtime/springext.xsd">
+
+  <context:annotation-config/>
+
+  <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module" conf="confRegistry"/>
+
+  <bean class="org.kauriproject.runtime.rapi.ConfPlaceholderConfigurer">
+    <constructor-arg ref="confRegistry"/>
+  </bean>
+
+  <kauri:import-service
+      id="hadoopConfFactory"
+      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
+
+  <kauri:import-service
+      id="zooKeeper"
+      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+
+  <kauri:export-service
+      ref="rowLogConfigurationMgr"
+      service="org.lilycms.rowlog.api.RowLogConfigurationManager"/>
+
+  <kauri:export-service
+      ref="messageQueue"
+      service="org.lilycms.rowlog.api.RowLog"/>
+
+  <kauri:export-service
+      ref="writeAheadLog"
+      service="org.lilycms.rowlog.api.RowLog"/>
+
+  <bean id="hbaseConf"
+      factory-bean="hadoopConfFactory"
+      factory-method="getHBaseConf"/>
+
+  <bean id="rowLogConfigurationMgr" class="org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl">
+    <constructor-arg ref="zooKeeper"/>
+  </bean>
+
+  <bean id="rowLogSetup" class="org.lilycms.server.modules.rowlog.RowLogSetup">
+    <constructor-arg ref="rowLogConfigurationMgr"/>
+    <constructor-arg ref="zooKeeper"/>
+    <constructor-arg ref="hbaseConf"/>
+  </bean>
+
+  <bean id="messageQueue" factory-bean="rowLogSetup" factory-method="getMessageQueue"/>
+
+  <bean id="writeAheadLog" factory-bean="rowLogSetup" factory-method="getWriteAheadLog"/>
+
+</beans>

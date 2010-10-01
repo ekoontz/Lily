@@ -56,7 +56,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 
-            Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, conf);
+            Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, null, conf);
 
             byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.fullbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);

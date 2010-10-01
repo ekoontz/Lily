@@ -23,13 +23,15 @@ import org.lilycms.indexer.model.indexerconf.IndexCase;
 import org.lilycms.indexer.model.indexerconf.IndexField;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.*;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
-import org.lilycms.rowlog.impl.ConsumerClassMapping;
 import org.lilycms.util.ObjectUtils;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;
 
@@ -41,10 +43,11 @@ import java.util.*;
  */
 public class IndexUpdater {
     private RowLog rowLog;
-    private int consumerId;
+    private String subscriptionId;
     private Repository repository;
     private TypeManager typeManager;
     private LinkIndex linkIndex;
+    private RemoteListenerHandler listenerHandler;
     private IndexerListener indexerListener = new IndexerListener();
     private Indexer indexer;
     private IndexUpdaterMetrics metrics;
@@ -53,11 +56,11 @@ public class IndexUpdater {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public IndexUpdater(Indexer indexer, RowLog rowLog, int consumerId, Repository repository, LinkIndex linkIndex,
-            IndexLocker indexLocker) {
+    public IndexUpdater(String subscriptionId, Indexer indexer, RowLog rowLog, Repository repository,
+            LinkIndex linkIndex, IndexLocker indexLocker, ZooKeeperItf zk) throws RowLogException {
         this.indexer = indexer;
         this.rowLog = rowLog;
-        this.consumerId = consumerId;
+        this.subscriptionId = subscriptionId;
         this.repository = repository;
         this.typeManager = repository.getTypeManager();
         this.linkIndex = linkIndex;
@@ -68,25 +71,16 @@ public class IndexUpdater {
 
         this.metrics = new IndexUpdaterMetrics();
 
-        rowLog.registerConsumer(indexerListener);
+
+        listenerHandler = new RemoteListenerHandler(rowLog, subscriptionId, indexerListener, zk);
+        listenerHandler.start();
     }
 
     public void stop() {
-        // TODO Once available, change this to unregister the MQ listener rather than the MQ consumer
-
-        // The unregister method will block until really stopped (which is behavior needed by the IndexerWorker)
-        rowLog.unRegisterConsumer(indexerListener);
+        listenerHandler.stop();
     }
 
     private class IndexerListener implements RowLogMessageListener {
-        public int getId() {
-            return consumerId;
-        }
-
-        public int getMaxTries() {
-            return 10;
-        }
-
         public boolean processMessage(RowLogMessage msg) {
             long before = System.currentTimeMillis();
 

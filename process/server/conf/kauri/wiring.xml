@@ -6,12 +6,17 @@
     <artifact id="general" groupId="org.lilycms" artifactId="lily-general-module" version="0.2-SNAPSHOT">
     </artifact>
 
+    <artifact id="rowlog" groupId="org.lilycms" artifactId="lily-rowlog-module" version="0.2-SNAPSHOT">
+    </artifact>
+
     <artifact id="repository" groupId="org.lilycms" artifactId="lily-repository-module" version="0.2-SNAPSHOT">
+      <inject-javaservice name="messageQueue" service="org.lilycms.rowlog.api.RowLog" ref="rowlog:messageQueue"/>
+      <inject-javaservice name="writeAheadLog" service="org.lilycms.rowlog.api.RowLog" ref="rowlog:writeAheadLog"/>
     </artifact>
 
     <artifact id="indexer" groupId="org.lilycms" artifactId="lily-indexer-module" version="0.2-SNAPSHOT">
-      <inject-javaservice name="messageQueue" service="org.lilycms.rowlog.api.RowLog" ref="repository:messageQueue"/>      
-      <inject-javaservice name="writeAheadLog" service="org.lilycms.rowlog.api.RowLog" ref="repository:writeAheadLog"/>
+      <inject-javaservice name="messageQueue" service="org.lilycms.rowlog.api.RowLog" ref="rowlog:messageQueue"/>
+      <inject-javaservice name="writeAheadLog" service="org.lilycms.rowlog.api.RowLog" ref="rowlog:writeAheadLog"/>
     </artifact>
 
     <artifact id="template" groupId="org.kauriproject" artifactId="kauri-template-service-impl">

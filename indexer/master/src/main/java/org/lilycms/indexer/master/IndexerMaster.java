@@ -9,6 +9,8 @@ import org.apache.hadoop.mapred.JobTracker;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.indexer.model.api.*;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.util.zookeeper.*;
 
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
@@ -28,25 +30,25 @@ import java.util.concurrent.TimeUnit;
  * index batch build jobs, assigning or removing message queue subscriptions, and the like.
  */
 public class IndexerMaster {
-    private ZooKeeperItf zk;
+    private final ZooKeeperItf zk;
 
-    private WriteableIndexerModel indexerModel;
+    private final WriteableIndexerModel indexerModel;
 
-    private Configuration mapReduceConf;
+    private final Configuration mapReduceConf;
 
-    private Configuration mapReduceJobConf;
+    private final Configuration mapReduceJobConf;
 
-    private Configuration hbaseConf;
+    private final Configuration hbaseConf;
 
-    private String zkConnectString;
+    private final String zkConnectString;
 
-    private int zkSessionTimeout;
+    private final int zkSessionTimeout;
+
+    private final RowLogConfigurationManager rowLogConfMgr;
 
     private LeaderElection leaderElection;
 
     private IndexerModelListener listener = new MyListener();
-
-    private int currentMaxConsumerId;
 
     private MasterProvisioner masterProvisioner = new MasterProvisioner();
 
@@ -59,7 +61,8 @@ public class IndexerMaster {
     enum MasterState { I_AM_MASTER, I_AM_NOT_MASTER }
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
-            Configuration mapReduceJobConf, Configuration hbaseConf, String zkConnectString, int zkSessionTimeout) {
+            Configuration mapReduceJobConf, Configuration hbaseConf, String zkConnectString, int zkSessionTimeout,
+            RowLogConfigurationManager rowLogConfMgr) {
         this.zk = zk;
         this.indexerModel = indexerModel;
         this.mapReduceConf = mapReduceConf;
@@ -67,6 +70,7 @@ public class IndexerMaster {
         this.hbaseConf = hbaseConf;
         this.zkConnectString = zkConnectString;
         this.zkSessionTimeout = zkSessionTimeout;
+        this.rowLogConfMgr = rowLogConfMgr;
     }
 
     @PostConstruct
@@ -157,8 +161,6 @@ public class IndexerMaster {
                             eventWorker.start();
                             jobStatusWatcher.start();
 
-                            initMaxConsumerId();
-
                             Collection<IndexDefinition> indexes = indexerModel.getIndexes(listener);
 
                             // Rather than performing any work that might to be done for the indexes here,
@@ -218,24 +220,6 @@ public class IndexerMaster {
                 index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
     }
 
-    /**
-     * TODO This is temporary code to find out the currently highest assigned message consumer ID.
-     * It should be adapated once a real system for (un)registering MQ consumers is in place.
-     */
-    private void initMaxConsumerId() {
-        int currentMaxId = 10000;
-        for (IndexDefinition index : indexerModel.getIndexes()) {
-            if (index.getQueueSubscriptionId() != null) {
-                int id = Integer.parseInt(index.getQueueSubscriptionId());
-                if (id > currentMaxId) {
-                    currentMaxId = id;
-                }
-            }
-        }
-        this.currentMaxConsumerId = currentMaxId;
-    }
-
-
     private void assignSubscription(String indexName) {
         try {
             String lock = indexerModel.lockIndex(indexName);
@@ -243,10 +227,11 @@ public class IndexerMaster {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsSubscriptionIdAssigned(index)) {
-                    String newConsumerId = String.valueOf(++currentMaxConsumerId);
-                    index.setQueueSubscriptionId(newConsumerId);
+                    String subscriptionId = index.getName(); // TODO guarantee uniqueness
+                    rowLogConfMgr.addSubscription("MQ", subscriptionId, SubscriptionContext.Type.Netty, 3, 1);
+                    index.setQueueSubscriptionId(subscriptionId);
                     indexerModel.updateIndexInternal(index);
-                    log.info("Assigned queue subscription ID " + newConsumerId + " to index " + indexName);
+                    log.info("Assigned queue subscription ID " + subscriptionId + " to index " + indexName);
                 }
             } finally {
                 indexerModel.unlockIndex(lock);
@@ -297,10 +282,8 @@ public class IndexerMaster {
 
                 String queueSubscriptionId = index.getQueueSubscriptionId();
                 if (queueSubscriptionId != null) {
-                    // TODO unregister message queue subscription once the subscription/listener distinction
-                    //      is in place
-
-                    // We can leave the subscription ID in the index definition FYI
+                    rowLogConfMgr.removeSubscription("MQ", index.getQueueSubscriptionId());
+                    // We leave the subscription ID in the index definition FYI
                 }
 
                 if (index.getActiveBatchBuildInfo() != null) {
