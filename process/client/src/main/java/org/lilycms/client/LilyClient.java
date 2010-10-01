@@ -19,11 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -64,29 +60,40 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 public class LilyClient implements Closeable {
     private ZooKeeperItf zk;
     private boolean managedZk;
-    private List<ServerNode> servers = new ArrayList<ServerNode>();
+    private List<ServerNode> servers = Collections.synchronizedList(new ArrayList<ServerNode>());
     private Set<String> serverAddresses = new HashSet<String>();
-    private static final String lilyPath = "/lily";
-    private static final String nodesPath = lilyPath + "/repositoryNodes";
-    private static final String blobDfsUriPath = lilyPath + "/blobStoresConfig/dfsUri";
-    private static final String blobHBaseZkQuorumPath = lilyPath + "/blobStoresConfig/hbaseZkQuorum";
-    private static final String blobHBaseZkPortPath = lilyPath + "/blobStoresConfig/hbaseZkPort";
+    private static final String nodesPath = "/lily/repositoryNodes";
+    private static final String blobDfsUriPath = "/lily/blobStoresConfig/dfsUri";
+    private static final String blobHBaseZkQuorumPath = "/lily/blobStoresConfig/hbaseZkQuorum";
+    private static final String blobHBaseZkPortPath = "/lily/blobStoresConfig/hbaseZkPort";
 
     private Log log = LogFactory.getLog(getClass());
 
     private ZkWatcher watcher = new ZkWatcher();
 
     public LilyClient(ZooKeeperItf zk) throws IOException, InterruptedException, KeeperException,
-            ZkConnectException {
+            ZkConnectException, ServerUnavailableException {
         this.zk = zk;
-        refreshServers();
+        init();
     }
 
-    public LilyClient(String zookeeperConnectString, int sessionTimeout) throws IOException, InterruptedException, KeeperException,
-            ZkConnectException {
+    /**
+     *
+     * @throws ServerUnavailableException if the znode under which the repositories are published does not exist
+     */
+    public LilyClient(String zookeeperConnectString, int sessionTimeout) throws IOException, InterruptedException,
+            KeeperException, ZkConnectException, ServerUnavailableException {
         managedZk = true;
         zk = ZkUtil.connect(zookeeperConnectString, sessionTimeout);
+        init();
+    }
+
+    private void init() throws InterruptedException, KeeperException, ServerUnavailableException {
         refreshServers();
+        Stat stat = zk.exists(nodesPath, false);
+        if (stat == null) {
+            throw new ServerUnavailableException("Repositories znode does not exist in ZooKeeper: " + nodesPath);
+        }
     }
 
     public void close() throws IOException {
@@ -188,14 +195,9 @@ public class LilyClient implements Closeable {
         }
     }
 
-    private synchronized void refreshServers() {
+    private synchronized void refreshServers() throws InterruptedException, KeeperException {
         Set<String> currentServers = new HashSet<String>();
-        try {
-            currentServers.addAll(zk.getChildren(nodesPath, watcher));
-        } catch (Exception e) {
-            log.error("Error querying list of Lily server nodes from Zookeeper.", e);
-            return;
-        }
+        currentServers.addAll(zk.getChildren(nodesPath, watcher));
 
         Set<String> removedServers = new HashSet<String>();
         removedServers.addAll(serverAddresses);
@@ -227,10 +229,29 @@ public class LilyClient implements Closeable {
         }
     }
 
+    private void clearServers() {
+        servers.clear();
+        serverAddresses.clear();
+    }
+
     private class ZkWatcher implements Watcher {
-        public void process(WatchedEvent watchedEvent) {
-            if (watchedEvent.getPath() != null && watchedEvent.getPath().equals(nodesPath)) {
-                refreshServers();
+        public void process(WatchedEvent event) {
+            try {
+                if (event.getState() != Event.KeeperState.SyncConnected) {
+                    clearServers();
+                } else {
+                    // We refresh the servers not only when /lily/repositoryNodes has changed, but also
+                    // when we get a SyncConnected event, since our watcher might not be installed anymore
+                    // (we do not have to check if it was still installed: ZK ignores double registration
+                    // of the same watcher object)
+                    refreshServers();
+                }
+            } catch (InterruptedException e) {
+                Thread.interrupted();
+            } catch (KeeperException.ConnectionLossException e) {
+                clearServers();
+            } catch (Throwable t) {
+                log.error("Error in ZooKeeper watcher.", t);
             }
         }
     }
