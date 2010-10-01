@@ -75,6 +75,7 @@
     <dependency>
       <groupId>org.lilycms</groupId>
       <artifactId>lily-rowlog-impl</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

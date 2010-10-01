@@ -53,16 +53,11 @@ import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
 import org.lilycms.repository.impl.HBaseTableUtil;
 import org.lilycms.repository.impl.IdGeneratorImpl;
-import org.lilycms.repository.impl.MessageQueueFeeder;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.rowlog.impl.RowLogImpl;
-import org.lilycms.rowlog.impl.RowLogProcessorImpl;
-import org.lilycms.rowlog.impl.RowLogShardImpl;
+import org.lilycms.rowlog.impl.*;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.repo.VersionTag;
 
@@ -159,14 +154,16 @@ public abstract class AbstractRepositoryTest {
 
     protected static void setupMessageQueue() throws RowLogException, KeeperException,
             InterruptedException, IOException {
-                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
-                rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
-                RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
-                listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(configuration));
-                messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                        HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration);
-                messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
-            }
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+        rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
+
+        messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration);
+        messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
+
+        RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
+        listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(messageQueue));
+    }
 
     protected static void setupMessageQueueProcessor() throws RowLogException {
         messageQueueProcessor = new RowLogProcessorImpl(messageQueue, configuration);

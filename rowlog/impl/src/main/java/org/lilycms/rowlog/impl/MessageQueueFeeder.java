@@ -13,27 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilycms.repository.impl;
+package org.lilycms.rowlog.impl;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
-import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.impl.RowLogImpl;
-import org.lilycms.rowlog.impl.RowLogShardImpl;
 
 public class MessageQueueFeeder implements RowLogMessageListener {
     private RowLog messageQueue = null;
     
-    public MessageQueueFeeder(Configuration configuration) throws RowLogException, IOException {
-        messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration); 
-        RowLogShard messageQueueShard = new RowLogShardImpl("MQS1", configuration, messageQueue, 100);
-        messageQueue.registerShard(messageQueueShard);
+    public MessageQueueFeeder(RowLog messageQueueRowLog) throws RowLogException, IOException {
+        this.messageQueue = messageQueueRowLog;
     }
     
     public boolean processMessage(RowLogMessage message) {
