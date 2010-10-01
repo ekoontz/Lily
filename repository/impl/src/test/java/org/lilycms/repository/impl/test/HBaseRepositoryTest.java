@@ -58,7 +58,6 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         messageQueueProcessor.stop();
         ((HBaseRepository)repository).stop();
-        rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
     }
     

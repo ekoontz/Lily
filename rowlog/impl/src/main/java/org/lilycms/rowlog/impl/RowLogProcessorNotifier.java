@@ -46,10 +46,6 @@ public class RowLogProcessorNotifier {
             channelFactory.releaseExternalResources();
             channelFactory = null;
         }
-        try {
-            rowLogConfigurationManager.stop();
-        } catch (InterruptedException e) {
-        }
     }
     
     @Override

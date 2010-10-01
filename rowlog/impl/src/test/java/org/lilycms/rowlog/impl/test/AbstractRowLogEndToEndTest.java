@@ -50,7 +50,6 @@ public abstract class AbstractRowLogEndToEndTest {
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-      rowLogConfigurationManager.stop();
       processor.stop();
       HBASE_PROXY.stop();
     }

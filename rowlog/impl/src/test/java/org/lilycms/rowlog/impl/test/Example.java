@@ -98,7 +98,6 @@ public class Example {
         // Give the processor some time to process the message
         Thread.sleep(30000);
         processor.stop();
-        
         TEST_UTIL.shutdownMiniCluster();
     }
     

@@ -90,10 +90,6 @@ public class RemoteListenerHandler {
             // TODO log
             e.printStackTrace();
         } 
-        try {
-            rowLogConfigurationManager.stop();
-        } catch (InterruptedException e) {
-        }
     }
     
     private class MessageDecoder extends OneToOneDecoder {

@@ -75,7 +75,6 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         messageQueueProcessor.stop();
         serverRepository.stop();
-        rowLogConfigurationManager.stop();
         HBASE_PROXY.stop();
     }
 }

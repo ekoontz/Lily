@@ -157,10 +157,6 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
                 }
             }
         }
-        try {
-            rowLogConfigurationManager.stop();
-        } catch (InterruptedException e) {
-        }
     }
 
     public boolean isRunning(int consumerId) {

@@ -3,8 +3,6 @@ package org.lilycms.rowlog.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -21,25 +19,10 @@ import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogConfigurationManagerImpl implements RowLogConfigurationManager {
-    private Log log = LogFactory.getLog(getClass());
     private String lilyPath = "/lily";
     private String rowLogPath = lilyPath + "/rowlog";
     
     private ZooKeeperItf zooKeeper;
-    
-    @Override
-    protected void finalize() throws Throwable {
-        stop();
-        super.finalize();
-    }
-    
-    public void stop() throws InterruptedException {
-        if (zooKeeper != null) {
-            long sessionId = zooKeeper.getSessionId();
-            zooKeeper.close();
-            log.info("Closed zookeeper connection with sessionId 0x"+Long.toHexString(sessionId));
-        }
-    }
     
     public RowLogConfigurationManagerImpl(ZooKeeperItf zooKeeper) throws RowLogException {
         this.zooKeeper = zooKeeper;

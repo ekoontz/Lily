@@ -68,7 +68,6 @@ public class RowLogTest {
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
-        configurationManager.stop();
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
     }
@@ -253,7 +252,6 @@ public class RowLogTest {
         //Cleanup 
         rowLog.unlockMessage(message, subscriptionId2, true, lock2);
         configurationManager.removeSubscription(RowLogId, subscriptionId2);
-        configurationManager.stop();
     }
     
     @Test
@@ -304,6 +302,5 @@ public class RowLogTest {
         
         control.verify();
         configurationManager.removeSubscription(RowLogId, subscriptionId3);
-        configurationManager.stop();
     }
 }
