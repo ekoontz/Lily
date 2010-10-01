@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
@@ -32,25 +31,23 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     @Before
     public void setUp() throws Exception {
         validationListener = new ValidationMessageListener();
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
         subscriptionId = "Test";
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3, 1);
-        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, HBASE_PROXY.getConf());
+        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, zooKeeper);
         remoteListener.start();
     }
 
     @After
     public void tearDown() throws Exception {
-        remoteListener.interrupt();
+        remoteListener.stop();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
-        rowLogConfigurationManager.stop();
     }
 
     @Test
     public void testMultipleConsumers() throws Exception {
         ValidationMessageListener validationListener2 = new ValidationMessageListener();
         rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3, 2);
-        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, HBASE_PROXY.getConf());
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, zooKeeper);
         remoteListener2.start();
         validationListener.expectMessages(10);
         validationListener2.expectMessages(10);
@@ -69,7 +66,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
         validationListener2.validate();
-        remoteListener2.interrupt();
+        remoteListener2.stop();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), "Test2");
         validationListener.validate();
     }

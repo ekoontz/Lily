@@ -36,6 +36,7 @@ import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class AvroRepositoryTest extends AbstractRepositoryTest {
     private static HBaseRepository serverRepository;
@@ -43,8 +44,10 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        setupRowLogConfigurationManager();
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
@@ -62,7 +65,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
-        
+        setupRowLogConfigurationManager();
         setupTypes();
         setupMessageQueue();
         setupMessageQueueProcessor();

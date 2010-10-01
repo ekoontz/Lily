@@ -24,16 +24,20 @@ import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.SubscriptionsWatcherCallBack;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogConfigurationManagerTest {
     protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static Configuration configuration;
+    private static ZooKeeperItf zooKeeper;
     
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
     }
 
     @AfterClass
@@ -55,7 +59,7 @@ public class RowLogConfigurationManagerTest {
         String subscriptionId1 = "testSubscriptionSubScriptionId1";
         String subscriptionId2 = "testSubscriptionSubScriptionId2";
         // Initialize
-        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         SubscriptionsCallBack callBack = new SubscriptionsCallBack();
         Assert.assertTrue(callBack.subscriptions.isEmpty());
         Assert.assertTrue(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLogId, callBack).isEmpty());
@@ -110,7 +114,7 @@ public class RowLogConfigurationManagerTest {
         String rowLogId = "testListenerRowLogId";
         String subscriptionId1 = "testListenerSubScriptionId1";
         // Initialize
-        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
 
         ListenersCallBack callBack = new ListenersCallBack();
         Assert.assertTrue(callBack.listeners.isEmpty());

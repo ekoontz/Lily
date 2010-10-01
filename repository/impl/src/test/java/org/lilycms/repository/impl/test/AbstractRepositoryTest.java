@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.zookeeper.KeeperException;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
@@ -57,9 +55,16 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.*;
+import org.lilycms.rowlog.impl.MessageQueueFeeder;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
+import org.lilycms.rowlog.impl.RowLogProcessorImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.repo.VersionTag;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractRepositoryTest {
 
@@ -84,6 +89,7 @@ public abstract class AbstractRepositoryTest {
     protected static RowLogProcessorImpl messageQueueProcessor;
     protected static Configuration configuration;
     protected static RowLog wal;
+    protected static ZooKeeperItf zooKeeper;
 
     @Before
     public void setUp() throws Exception {
@@ -98,8 +104,8 @@ public abstract class AbstractRepositoryTest {
         setupRecordTypes();
     }
     
-    protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+    protected static void setupWal() throws Exception {
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
@@ -152,13 +158,17 @@ public abstract class AbstractRepositoryTest {
         recordType3 = typeManager.updateRecordType(recordType3);
     }
 
-    protected static void setupMessageQueue() throws RowLogException, KeeperException,
-            InterruptedException, IOException {
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+    protected static void setupRowLogConfigurationManager() throws Exception {
+        ZooKeeperItf zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+    }
+    
+    protected static void setupMessageQueue() throws Exception {
+        
         rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
 
         messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, configuration);
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, zooKeeper);
         messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
 
         RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
@@ -166,7 +176,7 @@ public abstract class AbstractRepositoryTest {
     }
 
     protected static void setupMessageQueueProcessor() throws RowLogException {
-        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, configuration);
+        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, zooKeeper);
         messageQueueProcessor.start();
     }
 

@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -18,7 +17,6 @@ import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.util.zookeeper.ZkConnectException;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -43,14 +41,8 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         }
     }
     
-    public RowLogConfigurationManagerImpl(Configuration configuration) throws RowLogException {
-        try {
-            int sessionTimeout = configuration.getInt("zookeeper.session.timeout", 60 * 1000);
-            String connectString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
-            zooKeeper = ZkUtil.connect(connectString, sessionTimeout);
-        } catch (ZkConnectException e) {
-            throw new RowLogException("Failed to instantiate RowLogConfigurationManager", e);
-        }
+    public RowLogConfigurationManagerImpl(ZooKeeperItf zooKeeper) throws RowLogException {
+        this.zooKeeper = zooKeeper;
     }
     
     // Subscriptions

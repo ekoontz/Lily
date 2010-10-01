@@ -56,10 +56,13 @@ import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class ValueTypeTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    private static ZooKeeperItf zooKeeper;
 
     private AbstractTypeManager typeManager;
     private HBaseRepository repository;
@@ -70,6 +73,7 @@ public class ValueTypeTest {
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
     }
 
     @AfterClass
@@ -78,7 +82,7 @@ public class ValueTypeTest {
     }
 
     private RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
-        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);

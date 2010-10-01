@@ -7,7 +7,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferInputStream;
@@ -29,6 +28,7 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RemoteListenerHandler {
     private final Log log = LogFactory.getLog(getClass());
@@ -38,14 +38,14 @@ public class RemoteListenerHandler {
     private Channel channel;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private String listenerId;
-    private final Configuration configuration;
     private final String subscriptionId;
+    private final ZooKeeperItf zooKeeper;
 
-    public RemoteListenerHandler(RowLog rowLog, String subscriptionId, RowLogMessageListener consumer, Configuration configuration) throws RowLogException {
+    public RemoteListenerHandler(RowLog rowLog, String subscriptionId, RowLogMessageListener consumer, ZooKeeperItf zooKeeper) throws RowLogException {
         this.rowLog = rowLog;
         this.subscriptionId = subscriptionId;
         this.consumer = consumer;
-        this.configuration = configuration;
+        this.zooKeeper = zooKeeper;
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -62,7 +62,7 @@ public class RemoteListenerHandler {
     }
     
     public void start() throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();
@@ -77,7 +77,7 @@ public class RemoteListenerHandler {
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, listenerId);
     }
     
-    public void interrupt() {
+    public void stop() {
         ChannelFuture future = channel.close();
         try {
             future.await();

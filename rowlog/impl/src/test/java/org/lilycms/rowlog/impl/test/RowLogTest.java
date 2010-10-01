@@ -46,6 +46,8 @@ import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
@@ -56,13 +58,15 @@ public class RowLogTest {
     private static HTableInterface rowTable;
     private static String subscriptionId1 = "SubscriptionId";
     private static String RowLogId = "RowLogTest";
+    private static ZooKeeperItf zooKeeper;
     private RowLogShard shard;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
         configurationManager.stop();
         control = createControl();
@@ -76,7 +80,7 @@ public class RowLogTest {
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, HBASE_PROXY.getConf());
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, zooKeeper);
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -193,7 +197,7 @@ public class RowLogTest {
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, HBASE_PROXY.getConf());
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, zooKeeper);
         
         shard.putMessage(isA(RowLogMessage.class));
         
@@ -222,7 +226,7 @@ public class RowLogTest {
         shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId2));
         
         control.replay();
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3, 2);
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
@@ -262,7 +266,7 @@ public class RowLogTest {
         shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId3));
         
         control.replay();
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5, 3);
         
         long waitUntil = System.currentTimeMillis() + 10000;

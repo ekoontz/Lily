@@ -3,7 +3,6 @@ package org.lilycms.rowlog.impl;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
-import org.apache.hadoop.conf.Configuration;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -18,6 +17,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogProcessorNotifier {
     
@@ -26,8 +26,8 @@ public class RowLogProcessorNotifier {
     private String[] processorHostAndPort;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
 
-    public RowLogProcessorNotifier(Configuration configuration) throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+    public RowLogProcessorNotifier(ZooKeeperItf zookeeper) throws RowLogException {
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zookeeper);
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) {

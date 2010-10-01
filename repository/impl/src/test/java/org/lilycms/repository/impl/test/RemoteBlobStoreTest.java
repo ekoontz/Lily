@@ -19,7 +19,6 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -42,11 +41,13 @@ import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static HBaseRepository serverRepository;
+    
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -54,6 +55,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);

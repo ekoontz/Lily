@@ -32,6 +32,7 @@ import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class BlobStoreTest extends AbstractBlobStoreTest {
 
@@ -42,6 +43,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGenerator idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
         typeManager = new HBaseTypeManager(idGenerator, configuration);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);

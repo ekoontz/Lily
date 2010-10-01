@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 
 public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
@@ -33,7 +32,6 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     public void setUp() throws Exception {
         try {
             validationListener = new ValidationMessageListener();
-            rowLogConfigurationManager = new RowLogConfigurationManagerImpl(HBASE_PROXY.getConf());
             RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
             rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3, 1);
             rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
@@ -48,7 +46,6 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         try {
             rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
             rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
-            rowLogConfigurationManager.stop();
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

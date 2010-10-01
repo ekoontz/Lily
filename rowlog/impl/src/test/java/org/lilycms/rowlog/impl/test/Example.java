@@ -35,6 +35,8 @@ import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class Example {
     private final static HBaseTestingUtility TEST_UTIL = new HBaseTestingUtility();
@@ -55,9 +57,13 @@ public class Example {
         tableDescriptor.addFamily(new HColumnDescriptor(EXECUTIONSTATE_COLUMN_FAMILY));
         admin.createTable(tableDescriptor);
         HTable rowTable = new HTable(configuration, ROW_TABLE);
+
+        // Setup a zooKeeper connection
+        String zkConnectionString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
+        ZooKeeperItf zooKeeper = new StateWatchingZooKeeper(zkConnectionString, 10000);
         
         // Create a RowLog instance
-        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, configuration);
+        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, zooKeeper);
         
         // Create a shard and register it with the rowlog
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
@@ -67,7 +73,7 @@ public class Example {
         RowLogMessageListenerMapping.INSTANCE.put("FooBar", new FooBarConsumer());
         
         // Add a subscription to the configuration manager for the example Rowlog
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(configuration);
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription("Example", "FooBar", Type.VM, 3, 0);
         // The WAL use case 
         
@@ -84,7 +90,7 @@ public class Example {
         // The MQ use case
         
         // Create a processor and start it
-        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, configuration);
+        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, zooKeeper);
         processor.start();
         
         message  = rowLog.putMessage(row1, Bytes.toBytes("SomeMoreInfo"), Bytes.toBytes("Re-evaluate:AUserField"), null);

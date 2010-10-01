@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
@@ -54,6 +53,7 @@ import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatcherCallBack {
     private volatile boolean stop = true;
@@ -63,11 +63,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     private Channel channel;
     private ChannelFactory channelFactory;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
-    private final Configuration configuration;
+    private final ZooKeeperItf zooKeeper;
     
-    public RowLogProcessorImpl(RowLog rowLog, Configuration configuration) throws RowLogException {
-        this.configuration = configuration;
+    public RowLogProcessorImpl(RowLog rowLog, ZooKeeperItf zooKeeper) throws RowLogException {
         this.rowLog = rowLog;
+        this.zooKeeper = zooKeeper;
         this.shard = rowLog.getShards().get(0); // TODO: For now we only work with one shard
     }
     
@@ -81,7 +81,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
         if (stop) {
             stop = false;
             try {
-                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
                 subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLog.getId(), this));
             } catch (KeeperException e) {
                 

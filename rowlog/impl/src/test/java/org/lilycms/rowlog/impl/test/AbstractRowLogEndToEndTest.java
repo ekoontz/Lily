@@ -19,29 +19,33 @@ import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractRowLogEndToEndTest {
     protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     protected static RowLog rowLog;
     protected static RowLogShard shard;
     protected static RowLogProcessor processor;
-    protected static String zkConnectString;
     protected static RowLogConfigurationManagerImpl rowLogConfigurationManager;
     protected String subscriptionId = "Subscription1";
     protected ValidationMessageListener validationListener;
+    private static Configuration configuration;
+    protected static ZooKeeperItf zooKeeper;
     
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        Configuration configuration = HBASE_PROXY.getConf();
+        configuration = HBASE_PROXY.getConf();
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
-        zkConnectString = HBASE_PROXY.getZkConnectString();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
-                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, HBASE_PROXY.getConf());
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, zooKeeper);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
-        processor = new RowLogProcessorImpl(rowLog, HBASE_PROXY.getConf());
+        processor = new RowLogProcessorImpl(rowLog, zooKeeper);
     }    
     
     @AfterClass

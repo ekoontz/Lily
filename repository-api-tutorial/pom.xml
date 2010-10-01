@@ -58,6 +58,18 @@
       <artifactId>lily-repository-impl</artifactId>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-rowlog-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-rowlog-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>junit</groupId>

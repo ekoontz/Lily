@@ -27,7 +27,6 @@ import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -41,6 +40,7 @@ import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.SubscriptionContext;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 /**
  * See {@link RowLog}
@@ -69,18 +69,18 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
      * @param executionStateColumnFamily the column family in which the execution state of the messages can be stored
      * @param lockTimeout the timeout to be used for the locks that are put on the messages
      * @param respectOrder true if the order of the subscriptions needs to be followed
-     * @param configuration hadoop configuration
+     * @param zooKeeper 
      * @throws RowLogException 
      */
-    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, boolean respectOrder, Configuration configuration) throws RowLogException {
+    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, boolean respectOrder, ZooKeeperItf zooKeeper) throws RowLogException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
         this.executionStateColumnFamily = executionStateColumnFamily;
         this.lockTimeout = lockTimeout;
         this.respectOrder = respectOrder;
-        this.processorNotifier = new RowLogProcessorNotifier(configuration);
-        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(configuration);
+        this.processorNotifier = new RowLogProcessorNotifier(zooKeeper);
+        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         try {
             subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(id, this));
         } catch (KeeperException e) {

@@ -45,6 +45,8 @@ import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.util.repo.PrintUtil;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 
@@ -61,8 +63,8 @@ public class TutorialTest {
     private static TypeManager typeManager;
     private static HBaseRepository repository;
     private static RowLog wal;
-
     private static Configuration configuration;
+    private static ZooKeeperItf zooKeeper;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -71,6 +73,8 @@ public class TutorialTest {
 
         IdGenerator idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+
         typeManager = new HBaseTypeManager(idGenerator, configuration);
 
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
@@ -82,7 +86,7 @@ public class TutorialTest {
     }
     
     protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

@@ -29,15 +29,17 @@ import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public abstract class AbstractBlobStoreTest {
     protected static RowLog wal;
     protected static Repository repository;
     protected static TypeManager typeManager;
     protected static Configuration configuration;
+    protected static StateWatchingZooKeeper zooKeeper;
     
     protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, configuration);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
