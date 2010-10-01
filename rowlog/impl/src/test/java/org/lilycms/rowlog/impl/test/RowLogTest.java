@@ -46,6 +46,7 @@ import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -74,6 +75,7 @@ public class RowLogTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 

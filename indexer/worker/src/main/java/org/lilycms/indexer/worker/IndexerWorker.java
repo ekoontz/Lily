@@ -17,6 +17,7 @@ import org.lilycms.indexer.model.api.*;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -96,7 +97,7 @@ public class IndexerWorker {
         }
 
         for (IndexUpdaterHandle handle : indexUpdaters.values()) {
-            handle.updater.stop();
+            handle.listenerHandler.stop();
         }
 
         connectionManager.shutdown();
@@ -119,10 +120,13 @@ public class IndexerWorker {
             IndexLocker indexLocker = new IndexLocker(zk);
             Indexer indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
-            IndexUpdater indexUpdater = new IndexUpdater(index.getQueueSubscriptionId(), indexer, rowLog,
-                    repository, linkIndex, indexLocker, zk);
+            IndexUpdater indexUpdater = new IndexUpdater(indexer, repository, linkIndex, indexLocker);
 
-            IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater);
+            RemoteListenerHandler listenerHandler = new RemoteListenerHandler(rowLog, index.getQueueSubscriptionId(),
+                    indexUpdater, zk);
+
+            IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater, listenerHandler);
+            listenerHandler.start();
 
             indexUpdaters.put(index.getName(), handle);
 
@@ -168,7 +172,7 @@ public class IndexerWorker {
         }
 
         try {
-            handle.updater.stop();
+            handle.listenerHandler.stop();
             indexUpdaters.remove(indexName);
             log.info("Stopped indexer updater for index " + indexName);
             return true;
@@ -200,10 +204,12 @@ public class IndexerWorker {
     private class IndexUpdaterHandle {
         private IndexDefinition indexDef;
         private IndexUpdater updater;
+        private RemoteListenerHandler listenerHandler;
 
-        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater) {
+        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, RemoteListenerHandler listenerHandler) {
             this.indexDef = indexDef;
             this.updater = updater;
+            this.listenerHandler = listenerHandler;
         }
     }
 

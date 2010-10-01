@@ -24,14 +24,11 @@ import org.lilycms.indexer.model.indexerconf.IndexField;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.*;
 import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.repo.RecordEvent;
 import org.lilycms.util.repo.VersionTag;
-import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.util.ObjectUtils;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.util.repo.RecordEvent.Type.*;
 
@@ -41,14 +38,10 @@ import java.util.*;
 /**
  * Updates the index in response to repository events.
  */
-public class IndexUpdater {
-    private RowLog rowLog;
-    private String subscriptionId;
+public class IndexUpdater implements RowLogMessageListener {
     private Repository repository;
     private TypeManager typeManager;
     private LinkIndex linkIndex;
-    private RemoteListenerHandler listenerHandler;
-    private IndexerListener indexerListener = new IndexerListener();
     private Indexer indexer;
     private IndexUpdaterMetrics metrics;
     private ClassLoader myContextClassLoader;
@@ -56,11 +49,9 @@ public class IndexUpdater {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public IndexUpdater(String subscriptionId, Indexer indexer, RowLog rowLog, Repository repository,
-            LinkIndex linkIndex, IndexLocker indexLocker, ZooKeeperItf zk) throws RowLogException {
+    public IndexUpdater(Indexer indexer, Repository repository,
+            LinkIndex linkIndex, IndexLocker indexLocker) throws RowLogException {
         this.indexer = indexer;
-        this.rowLog = rowLog;
-        this.subscriptionId = subscriptionId;
         this.repository = repository;
         this.typeManager = repository.getTypeManager();
         this.linkIndex = linkIndex;
@@ -70,96 +61,86 @@ public class IndexUpdater {
         this.myContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         this.metrics = new IndexUpdaterMetrics();
-
-
-        listenerHandler = new RemoteListenerHandler(rowLog, subscriptionId, indexerListener, zk);
-        listenerHandler.start();
     }
 
-    public void stop() {
-        listenerHandler.stop();
-    }
+    public boolean processMessage(RowLogMessage msg) {
+        long before = System.currentTimeMillis();
 
-    private class IndexerListener implements RowLogMessageListener {
-        public boolean processMessage(RowLogMessage msg) {
-            long before = System.currentTimeMillis();
+        // During the processing of this message, we switch the context class loader to the one
+        // of the Kauri module to which the index updater belongs. This is necessary for Tika
+        // to find its parser implementations.
 
-            // During the processing of this message, we switch the context class loader to the one
-            // of the Kauri module to which the index updater belongs. This is necessary for Tika
-            // to find its parser implementations.
+        ClassLoader currentCL = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(myContextClassLoader);
+            RecordEvent event = new RecordEvent(msg.getPayload());
+            RecordId recordId = repository.getIdGenerator().fromBytes(msg.getRowKey());
 
-            ClassLoader currentCL = Thread.currentThread().getContextClassLoader();
-            try {
-                Thread.currentThread().setContextClassLoader(myContextClassLoader);
-                RecordEvent event = new RecordEvent(msg.getPayload());
-                RecordId recordId = repository.getIdGenerator().fromBytes(msg.getRowKey());
+            if (log.isDebugEnabled()) {
+                log.debug("Received message: " + event.toJson());
+            }
+
+            if (event.getType().equals(DELETE)) {
+                // For deleted records, we cannot determine the record type, so we do not know if there was
+                // an applicable index case, so we always perform a delete.
+                indexLocker.lock(recordId);
+                try {
+                    indexer.delete(recordId);
+                } finally {
+                    indexLocker.unlockLogFailure(recordId);
+                }
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Received message: " + event.toJson());
+                    log.debug(String.format("Record %1$s: deleted from index (if present) because of " +
+                            "delete record event", recordId));
                 }
 
-                if (event.getType().equals(DELETE)) {
-                    // For deleted records, we cannot determine the record type, so we do not know if there was
-                    // an applicable index case, so we always perform a delete.
-                    indexLocker.lock(recordId);
+                // After this we can go to update denormalized data
+                updateDenormalizedData(recordId, event, null, null);
+            } else {
+                Map<Long, Set<String>> vtagsByVersion;
+                Map<Scope, Set<FieldType>> updatedFieldsByScope;
+
+                indexLocker.lock(recordId);
+                try {
+                    IdRecord record;
                     try {
-                        indexer.delete(recordId);
-                    } finally {
-                        indexLocker.unlockLogFailure(recordId);
+                        record = repository.readWithIds(recordId, null, null);
+                    } catch (RecordNotFoundException e) {
+                        // The record has been deleted in the meantime.
+                        // For now, we do nothing, when the delete event is received the record will be removed
+                        // from the index.
+                        // TODO: we should process all outstanding messages for the record (up to delete) in one go
+                        return true;
                     }
 
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("Record %1$s: deleted from index (if present) because of " +
-                                "delete record event", recordId));
-                    }
+                    // Read the vtags of the record. Note that while this algorithm is running, the record can meanwhile
+                    // undergo changes. However, we continuously work with the snapshot of the vtags mappings read here.
+                    // The processing of later events will bring the index up to date with any new changes.
+                    Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
+                    vtagsByVersion = VersionTag.tagsByVersion(vtags);
 
-                    // After this we can go to update denormalized data
-                    updateDenormalizedData(recordId, event, null, null);
-                } else {
-                    Map<Long, Set<String>> vtagsByVersion;
-                    Map<Scope, Set<FieldType>> updatedFieldsByScope;
+                    updatedFieldsByScope = getFieldTypeAndScope(event.getUpdatedFields());
 
-                    indexLocker.lock(recordId);
-                    try {
-                        IdRecord record;
-                        try {
-                            record = repository.readWithIds(recordId, null, null);
-                        } catch (RecordNotFoundException e) {
-                            // The record has been deleted in the meantime.
-                            // For now, we do nothing, when the delete event is received the record will be removed
-                            // from the index.
-                            // TODO: we should process all outstanding messages for the record (up to delete) in one go
-                            return true;
-                        }
-
-                        // Read the vtags of the record. Note that while this algorithm is running, the record can meanwhile
-                        // undergo changes. However, we continuously work with the snapshot of the vtags mappings read here.
-                        // The processing of later events will bring the index up to date with any new changes.
-                        Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
-                        vtagsByVersion = VersionTag.tagsByVersion(vtags);
-
-                        updatedFieldsByScope = getFieldTypeAndScope(event.getUpdatedFields());
-
-                        handleRecordCreateUpdate(record, event, vtags, vtagsByVersion, updatedFieldsByScope);
-                    } finally {
-                        indexLocker.unlockLogFailure(recordId);
-                    }
-
-                    updateDenormalizedData(recordId, event, updatedFieldsByScope, vtagsByVersion);
+                    handleRecordCreateUpdate(record, event, vtags, vtagsByVersion, updatedFieldsByScope);
+                } finally {
+                    indexLocker.unlockLogFailure(recordId);
                 }
 
-
-            } catch (Exception e) {
-                // TODO
-                //  TODO if the error is an IndexLockException: indexing can be retried later thus rather return false
-                log.error("Error processing event in indexer.", e);
-            } finally {
-                long after = System.currentTimeMillis();
-                metrics.messageProcessed(after - before);
-                Thread.currentThread().setContextClassLoader(currentCL);
+                updateDenormalizedData(recordId, event, updatedFieldsByScope, vtagsByVersion);
             }
-            return true;
+
+
+        } catch (Exception e) {
+            // TODO
+            //  TODO if the error is an IndexLockException: indexing can be retried later thus rather return false
+            log.error("Error processing event in indexer.", e);
+        } finally {
+            long after = System.currentTimeMillis();
+            metrics.messageProcessed(after - before);
+            Thread.currentThread().setContextClassLoader(currentCL);
         }
+        return true;
     }
 
     private void handleRecordCreateUpdate(IdRecord record, RecordEvent event, Map<String, Long> vtags,

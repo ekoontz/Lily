@@ -32,6 +32,7 @@ import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
@@ -58,6 +59,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         messageQueueProcessor.stop();
         ((HBaseRepository)repository).stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
     

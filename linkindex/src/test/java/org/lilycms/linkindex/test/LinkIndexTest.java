@@ -31,12 +31,25 @@ import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.*;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.SubscriptionContext;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
+import org.lilycms.rowlog.impl.RowLogImpl;
+import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
+import org.lilycms.util.hbase.HBaseTableUtil;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class LinkIndexTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    private static ZooKeeperItf zk;
 
     private static TypeManager typeManager;
     private static HBaseRepository repository;
@@ -48,6 +61,7 @@ public class LinkIndexTest {
         TestHelper.setupLogging("org.lilycms.linkindex");
 
         HBASE_PROXY.start();
+        zk = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
 
         IndexManager.createIndexMetaTableIfNotExists(HBASE_PROXY.getConf());
 
@@ -55,18 +69,29 @@ public class LinkIndexTest {
         typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, HBASE_PROXY.getConf());
+
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
+                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zk);
+        RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
+        wal.registerShard(walShard);
+
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, HBASE_PROXY.getConf());
         ids = repository.getIdGenerator();
         IndexManager indexManager = new IndexManager(HBASE_PROXY.getConf());
 
         LinkIndex.createIndexes(indexManager);
         linkIndex = new LinkIndex(indexManager, repository);
+
+        RowLogConfigurationManager rowLogMgr = new RowLogConfigurationManagerImpl(zk);
+        rowLogMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 1, 1);
+        RowLogMessageListenerMapping.INSTANCE.put("LinkIndexUpdater", new LinkIndexUpdater(repository, linkIndex));
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         repository.stop();
         HBASE_PROXY.stop();
+        Closer.close(zk);
     }
 
     @Test
@@ -117,8 +142,6 @@ public class LinkIndexTest {
 
     @Test
     public void testLinkIndexUpdater() throws Exception {
-        LinkIndexUpdater linkIndexUpdater = new LinkIndexUpdater(repository, linkIndex, repository.getWal());
-
         FieldType nonVersionedFt = typeManager.newFieldType(typeManager.getValueType("LINK", false, false),
                 new QName("ns", "link1"), Scope.NON_VERSIONED);
         nonVersionedFt = typeManager.createFieldType(nonVersionedFt);

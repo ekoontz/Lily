@@ -32,6 +32,7 @@ import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class BlobStoreTest extends AbstractBlobStoreTest {
@@ -58,6 +59,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         ((HBaseRepository)repository).stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 

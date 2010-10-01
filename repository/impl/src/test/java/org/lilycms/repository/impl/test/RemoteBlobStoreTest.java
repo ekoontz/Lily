@@ -41,6 +41,7 @@ import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
@@ -85,6 +86,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         serverRepository.stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 

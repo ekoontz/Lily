@@ -9,6 +9,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.net.NetUtils;
 import org.lilycms.util.zookeeper.ZkLock;
 import org.lilycms.util.zookeeper.ZkUtil;
@@ -45,6 +46,7 @@ public class ZkLockTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(ZK);
         if (ZK_CLUSTER != null) {
             ZK_CLUSTER.shutdown();            
         }

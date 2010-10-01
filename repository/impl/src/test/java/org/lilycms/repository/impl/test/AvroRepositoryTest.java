@@ -36,6 +36,7 @@ import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class AvroRepositoryTest extends AbstractRepositoryTest {
@@ -75,6 +76,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         messageQueueProcessor.stop();
         serverRepository.stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 }

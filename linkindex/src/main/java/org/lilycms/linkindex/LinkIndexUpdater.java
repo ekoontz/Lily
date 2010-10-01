@@ -38,12 +38,10 @@ import static org.lilycms.util.repo.RecordEvent.Type.*;
 /**
  * Keeps the {@link LinkIndex} up to date when changes happen to records.
  */
-public class LinkIndexUpdater {
+public class LinkIndexUpdater implements RowLogMessageListener {
     private Repository repository;
     private TypeManager typeManager;
-    private RowLog rowLog;
     private LinkIndex linkIndex;
-    private MyListener listener = new MyListener();
 
     private Log log = LogFactory.getLog(getClass());
 
@@ -53,50 +51,15 @@ public class LinkIndexUpdater {
         this.linkIndex = linkIndex;
     }
 
-    /**
-     * This constructor registers a listener with the rowlog.
-     *
-     * <b>IMPORTANT: this should not be used, the link index update is now triggered as part
-     * of the indexer.</b>
-     */
-    public LinkIndexUpdater(Repository repository, LinkIndex linkIndex, RowLog rowLog) {
-        this.repository = repository;
-        this.typeManager = repository.getTypeManager();
-        this.linkIndex = linkIndex;
-
-        if (rowLog != null) {
-            this.rowLog = rowLog;
-            // TODO
-            //rowLog.registerConsumer(listener);
+    public boolean processMessage(RowLogMessage msg) {
+        try {
+            RecordId recordId = repository.getIdGenerator().fromBytes(msg.getRowKey());
+            RecordEvent recordEvent = new RecordEvent(msg.getPayload());
+            update(recordId, recordEvent);
+        } catch (Exception e) {
+            log.error("Error processing event in LinkIndexUpdater", e);
         }
-    }
-
-    public void stop() {
-        // TODO
-        //rowLog.unRegisterConsumer(listener);
-    }
-
-    private class  MyListener implements RowLogMessageListener {
-
-        public int getId() {
-            // This is selected so as to come before the MessageQueueFeeder 
-            return 5;
-        }
-        
-        public int getMaxTries() {
-            return 10;
-        }
-
-        public boolean processMessage(RowLogMessage msg) {
-            try {
-                RecordId recordId = repository.getIdGenerator().fromBytes(msg.getRowKey());
-                RecordEvent recordEvent = new RecordEvent(msg.getPayload());
-                update(recordId, recordEvent);
-            } catch (Exception e) {
-                log.error("Error processing event in LinkIndexUpdater", e);
-            }
-            return true;
-        }
+        return true;
     }
 
     public void update(RecordId recordId, RecordEvent recordEvent) {

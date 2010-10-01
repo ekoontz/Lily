@@ -22,11 +22,14 @@ import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.zookeeper.*;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+
+import static org.apache.zookeeper.ZooKeeper.States.CONNECTED;
 
 /**
  * Provides access to HBase, either by starting an embedded HBase or by connecting to a running HBase.
@@ -90,6 +93,7 @@ public class HBaseProxy {
                 CONF.set("hbase.zookeeper.quorum", "localhost");
                 CONF.set("hbase.zookeeper.property.clientPort", "2181"); // matches HBaseRunner
                 addUserProps(CONF);
+                cleanZooKeeper();
                 cleanTables();
                 break;
             default:
@@ -157,9 +161,55 @@ public class HBaseProxy {
         }
     }
 
+    public void cleanZooKeeper() throws Exception {
+        int sessionTimeout = 10000;
+
+        ZooKeeper zk = new ZooKeeper(getZkConnectString(), sessionTimeout, new Watcher() {
+            public void process(WatchedEvent event) {
+                if (event.getState() == Watcher.Event.KeeperState.Disconnected) {
+                    System.err.println("ZooKeeper Disconnected.");
+                } else if (event.getState() == Event.KeeperState.Expired) {
+                    System.err.println("ZooKeeper session expired.");
+                }
+            }
+        });
+
+        long waitUntil = System.currentTimeMillis() + sessionTimeout;
+        while (zk.getState() != CONNECTED && waitUntil > System.currentTimeMillis()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        if (zk.getState() != CONNECTED) {
+            throw new RuntimeException("Failed to connect to ZK within " + sessionTimeout + "ms.");
+        }
+
+        if (zk.exists("/lily", false) != null) {
+            System.out.println("----------------- Clearing '/lily' node in ZooKeeper -------------------");
+            deleteChildren("/lily", zk);
+            zk.delete("/lily", -1);
+            System.out.println("------------------------------------------------------------------------");
+        }
+
+        zk.close();
+    }
+
+    private void deleteChildren(String path, ZooKeeper zk) throws InterruptedException, KeeperException {
+        List<String> children = zk.getChildren(path, false);
+        for (String child : children) {
+            String childPath = path + "/" + child;
+            deleteChildren(childPath, zk);
+            System.out.println("Deleting " + path);
+            zk.delete(childPath, -1);
+        }
+    }
+
     public void cleanTables() throws Exception {
         System.out.println("------------------------ Resetting HBase tables ------------------------");
-        
+
         StringBuilder truncateReport = new StringBuilder();
         StringBuilder retainReport = new StringBuilder();
 

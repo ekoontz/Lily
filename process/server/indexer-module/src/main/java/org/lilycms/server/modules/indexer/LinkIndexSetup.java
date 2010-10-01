@@ -38,12 +38,12 @@ public class LinkIndexSetup {
         LinkIndex.createIndexes(indexManager);
         linkIndex = new LinkIndex(indexManager, repository);
 
-        this.linkIndexUpdater = new LinkIndexUpdater(repository, linkIndex, writeAheadLog);
+        this.linkIndexUpdater = new LinkIndexUpdater(repository, linkIndex);
     }
 
     @PreDestroy
     public void stop() {
-        linkIndexUpdater.stop();
+        //linkIndexUpdater.stop();
     }
 
     public LinkIndex getLinkIndex() {

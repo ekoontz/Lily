@@ -44,6 +44,7 @@ import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.repo.PrintUtil;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -94,6 +95,7 @@ public class TutorialTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         repository.stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 

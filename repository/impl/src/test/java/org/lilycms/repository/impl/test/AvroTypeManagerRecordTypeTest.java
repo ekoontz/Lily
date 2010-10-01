@@ -45,6 +45,7 @@ import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -99,6 +100,7 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         serverRepository.stop();
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
  

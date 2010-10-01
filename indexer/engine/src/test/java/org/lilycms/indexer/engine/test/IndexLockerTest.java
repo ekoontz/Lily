@@ -11,6 +11,7 @@ import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.repository.api.RecordId;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.net.NetUtils;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -46,6 +47,7 @@ public class IndexLockerTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(ZK);
         if (ZK_CLUSTER != null) {
             ZK_CLUSTER.shutdown();
         }
