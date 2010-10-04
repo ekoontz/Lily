@@ -19,6 +19,7 @@ import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.*;
+import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -56,7 +57,8 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 
-            Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, null, conf);
+            RowLog wal = new DummyRowLog("The write ahead log should not be called from within MapReduce jobs.");
+            Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf);
 
             byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.fullbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);

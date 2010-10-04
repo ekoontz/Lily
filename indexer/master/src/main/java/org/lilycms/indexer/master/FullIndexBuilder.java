@@ -77,7 +77,7 @@ public class FullIndexBuilder {
         scan.addColumn(NON_VERSIONED_SYSTEM_COLUMN_FAMILY, DELETED_COLUMN_NAME);
 
         TableMapReduceUtil.initTableMapperJob("recordTable", scan,
-            IndexingMapper.class, null, null, job);
+            IndexingMapper.class, null, null, job, false);
 
         //
         // Provide properties to connect to HBase
