@@ -80,7 +80,9 @@ public class HBaseExclusionsMojo  extends AbstractMojo {
         ALLOWED_ARTIFACTS.add("org.apache.hbase:hbase");
         ALLOWED_ARTIFACTS.add("org.apache.hadoop:zookeeper");
         ALLOWED_ARTIFACTS.add("org.apache.hadoop:hadoop-core");
+        ALLOWED_ARTIFACTS.add("com.google.guava:guava");
     }
+    
     private boolean isAllowed(String groupId, String artifactId) {
         return ALLOWED_ARTIFACTS.contains(groupId + ":" + artifactId);
     }
