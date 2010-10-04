@@ -42,13 +42,6 @@ public class RowLogSetup {
 
         RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
         listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(messageQueue));
-        listenerClassMapping.put("LinkIndexUpdater", new RowLogMessageListener() {
-            public boolean processMessage(RowLogMessage message) {
-                // TODO
-                return true;
-            }
-        });
-
 
         // Start the processor
         messageQueueProcessor = new RowLogProcessorImpl(messageQueue, zk);
@@ -58,6 +51,8 @@ public class RowLogSetup {
     @PreDestroy
     public void stop() {
         messageQueueProcessor.stop();
+        RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
+        listenerClassMapping.remove("MQFeeder");        
     }
 
     public RowLog getMessageQueue() {

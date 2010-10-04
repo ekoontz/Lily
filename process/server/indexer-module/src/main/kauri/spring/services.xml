@@ -54,23 +54,13 @@
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperSessionTimeout"/></constructor-arg>
     <constructor-arg ref="rowLogConfigurationMgr"/>
   </bean>
-
-  <bean id="linkIndexSetup" class="org.lilycms.server.modules.indexer.LinkIndexSetup">
-    <constructor-arg ref="repository"/>
-    <constructor-arg ref="writeAheadLog"/>
-    <constructor-arg ref="hbaseConf"/>
-  </bean>
-
-  <bean id="linkIndex"
-      factory-bean="linkIndexSetup"
-      factory-method="getLinkIndex"/>
-
+  
   <bean id="indexerWorker" class="org.lilycms.indexer.worker.IndexerWorker">
     <constructor-arg ref="indexerModel"/>
     <constructor-arg ref="repository"/>
     <constructor-arg ref="messageQueue"/>
-    <constructor-arg ref="linkIndex"/>
     <constructor-arg ref="zooKeeper"/>
+    <constructor-arg ref="hbaseConf"/>
   </bean>
 
 </beans>

@@ -69,6 +69,11 @@
     <constructor-arg ref="hbaseConf"/>
   </bean>
 
+  <bean class="org.lilycms.server.modules.repository.LinkIndexUpdaterSetup">
+    <constructor-arg ref="repository"/>
+    <constructor-arg ref="hbaseConf"/>
+  </bean>
+
   <bean id="address" class="org.lilycms.server.modules.repository.AddressResolver">
     <constructor-arg value="${repository:interface}"/>
     <constructor-arg value="${repository:nameserver}"/>

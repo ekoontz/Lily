@@ -1,10 +1,8 @@
-package org.lilycms.rowlog.impl;
+package org.lilycms.rowlog.api;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.lilycms.rowlog.api.RowLogMessageListener;
 
 public class RowLogMessageListenerMapping {
 

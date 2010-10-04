@@ -15,14 +15,7 @@
  */
 package org.lilycms.rowlog.impl.test;
 
-import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.impl.RowLogMessageListenerMapping;
 
 public class RowLogLocalEndToEndTest {
     @Test

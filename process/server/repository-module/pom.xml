@@ -44,6 +44,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-linkindex</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>

@@ -3,6 +3,7 @@ package org.lilycms.rowlog.impl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
 
 public class LocalListenersSubscriptionHandler extends AbstractListenersSubscriptionHandler {
     

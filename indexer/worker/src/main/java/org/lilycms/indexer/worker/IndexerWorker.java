@@ -4,9 +4,13 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.lilycms.hbaseindex.*;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.IndexUpdater;
 import org.lilycms.indexer.engine.Indexer;
+import org.lilycms.indexer.model.api.IndexDefinition;
+import org.lilycms.indexer.model.api.IndexNotFoundException;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.indexer.engine.SolrServers;
@@ -26,6 +30,7 @@ import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -57,12 +62,12 @@ public class IndexerWorker {
     
     private final Log log = LogFactory.getLog(getClass());
 
-    public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, LinkIndex linkIndex,
-            ZooKeeperItf zk) {
+    public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, ZooKeeperItf zk,
+            Configuration hbaseConf) throws IOException, org.lilycms.hbaseindex.IndexNotFoundException {
         this.indexerModel = indexerModel;
         this.repository = repository;
         this.rowLog = rowLog;
-        this.linkIndex = linkIndex;
+        this.linkIndex = new LinkIndex(new IndexManager(hbaseConf), repository);
         this.zk = zk;
     }
 
