@@ -134,6 +134,12 @@
       <artifactId>jackson-mapper-asl</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-rowlog-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 </project>

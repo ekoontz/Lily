@@ -136,6 +136,9 @@ public class HBaseProxy {
     }
 
     public void stop() throws Exception {
+        // Close connections with HBase and HBase's ZooKeeper handles
+        HConnectionManager.deleteAllConnections(true);
+
         if (MODE == Mode.EMBED) {
             TEST_UTIL.shutdownMiniCluster();
             TEST_UTIL = null;

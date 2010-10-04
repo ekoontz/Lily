@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
@@ -64,6 +66,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     private ChannelFactory channelFactory;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private final ZooKeeperItf zooKeeper;
+    private Log log = LogFactory.getLog(getClass());
     
     public RowLogProcessorImpl(RowLog rowLog, ZooKeeperItf zooKeeper) throws RowLogException {
         this.rowLog = rowLog;
@@ -100,20 +103,24 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     
     public void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
         synchronized (subscriptionThreads) {
-            List<String> newSubscriptionIds = new ArrayList<String>();
-            for (SubscriptionContext newSubscription : newSubscriptions) {
-                newSubscriptionIds.add(newSubscription.getId());
-                if (!subscriptionThreads.containsKey(newSubscription)) {
-                    SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
-                    subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
-                }
-            }
-            Iterator<String> iterator = subscriptionThreads.keySet().iterator();
-            while (iterator.hasNext()) {
-                String subscriptionId = iterator.next();
-                if (!newSubscriptionIds.contains(subscriptionId)) {
-                    stopSubscriptionThread(subscriptionId);
-                    iterator.remove();
+            synchronized (this) { //  because we do not want to run this concurrently with the start/stop methods
+                if (!stop) {
+                    List<String> newSubscriptionIds = new ArrayList<String>();
+                    for (SubscriptionContext newSubscription : newSubscriptions) {
+                        newSubscriptionIds.add(newSubscription.getId());
+                        if (!subscriptionThreads.containsKey(newSubscription.getId())) {
+                            SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
+                            subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
+                        }
+                    }
+                    Iterator<String> iterator = subscriptionThreads.keySet().iterator();
+                    while (iterator.hasNext()) {
+                        String subscriptionId = iterator.next();
+                        if (!newSubscriptionIds.contains(subscriptionId)) {
+                            stopSubscriptionThread(subscriptionId);
+                            iterator.remove();
+                        }
+                    }
                 }
             }
         }
@@ -190,6 +197,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
             } catch (UnknownHostException e) {
                 // Don't listen to any wakeup events
                 // Fallback on the default timeout behaviour
+                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId());
             }
         }
     }

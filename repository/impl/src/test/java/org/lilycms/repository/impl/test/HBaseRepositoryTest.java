@@ -44,7 +44,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        setupRowLogConfigurationManager();
+        setupRowLogConfigurationManager(zooKeeper);
         typeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);

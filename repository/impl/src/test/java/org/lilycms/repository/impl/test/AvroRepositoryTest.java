@@ -47,7 +47,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        setupRowLogConfigurationManager();
+        setupRowLogConfigurationManager(zooKeeper);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
@@ -66,7 +66,6 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
-        setupRowLogConfigurationManager();
         setupTypes();
         setupMessageQueue();
         setupMessageQueueProcessor();

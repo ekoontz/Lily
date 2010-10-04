@@ -158,8 +158,7 @@ public abstract class AbstractRepositoryTest {
         recordType3 = typeManager.updateRecordType(recordType3);
     }
 
-    protected static void setupRowLogConfigurationManager() throws Exception {
-        ZooKeeperItf zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+    protected static void setupRowLogConfigurationManager(ZooKeeperItf zooKeeper) throws Exception {
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
     }
     

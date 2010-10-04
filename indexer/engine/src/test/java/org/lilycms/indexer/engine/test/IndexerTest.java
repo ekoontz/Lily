@@ -155,12 +155,12 @@ public class IndexerTest {
         if (repository != null)
             repository.stop();
 
+        Closer.close(zk);
+
         HBASE_PROXY.stop();
 
         if (SOLR_TEST_UTIL != null)
             SOLR_TEST_UTIL.stop();
-
-        Closer.close(zk);
     }
 
     private static void setupSchema() throws Exception {
