@@ -1221,14 +1221,6 @@ public class IndexerTest {
             return failures;
         }
 
-        public int getId() {
-            return 201;
-        }
-
-        public int getMaxTries() {
-            return 1;
-        }
-
         public void init() {
             this.expectedId = null;
             this.expectedEvent = null;
