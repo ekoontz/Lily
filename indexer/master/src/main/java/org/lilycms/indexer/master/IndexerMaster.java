@@ -50,15 +50,11 @@ public class IndexerMaster {
 
     private IndexerModelListener listener = new MyListener();
 
-    private MasterProvisioner masterProvisioner = new MasterProvisioner();
-
     private JobStatusWatcher jobStatusWatcher = new JobStatusWatcher();
 
     private EventWorker eventWorker = new EventWorker();
 
     private final Log log = LogFactory.getLog(getClass());
-
-    enum MasterState { I_AM_MASTER, I_AM_NOT_MASTER }
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
             Configuration mapReduceJobConf, Configuration hbaseConf, String zkConnectString, int zkSessionTimeout,
@@ -75,138 +71,52 @@ public class IndexerMaster {
 
     @PostConstruct
     public void start() throws LeaderElectionSetupException, IOException, InterruptedException, KeeperException {
-        masterProvisioner.start();
-
         leaderElection = new LeaderElection(zk, "Indexer Master", "/lily/indexer/masters",
                 new MyLeaderElectionCallback());
     }
 
     @PreDestroy
     public void stop() {
-        leaderElection.stop();
-
         try {
-            eventWorker.shutdown(true);
+            leaderElection.stop();
         } catch (InterruptedException e) {
-            log.info("Interrupted while shutting down event worker.");
-        }
-
-        try {
-            jobStatusWatcher.shutdown(true);
-        } catch (InterruptedException e) {
-            log.info("Interrupted while shutting down job status watcher.");
-        }
-
-        try {
-            masterProvisioner.shutdown();
-        } catch (InterruptedException e) {
-            log.info("Interrupted while shutting down master provisioner.");
+            log.info("Interrupted while shutting down leader election.");
         }
     }
 
     private class MyLeaderElectionCallback implements LeaderElectionCallback {
-        public void elected() {
-            log.info("Got notified that I am elected as the indexer master.");
-            masterProvisioner.setRequiredState(MasterState.I_AM_MASTER);
-        }
+        public void activateAsLeader() throws Exception {
+            log.info("Starting up as indexer master.");
 
-        public void noLongerElected() {
-            log.info("Got notified that I am no longer the indexer master.");
-            masterProvisioner.setRequiredState(MasterState.I_AM_NOT_MASTER);
-        }
-    }
+            // Start these processes, but it is not until we have registered our model listener
+            // that these will receive work.
+            eventWorker.start();
+            jobStatusWatcher.start();
 
-    /**
-     * Activates or disactivates this node as master. This is done in a separate thread, rather than in the
-     * LeaderElectionCallback, in order not to block delivery of messages to other ZK watchers. A simple solution
-     * to this would be to simply launch a thread in the LeaderElectionCallback methods. But then the handling
-     * of the elected() and noLongerElected() could run in parallel, which is not allowed. An improvement would
-     * be to put their processing in a queue. But when we have a lot of disconnected/connected events in a short
-     * time frame, faster than we can process them, it would not make sense to process them one by one, we are
-     * only interested in bringing the master to latest requested state.
-     *
-     * Therefore, the solution used here just keeps a 'requiredState' variable and notifies a monitor when
-     * it is changed.
-     */
-    private class MasterProvisioner implements Runnable {
-        private volatile MasterState currentState = MasterState.I_AM_NOT_MASTER;
-        private volatile MasterState requiredState = MasterState.I_AM_NOT_MASTER;
-        private final Object stateMonitor = new Object();
-        private Thread thread;
+            Collection<IndexDefinition> indexes = indexerModel.getIndexes(listener);
 
-        public synchronized void shutdown() throws InterruptedException {
-            if (!thread.isAlive()) {
-                return;
+            // Rather than performing any work that might to be done for the indexes here,
+            // we push out fake events. This way there's only one place where these actions
+            // need to be performed.
+            for (IndexDefinition index : indexes) {
+                eventWorker.putEvent(new IndexerModelEvent(IndexerModelEventType.INDEX_UPDATED, index.getName()));
             }
 
-            thread.interrupt();
-            thread.join();
-            thread = null;
+            log.info("Startup as indexer master successful.");
         }
 
-        public synchronized void start() {
-            thread = new Thread(this, "IndexerMasterProvisioner");
-            thread.start();
-        }
+        public void deactivateAsLeader() throws Exception {
+            log.info("Shutting down as indexer master.");
 
-        public void run() {
-            while (!Thread.interrupted()) {
-                try {
-                    if (currentState != requiredState) {
-                        if (requiredState == MasterState.I_AM_MASTER) {
-                            log.info("Starting up as indexer master.");
+            indexerModel.unregisterListener(listener);
 
-                            // Start these processes, but it is not until we have registered our model listener
-                            // that these will receive work.
-                            eventWorker.start();
-                            jobStatusWatcher.start();
+            // Argument false for shutdown: we do not interrupt the event worker thread: if there
+            // was something running there that is blocked until the ZK connection comes back up
+            // we want it to finish (e.g. a lock taken that should be released again)
+            eventWorker.shutdown(false);
+            jobStatusWatcher.shutdown(false);
 
-                            Collection<IndexDefinition> indexes = indexerModel.getIndexes(listener);
-
-                            // Rather than performing any work that might to be done for the indexes here,
-                            // we push out fake events. This way there's only one place where these actions
-                            // need to be performed.
-                            for (IndexDefinition index : indexes) {
-                                eventWorker.putEvent(new IndexerModelEvent(IndexerModelEventType.INDEX_UPDATED, index.getName()));
-                            }
-
-                            currentState = MasterState.I_AM_MASTER;
-                            log.info("Startup as indexer master successful.");
-                        } else if (requiredState == MasterState.I_AM_NOT_MASTER) {
-                            log.info("Shutting down as indexer master.");
-
-                            indexerModel.unregisterListener(listener);
-
-                            // Argument false for shutdown: we do not interrupt the event worker thread: if there
-                            // was something running there that is blocked until the ZK connection comes back up
-                            // we want it to finish (e.g. a lock taken that should be released again)
-                            eventWorker.shutdown(false);
-                            jobStatusWatcher.shutdown(false);
-
-                            currentState = MasterState.I_AM_NOT_MASTER;
-                            log.info("Shutdown as indexer master successful.");
-                        }
-                    }
-
-                    synchronized (stateMonitor) {
-                        if (currentState == requiredState) {
-                            stateMonitor.wait();
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    // we stop working
-                    return;
-                } catch (Throwable t) {
-                    log.error("Error in indexer master provisioner.", t);
-                }
-            }
-        }
-
-        public void setRequiredState(MasterState state) {
-            synchronized (stateMonitor) {
-                this.requiredState = state;
-                stateMonitor.notifyAll();
-            }
+            log.info("Shutdown as indexer master successful.");
         }
     }
 

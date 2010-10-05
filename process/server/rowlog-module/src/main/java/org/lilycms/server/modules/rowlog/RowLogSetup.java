@@ -5,6 +5,7 @@ import org.apache.zookeeper.KeeperException;
 import org.lilycms.rowlog.api.*;
 import org.lilycms.rowlog.impl.*;
 import org.lilycms.util.hbase.HBaseTableUtil;
+import org.lilycms.util.zookeeper.LeaderElectionSetupException;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import javax.annotation.PostConstruct;
@@ -17,7 +18,7 @@ public class RowLogSetup {
     private final ZooKeeperItf zk;
     private RowLog messageQueue;
     private RowLog writeAheadLog;
-    private RowLogProcessorImpl messageQueueProcessor;
+    private RowLogProcessorElection messageQueueProcessorLeader;
 
     public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf) {
         this.confMgr = confMgr;
@@ -26,7 +27,7 @@ public class RowLogSetup {
     }
 
     @PostConstruct
-    public void start() throws InterruptedException, KeeperException, IOException, RowLogException {
+    public void start() throws InterruptedException, KeeperException, IOException, RowLogException, LeaderElectionSetupException {
         // If the subscription already exists, this method will silently return
         confMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 3, 10);
         confMgr.addSubscription("WAL", "MQFeeder", SubscriptionContext.Type.VM, 3, 20);
@@ -44,13 +45,13 @@ public class RowLogSetup {
         listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(messageQueue));
 
         // Start the processor
-        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, zk);
-        messageQueueProcessor.start();
+        messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, zk));
+        messageQueueProcessorLeader.start();
     }
 
     @PreDestroy
     public void stop() {
-        messageQueueProcessor.stop();
+        messageQueueProcessorLeader.stop();
         RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
         listenerClassMapping.remove("MQFeeder");        
     }

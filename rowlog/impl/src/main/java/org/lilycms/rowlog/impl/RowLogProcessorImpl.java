@@ -73,7 +73,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
         this.zooKeeper = zooKeeper;
         this.shard = rowLog.getShards().get(0); // TODO: For now we only work with one shard
     }
-    
+
+    public RowLog getRowLog() {
+        return rowLog;
+    }
+
     @Override
     protected synchronized void finalize() throws Throwable {
         stop();

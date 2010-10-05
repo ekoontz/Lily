@@ -24,11 +24,11 @@ public class LeaderElectionMain implements Runnable {
     }
 
     private class Callback implements LeaderElectionCallback {
-        public void elected() {
+        public void activateAsLeader() {
             System.out.println("I am the leader.");
         }
 
-        public void noLongerElected() {
+        public void deactivateAsLeader() {
             System.out.println("I am no longer the leader.");
         }
     }

@@ -11,8 +11,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Simple leader election system, not optimized for large numbers of potential leaders (see ZK recipe
- * for how it could be improved).
+ * Simple leader election system, not optimized for large numbers of potential leaders (could be improved
+ * for herd effect, see ZK recipe).
  *
  * <p>It currently only reports if this client is the leader or not, it does not report who the leader is,
  * but that could be added.
@@ -20,6 +20,9 @@ import java.util.List;
  * <p>It is intended for 'active leaders', which should give up their leader role as soon as we
  * are disconnected from the ZK cluster, rather than only when we get a session expiry event
  * (see http://markmail.org/message/o6whuii7wlf2a64c).
+ *
+ * <p>The leader state is reported via the {@link LeaderElectionCallback}, which is called from
+ * within a different Thread than the ZooKeeper event thread.
  */
 public class LeaderElection {
     private ZooKeeperItf zk;
@@ -29,6 +32,11 @@ public class LeaderElection {
     private boolean elected = false;
     private ZkWatcher watcher = new ZkWatcher();
     private boolean stopped = false;
+    private LeaderProvisioner leaderProvisioner = new LeaderProvisioner();
+
+    enum LeaderState {
+        I_AM_LEADER, I_AM_NOT_LEADER
+    }
 
     private Log log = LogFactory.getLog(this.getClass());
 
@@ -45,11 +53,22 @@ public class LeaderElection {
         this.electionPath = electionPath;
         this.callback = callback;
         proposeAsLeader();
+        leaderProvisioner.start();
     }
 
-    public void stop() {
+    public void stop() throws InterruptedException {
         // Note that ZooKeeper does not have a way to remove watches (see ZOOKEEPER-422)
         stopped = true;
+        leaderProvisioner.shutdown();
+        if (leaderProvisioner.currentState == LeaderState.I_AM_LEADER) {
+            try {
+                callback.deactivateAsLeader();
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (Throwable t) {
+                log.error("Error stopping the leader for " + position, t);
+            }
+        }
     }
 
     private void proposeAsLeader() throws LeaderElectionSetupException, InterruptedException, KeeperException {
@@ -65,9 +84,6 @@ public class LeaderElection {
                 }
             });
         } catch (KeeperException e) {
-            throw new LeaderElectionSetupException("Error creating leader election zookeeper node below " +
-                    electionPath, e);
-        } catch (InterruptedException e) {
             throw new LeaderElectionSetupException("Error creating leader election zookeeper node below " +
                     electionPath, e);
         }
@@ -109,12 +125,12 @@ public class LeaderElection {
 
             if (stat.getEphemeralOwner() == zk.getSessionId() && !elected) {
                 elected = true;
-                callback.elected();
-
-                log.info("I became the leader for the position of " + position);
+                log.info("Elected as leader for the position of " + position);
+                leaderProvisioner.setRequiredState(LeaderState.I_AM_LEADER);
             }
 
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.error("Error getting children of path " + electionPath, e);
         } catch (KeeperException e) {
             // If the exception happened on the zk.getChildren() call, then the watcher will not have been
@@ -137,8 +153,8 @@ public class LeaderElection {
 
                 if (elected) {
                     elected = false;
-                    log.info("I lost the leader role for the position of " + position);
-                    callback.noLongerElected();
+                    log.info("No longer leader for the position of " + position);
+                    leaderProvisioner.setRequiredState(LeaderState.I_AM_NOT_LEADER);
                 }
 
                 // Note that if we get a disconnected event here, our watcher is not unregistered, thus we will
@@ -157,4 +173,72 @@ public class LeaderElection {
         }
     }
 
+    /**
+     * Activates or deactivates the leader. This is done in a separate thread, rather than in the
+     * ZooKeeper event thread, in order not to block delivery of messages to other ZK watchers. A simple solution
+     * to this would be to simply launch a thread in the LeaderElectionCallback methods. But then the handling
+     * of the activateAsLeader() and deactivateAsLeader() could run in parallel, which we do not desire. An
+     * improvement would be to put their processing in a queue. But when we have a lot of disconnected/connected
+     * events in a short time frame, faster than they are processed, it would not make sense to process them one by
+     * one, we are only interested in bringing the leader to latest requested state.
+     *
+     * Therefore, the solution used here just keeps a 'requiredState' variable and notifies a monitor when
+     * it is changed.
+     */
+    private class LeaderProvisioner implements Runnable {
+        private volatile LeaderState currentState = LeaderState.I_AM_NOT_LEADER;
+        private volatile LeaderState requiredState = LeaderState.I_AM_NOT_LEADER;
+        private final Object stateMonitor = new Object();
+        private Thread thread;
+
+        public synchronized void shutdown() throws InterruptedException {
+            if (!thread.isAlive()) {
+                return;
+            }
+
+            thread.interrupt();
+            thread.join();
+            thread = null;
+        }
+
+        public synchronized void start() {
+            thread = new Thread(this, "LeaderProvisioner for " + position);
+            thread.start();
+        }
+
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    if (currentState != requiredState) {
+                        if (requiredState == LeaderState.I_AM_LEADER) {
+                            callback.activateAsLeader();
+                            currentState = LeaderState.I_AM_LEADER;
+                        } else if (requiredState == LeaderState.I_AM_NOT_LEADER) {
+                            callback.deactivateAsLeader();
+                            currentState = LeaderState.I_AM_NOT_LEADER;
+                        }
+                    }
+
+                    synchronized (stateMonitor) {
+                        if (currentState == requiredState) {
+                            stateMonitor.wait();
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    // we stop working
+                    return;
+                } catch (Throwable t) {
+                    log.error("Error in leader provisioner for " + position, t);
+                }
+            }
+        }
+
+        public void setRequiredState(LeaderState state) {
+            synchronized (stateMonitor) {
+                this.requiredState = state;
+                stateMonitor.notifyAll();
+            }
+        }
+    }
 }
