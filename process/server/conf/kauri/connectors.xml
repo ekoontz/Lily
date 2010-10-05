@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <connectors>
-  <serverConnector protocols="HTTP" port="8888">
+  <serverConnector protocols="HTTP" port="0">
     <!--
       The full list of parameters that can be used here can be found in the Javadoc
       of the class org.restlet.ext.jetty.HttpServerHelper and its parent class.
