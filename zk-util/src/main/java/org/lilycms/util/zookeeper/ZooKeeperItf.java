@@ -50,6 +50,13 @@ public interface ZooKeeperItf extends Closeable {
      */
     <T> T retryOperation(ZooKeeperOperation<T> operation) throws InterruptedException, KeeperException;
 
+    /**
+     * Returns true if we know for sure the current thread is the ZooKeeper event thread.
+     * 
+     * <p><b>This is a Lily-specific method.</b>
+     */
+    boolean isCurrentThreadEventThread();
+
     long getSessionId();
 
     byte[] getSessionPasswd();

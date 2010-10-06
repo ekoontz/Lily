@@ -107,6 +107,8 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                 return;
             }
 
+            zkEventThread = Thread.currentThread();
+
             try {
                 if (event.getState() == Expired) {
                     endProcess("ZooKeeper session expired, shutting down.");

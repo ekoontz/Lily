@@ -47,6 +47,10 @@ public class ZkLock {
      * @return a string identifying this lock, needs to be supplied to {@link ZkLock#unlock}.
      */
     public static String lock(final ZooKeeperItf zk, final String lockPath) throws ZkLockException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("ZkLock should not be used from within the ZooKeeper event thread.");
+        }
+
         try {
             final long threadId = Thread.currentThread().getId();
 
@@ -178,6 +182,10 @@ public class ZkLock {
      * @param ignoreMissing if true, do not throw an exception if the lock does not exist
      */
     public static void unlock(final ZooKeeperItf zk, final String lockId, boolean ignoreMissing) throws ZkLockException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("ZkLock should not be used from within the ZooKeeper event thread.");
+        }
+
         try {
             zk.retryOperation(new ZooKeeperOperation<Object>() {
                 public Object execute() throws KeeperException, InterruptedException {
@@ -198,6 +206,10 @@ public class ZkLock {
      * Verifies that the specified lockId is the owner of the lock.
      */
     public static boolean ownsLock(final ZooKeeperItf zk, final String lockId) throws ZkLockException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("ZkLock should not be used from within the ZooKeeper event thread.");
+        }
+
         try {
             int lastSlashPos = lockId.lastIndexOf('/');
             final String lockPath = lockId.substring(0, lastSlashPos);

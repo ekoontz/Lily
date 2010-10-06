@@ -30,7 +30,8 @@ public class LeaderElection {
     private String electionPath;
     private LeaderElectionCallback callback;
     private boolean elected = false;
-    private ZkWatcher watcher = new ZkWatcher();
+    private ChildrenWatcher watcher = new ChildrenWatcher();
+    private ConnectStateWatcher connectStateWatcher = new ConnectStateWatcher();
     private boolean stopped = false;
     private LeaderProvisioner leaderProvisioner = new LeaderProvisioner();
 
@@ -53,12 +54,14 @@ public class LeaderElection {
         this.electionPath = electionPath;
         this.callback = callback;
         proposeAsLeader();
+        zk.addDefaultWatcher(connectStateWatcher);
         leaderProvisioner.start();
     }
 
     public void stop() throws InterruptedException {
         // Note that ZooKeeper does not have a way to remove watches (see ZOOKEEPER-422)
         stopped = true;
+        zk.removeDefaultWatcher(connectStateWatcher);
         leaderProvisioner.shutdown();
         if (leaderProvisioner.currentState == LeaderState.I_AM_LEADER) {
             try {
@@ -93,13 +96,10 @@ public class LeaderElection {
 
     private synchronized void watchLeaders() {
         try {
-            List<String> children = zk.retryOperation(new ZooKeeperOperation<List<String>>() {
-                public List<String> execute() throws KeeperException, InterruptedException {
-                    // Here the code could be improved: providing the watcher here can give the so-called
-                    // "herd-effect", especially when there are many potential leaders.
-                    return zk.getChildren(electionPath, watcher);
-                }
-            });
+            // Here the code could be improved: providing the watcher here can give the so-called
+            // "herd-effect", especially when there are many potential leaders.
+            List<String> children = zk.getChildren(electionPath, watcher);
+
             // The child sequence numbers are fixed-with, prefixed with zeros, so we can sort them as strings
             Collections.sort(children);
 
@@ -117,11 +117,7 @@ public class LeaderElection {
             // with the Stat.ephemeralOwner field. This is because the creation of the ephemeral node might have
             // failed with a ConnectionLoss exception, in which case we might have retried and hence have two
             // leader nodes allocated.
-            Stat stat = zk.retryOperation(new ZooKeeperOperation<Stat>() {
-                public Stat execute() throws KeeperException, InterruptedException {
-                    return zk.exists(electionPath + "/" + leader, false);
-                }
-            });
+            Stat stat = zk.exists(electionPath + "/" + leader, false);
 
             if (stat.getEphemeralOwner() == zk.getSessionId() && !elected) {
                 elected = true;
@@ -142,14 +138,27 @@ public class LeaderElection {
         }
     }
 
-    public class ZkWatcher implements Watcher {
+    public class ChildrenWatcher implements Watcher {
         public void process(WatchedEvent event) {
             if (stopped) {
                 return;
             }
 
-            if (event.getState().equals(Event.KeeperState.Disconnected) ||
-                    event.getState().equals(Event.KeeperState.Expired)) {
+            if (event.getType() == EventType.NodeChildrenChanged && event.getPath().equals(electionPath)) {
+                watchLeaders();
+            }
+        }
+    }
+
+    public class ConnectStateWatcher implements Watcher {
+        public void process(WatchedEvent event) {
+            if (stopped) {
+                return;
+            }
+
+            if (event.getType() == EventType.None &&
+                    (event.getState().equals(Event.KeeperState.Disconnected) ||
+                    event.getState().equals(Event.KeeperState.Expired))) {
 
                 if (elected) {
                     elected = false;
@@ -166,8 +175,6 @@ public class LeaderElection {
             } else if (event.getType() == EventType.None && event.getState() == KeeperState.SyncConnected) {
                 // Upon reconnect, since our session was not expired, our ephemeral node will still
                 // exist (it might even be the leader), therefore have a look at the leaders.
-                watchLeaders();
-            } else if (event.getType() == EventType.NodeChildrenChanged && event.getPath().equals(electionPath)) {
                 watchLeaders();
             }
         }

@@ -26,6 +26,8 @@ public class ZooKeeperImpl implements ZooKeeperItf {
 
     protected final Object connectedMonitor = new Object();
 
+    protected Thread zkEventThread;
+
     private Log log = LogFactory.getLog(getClass());
 
     protected ZooKeeperImpl() {
@@ -49,11 +51,20 @@ public class ZooKeeperImpl implements ZooKeeperItf {
     }
 
     public void waitForConnection() throws InterruptedException {
+        if (isCurrentThreadEventThread()) {
+            throw new RuntimeException("waitForConnection should not be called from within the ZooKeeper event thread.");
+        }
+
         synchronized (connectedMonitor) {
             while (!connected) {
                 connectedMonitor.wait();
             }
         }
+    }
+
+    public boolean isCurrentThreadEventThread() {
+        // Disclaimer: this way of detected wrong use of the event thread was inspired by the ZKClient library.
+        return zkEventThread != null && zkEventThread == Thread.currentThread();
     }
 
     protected void setConnectedState(WatchedEvent event) {
@@ -76,6 +87,9 @@ public class ZooKeeperImpl implements ZooKeeperItf {
     }
 
     public <T> T retryOperation(ZooKeeperOperation<T> operation) throws InterruptedException, KeeperException {
+        if (isCurrentThreadEventThread()) {
+            throw new RuntimeException("retryOperation should not be called from within the ZooKeeper event thread.");
+        }
 
         int tryCount = 0;
 
@@ -241,6 +255,8 @@ public class ZooKeeperImpl implements ZooKeeperItf {
         private boolean firstConnect = true;
 
         public void process(WatchedEvent event) {
+            zkEventThread = Thread.currentThread();
+
             if (event.getState() == Watcher.Event.KeeperState.Disconnected) {
                 System.err.println("ZooKeeper Disconnected.");
             } else if (event.getState() == Event.KeeperState.Expired) {
