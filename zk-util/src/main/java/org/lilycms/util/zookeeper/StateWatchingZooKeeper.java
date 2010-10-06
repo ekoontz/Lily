@@ -88,6 +88,7 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
         if (stateWatcherThread != null) {
             stateWatcherThread.interrupt();
         }
+        close();
     }
 
     private void endProcess(String message) {
