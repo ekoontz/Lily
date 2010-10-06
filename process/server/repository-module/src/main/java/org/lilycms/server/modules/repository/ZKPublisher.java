@@ -58,7 +58,7 @@ public class ZKPublisher {
         // Publish our address
         ZkUtil.createPath(zk, nodesPath);
         final String repoAddressAndPort = hostAddress + ":" + port;
-        ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
+        ZkUtil.retryOperation(new ZooKeeperOperation<Object>() {
             public Object execute() throws KeeperException, InterruptedException {
                 zk.create(nodesPath + "/" + repoAddressAndPort, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 return null;

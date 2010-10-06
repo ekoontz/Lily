@@ -62,6 +62,7 @@ public class ZooKeeperImpl implements ZooKeeperItf {
         try {
             delegate.close();
         } catch (InterruptedException e) {
+            Thread.interrupted();
             throw new RuntimeException(e);
         }
     }

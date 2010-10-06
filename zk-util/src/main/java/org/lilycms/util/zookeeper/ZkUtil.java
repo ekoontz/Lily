@@ -57,7 +57,7 @@ public class ZkUtil {
     public static void createPath(final ZooKeeperItf zk, final String path, final byte[] data,
             final CreateMode createMode) throws InterruptedException, KeeperException {
 
-        Stat stat = retryOperationForever(new ZooKeeperOperation<Stat>() {
+        Stat stat = retryOperation(new ZooKeeperOperation<Stat>() {
             public Stat execute() throws KeeperException, InterruptedException {
                 return zk.exists(path, null);
             }
@@ -75,7 +75,7 @@ public class ZkUtil {
         for (String part : parts) {
             subPath.append("/").append(part);
             try {
-                retryOperationForever(new ZooKeeperOperation<String>() {
+                retryOperation(new ZooKeeperOperation<String>() {
                     public String execute() throws KeeperException, InterruptedException {
                         return zk.create(subPath.toString(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
                     }
@@ -111,11 +111,11 @@ public class ZkUtil {
      * <p>Do not call this method from within a ZooKeeper watcher callback, as it might block for a longer
      * time and hence block the delivery of other events, including the Disconnected event.
      *
-     * @retryCount if -1, retries forever
      */
-    public static <T> T retryOperation(ZooKeeperOperation<T> operation, int retryCount)
-        throws KeeperException, InterruptedException {
+    public static <T> T retryOperation(ZooKeeperOperation<T> operation)
+            throws InterruptedException, KeeperException {
         // Disclaimer: this method was copied from ZooKeeper's lock recipe (class ProtocolSupport) and slightly altered
+        int retryCount = -1;
         KeeperException exception = null;
         for (int i = 0; retryCount == -1 || i < retryCount; i++) {
             try {
@@ -130,11 +130,6 @@ public class ZkUtil {
             }
         }
         throw exception;
-    }
-
-    public static <T> T retryOperationForever(ZooKeeperOperation<T> operation)
-            throws InterruptedException, KeeperException {
-        return retryOperation(operation, -1);
     }
 
     /**

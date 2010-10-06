@@ -328,7 +328,7 @@ public abstract class BaseIndexerAdminCli extends BaseZkCliTool {
 
         final ZooKeeperItf zk = new StateWatchingZooKeeper(zkConnectionString, 10000);
 
-        boolean lilyNodeExists = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+        boolean lilyNodeExists = ZkUtil.retryOperation(new ZooKeeperOperation<Boolean>() {
             public Boolean execute() throws KeeperException, InterruptedException {
                 return zk.exists("/lily", false) != null;
             }

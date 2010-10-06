@@ -91,7 +91,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         final byte[] data = IndexDefinitionConverter.INSTANCE.toJsonBytes(index);
 
         try {
-            ZkUtil.retryOperationForever(new ZooKeeperOperation<String>() {
+            ZkUtil.retryOperation(new ZooKeeperOperation<String>() {
                 public String execute() throws KeeperException, InterruptedException {
                     return zk.create(indexPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
@@ -182,7 +182,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         final byte[] newData = IndexDefinitionConverter.INSTANCE.toJsonBytes(index);
 
         try {
-            ZkUtil.retryOperationForever(new ZooKeeperOperation<Stat>() {
+            ZkUtil.retryOperation(new ZooKeeperOperation<Stat>() {
                 public Stat execute() throws KeeperException, InterruptedException {
                     return zk.setData(INDEX_COLLECTION_PATH_SLASH + index.getName(), newData, index.getZkDataVersion());
                 }
@@ -240,7 +240,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
         try {
             // Make a copy of the index data in the index trash
-            ZkUtil.retryOperationForever(new ZooKeeperOperation<Object>() {
+            ZkUtil.retryOperation(new ZooKeeperOperation<Object>() {
                 public Object execute() throws KeeperException, InterruptedException {
                     byte[] data = zk.getData(indexPath, false, null);
 
@@ -266,7 +266,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
             // which are being deleted.
             int tryCount = 0;
             while (true) {
-                boolean success = ZkUtil.retryOperationForever(new ZooKeeperOperation<Boolean>() {
+                boolean success = ZkUtil.retryOperation(new ZooKeeperOperation<Boolean>() {
                     public Boolean execute() throws KeeperException, InterruptedException {
                         try {
                             // Delete the index lock if it exists
@@ -334,7 +334,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         //
         // Create the lock path if necessary
         //
-        Stat stat = ZkUtil.retryOperationForever(new ZooKeeperOperation<Stat>() {
+        Stat stat = ZkUtil.retryOperation(new ZooKeeperOperation<Stat>() {
             public Stat execute() throws KeeperException, InterruptedException {
                 return zk.exists(lockPath, null);
             }
@@ -345,7 +345,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
             // because if the parent path does not exist, this means the index does not exist,
             // and we do not want to create an index path (with null data) like that.
             try {
-                ZkUtil.retryOperationForever(new ZooKeeperOperation<String>() {
+                ZkUtil.retryOperation(new ZooKeeperOperation<String>() {
                     public String execute() throws KeeperException, InterruptedException {
                         return zk.create(lockPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                     }
@@ -408,7 +408,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
     private List<IndexerModelEvent> refreshIndexes() throws InterruptedException, KeeperException {
         List<IndexerModelEvent> events = new ArrayList<IndexerModelEvent>();
 
-        List<String> indexNames = ZkUtil.retryOperationForever(new ZooKeeperOperation<List<String>>() {
+        List<String> indexNames = ZkUtil.retryOperation(new ZooKeeperOperation<List<String>>() {
             public List<String> execute() throws KeeperException, InterruptedException {
                 return zk.getChildren(INDEX_COLLECTION_PATH, watcher);
             }
@@ -462,7 +462,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
         byte[] data;
         try {
-            data = ZkUtil.retryOperationForever(new ZooKeeperOperation<byte[]>() {
+            data = ZkUtil.retryOperation(new ZooKeeperOperation<byte[]>() {
                 public byte[] execute() throws KeeperException, InterruptedException {
                     return zk.getData(childPath, watcher, stat);
                 }

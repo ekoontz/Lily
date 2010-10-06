@@ -78,7 +78,7 @@ public class LeaderElection {
             // In case of connection loss, a node might have been created for us (we do not know it). Therefore,
             // retrying upon connection loss is important, so that we can continue with watching the leaders.
             // Later on, we do not look at the name of the node we created here, but at the owner.
-            ZkUtil.retryOperationForever(new ZooKeeperOperation<String>() {
+            ZkUtil.retryOperation(new ZooKeeperOperation<String>() {
                 public String execute() throws KeeperException, InterruptedException {
                     return zk.create(electionPath + "/n_", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
                 }
@@ -93,7 +93,7 @@ public class LeaderElection {
 
     private synchronized void watchLeaders() {
         try {
-            List<String> children = ZkUtil.retryOperationForever(new ZooKeeperOperation<List<String>>() {
+            List<String> children = ZkUtil.retryOperation(new ZooKeeperOperation<List<String>>() {
                 public List<String> execute() throws KeeperException, InterruptedException {
                     // Here the code could be improved: providing the watcher here can give the so-called
                     // "herd-effect", especially when there are many potential leaders.
@@ -117,7 +117,7 @@ public class LeaderElection {
             // with the Stat.ephemeralOwner field. This is because the creation of the ephemeral node might have
             // failed with a ConnectionLoss exception, in which case we might have retried and hence have two
             // leader nodes allocated.
-            Stat stat = ZkUtil.retryOperationForever(new ZooKeeperOperation<Stat>() {
+            Stat stat = ZkUtil.retryOperation(new ZooKeeperOperation<Stat>() {
                 public Stat execute() throws KeeperException, InterruptedException {
                     return zk.exists(electionPath + "/" + leader, false);
                 }
