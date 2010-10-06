@@ -140,8 +140,32 @@ public class HBaseProxy {
         HConnectionManager.deleteAllConnections(true);
 
         if (MODE == Mode.EMBED) {
-            TEST_UTIL.shutdownMiniCluster();
-            TEST_UTIL = null;
+            // Since HBase mini cluster shutdown has a tendency of sometimes failing (hanging waiting on master
+            // to end), add a protection for this so that we do not run indefinitely. Especially important not to
+            // annoy the other projects on our Hudson server.
+            Thread stopHBaseThread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        TEST_UTIL.shutdownMiniCluster();
+                        TEST_UTIL = null;
+                    } catch (IOException e) {
+                        System.out.println("Error shutting down mini cluster.");
+                        e.printStackTrace();
+                    }
+                }
+            };
+            stopHBaseThread.start();
+            stopHBaseThread.join(60000);
+            if (stopHBaseThread.isAlive()) {
+                System.err.println("Unable to stop embedded mini cluster within predetermined timeout.");
+                System.err.println("Dumping stack for future investigation.");
+                Thread.dumpStack();
+                System.out.println("Will now try to interrupt the mini-cluster-stop-thread and give it some more time to end.");
+                stopHBaseThread.interrupt();
+                stopHBaseThread.join(20000);
+                throw new Exception("Failed to stop the mini cluster within the predetermined timeout.");
+            }
         }
         CONF = null;
     }
