@@ -57,8 +57,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private final Object indexes_lock = new Object();
 
-    /** Using a Map since there is no IdentitySet. */
-    private Map<IndexerModelListener, Object> listeners = new IdentityHashMap<IndexerModelListener, Object>();
+    private Set<IndexerModelListener> listeners = Collections.newSetFromMap(new IdentityHashMap<IndexerModelListener, Boolean>());
 
     private Watcher watcher = new MyWatcher();
 
@@ -480,14 +479,14 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private void notifyListeners(List<IndexerModelEvent> events) {
         for (IndexerModelEvent event : events) {
-            for (IndexerModelListener listener : listeners.keySet()) {
+            for (IndexerModelListener listener : listeners) {
                 listener.process(event);
             }
         }
     }
 
     public void registerListener(IndexerModelListener listener) {
-        this.listeners.put(listener, null);
+        this.listeners.add(listener);
     }
 
     public void unregisterListener(IndexerModelListener listener) {
