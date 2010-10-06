@@ -106,8 +106,8 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     }
     
     public void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
-        synchronized (subscriptionThreads) {
-            synchronized (this) { //  because we do not want to run this concurrently with the start/stop methods
+        synchronized (this) { //  because we do not want to run this concurrently with the start/stop methods
+            synchronized (subscriptionThreads) {
                 if (!stop) {
                     List<String> newSubscriptionIds = new ArrayList<String>();
                     for (SubscriptionContext newSubscription : newSubscriptions) {
