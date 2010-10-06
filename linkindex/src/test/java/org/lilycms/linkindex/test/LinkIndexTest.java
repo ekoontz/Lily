@@ -86,7 +86,6 @@ public class LinkIndexTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        repository.stop();
         Closer.close(zk);
         HBASE_PROXY.stop();
     }

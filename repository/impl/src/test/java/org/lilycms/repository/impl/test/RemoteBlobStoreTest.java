@@ -19,6 +19,8 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.NettyServer;
+import org.apache.avro.ipc.Server;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -48,6 +50,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static HBaseRepository serverRepository;
+    private static Server lilyServer;
     
 
     @BeforeClass
@@ -69,9 +72,10 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        HttpServer lilyServer = new HttpServer(
+        lilyServer = new HttpServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
                         serverConverter), 0);
+        lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, idGenerator);
@@ -85,7 +89,9 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        serverRepository.stop();
+        Closer.close(repository);
+        lilyServer.close();
+        lilyServer.join();
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

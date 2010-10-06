@@ -141,7 +141,7 @@ public class HBaseRepository implements Repository {
                 10000);
     }
 
-    public void stop() {
+    public void close() throws IOException {
     }
 
     public IdGenerator getIdGenerator() {

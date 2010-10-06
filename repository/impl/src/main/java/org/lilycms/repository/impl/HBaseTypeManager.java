@@ -80,6 +80,9 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         initializeRecordTypeNameCache();
     }
 
+    public void close() throws IOException {
+    }
+
     public RecordType createRecordType(RecordType recordType) throws RecordTypeExistsException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, TypeException {
         ArgumentValidator.notNull(recordType, "recordType");

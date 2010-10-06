@@ -41,6 +41,8 @@ import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class AvroRepositoryTest extends AbstractRepositoryTest {
     private static HBaseRepository serverRepository;
+    private static HttpServer lilyServer;
+
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
@@ -57,9 +59,10 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        HttpServer lilyServer = new HttpServer(
+        lilyServer = new HttpServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
                         serverConverter), 0);
+        lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, idGenerator);
@@ -73,8 +76,13 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        messageQueueProcessor.stop();
-        serverRepository.stop();
+        if (messageQueueProcessor != null)
+            messageQueueProcessor.stop();
+        Closer.close(repository);
+        if (lilyServer != null) {
+            lilyServer.close();
+            lilyServer.join();
+        }
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

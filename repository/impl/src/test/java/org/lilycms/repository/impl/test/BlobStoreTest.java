@@ -58,7 +58,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        ((HBaseRepository)repository).stop();
+        Closer.close(repository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

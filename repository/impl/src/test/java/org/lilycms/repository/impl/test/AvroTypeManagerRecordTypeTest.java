@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.Server;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.*;
@@ -56,12 +57,15 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
 
-    private static HBaseRepository serverRepository;
+    private static Repository repository;
+
     private static RowLog wal;
 
     private static Configuration configuration;
 
     private static ZooKeeperItf zooKeeper;
+
+    private static Server lilyServer;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -74,13 +78,14 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         setupWal();
-        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
+        Repository serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        HttpServer lilyServer = new HttpServer(
+        lilyServer = new HttpServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
                         serverConverter), 0);
+        lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, idGenerator);
@@ -99,7 +104,9 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        serverRepository.stop();
+        Closer.close(repository);
+        lilyServer.close();
+        lilyServer.join();
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

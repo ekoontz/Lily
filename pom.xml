@@ -226,11 +226,16 @@
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
         <version>${hbase.version}</version>
-        <!-- We use the log4j binding for slf4j instead of the simple one -->
         <exclusions>
+          <!-- We use the log4j binding for slf4j instead of the simple one -->
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
+          </exclusion>
+          <!-- We use a more recent Avro in Lily (which has a different groupId). -->
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>avro</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -240,6 +245,19 @@
         <classifier>tests</classifier>
         <version>${hbase.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <!-- We use a more recent Avro in Lily (which has a different groupId). -->
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>avro</artifactId>
+          </exclusion>          
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <!-- This specific Avro version is basically 1.4.0 with some fixes, notably AVRO-667 -->
+        <version>1.4.1-r1004928</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>

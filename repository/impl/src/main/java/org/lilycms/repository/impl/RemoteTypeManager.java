@@ -23,26 +23,31 @@ import java.util.List;
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
-import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.avro.*;
+import org.lilycms.util.io.Closer;
 
 public class RemoteTypeManager extends AbstractTypeManager implements TypeManager {
 
     private AvroLily lilyProxy;
     private AvroConverter converter;
+    private HttpTransceiver client;
 
     public RemoteTypeManager(InetSocketAddress address, AvroConverter converter, IdGenerator idGenerator)
             throws IOException {
         this.converter = converter;
         //TODO idGenerator should not be available or used in the remote implementation
         this.idGenerator = idGenerator;
-        HttpTransceiver client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
 
         lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
         initialize();
     }
-    
+
+    public void close() throws IOException {
+        Closer.close(client);
+    }
+
     public RecordType createRecordType(RecordType recordType) throws RecordTypeExistsException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, TypeException {
 
@@ -71,7 +76,7 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             } else {
                 avroVersion = version;
             }
-            return converter.convert(lilyProxy.getRecordTypeById(new Utf8(id), avroVersion));
+            return converter.convert(lilyProxy.getRecordTypeById(id, avroVersion));
         } catch (AvroRecordTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroTypeException e) {
@@ -159,7 +164,7 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
 
     public FieldType getFieldTypeById(String id) throws FieldTypeNotFoundException, TypeException {
         try {
-            return converter.convert(lilyProxy.getFieldTypeById(new Utf8(id)));
+            return converter.convert(lilyProxy.getFieldTypeById(id));
         } catch (AvroFieldTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroTypeException e) {

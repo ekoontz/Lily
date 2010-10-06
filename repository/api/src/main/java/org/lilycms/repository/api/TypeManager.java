@@ -15,6 +15,7 @@
  */
 package org.lilycms.repository.api;
 
+import java.io.Closeable;
 import java.util.Collection;
 
 /**
@@ -23,7 +24,7 @@ import java.util.Collection;
  *
  * <p>For an in-depth description of the repository model, please see the Lily documentation.
  */
-public interface TypeManager {
+public interface TypeManager extends Closeable {
     
     /**
      * Instantiates a new RecordType object.

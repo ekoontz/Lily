@@ -18,9 +18,7 @@ package org.lilycms.repository.avro;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.avro.generic.GenericArray;
 import org.apache.avro.ipc.AvroRemoteException;
-import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
 import org.lilycms.repository.api.FieldTypeExistsException;
@@ -71,7 +69,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public Void delete(Utf8 recordId) throws AvroRecordException, AvroTypeException, AvroFieldTypeNotFoundException,
+    public Void delete(CharSequence recordId) throws AvroRecordException, AvroTypeException, AvroFieldTypeNotFoundException,
             AvroRecordNotFoundException {
         try {
             repository.delete(converter.convertAvroRecordId(recordId));
@@ -83,7 +81,7 @@ public class AvroLilyImpl implements AvroLily {
         return null;
     }
 
-    public AvroRecord read(Utf8 recordId, long avroVersion, GenericArray<AvroQName> avroFieldNames)
+    public AvroRecord read(CharSequence recordId, long avroVersion, List<AvroQName> avroFieldNames)
             throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordNotFoundException,
             AvroVersionNotFoundException, AvroRecordException, AvroTypeException {
         List<QName> fieldNames = null;
@@ -111,8 +109,8 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public GenericArray<AvroRecord> readVersions(Utf8 recordId, long avroFromVersion, long avroToVersion,
-            GenericArray<AvroQName> avroFieldNames) throws AvroRecordTypeNotFoundException,
+    public List<AvroRecord> readVersions(CharSequence recordId, long avroFromVersion, long avroToVersion,
+            List<AvroQName> avroFieldNames) throws AvroRecordTypeNotFoundException,
             AvroFieldTypeNotFoundException, AvroRecordNotFoundException, AvroVersionNotFoundException,
             AvroRecordException, AvroTypeException {
         List<QName> fieldNames = null;
@@ -190,7 +188,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecordType getRecordTypeById(Utf8 id, long avroVersion) throws AvroRecordTypeNotFoundException,
+    public AvroRecordType getRecordTypeById(CharSequence id, long avroVersion) throws AvroRecordTypeNotFoundException,
             AvroTypeException {
         try {
             return converter.convert(typeManager.getRecordTypeById(id.toString(), converter.convertAvroVersion(avroVersion)));
@@ -240,7 +238,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroFieldType getFieldTypeById(Utf8 id) throws AvroFieldTypeNotFoundException, AvroTypeException {
+    public AvroFieldType getFieldTypeById(CharSequence id) throws AvroFieldTypeNotFoundException, AvroTypeException {
         try {
             return converter.convert(typeManager.getFieldTypeById(id.toString()));
         } catch (FieldTypeNotFoundException e) {
@@ -260,7 +258,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public GenericArray<AvroFieldType> getFieldTypes() throws AvroTypeException {
+    public List<AvroFieldType> getFieldTypes() throws AvroTypeException {
         try {
             return converter.convertFieldTypes(typeManager.getFieldTypes());
         } catch (TypeException e) {
@@ -268,7 +266,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public GenericArray<AvroRecordType> getRecordTypes() throws AvroTypeException {
+    public List<AvroRecordType> getRecordTypes() throws AvroTypeException {
         try {
             return converter.convertRecordTypes(typeManager.getRecordTypes());
         } catch (TypeException e) {
@@ -276,7 +274,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public GenericArray<Utf8> getVariants(Utf8 recordId) throws AvroRemoteException, AvroRepositoryException,
+    public List<CharSequence> getVariants(CharSequence recordId) throws AvroRemoteException, AvroRepositoryException,
             AvroGenericException {
         try {
             return converter.convert(repository.getVariants(converter.convertAvroRecordId(recordId)));
@@ -285,7 +283,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroIdRecord readWithIds(Utf8 recordId, long avroVersion, GenericArray<Utf8> avroFieldIds)
+    public AvroIdRecord readWithIds(CharSequence recordId, long avroVersion, List<CharSequence> avroFieldIds)
             throws AvroRemoteException, AvroRecordNotFoundException, AvroVersionNotFoundException,
             AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordException, AvroTypeException,
             AvroGenericException {
@@ -293,8 +291,8 @@ public class AvroLilyImpl implements AvroLily {
             List<String> fieldIds = null;
             if (avroFieldIds != null) {
                 fieldIds = new ArrayList<String>();
-                for (Utf8 utf8 : avroFieldIds) {
-                    fieldIds.add(converter.convert(utf8));
+                for (CharSequence avroFieldId : avroFieldIds) {
+                    fieldIds.add(converter.convert(avroFieldId));
                 }
             }
             return converter.convert(repository.readWithIds(converter.convertAvroRecordId(recordId), converter.convertAvroVersion(avroVersion), fieldIds));

@@ -94,7 +94,6 @@ public class TutorialTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        repository.stop();
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

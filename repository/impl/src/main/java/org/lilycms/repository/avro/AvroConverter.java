@@ -26,8 +26,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.*;
@@ -62,7 +60,7 @@ public class AvroConverter {
         }
         record.setRecordType(recordTypeName, avroRecord.recordTypeVersion);
          
-        Map<Utf8, AvroQName> scopeRecordTypeNames = avroRecord.scopeRecordTypeNames;
+        Map<CharSequence, AvroQName> scopeRecordTypeNames = avroRecord.scopeRecordTypeNames;
         if (scopeRecordTypeNames != null) {
             for (Scope scope : Scope.values()) {
                 Utf8 key = new Utf8(scope.name());
@@ -84,10 +82,10 @@ public class AvroConverter {
         }
 
         // FieldsToDelete
-        GenericArray<Utf8> avroFieldsToDelete = avroRecord.fieldsToDelete;
+        List<CharSequence> avroFieldsToDelete = avroRecord.fieldsToDelete;
         if (avroFieldsToDelete != null) {
             List<QName> fieldsToDelete = new ArrayList<QName>();
-            for (Utf8 fieldToDelete : avroFieldsToDelete) {
+            for (CharSequence fieldToDelete : avroFieldsToDelete) {
                 fieldsToDelete.add(decodeQName(convert(fieldToDelete)));
             }
             record.addFieldsToDelete(fieldsToDelete);
@@ -99,16 +97,16 @@ public class AvroConverter {
         Map<String, QName> idToQNameMapping = null;
         if (avroIdRecord.idToQNameMapping != null) {
             idToQNameMapping = new HashMap<String, QName>();
-            for (Entry<Utf8, AvroQName> idEntry : avroIdRecord.idToQNameMapping.entrySet()) {
+            for (Entry<CharSequence, AvroQName> idEntry : avroIdRecord.idToQNameMapping.entrySet()) {
                 idToQNameMapping.put(convert(idEntry.getKey()), convert(idEntry.getValue()));
             }
         }
         Map<Scope, String> recordTypeIds = null;
         if (avroIdRecord.scopeRecordTypeIds == null) {
             recordTypeIds = new HashMap<Scope, String>();
-            Map<Utf8, Utf8> avroRecordTypeIds = avroIdRecord.scopeRecordTypeIds;
+            Map<CharSequence, CharSequence> avroRecordTypeIds = avroIdRecord.scopeRecordTypeIds;
             for (Scope scope : Scope.values()) {
-                recordTypeIds.put(scope, convert(avroRecordTypeIds.get(convert(scope.name()))));
+                recordTypeIds.put(scope, convert(avroRecordTypeIds.get(new Utf8(scope.name()))));
             }
         }
         return new IdRecordImpl(convert(avroIdRecord.record), idToQNameMapping, recordTypeIds);
@@ -119,7 +117,7 @@ public class AvroConverter {
         // Id
         RecordId id = record.getId();
         if (id != null) {
-            avroRecord.id = new Utf8(id.toString());
+            avroRecord.id = id.toString();
         }
         if (record.getVersion() != null) {
             avroRecord.version = record.getVersion();
@@ -131,8 +129,8 @@ public class AvroConverter {
         if (record.getRecordTypeVersion() != null) {
             avroRecord.recordTypeVersion = record.getRecordTypeVersion();
         }
-        avroRecord.scopeRecordTypeNames = new HashMap<Utf8, AvroQName>();
-        avroRecord.scopeRecordTypeVersions = new HashMap<Utf8, Long>();
+        avroRecord.scopeRecordTypeNames = new HashMap<CharSequence, AvroQName>();
+        avroRecord.scopeRecordTypeVersions = new HashMap<CharSequence, Long>();
         for (Scope scope : Scope.values()) {
             QName recordTypeName = record.getRecordTypeName(scope);
             if (recordTypeName != null) {
@@ -145,10 +143,10 @@ public class AvroConverter {
         }
 
         // Fields
-        avroRecord.fields = new GenericData.Array<AvroField>(record.getFields().size(), Schema.createArray(AvroField.SCHEMA$));
+        avroRecord.fields = new ArrayList<AvroField>(record.getFields().size());
         for (Entry<QName, Object> field : record.getFields().entrySet()) {
             AvroField avroField = new AvroField();
-            avroField.name = convert(encodeQName(field.getKey()));
+            avroField.name = encodeQName(field.getKey());
 
             FieldType fieldType;
             try {
@@ -159,7 +157,7 @@ public class AvroConverter {
                 throw convert(e);
             }
 
-            avroField.primitiveType = convert(fieldType.getValueType().getPrimitive().getName());
+            avroField.primitiveType = fieldType.getValueType().getPrimitive().getName();
             avroField.multiValue = fieldType.getValueType().isMultiValue();
             avroField.hierarchical = fieldType.getValueType().isHierarchical();
 
@@ -176,9 +174,9 @@ public class AvroConverter {
 
         // FieldsToDelete
         List<QName> fieldsToDelete = record.getFieldsToDelete();
-        avroRecord.fieldsToDelete = new GenericData.Array<Utf8>(fieldsToDelete.size(), Schema.createArray(Schema.create(Schema.Type.STRING)));
+        avroRecord.fieldsToDelete = new ArrayList<CharSequence>(fieldsToDelete.size());
         for (QName fieldToDelete : fieldsToDelete) {
-            avroRecord.fieldsToDelete.add(new Utf8(encodeQName(fieldToDelete)));
+            avroRecord.fieldsToDelete.add(encodeQName(fieldToDelete));
         }
         return avroRecord; 
     }
@@ -189,17 +187,17 @@ public class AvroConverter {
      // Fields
         Map<String, QName> fields = idRecord.getFieldIdToNameMapping();
         if (fields != null) {
-            avroIdRecord.idToQNameMapping = new HashMap<Utf8, AvroQName>();
+            avroIdRecord.idToQNameMapping = new HashMap<CharSequence, AvroQName>();
             for (Entry<String, QName> fieldEntry : fields.entrySet()) {
-                avroIdRecord.idToQNameMapping.put(convert(fieldEntry.getKey()), convert(fieldEntry.getValue()));
+                avroIdRecord.idToQNameMapping.put(new Utf8(fieldEntry.getKey()), convert(fieldEntry.getValue()));
             }
         }
      // Record types
-        avroIdRecord.scopeRecordTypeIds = new HashMap<Utf8, Utf8>();
+        avroIdRecord.scopeRecordTypeIds = new HashMap<CharSequence, CharSequence>();
         for (Scope scope : Scope.values()) {
             String recordTypeId = idRecord.getRecordTypeId(scope);
             if (recordTypeId != null) {
-                avroIdRecord.scopeRecordTypeIds.put(convert(scope.name()), convert(recordTypeId));
+                avroIdRecord.scopeRecordTypeIds.put(new Utf8(scope.name()), recordTypeId);
             }
         }
         return avroIdRecord;
@@ -242,9 +240,7 @@ public class AvroConverter {
     public AvroFieldType convert(FieldType fieldType) {
         AvroFieldType avroFieldType = new AvroFieldType();
         
-        if (fieldType.getId() != null) {
-            avroFieldType.id = new Utf8(fieldType.getId());
-        } 
+        avroFieldType.id = fieldType.getId();
         avroFieldType.name = convert(fieldType.getName());
         avroFieldType.valueType = convert(fieldType.getValueType());
         avroFieldType.scope = fieldType.getScope();
@@ -256,13 +252,13 @@ public class AvroConverter {
         QName recordTypeName = convert(avroRecordType.name);
         RecordType recordType = typeManager.newRecordType(recordTypeId, recordTypeName);
         recordType.setVersion(avroRecordType.version);
-        GenericArray<AvroFieldTypeEntry> fieldTypeEntries = avroRecordType.fieldTypeEntries;
+        List<AvroFieldTypeEntry> fieldTypeEntries = avroRecordType.fieldTypeEntries;
         if (fieldTypeEntries != null) {
             for (AvroFieldTypeEntry avroFieldTypeEntry : fieldTypeEntries) {
                 recordType.addFieldTypeEntry(convert(avroFieldTypeEntry));
             }
         }
-        GenericArray<AvroMixin> mixins = avroRecordType.mixins;
+        List<AvroMixin> mixins = avroRecordType.mixins;
         if (mixins != null) {
             for (AvroMixin avroMixin : mixins) {
                 recordType.addMixin(convert(avroMixin.recordTypeId), avroMixin.recordTypeVersion);
@@ -273,21 +269,19 @@ public class AvroConverter {
 
     public AvroRecordType convert(RecordType recordType) {
         AvroRecordType avroRecordType = new AvroRecordType();
-        if (recordType.getId() != null) {
-            avroRecordType.id = new Utf8(recordType.getId());
-        }
+        avroRecordType.id = recordType.getId();
         avroRecordType.name = convert(recordType.getName());
         Long version = recordType.getVersion();
         if (version != null) {
             avroRecordType.version = version;
         }
         Collection<FieldTypeEntry> fieldTypeEntries = recordType.getFieldTypeEntries();
-        avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(fieldTypeEntries.size(), Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
+        avroRecordType.fieldTypeEntries = new ArrayList<AvroFieldTypeEntry>(fieldTypeEntries.size());
         for (FieldTypeEntry fieldTypeEntry : fieldTypeEntries) {
             avroRecordType.fieldTypeEntries.add(convert(fieldTypeEntry));
         }
         Set<Entry<String,Long>> mixinEntries = recordType.getMixins().entrySet();
-        avroRecordType.mixins = new GenericData.Array<AvroMixin>(mixinEntries.size(), Schema.createArray(AvroMixin.SCHEMA$));
+        avroRecordType.mixins = new ArrayList<AvroMixin>(mixinEntries.size());
         for (Entry<String, Long> mixinEntry : mixinEntries) {
             avroRecordType.mixins.add(convert(mixinEntry));
         }
@@ -300,7 +294,7 @@ public class AvroConverter {
 
     public AvroValueType convert(ValueType valueType) {
         AvroValueType avroValueType = new AvroValueType();
-        avroValueType.primitiveValueType = new Utf8(valueType.getPrimitive().getName());
+        avroValueType.primitiveValueType = valueType.getPrimitive().getName();
         avroValueType.multivalue = valueType.isMultiValue();
         avroValueType.hierarchical = valueType.isHierarchical();
         return avroValueType;
@@ -315,16 +309,14 @@ public class AvroConverter {
             return null;
 
         AvroQName avroQName = new AvroQName();
-        if (name.getNamespace() != null) {
-            avroQName.namespace = new Utf8(name.getNamespace());
-        }
-        avroQName.name = new Utf8(name.getName());
+        avroQName.namespace = name.getNamespace();
+        avroQName.name = name.getName();
         return avroQName;
     }
 
     public AvroMixin convert(Entry<String, Long> mixinEntry) {
         AvroMixin avroMixin = new AvroMixin();
-        avroMixin.recordTypeId = new Utf8(mixinEntry.getKey());
+        avroMixin.recordTypeId = mixinEntry.getKey();
         Long version = mixinEntry.getValue();
         if (version != null) {
             avroMixin.recordTypeVersion = version;
@@ -338,7 +330,7 @@ public class AvroConverter {
 
     public AvroFieldTypeEntry convert(FieldTypeEntry fieldTypeEntry) {
         AvroFieldTypeEntry avroFieldTypeEntry = new AvroFieldTypeEntry();
-        avroFieldTypeEntry.id = new Utf8(fieldTypeEntry.getFieldTypeId());
+        avroFieldTypeEntry.id = fieldTypeEntry.getFieldTypeId();
         avroFieldTypeEntry.mandatory = fieldTypeEntry.isMandatory();
         return avroFieldTypeEntry;
     }
@@ -361,21 +353,21 @@ public class AvroConverter {
 
     public AvroRecordException convert(RecordException exception) {
         AvroRecordException avroException = new AvroRecordException();
-        avroException.message = new Utf8(exception.getMessage());
+        avroException.message = exception.getMessage();
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
 
     public AvroTypeException convert(TypeException exception) {
         AvroTypeException avroException = new AvroTypeException();
-        avroException.message = new Utf8(exception.getMessage());
+        avroException.message = exception.getMessage();
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
     
     public AvroRepositoryException convert(RepositoryException exception) {
         AvroRepositoryException avroException = new AvroRepositoryException();
-        avroException.message = new Utf8(exception.getMessage());
+        avroException.message = exception.getMessage();
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
@@ -403,7 +395,7 @@ public class AvroConverter {
     public AvroRecordTypeNotFoundException convert(RecordTypeNotFoundException exception) {
         AvroRecordTypeNotFoundException avroException = new AvroRecordTypeNotFoundException();
         if (exception.getId() != null)
-            avroException.id = new Utf8(exception.getId());
+            avroException.id = exception.getId();
         if (exception.getName() != null)
             avroException.name = convert(exception.getName());
         Long version = exception.getVersion();
@@ -417,7 +409,7 @@ public class AvroConverter {
     public AvroFieldTypeNotFoundException convert(FieldTypeNotFoundException exception) {
         AvroFieldTypeNotFoundException avroException = new AvroFieldTypeNotFoundException();
         if (exception.getId() != null)
-            avroException.id = new Utf8(exception.getId());
+            avroException.id = exception.getId();
         if (exception.getName() != null)
             avroException.name = convert(exception.getName());
         avroException.remoteCauses = buildCauses(exception);
@@ -478,9 +470,7 @@ public class AvroConverter {
 
     public AvroFieldTypeUpdateException convert(FieldTypeUpdateException exception) {
         AvroFieldTypeUpdateException avroException = new AvroFieldTypeUpdateException();
-        if (exception.getMessage() != null) {
-            avroException.message = new Utf8(exception.getMessage());
-        }
+        avroException.message = exception.getMessage();
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
@@ -518,9 +508,7 @@ public class AvroConverter {
 
         AvroInvalidRecordException avroException = new AvroInvalidRecordException();
         avroException.record = convert(exception.getRecord());
-        if (exception.getMessage() != null) {
-            avroException.message = new Utf8(exception.getMessage());
-        }
+        avroException.message = exception.getMessage();
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
@@ -549,24 +537,20 @@ public class AvroConverter {
         return exception;
     }
     
-    public Utf8 convert(RecordId recordId) {
-        return convert(recordId.toString());
-    }
-    
-    public RecordId convertAvroRecordId(Utf8 recordId) {
+    public RecordId convertAvroRecordId(CharSequence recordId) {
         return repository.getIdGenerator().fromString(convert(recordId));
     }
-    
-    public String convert(Utf8 utf8) {
-        if (utf8 == null) return null;
-        return utf8.toString();
+
+    public String convert(RecordId recordId) {
+        if (recordId == null) return null;
+        return recordId.toString();
     }
 
-    public Utf8 convert(String string) {
-        if (string == null) return null;
-        return new Utf8(string);
+    public String convert(CharSequence charSeq) {
+        if (charSeq == null) return null;
+        return charSeq.toString();
     }
-    
+
     public Long convertAvroVersion(long avroVersion) {
         if (avroVersion == -1)
             return null;
@@ -579,8 +563,8 @@ public class AvroConverter {
         return version;
     }
 
-    private GenericArray<AvroExceptionCause> buildCauses(Throwable throwable) {
-        GenericData.Array<AvroExceptionCause> causes = new GenericData.Array<AvroExceptionCause>(3, Schema.createArray(AvroExceptionCause.SCHEMA$));
+    private List<AvroExceptionCause> buildCauses(Throwable throwable) {
+        List<AvroExceptionCause> causes = new ArrayList<AvroExceptionCause>();
 
         Throwable cause = throwable;
 
@@ -599,7 +583,7 @@ public class AvroConverter {
 
         StackTraceElement[] stackTrace = throwable.getStackTrace();
 
-        cause.stackTrace = new GenericData.Array<AvroStackTraceElement>(stackTrace.length, Schema.createArray(AvroStackTraceElement.SCHEMA$));
+        cause.stackTrace = new ArrayList<AvroStackTraceElement>(stackTrace.length);
 
         for (StackTraceElement el : stackTrace) {
             cause.stackTrace.add(convert(el));
@@ -617,18 +601,18 @@ public class AvroConverter {
         return result;
     }
 
-    private void restoreCauses(GenericArray<AvroExceptionCause> remoteCauses, Throwable throwable) {
+    private void restoreCauses(List<AvroExceptionCause> remoteCauses, Throwable throwable) {
         Throwable causes = restoreCauses(remoteCauses);
         if (causes != null) {
             throwable.initCause(causes);
         }
     }
 
-    private Throwable restoreCauses(GenericArray<AvroExceptionCause> remoteCauses) {
+    private Throwable restoreCauses(List<AvroExceptionCause> remoteCauses) {
         Throwable result = null;
 
         for (AvroExceptionCause remoteCause : remoteCauses) {
-            List<StackTraceElement> stackTrace = new ArrayList<StackTraceElement>((int)remoteCause.stackTrace.size());
+            List<StackTraceElement> stackTrace = new ArrayList<StackTraceElement>(remoteCause.stackTrace.size());
 
             for (AvroStackTraceElement el : remoteCause.stackTrace) {
                 stackTrace.add(new StackTraceElement(convert(el.className), convert(el.methodName),
@@ -649,7 +633,7 @@ public class AvroConverter {
         return result;
     }
 
-    public List<FieldType> convertAvroFieldTypes(GenericArray<AvroFieldType> avroFieldTypes) {
+    public List<FieldType> convertAvroFieldTypes(List<AvroFieldType> avroFieldTypes) {
         List<FieldType> fieldTypes = new ArrayList<FieldType>();
         for (AvroFieldType avroFieldType : avroFieldTypes) {
             fieldTypes.add(convert(avroFieldType));
@@ -657,7 +641,7 @@ public class AvroConverter {
         return fieldTypes;
     }
 
-    public List<RecordType> convertAvroRecordTypes(GenericArray<AvroRecordType> avroRecordTypes) {
+    public List<RecordType> convertAvroRecordTypes(List<AvroRecordType> avroRecordTypes) {
         List<RecordType> recordTypes = new ArrayList<RecordType>();
         for (AvroRecordType avroRecordType : avroRecordTypes) {
             recordTypes.add(convert(avroRecordType));
@@ -665,23 +649,23 @@ public class AvroConverter {
         return recordTypes;
     }
 
-    public GenericArray<AvroFieldType> convertFieldTypes(Collection<FieldType> fieldTypes) {
-        GenericArray<AvroFieldType> avroFieldTypes = new GenericData.Array<AvroFieldType>(fieldTypes.size(), Schema.createArray(AvroFieldType.SCHEMA$));
+    public List<AvroFieldType> convertFieldTypes(Collection<FieldType> fieldTypes) {
+        List<AvroFieldType> avroFieldTypes = new ArrayList<AvroFieldType>(fieldTypes.size());
         for (FieldType fieldType : fieldTypes) {
             avroFieldTypes.add(convert(fieldType));
         }
         return avroFieldTypes;
     }
 
-    public GenericArray<AvroRecordType> convertRecordTypes(Collection<RecordType> recordTypes) {
-        GenericArray<AvroRecordType> avroRecordTypes = new GenericData.Array<AvroRecordType>(recordTypes.size(), Schema.createArray(AvroRecordType.SCHEMA$));
+    public List<AvroRecordType> convertRecordTypes(Collection<RecordType> recordTypes) {
+        List<AvroRecordType> avroRecordTypes = new ArrayList<AvroRecordType>(recordTypes.size());
         for (RecordType recordType : recordTypes) {
             avroRecordTypes.add(convert(recordType));
         }
         return avroRecordTypes;
     }
     
-    public List<Record> convertAvroRecords(GenericArray<AvroRecord> avroRecords) {
+    public List<Record> convertAvroRecords(List<AvroRecord> avroRecords) {
         List<Record> records = new ArrayList<Record>();
         for(AvroRecord avroRecord : avroRecords) {
             records.add(convert(avroRecord));
@@ -689,27 +673,27 @@ public class AvroConverter {
         return records;
     }
 
-    public GenericArray<AvroRecord> convertRecords(Collection<Record> records) throws AvroFieldTypeNotFoundException, AvroTypeException {
-        GenericArray<AvroRecord> avroRecords = new GenericData.Array<AvroRecord>(records.size(), Schema.createArray(AvroRecord.SCHEMA$));
+    public List<AvroRecord> convertRecords(Collection<Record> records) throws AvroFieldTypeNotFoundException, AvroTypeException {
+        List<AvroRecord> avroRecords = new ArrayList<AvroRecord>(records.size());
         for (Record record: records) {
             avroRecords.add(convert(record));
         }
         return avroRecords;
     }
     
-    public Set<RecordId> convertAvroRecordIds(GenericArray<Utf8> avroRecordIds) {
+    public Set<RecordId> convertAvroRecordIds(List<CharSequence> avroRecordIds) {
         Set<RecordId> recordIds = new HashSet<RecordId>();
         IdGenerator idGenerator = repository.getIdGenerator();
-        for (Utf8 avroRecordId : avroRecordIds) {
+        for (CharSequence avroRecordId : avroRecordIds) {
             recordIds.add(idGenerator.fromString(convert(avroRecordId)));
         }
         return recordIds;
     }
     
-    public GenericArray<Utf8> convert(Set<RecordId> recordIds) {
-        GenericArray<Utf8> avroRecordIds = new GenericData.Array<Utf8>(recordIds.size(), Schema.createArray(Schema.create(Schema.Type.STRING)));
+    public List<CharSequence> convert(Set<RecordId> recordIds) {
+        List<CharSequence> avroRecordIds = new ArrayList<CharSequence>(recordIds.size());
         for (RecordId recordId: recordIds) {
-            avroRecordIds.add(convert(recordId.toString()));
+            avroRecordIds.add(recordId.toString());
         }
         return avroRecordIds;
     }

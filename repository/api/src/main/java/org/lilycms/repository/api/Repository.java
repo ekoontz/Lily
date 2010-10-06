@@ -15,6 +15,7 @@
  */
 package org.lilycms.repository.api;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.Set;
  *
  * <p>Via Repository, you can perform all {@link Record}-related CRUD operations.
  */
-public interface Repository {
+public interface Repository extends Closeable {
     /**
      * Instantiates a new Record object.
      *

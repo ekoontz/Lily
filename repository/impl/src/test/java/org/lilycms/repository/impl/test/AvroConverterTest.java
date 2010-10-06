@@ -22,12 +22,11 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.util.Utf8;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -100,15 +99,15 @@ public class AvroConverterTest {
         // Full name
         QName qname = new QName("namespace", "name");
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("namespace");
-        avroQName.name = new Utf8("name");
+        avroQName.namespace = "namespace";
+        avroQName.name = "name";
         assertEquals(avroQName, converter.convert(qname));
         assertEquals(qname, converter.convert(avroQName));
         
         // No namespace
         qname = new QName(null, "name");
         avroQName = new AvroQName();
-        avroQName.name = new Utf8("name");
+        avroQName.name = "name";
         control.verify();
         assertEquals(avroQName, converter.convert(qname));
         assertEquals(qname, converter.convert(avroQName));
@@ -125,7 +124,7 @@ public class AvroConverterTest {
         converter = new AvroConverter();
         converter.setRepository(repository);
         AvroValueType avroValueType = new AvroValueType();
-        avroValueType.primitiveValueType = new Utf8("STRING");
+        avroValueType.primitiveValueType = "STRING";
         avroValueType.multivalue = false;
         avroValueType.hierarchical = true;
         
@@ -143,7 +142,7 @@ public class AvroConverterTest {
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroFieldTypeEntry avroFieldTypeEntry = new AvroFieldTypeEntry();
-        avroFieldTypeEntry.id = new Utf8("fieldTypeId");
+        avroFieldTypeEntry.id = "fieldTypeId";
         avroFieldTypeEntry.mandatory = true;
         assertEquals(fieldTypeEntry, converter.convert(avroFieldTypeEntry));
         assertEquals(avroFieldTypeEntry, converter.convert(fieldTypeEntry));
@@ -163,14 +162,14 @@ public class AvroConverterTest {
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroFieldType avroFieldType = new AvroFieldType();
-        avroFieldType.id = new Utf8("fieldTypeId");
+        avroFieldType.id = "fieldTypeId";
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroFieldType.name = avroQName ;
         avroFieldType.scope = Scope.NON_VERSIONED;
         AvroValueType avroValueType = new AvroValueType();
-        avroValueType.primitiveValueType = new Utf8("STRING");
+        avroValueType.primitiveValueType = "STRING";
         avroValueType.hierarchical = true;
         avroValueType.multivalue = true;
         avroFieldType.valueType = avroValueType;
@@ -194,12 +193,12 @@ public class AvroConverterTest {
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroFieldType avroFieldType = new AvroFieldType();
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroFieldType.name = avroQName ;
         avroFieldType.scope = Scope.NON_VERSIONED;
         AvroValueType avroValueType = new AvroValueType();
-        avroValueType.primitiveValueType = new Utf8("STRING");
+        avroValueType.primitiveValueType = "STRING";
         avroValueType.hierarchical = true;
         avroValueType.multivalue = true;
         avroFieldType.valueType = avroValueType;
@@ -219,10 +218,10 @@ public class AvroConverterTest {
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroRecordType avroRecordType = new AvroRecordType();
-        avroRecordType.id = new Utf8("recordTypeId");
+        avroRecordType.id = "recordTypeId";
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
@@ -243,10 +242,10 @@ public class AvroConverterTest {
                 converter = new AvroConverter();        converter.setRepository(repository);
         recordType.setVersion(1L);
         AvroRecordType avroRecordType = new AvroRecordType();
-        avroRecordType.id = new Utf8("recordTypeId");
+        avroRecordType.id = "recordTypeId";
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroRecordType.name = avroQName ;
         avroRecordType.version = 1L;
         // fieldTypeEntries and mixins are by default empty instead of null
@@ -276,28 +275,28 @@ public class AvroConverterTest {
         recordType.addFieldTypeEntry(fieldTypeEntry1);
         recordType.addFieldTypeEntry(fieldTypeEntry2);
         AvroRecordType avroRecordType = new AvroRecordType();
-        avroRecordType.id = new Utf8("recordTypeId");
+        avroRecordType.id = "recordTypeId";
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
         AvroFieldTypeEntry avroFieldTypeEntry = new AvroFieldTypeEntry();
-        avroFieldTypeEntry.id = new Utf8("field1");
+        avroFieldTypeEntry.id = "field1";
         avroFieldTypeEntry.mandatory = true;
         avroRecordType.fieldTypeEntries.add(avroFieldTypeEntry);
         Set<AvroFieldTypeEntry> expectedFieldTypeEntries = new HashSet<AvroFieldTypeEntry>();
         expectedFieldTypeEntries.add(avroFieldTypeEntry);
         avroFieldTypeEntry = new AvroFieldTypeEntry();
-        avroFieldTypeEntry.id = new Utf8("field2");
+        avroFieldTypeEntry.id = "field2";
         avroFieldTypeEntry.mandatory = false;
         avroRecordType.fieldTypeEntries.add(avroFieldTypeEntry);
         expectedFieldTypeEntries.add(avroFieldTypeEntry);
         avroRecordType.mixins = new GenericData.Array<AvroMixin>(0, Schema.createArray(AvroMixin.SCHEMA$));
         assertEquals(recordType, converter.convert(avroRecordType));
         AvroRecordType actualAvroRecordType = converter.convert(recordType);
-        GenericArray<AvroFieldTypeEntry> fieldTypeEntries = actualAvroRecordType.fieldTypeEntries;
+        List<AvroFieldTypeEntry> fieldTypeEntries = actualAvroRecordType.fieldTypeEntries;
         assertEquals(2, fieldTypeEntries.size());
         Set<AvroFieldTypeEntry> actualFieldTypeEntries = new HashSet<AvroFieldTypeEntry>();
         for (AvroFieldTypeEntry entry : fieldTypeEntries) {
@@ -319,28 +318,28 @@ public class AvroConverterTest {
         recordType.addMixin("mixinId1", 1L);
         recordType.addMixin("mixinId2", 2L);
         AvroRecordType avroRecordType = new AvroRecordType();
-        avroRecordType.id = new Utf8("recordTypeId");
+        avroRecordType.id = "recordTypeId";
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("aNamespace");
-        avroQName.name = new Utf8("aName");
+        avroQName.namespace = "aNamespace";
+        avroQName.name = "aName";
         avroRecordType.name = avroQName ;
         // fieldTypeEntries and mixins are by default empty instead of null
         avroRecordType.fieldTypeEntries = new GenericData.Array<AvroFieldTypeEntry>(0, Schema.createArray(AvroFieldTypeEntry.SCHEMA$));
         avroRecordType.mixins = new GenericData.Array<AvroMixin>(0, Schema.createArray(AvroMixin.SCHEMA$));
         AvroMixin avroMixin = new AvroMixin();
-        avroMixin.recordTypeId = new Utf8("mixinId1");
+        avroMixin.recordTypeId = "mixinId1";
         avroMixin.recordTypeVersion = 1L;
         avroRecordType.mixins.add(avroMixin);
         Set<AvroMixin> expectedMixins = new HashSet<AvroMixin>();
         expectedMixins.add(avroMixin);
         avroMixin = new AvroMixin();
-        avroMixin.recordTypeId = new Utf8("mixinId2");
+        avroMixin.recordTypeId = "mixinId2";
         avroMixin.recordTypeVersion = 2L;
         avroRecordType.mixins.add(avroMixin);
         expectedMixins.add(avroMixin);
         assertEquals(recordType, converter.convert(avroRecordType));
         AvroRecordType actualAvroRecordType = converter.convert(recordType);
-        GenericArray<AvroMixin> mixins = actualAvroRecordType.mixins;
+        List<AvroMixin> mixins = actualAvroRecordType.mixins;
         assertEquals(2, mixins.size());
         Set<AvroMixin> actualMixins = new HashSet<AvroMixin>();
         for (AvroMixin entry : mixins) {
@@ -360,8 +359,8 @@ public class AvroConverterTest {
         record.setRecordType(new QName("ns","recordTypeName"), null);
         AvroRecord avroRecord = new AvroRecord();
         AvroQName avroQName = new AvroQName();
-        avroQName.namespace = new Utf8("ns");
-        avroQName.name = new Utf8("recordTypeName");
+        avroQName.namespace = "ns";
+        avroQName.name = "recordTypeName";
         avroRecord.recordTypeName = avroQName;
 
         assertEquals(record, converter.convert(avroRecord));

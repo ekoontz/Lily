@@ -45,11 +45,17 @@ public class AvroServer {
         AvroLilyImpl avroLily = new AvroLilyImpl(repository, avroConverter);
         Responder responder = new LilySpecificResponder(AvroLily.class, avroLily, avroConverter);
         server = new HttpServer(responder, port);
+        server.start();
     }
     
     @PreDestroy
     public void stop() {
         server.close();
+        try {
+            server.join();
+        } catch (InterruptedException e) {
+            Thread.interrupted();
+        }
     }
 
     public int getPort() {

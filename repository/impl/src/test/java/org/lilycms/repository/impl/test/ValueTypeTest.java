@@ -102,7 +102,6 @@ public class ValueTypeTest {
 
     @After
     public void tearDown() throws Exception {
-        repository.stop();
     }
     
     @Test

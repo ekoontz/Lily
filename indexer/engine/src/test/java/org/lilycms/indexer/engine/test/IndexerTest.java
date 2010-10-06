@@ -152,9 +152,6 @@ public class IndexerTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        if (repository != null)
-            repository.stop();
-
         Closer.close(zk);
 
         HBASE_PROXY.stop();

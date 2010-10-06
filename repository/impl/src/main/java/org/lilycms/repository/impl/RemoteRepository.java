@@ -20,16 +20,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
+import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.specific.SpecificRequestor;
-import org.apache.avro.util.Utf8;
 import org.lilycms.repository.api.Blob;
 import org.lilycms.repository.api.BlobException;
 import org.lilycms.repository.api.BlobNotFoundException;
@@ -67,6 +65,7 @@ import org.lilycms.repository.avro.AvroRepositoryException;
 import org.lilycms.repository.avro.AvroTypeException;
 import org.lilycms.repository.avro.AvroVersionNotFoundException;
 import org.lilycms.util.ArgumentValidator;
+import org.lilycms.util.io.Closer;
 
 public class RemoteRepository implements Repository {
     private AvroLily lilyProxy;
@@ -74,6 +73,7 @@ public class RemoteRepository implements Repository {
     private IdGenerator idGenerator;
     private final TypeManager typeManager;
     private BlobStoreAccessRegistry blobStoreAccessRegistry;
+    private Transceiver client;
 
     public RemoteRepository(InetSocketAddress address, AvroConverter converter, RemoteTypeManager typeManager, IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory)
             throws IOException {
@@ -83,11 +83,16 @@ public class RemoteRepository implements Repository {
         blobStoreAccessRegistry = new BlobStoreAccessRegistry();
         blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
 
-        HttpTransceiver client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
 
         lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
     }
-    
+
+    public void close() throws IOException {
+        Closer.close(typeManager);
+        Closer.close(client);
+    }
+
     public TypeManager getTypeManager() {
         return typeManager;
     }
@@ -162,9 +167,9 @@ public class RemoteRepository implements Repository {
             RecordTypeNotFoundException, FieldTypeNotFoundException, VersionNotFoundException, RecordException,
             TypeException {
         try {
-            GenericArray<AvroQName> avroFieldNames = null;
+            List<AvroQName> avroFieldNames = null;
             if (fieldNames != null) {
-                avroFieldNames = new GenericData.Array<AvroQName>(fieldNames.size(), Schema.createArray(AvroQName.SCHEMA$));
+                avroFieldNames = new ArrayList<AvroQName>(fieldNames.size());
                 for (QName fieldName : fieldNames) {
                     avroFieldNames.add(converter.convert(fieldName));
                 }
@@ -193,9 +198,9 @@ public class RemoteRepository implements Repository {
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
             VersionNotFoundException, TypeException {
         try {
-            GenericArray<AvroQName> avroFieldNames = null;
+            List<AvroQName> avroFieldNames = null;
             if (fieldNames != null) {
-                avroFieldNames = new GenericData.Array<AvroQName>(fieldNames.size(), Schema.createArray(AvroQName.SCHEMA$));
+                avroFieldNames = new ArrayList<AvroQName>(fieldNames.size());
                 for (QName fieldName : fieldNames) {
                     avroFieldNames.add(converter.convert(fieldName));
                 }
@@ -263,11 +268,11 @@ public class RemoteRepository implements Repository {
     
     public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException, VersionNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
         try {
-            GenericArray<Utf8> avroFieldIds = null;
+            List<CharSequence> avroFieldIds = null;
             if (fieldIds != null) {
-                avroFieldIds = new GenericData.Array<Utf8>(fieldIds.size(), Schema.createArray(Schema.create(Schema.Type.STRING)));
+                avroFieldIds = new ArrayList<CharSequence>(fieldIds.size());
                 for (String fieldId : fieldIds) {
-                    avroFieldIds.add(converter.convert(fieldId));
+                    avroFieldIds.add(fieldId);
                 }
             }
             return converter.convert(lilyProxy.readWithIds(converter.convert(recordId), converter.convertVersion(version), avroFieldIds));
