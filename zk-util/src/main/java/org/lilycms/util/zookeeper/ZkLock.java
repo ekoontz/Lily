@@ -52,7 +52,7 @@ public class ZkLock {
 
             // Quote from ZK lock recipe:
             //    1. Call create( ) with a pathname of "_locknode_/lock-" and the sequence and ephemeral flags set.
-            ZkUtil.retryOperation(new ZooKeeperOperation<String>() {
+            zk.retryOperation(new ZooKeeperOperation<String>() {
                 public String execute() throws KeeperException, InterruptedException {
                     return zk.create(lockPath + "/lock-" + threadId + "-", null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                             CreateMode.EPHEMERAL_SEQUENTIAL);
@@ -63,7 +63,7 @@ public class ZkLock {
                 // Quote from ZK lock recipe:
                 //    2. Call getChildren( ) on the lock node without setting the watch flag (this is important to avoid
                 //       the herd effect).
-                List<ZkLockNode> children = parseChildren(ZkUtil.retryOperation(new ZooKeeperOperation<List<String>>() {
+                List<ZkLockNode> children = parseChildren(zk.retryOperation(new ZooKeeperOperation<List<String>>() {
                     public List<String> execute() throws KeeperException, InterruptedException {
                         return zk.getChildren(lockPath, null);
                     }
@@ -76,7 +76,7 @@ public class ZkLock {
                     // if the child has the same thread id and session id as us, then it is our lock
                     if (child.getThreadId() == threadId) {
                         final String childPath = lockPath + "/" + child.getName();
-                        Stat stat = ZkUtil.retryOperation(new ZooKeeperOperation<Stat>() {
+                        Stat stat = zk.retryOperation(new ZooKeeperOperation<Stat>() {
                             public Stat execute() throws KeeperException, InterruptedException {
                                 return zk.exists(childPath, false);
                             }
@@ -87,7 +87,7 @@ public class ZkLock {
                                 // This means that the lock creation above was executed twice, which can occur
                                 // in case of connection loss. Delete this node to avoid that otherwise it would
                                 // never be released.
-                                ZkUtil.retryOperation(new ZooKeeperOperation<Object>() {
+                                zk.retryOperation(new ZooKeeperOperation<Object>() {
                                     public Object execute() throws KeeperException, InterruptedException {
                                         try {
                                             zk.delete(childPath, -1);
@@ -130,7 +130,7 @@ public class ZkLock {
                 final Object condition = new Object();
                 final MyWatcher watcher = new MyWatcher(pathToWatch, condition);
 
-                Stat stat = ZkUtil.retryOperation(new ZooKeeperOperation<Stat>() {
+                Stat stat = zk.retryOperation(new ZooKeeperOperation<Stat>() {
                     public Stat execute() throws KeeperException, InterruptedException {
                         return zk.exists(pathToWatch, watcher);
                     }
@@ -179,7 +179,7 @@ public class ZkLock {
      */
     public static void unlock(final ZooKeeperItf zk, final String lockId, boolean ignoreMissing) throws ZkLockException {
         try {
-            ZkUtil.retryOperation(new ZooKeeperOperation<Object>() {
+            zk.retryOperation(new ZooKeeperOperation<Object>() {
                 public Object execute() throws KeeperException, InterruptedException {
                     zk.delete(lockId, -1);
                     return null;
@@ -203,7 +203,7 @@ public class ZkLock {
             final String lockPath = lockId.substring(0, lastSlashPos);
             String lockName = lockId.substring(lastSlashPos + 1);
 
-            List<String> children = ZkUtil.retryOperation(new ZooKeeperOperation<List<String>>() {
+            List<String> children = zk.retryOperation(new ZooKeeperOperation<List<String>>() {
                 public List<String> execute() throws KeeperException, InterruptedException {
                     return zk.getChildren(lockPath, null);
                 }

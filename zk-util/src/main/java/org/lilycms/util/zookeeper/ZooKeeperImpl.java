@@ -1,11 +1,13 @@
 package org.lilycms.util.zookeeper;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 /**
  * Default implementation of {@link ZooKeeperItf}.
@@ -16,26 +18,82 @@ import java.util.List;
  * {@link org.lilycms.util.zookeeper.StateWatchingZooKeeper}.
  */
 public class ZooKeeperImpl implements ZooKeeperItf {
-    private ZooKeeper delegate;
+    protected ZooKeeper delegate;
 
-    public ZooKeeperImpl() {
+    protected Set<Watcher> additionalDefaultWatchers = Collections.newSetFromMap(new IdentityHashMap<Watcher, Boolean>());
+
+    protected boolean connected = false;
+
+    protected final Object connectedMonitor = new Object();
+
+    private Log log = LogFactory.getLog(getClass());
+
+    protected ZooKeeperImpl() {
 
     }
 
-    public ZooKeeperImpl(ZooKeeper delegate) {
+    protected void setDelegate(ZooKeeper delegate) {
         this.delegate = delegate;
-    }
-
-    public ZooKeeperImpl(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
-        this.delegate = new ZooKeeper(connectString, sessionTimeout, watcher);
     }
 
     public ZooKeeperImpl(String connectString, int sessionTimeout) throws IOException {
-        this.delegate = new ZooKeeper(connectString, sessionTimeout, new DefaultZkWatcher());
+        this.delegate = new ZooKeeper(connectString, sessionTimeout, new MyWatcher());
     }
 
-    public void setDelegate(ZooKeeper delegate) {
-        this.delegate = delegate;
+    public void addDefaultWatcher(Watcher watcher) {
+        additionalDefaultWatchers.add(watcher);
+    }
+
+    public void removeDefaultWatcher(Watcher watcher) {
+        additionalDefaultWatchers.remove(watcher);
+    }
+
+    public void waitForConnection() throws InterruptedException {
+        synchronized (connectedMonitor) {
+            while (!connected) {
+                connectedMonitor.wait();
+            }
+        }
+    }
+
+    protected void setConnectedState(WatchedEvent event) {
+        if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
+            synchronized (connectedMonitor) {
+                if (!connected) {
+                    connected = true;
+                    connectedMonitor.notifyAll();
+                }
+            }
+        } else if (event.getState() == Watcher.Event.KeeperState.Disconnected ||
+                event.getState() == Watcher.Event.KeeperState.Expired) {
+            synchronized (connectedMonitor) {
+                if (connected) {
+                    connected = false;
+                    connectedMonitor.notifyAll();
+                }
+            }
+        }
+    }
+
+    public <T> T retryOperation(ZooKeeperOperation<T> operation) throws InterruptedException, KeeperException {
+
+        int tryCount = 0;
+
+        while (true) {
+            tryCount++;
+
+            try {
+                return operation.execute();
+            } catch (KeeperException.ConnectionLossException e) {
+                // ok
+            }
+
+            if (tryCount > 3) {
+                log.warn("ZooKeeper operation attempt " + tryCount + " failed due to connection loss.");
+            }
+
+            waitForConnection();
+        }
     }
 
     public long getSessionId() {
@@ -177,6 +235,31 @@ public class ZooKeeperImpl implements ZooKeeperItf {
 
     public ZooKeeper.States getState() {
         return delegate.getState();
+    }
+
+    public class MyWatcher implements Watcher {
+        private boolean firstConnect = true;
+
+        public void process(WatchedEvent event) {
+            if (event.getState() == Watcher.Event.KeeperState.Disconnected) {
+                System.err.println("ZooKeeper Disconnected.");
+            } else if (event.getState() == Event.KeeperState.Expired) {
+                System.err.println("ZooKeeper session expired.");
+            } else if (event.getState() == Event.KeeperState.SyncConnected) {
+                if (firstConnect) {
+                    // don't log the first time we connect.
+                    firstConnect = false;
+                } else {
+                    System.out.println("ZooKeeper connected.");
+                }
+            }
+
+            setConnectedState(event);
+
+            for (Watcher watcher : additionalDefaultWatchers) {
+                watcher.process(event);
+            }
+        }
     }
 
 }

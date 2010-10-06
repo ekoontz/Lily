@@ -11,6 +11,45 @@ import java.util.List;
  * An interface for ZooKeeper.
  */
 public interface ZooKeeperItf extends Closeable {
+    
+    void waitForConnection() throws InterruptedException;
+
+    /**
+     * Adds an additional watcher to be called as default watcher. This should mainly be used for
+     * reacting to connection-related events.
+     *
+     * <p><b>This is a Lily-specific method.</b>
+     */
+    void addDefaultWatcher(Watcher watcher);
+
+    /**
+     * Removes a default watcher added via {@link #addDefaultWatcher}.
+     *
+     * <p><b>This is a Lily-specific method.</b>
+     */
+    void removeDefaultWatcher(Watcher watcher);
+
+    /**
+     * Perform the given operation, retrying in case of connection loss.
+     *
+     * <p>Note that in case of connection loss, you are never sure if the operation succeeded or not,
+     * so it might be executed twice. Therefore:
+     *
+     * <ul>
+     *   <li>in case of a delete operation, be prepared to deal with a NoNode exception
+     *   <li>in case of a create operation, be prepared to deal with a NodeExists exception
+     *   <li>in case of creation of a sequential node, two nodes might have been created. If they are ephemeral,
+     *       you can use Stat.ephemeralOwner to find out the ones that belong to the current session. Otherwise,
+     *       embed the necessary identification into the name or data.
+     * </ul>
+     *
+     * <p>Do not call this method from within a ZooKeeper watcher callback, as it might block for a longer
+     * time and hence block the delivery of other events, including the Disconnected event.
+     *
+     * <p><b>This is a Lily-specific method.</b>
+     */
+    <T> T retryOperation(ZooKeeperOperation<T> operation) throws InterruptedException, KeeperException;
+
     long getSessionId();
 
     byte[] getSessionPasswd();

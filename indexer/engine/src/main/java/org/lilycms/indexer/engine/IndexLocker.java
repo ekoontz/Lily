@@ -75,7 +75,7 @@ public class IndexLocker {
                 }
 
                 try {
-                    ZkUtil.retryOperation(new ZooKeeperOperation<Object>() {
+                    zk.retryOperation(new ZooKeeperOperation<Object>() {
                         public Object execute() throws KeeperException, InterruptedException {
                             zk.create(lockPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                             return null;
@@ -90,7 +90,7 @@ public class IndexLocker {
                 // In case creating the node failed, it does not mean we do not have the lock: in case
                 // of connection loss, we might not know if we actually succeeded creating the node, therefore
                 // read the owner and thread id to check.
-                boolean hasLock = ZkUtil.retryOperation(new ZooKeeperOperation<Boolean>() {
+                boolean hasLock = zk.retryOperation(new ZooKeeperOperation<Boolean>() {
                     public Boolean execute() throws KeeperException, InterruptedException {
                         try {
                             Stat stat = new Stat();
@@ -119,7 +119,7 @@ public class IndexLocker {
             KeeperException {
         final String lockPath = getPath(recordId);
 
-        boolean tokenOk = ZkUtil.retryOperation(new ZooKeeperOperation<Boolean>() {
+        boolean tokenOk = zk.retryOperation(new ZooKeeperOperation<Boolean>() {
             public Boolean execute() throws KeeperException, InterruptedException {
                 Stat stat = new Stat();
                 byte[] data = zk.getData(lockPath, false, stat);
@@ -151,7 +151,7 @@ public class IndexLocker {
             KeeperException {
         final String lockPath = getPath(recordId);
 
-        return ZkUtil.retryOperation(new ZooKeeperOperation<Boolean>() {
+        return zk.retryOperation(new ZooKeeperOperation<Boolean>() {
             public Boolean execute() throws KeeperException, InterruptedException {
                 try {
                     Stat stat = new Stat();

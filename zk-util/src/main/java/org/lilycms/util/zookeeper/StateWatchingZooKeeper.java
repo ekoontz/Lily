@@ -142,6 +142,12 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
                 // someone wants us to stop
                 return;
             }
+
+            setConnectedState(event);
+
+            for (Watcher watcher : additionalDefaultWatchers) {
+                watcher.process(event);
+            }
         }
 
         private void waitForZk() throws InterruptedException {
