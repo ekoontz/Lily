@@ -61,7 +61,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
-    private Map<String, SubscriptionThread> subscriptionThreads = Collections.synchronizedMap(new HashMap<String, SubscriptionThread>());
+    private final Map<String, SubscriptionThread> subscriptionThreads = Collections.synchronizedMap(new HashMap<String, SubscriptionThread>());
     private Channel channel;
     private ChannelFactory channelFactory;
     private RowLogConfigurationManagerImpl rowLogConfigurationManager;
@@ -104,26 +104,25 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
             startConsumerNotifyListener();
         }
     }
-    
-    public void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
-        synchronized (this) { //  because we do not want to run this concurrently with the start/stop methods
-            synchronized (subscriptionThreads) {
-                if (!stop) {
-                    List<String> newSubscriptionIds = new ArrayList<String>();
-                    for (SubscriptionContext newSubscription : newSubscriptions) {
-                        newSubscriptionIds.add(newSubscription.getId());
-                        if (!subscriptionThreads.containsKey(newSubscription.getId())) {
-                            SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
-                            subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
-                        }
+
+    //  synchronized because we do not want to run this concurrently with the start/stop methods
+    public synchronized void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
+        synchronized (subscriptionThreads) {
+            if (!stop) {
+                List<String> newSubscriptionIds = new ArrayList<String>();
+                for (SubscriptionContext newSubscription : newSubscriptions) {
+                    newSubscriptionIds.add(newSubscription.getId());
+                    if (!subscriptionThreads.containsKey(newSubscription.getId())) {
+                        SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
+                        subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
                     }
-                    Iterator<String> iterator = subscriptionThreads.keySet().iterator();
-                    while (iterator.hasNext()) {
-                        String subscriptionId = iterator.next();
-                        if (!newSubscriptionIds.contains(subscriptionId)) {
-                            stopSubscriptionThread(subscriptionId);
-                            iterator.remove();
-                        }
+                }
+                Iterator<String> iterator = subscriptionThreads.keySet().iterator();
+                while (iterator.hasNext()) {
+                    String subscriptionId = iterator.next();
+                    if (!newSubscriptionIds.contains(subscriptionId)) {
+                        stopSubscriptionThread(subscriptionId);
+                        iterator.remove();
                     }
                 }
             }
