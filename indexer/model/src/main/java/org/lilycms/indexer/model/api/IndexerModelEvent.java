@@ -18,6 +18,15 @@ public class IndexerModelEvent {
     }
 
     @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + type.hashCode();
+        result = prime * result + indexName.hashCode();
+        return result;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
@@ -27,5 +36,10 @@ public class IndexerModelEvent {
             return false;
         IndexerModelEvent other = (IndexerModelEvent) obj;
         return other.type == type && other.indexName.equals(indexName);
+    }
+
+    @Override
+    public String toString() {
+        return "Indexer model event [type = " + type + ", index = " + indexName + "]";
     }
 }

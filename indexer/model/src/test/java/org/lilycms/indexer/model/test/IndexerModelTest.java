@@ -12,9 +12,7 @@ import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -116,7 +114,7 @@ public class IndexerModelTest {
     }
 
     private class TestListener implements IndexerModelListener {
-        private List<IndexerModelEvent> events = new ArrayList<IndexerModelEvent>();
+        private Set<IndexerModelEvent> events = new HashSet<IndexerModelEvent>();
 
         public void process(IndexerModelEvent event) {
             synchronized (this) {
@@ -149,9 +147,20 @@ public class IndexerModelTest {
                 assertEquals("Expected number of events", expectedEvents.length, events.size());
             }
 
-            for (int i = 0; i < events.size(); i++) {
-                assertEquals(events.get(i), expectedEvents[i]);
+            Set<IndexerModelEvent> expectedEventsSet  = new HashSet<IndexerModelEvent>(Arrays.asList(expectedEvents));
+
+            for (IndexerModelEvent event : expectedEvents) {
+                if (!events.contains(event)) {
+                    fail("Expected event not present among events: " + event);
+                }
             }
+
+            for (IndexerModelEvent event : events) {
+                if (!expectedEventsSet.contains(event)) {
+                    fail("Got an event which is not among the expected events: " + event);
+                }
+            }
+
             events.clear();
         }
     }
