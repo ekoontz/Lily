@@ -2,6 +2,7 @@ package org.lilycms.indexer.model.impl;
 
 import org.lilycms.indexer.model.api.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ public class IndexDefinitionImpl implements IndexDefinition {
     private String queueSubscriptionId;
     private byte[] configuration;
     private byte[] shardingConfiguration;
-    private Map<String, String> solrShards;
+    private Map<String, String> solrShards = Collections.emptyMap();
     private int zkDataVersion = -1;
     private BatchBuildInfo lastBatchBuildInfo;
     private ActiveBatchBuildInfo activeBatchBuildInfo;

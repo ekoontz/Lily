@@ -13,9 +13,13 @@ import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.indexer.model.sharding.ShardingConfigException;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.*;
+
+import javax.annotation.PreDestroy;
+
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -59,7 +63,13 @@ public class IndexerModelImpl implements WriteableIndexerModel {
 
     private Set<IndexerModelListener> listeners = Collections.newSetFromMap(new IdentityHashMap<IndexerModelListener, Boolean>());
 
-    private Watcher watcher = new MyWatcher();
+    private Watcher watcher = new IndexModelChangeWatcher();
+
+    private Watcher connectStateWatcher = new ConnectStateWatcher();
+
+    private IndexCacheRefresher indexCacheRefresher = new IndexCacheRefresher();
+
+    private boolean stopped = false;
 
     private Log log = LogFactory.getLog(getClass());
 
@@ -74,9 +84,17 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         ZkUtil.createPath(zk, INDEX_COLLECTION_PATH);
         ZkUtil.createPath(zk, INDEX_TRASH_PATH);
 
-        synchronized(indexes_lock) {
-            refreshIndexes();
-        }
+        zk.addDefaultWatcher(connectStateWatcher);
+
+        indexCacheRefresher.start();
+        indexCacheRefresher.waitUntilStarted();
+    }
+
+    @PreDestroy
+    public void stop() throws InterruptedException {
+        stopped = true;
+        zk.removeDefaultWatcher(connectStateWatcher);
+        indexCacheRefresher.shutdown();
     }
 
     public IndexDefinition newIndex(String name) {
@@ -312,6 +330,8 @@ public class IndexerModelImpl implements WriteableIndexerModel {
                 }
             }
         } catch (Throwable t) {
+            if (t instanceof InterruptedException)
+                Thread.currentThread().interrupt();
             throw new IndexModelException("Failed to delete index " + indexName, t);
         }
     }
@@ -390,7 +410,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
     }
 
     public IndexDefinition getMutableIndex(String name) throws InterruptedException, KeeperException, IndexNotFoundException {
-        return loadIndex(name);
+        return loadIndex(name, false);
     }
 
     public Collection<IndexDefinition> getIndexes() {
@@ -404,68 +424,24 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         }
     }
 
-    private List<IndexerModelEvent> refreshIndexes() throws InterruptedException, KeeperException {
-        List<IndexerModelEvent> events = new ArrayList<IndexerModelEvent>();
-
-        List<String> indexNames = zk.retryOperation(new ZooKeeperOperation<List<String>>() {
-            public List<String> execute() throws KeeperException, InterruptedException {
-                return zk.getChildren(INDEX_COLLECTION_PATH, watcher);
-            }
-        });
-
-        Set<String> indexNameSet = new HashSet<String>();
-        indexNameSet.addAll(indexNames);
-
-        // Remove indexes which no longer exist in ZK
-        Iterator<String> currentIndexNamesIt = indexes.keySet().iterator();
-        while (currentIndexNamesIt.hasNext()) {
-            String indexName = currentIndexNamesIt.next();
-            if (!indexNameSet.contains(indexName)) {
-                currentIndexNamesIt.remove();
-                events.add(new IndexerModelEvent(INDEX_REMOVED, indexName));
-            }
-        }
-
-        // Add new indexes
-        for (String indexName : indexNames) {
-            if (!indexes.containsKey(indexName)) {
-                events.add(refreshIndex(indexName));
-            }
-        }
-
-        return events;
-    }
-
-    /**
-     * Adds or updates the given index to the internal cache.
-     */
-    private IndexerModelEvent refreshIndex(final String indexName) throws InterruptedException, KeeperException {
-        try {
-            IndexDefinitionImpl index = loadIndex(indexName);
-            index.makeImmutable();
-            final boolean isNew = !indexes.containsKey(indexName);
-            indexes.put(indexName, index);
-
-            return new IndexerModelEvent(isNew ? IndexerModelEventType.INDEX_ADDED : IndexerModelEventType.INDEX_UPDATED, indexName);
-
-        } catch (IndexNotFoundException e) {
-            indexes.remove(indexName);
-
-            return new IndexerModelEvent(IndexerModelEventType.INDEX_REMOVED, indexName);
-        }
-    }
-
-    private IndexDefinitionImpl loadIndex(String indexName) throws InterruptedException, KeeperException, IndexNotFoundException {
+    private IndexDefinitionImpl loadIndex(String indexName, boolean forCache)
+            throws InterruptedException, KeeperException, IndexNotFoundException {
         final String childPath = INDEX_COLLECTION_PATH + "/" + indexName;
         final Stat stat = new Stat();
 
         byte[] data;
         try {
-            data = zk.retryOperation(new ZooKeeperOperation<byte[]>() {
-                public byte[] execute() throws KeeperException, InterruptedException {
-                    return zk.getData(childPath, watcher, stat);
-                }
-            });
+            if (forCache) {
+                // do not retry, install watcher
+                data = zk.getData(childPath, watcher, stat);
+            } else {
+                // do retry, do not install watcher
+                data = zk.retryOperation(new ZooKeeperOperation<byte[]>() {
+                    public byte[] execute() throws KeeperException, InterruptedException {
+                        return zk.getData(childPath, false, stat);
+                    }
+                });
+            }
         } catch (KeeperException.NoNodeException e) {
             throw new IndexNotFoundException(indexName);
         }
@@ -493,30 +469,205 @@ public class IndexerModelImpl implements WriteableIndexerModel {
         this.listeners.remove(listener);
     }
 
-    private class MyWatcher implements Watcher {
+    private class IndexModelChangeWatcher implements Watcher {
         public void process(WatchedEvent event) {
+            if (stopped) {
+                return;
+            }
+
             try {
                 if (NodeChildrenChanged.equals(event.getType()) && event.getPath().equals(INDEX_COLLECTION_PATH)) {
-
-                    List<IndexerModelEvent> events;
-                    synchronized (indexes_lock) {
-                        events = refreshIndexes();
-                    }
-
-                    notifyListeners(events);
-
+                    indexCacheRefresher.triggerRefreshAllIndexes();
                 } else if (NodeDataChanged.equals(event.getType()) && event.getPath().startsWith(INDEX_COLLECTION_PATH_SLASH)) {
-
-                    IndexerModelEvent myEvent;
-                    synchronized (indexes_lock) {
-                        String indexName = event.getPath().substring(INDEX_COLLECTION_PATH_SLASH.length());
-                        myEvent = refreshIndex(indexName);
-                    }
-
-                    notifyListeners(Collections.singletonList(myEvent));
+                    String indexName = event.getPath().substring(INDEX_COLLECTION_PATH_SLASH.length());
+                    indexCacheRefresher.triggerIndexToRefresh(indexName);
                 }
             } catch (Throwable t) {
                 log.error("Indexer Model: error handling event from ZooKeeper. Event: " + event, t);
+            }
+        }
+    }
+
+    public class ConnectStateWatcher implements Watcher {
+        public void process(WatchedEvent event) {
+            if (stopped) {
+                return;
+            }
+
+            if (event.getType() == Event.EventType.None && event.getState() == Event.KeeperState.SyncConnected) {
+                // Each time the connection is established, we trigger refreshing, since the previous refresh
+                // might have failed with a ConnectionLoss exception
+                indexCacheRefresher.triggerRefreshAllIndexes();
+            }
+        }
+    }
+
+    /**
+     * Responsible for updating our internal cache of IndexDefinition's. Should be triggered upon each related
+     * change on ZK, as well as on ZK connection established, since this refresher simply fails on ZK connection
+     * loss exceptions, rather than retrying.
+     */
+    private class IndexCacheRefresher implements Runnable {
+        private volatile Set<String> indexesToRefresh = new HashSet<String>();
+        private volatile boolean refreshAllIndexes;
+        private final Object refreshLock = new Object();
+        private Thread thread;
+        private final Object startedLock = new Object();
+        private volatile boolean started = false;
+
+        public synchronized void shutdown() throws InterruptedException {
+            if (thread == null || !thread.isAlive()) {
+                return;
+            }
+
+            thread.interrupt();
+            thread.join();
+            thread = null;
+        }
+
+        public synchronized void start() {
+            // Upon startup, be sure to run a refresh of all indexes
+            this.refreshAllIndexes = true;
+
+            thread = new Thread(this, "Indexer model refresher");
+            // Set as daemon thread: IndexerModel can be used in tools like the indexer admin CLI tools,
+            // where we should not require explicit shutdown.
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        /**
+         * Waits until the initial cache fill up happened.
+         */
+        public void waitUntilStarted() throws InterruptedException {
+            synchronized (startedLock) {
+                while (!started) {
+                    startedLock.wait();
+                }
+            }
+        }
+
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    List<IndexerModelEvent> events = new ArrayList<IndexerModelEvent>();
+                    try {
+                        Set<String> indexesToRefresh = null;
+                        boolean refreshAllIndexes = false;
+
+                        synchronized (refreshLock) {
+                            if (this.refreshAllIndexes || this.indexesToRefresh.isEmpty()) {
+                                refreshAllIndexes = true;
+                            } else {
+                                indexesToRefresh = new HashSet<String>(this.indexesToRefresh);
+                            }
+                            this.refreshAllIndexes = false;
+                            this.indexesToRefresh.clear();
+                        }
+
+                        if (refreshAllIndexes) {
+                            synchronized (indexes_lock) {
+                                refreshIndexes(events);
+                            }
+                        } else {
+                            synchronized (indexes_lock) {
+                                for (String indexName : indexesToRefresh) {
+                                    refreshIndex(indexName, events);
+                                }
+                            }
+                        }
+
+                        if (!started) {
+                            started = true;
+                            synchronized (startedLock) {
+                                startedLock.notifyAll();
+                            }
+                        }
+                    } finally {
+                        // We notify the listeners here because we want to be sure events for every
+                        // change are delivered, even if halfway through the refreshing we would have
+                        // failed due to some error like a ZooKeeper connection loss
+                        if (!events.isEmpty() && !stopped && !Thread.currentThread().isInterrupted()) {
+                            notifyListeners(events);
+                        }
+                    }
+
+                    synchronized (refreshLock) {
+                        if (!this.refreshAllIndexes && this.indexesToRefresh.isEmpty()) {
+                            refreshLock.wait();
+                        }
+                    }
+                } catch (KeeperException.ConnectionLossException e) {
+                    // we will be retriggered when the connection is back
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Throwable t) {
+                    log.error("Indexer Model Refresher: some exception happened.", t);
+                }
+            }
+        }
+
+        public void triggerIndexToRefresh(String indexName) {
+            synchronized (refreshLock) {
+                indexesToRefresh.add(indexName);
+                refreshLock.notifyAll();
+            }
+        }
+
+        public void triggerRefreshAllIndexes() {
+            synchronized (refreshLock) {
+                refreshAllIndexes = true;
+                refreshLock.notifyAll();
+            }
+        }
+
+        private void refreshIndexes(List<IndexerModelEvent> events) throws InterruptedException, KeeperException {
+            List<String> indexNames = zk.getChildren(INDEX_COLLECTION_PATH, watcher);
+
+            Set<String> indexNameSet = new HashSet<String>();
+            indexNameSet.addAll(indexNames);
+
+            // Remove indexes which no longer exist in ZK
+            Iterator<String> currentIndexNamesIt = indexes.keySet().iterator();
+            while (currentIndexNamesIt.hasNext()) {
+                String indexName = currentIndexNamesIt.next();
+                if (!indexNameSet.contains(indexName)) {
+                    currentIndexNamesIt.remove();
+                    events.add(new IndexerModelEvent(INDEX_REMOVED, indexName));
+                }
+            }
+
+            // Add/update the other indexes
+            for (String indexName : indexNames) {
+                refreshIndex(indexName, events);
+            }
+        }
+
+        /**
+         * Adds or updates the given index to the internal cache.
+         */
+        private void refreshIndex(final String indexName, List<IndexerModelEvent> events)
+                throws InterruptedException, KeeperException {
+            try {
+                IndexDefinitionImpl index = loadIndex(indexName, true);
+                index.makeImmutable();
+
+                IndexDefinition oldIndex = indexes.get(indexName);
+
+                if (oldIndex != null && oldIndex.getZkDataVersion() == index.getZkDataVersion()) {
+                    // nothing changed
+                } else {
+                    final boolean isNew = oldIndex == null;
+                    indexes.put(indexName, index);
+                    events.add(new IndexerModelEvent(isNew ? IndexerModelEventType.INDEX_ADDED : IndexerModelEventType.INDEX_UPDATED, indexName));
+                }
+            } catch (IndexNotFoundException e) {
+                Object oldIndex = indexes.remove(indexName);
+
+                if (oldIndex != null) {
+                    events.add(new IndexerModelEvent(IndexerModelEventType.INDEX_REMOVED, indexName));
+                }
             }
         }
     }

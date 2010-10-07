@@ -61,6 +61,10 @@ public class IndexLocker {
      * @throws IndexLockTimeoutException if the lock could not be obtained within the given timeout.
      */
     public void lock(RecordId recordId) throws IndexLockException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("IndexLocker should not be used from within the ZooKeeper event thread.");
+        }
+
         try {
             long startTime = System.currentTimeMillis();
             final String lockPath = getPath(recordId);
@@ -117,6 +121,10 @@ public class IndexLocker {
 
     public void unlock(final RecordId recordId) throws IndexLockException, InterruptedException,
             KeeperException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("IndexLocker should not be used from within the ZooKeeper event thread.");
+        }
+
         final String lockPath = getPath(recordId);
 
         boolean tokenOk = zk.retryOperation(new ZooKeeperOperation<Boolean>() {
@@ -149,6 +157,10 @@ public class IndexLocker {
 
     public boolean hasLock(final RecordId recordId) throws IndexLockException, InterruptedException,
             KeeperException {
+        if (zk.isCurrentThreadEventThread()) {
+            throw new RuntimeException("IndexLocker should not be used from within the ZooKeeper event thread.");
+        }
+
         final String lockPath = getPath(recordId);
 
         return zk.retryOperation(new ZooKeeperOperation<Boolean>() {

@@ -199,7 +199,7 @@ public class LeaderElection {
         private Thread thread;
 
         public synchronized void shutdown() throws InterruptedException {
-            if (!thread.isAlive()) {
+            if (thread == null || !thread.isAlive()) {
                 return;
             }
 

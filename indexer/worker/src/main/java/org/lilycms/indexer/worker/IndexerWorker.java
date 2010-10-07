@@ -35,6 +35,16 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * IndexerWorker is reponsible for starting index updaters on each Lily node for each index
+ * that is configured for updating (according to its {@link IndexUpdateState}).
+ *
+ * <p>IndexerWorker does not shut down the index updaters when the ZooKeeper connection is
+ * lossed. This is in the assumption that if the ZK connection would be lost for a longer
+ * period of time, the Lily node will shut down, and that it should not cause harm that
+ * the index updaters continue to run according to a possibly outdated configuration, since
+ * after all one can not expect these things to change momentarily.
+ */
 public class IndexerWorker {
     private IndexerModel indexerModel;
 
