@@ -33,7 +33,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener = new ValidationMessageListener();
         subscriptionId = "Test";
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.Netty, 3, 1);
-        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, zooKeeper);
+        remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, rowLogConfigurationManager);
         remoteListener.start();
     }
 
@@ -47,7 +47,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     public void testMultipleConsumers() throws Exception {
         ValidationMessageListener validationListener2 = new ValidationMessageListener();
         rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", SubscriptionContext.Type.Netty, 3, 2);
-        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, zooKeeper);
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, rowLogConfigurationManager);
         remoteListener2.start();
         validationListener.expectMessages(10);
         validationListener2.expectMessages(10);

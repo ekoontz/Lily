@@ -47,6 +47,7 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 public class LinkIndexTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static ZooKeeperItf zk;
+    private static RowLogConfigurationManager rowLogConfMgr;
 
     private static TypeManager typeManager;
     private static HBaseRepository repository;
@@ -67,8 +68,10 @@ public class LinkIndexTest {
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
 
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
+
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
-                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zk);
+                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 
@@ -79,13 +82,13 @@ public class LinkIndexTest {
         LinkIndex.createIndexes(indexManager);
         linkIndex = new LinkIndex(indexManager, repository);
 
-        RowLogConfigurationManager rowLogMgr = new RowLogConfigurationManagerImpl(zk);
-        rowLogMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 1, 1);
+        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 1, 1);
         RowLogMessageListenerMapping.INSTANCE.put("LinkIndexUpdater", new LinkIndexUpdater(repository, linkIndex));
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfMgr);
         Closer.close(zk);
         HBASE_PROXY.stop();
     }

@@ -36,10 +36,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.*;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
@@ -52,6 +49,7 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    private static RowLogConfigurationManager configurationManager;
     private static IMocksControl control;
     private static RowLog rowLog;
     private static byte[] payloadColumnFamily = RowLogTableUtil.PAYLOAD_COLUMN_FAMILY;
@@ -67,7 +65,7 @@ public class RowLogTest {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+        configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
@@ -76,12 +74,13 @@ public class RowLogTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         Closer.close(zooKeeper);
+        Closer.close(configurationManager);
         HBASE_PROXY.stop();
     }
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, zooKeeper);
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, configurationManager);
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -198,7 +197,7 @@ public class RowLogTest {
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, zooKeeper);
+        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, configurationManager);
         
         shard.putMessage(isA(RowLogMessage.class));
         

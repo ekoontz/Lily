@@ -33,14 +33,12 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.zookeeper.KeeperException;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 /**
  * See {@link RowLog}
  */
-public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
+public class RowLogImpl implements RowLog, SubscriptionsObserver {
 
     private static final byte[] SEQ_NR = Bytes.toBytes("SEQNR");
     private RowLogShard shard; // TODO: We only work with one shard for now
@@ -54,6 +52,7 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
     private RowLogProcessorNotifier processorNotifier = null;
     private Log log = LogFactory.getLog(getClass());
     private final boolean respectOrder;
+    private RowLogConfigurationManager rowLogConfigurationManager;
     
     /**
      * The RowLog should be instantiated with information about the table that contains the rows the messages are 
@@ -64,34 +63,31 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
      * @param executionStateColumnFamily the column family in which the execution state of the messages can be stored
      * @param lockTimeout the timeout to be used for the locks that are put on the messages
      * @param respectOrder true if the order of the subscriptions needs to be followed
-     * @param zooKeeper 
-     * @throws RowLogException 
+     * @throws RowLogException
      */
-    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily, long lockTimeout, boolean respectOrder, ZooKeeperItf zooKeeper) throws RowLogException {
+    public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily,
+            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
         this.executionStateColumnFamily = executionStateColumnFamily;
         this.lockTimeout = lockTimeout;
         this.respectOrder = respectOrder;
-        this.processorNotifier = new RowLogProcessorNotifier(zooKeeper);
-        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        try {
-            subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(id, this));
-        } catch (KeeperException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        this.processorNotifier = new RowLogProcessorNotifier(rowLogConfigurationManager);
+        this.rowLogConfigurationManager = rowLogConfigurationManager;
+        rowLogConfigurationManager.addSubscriptionsObserver(id, this);
+    }
+
+    public void stop() {
+        rowLogConfigurationManager.removeSubscriptionsObserver(id, this);
+        if (processorNotifier != null) {
+            processorNotifier.close();
         }
     }
     
     @Override
     protected void finalize() throws Throwable {
-        if (processorNotifier != null) {
-            processorNotifier.close();
-        }
+        stop();
         super.finalize();
     }
     

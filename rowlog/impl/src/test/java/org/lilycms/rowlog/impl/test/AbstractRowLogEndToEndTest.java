@@ -43,15 +43,16 @@ public abstract class AbstractRowLogEndToEndTest {
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
-                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, zooKeeper);
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, rowLogConfigurationManager);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
-        processor = new RowLogProcessorImpl(rowLog, zooKeeper);
+        processor = new RowLogProcessorImpl(rowLog, rowLogConfigurationManager);
     }    
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         processor.stop();
+        Closer.close(rowLogConfigurationManager);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

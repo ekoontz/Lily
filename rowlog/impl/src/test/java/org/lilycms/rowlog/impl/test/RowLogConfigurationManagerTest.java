@@ -1,32 +1,29 @@
 package org.lilycms.rowlog.impl.test;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.ListenersObserver;
 import org.lilycms.rowlog.api.SubscriptionContext;
 import org.lilycms.rowlog.api.SubscriptionContext.Type;
-import org.lilycms.rowlog.impl.ListenersWatcherCallBack;
+import org.lilycms.rowlog.api.SubscriptionsObserver;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.rowlog.impl.SubscriptionsWatcherCallBack;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
+
+import static org.junit.Assert.assertEquals;
 
 public class RowLogConfigurationManagerTest {
     protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
@@ -64,29 +61,36 @@ public class RowLogConfigurationManagerTest {
         RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         SubscriptionsCallBack callBack = new SubscriptionsCallBack();
         Assert.assertTrue(callBack.subscriptions.isEmpty());
-        Assert.assertTrue(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLogId, callBack).isEmpty());
+        callBack.expect(Collections.<SubscriptionContext>emptyList());
+        rowLogConfigurationManager.addSubscriptionsObserver(rowLogId, callBack);
+
+        // After adding the observer we will receive an initial report of the subscriptions
+        callBack.validate();
+
         // Add subscription
         SubscriptionContext expectedSubscriptionContext = new SubscriptionContext(subscriptionId1, Type.VM, 3, 1);
-        callBack.expect(Arrays.asList(new SubscriptionContext[]{expectedSubscriptionContext}));
+        callBack.expect(Arrays.asList(expectedSubscriptionContext));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.validate();
 
         SubscriptionContext expectedSubscriptionContext2 = new SubscriptionContext(subscriptionId2, Type.Netty, 5, 2);
-        callBack.expect(Arrays.asList(new SubscriptionContext[]{expectedSubscriptionContext, expectedSubscriptionContext2}));
+        callBack.expect(Arrays.asList(expectedSubscriptionContext, expectedSubscriptionContext2));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.validate();
 
         // Remove subscription
-        callBack.expect(Arrays.asList(new SubscriptionContext[]{expectedSubscriptionContext2}));
+        callBack.expect(Arrays.asList(expectedSubscriptionContext2));
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId1);
         callBack.validate();
         
-        callBack.expect(Collections.EMPTY_LIST);
+        callBack.expect(Collections.<SubscriptionContext>emptyList());
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId2);
         callBack.validate();
+
+        rowLogConfigurationManager.shutdown();
     }
     
-    private class SubscriptionsCallBack implements SubscriptionsWatcherCallBack {
+    private class SubscriptionsCallBack implements SubscriptionsObserver {
         public List<SubscriptionContext> subscriptions = new ArrayList<SubscriptionContext>();
         private List<SubscriptionContext> expectedSubscriptions;
         private Semaphore semaphore = new Semaphore(0);
@@ -120,12 +124,17 @@ public class RowLogConfigurationManagerTest {
 
         ListenersCallBack callBack = new ListenersCallBack();
         Assert.assertTrue(callBack.listeners.isEmpty());
-        Assert.assertTrue(rowLogConfigurationManager.getAndMonitorListeners(rowLogId, subscriptionId1, callBack).isEmpty());
+        callBack.expect(Collections.<String>emptyList());
+        rowLogConfigurationManager.addListenersObserver(rowLogId, subscriptionId1, callBack);
+
+        // After adding the observer we will receive an initial report of the listeners
+        callBack.validate();
 
         // Add subscription
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.expect(Collections.EMPTY_LIST);
         callBack.validate();
+
         // Add listener
         callBack.expect(Arrays.asList(new String[]{"Listener1"}));
         rowLogConfigurationManager.addListener(rowLogId, subscriptionId1, "Listener1");
@@ -143,9 +152,11 @@ public class RowLogConfigurationManagerTest {
         callBack.expect(Collections.EMPTY_LIST);
         rowLogConfigurationManager.removeListener(rowLogId, subscriptionId1, "Listener2");
         callBack.validate();
+
+        rowLogConfigurationManager.shutdown();
     }
     
-    private class ListenersCallBack implements ListenersWatcherCallBack {
+    private class ListenersCallBack implements ListenersObserver {
         public List<String> listeners = new ArrayList<String>();
         private List<String> expectedListeners;
         
@@ -157,6 +168,7 @@ public class RowLogConfigurationManagerTest {
         }
 
         public void expect(List<String> expectedListeners) {
+            semaphore.drainPermits();
             this.expectedListeners = expectedListeners;
         }
         

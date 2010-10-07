@@ -21,6 +21,7 @@ import org.lilycms.indexer.model.api.*;
 import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -54,6 +55,8 @@ public class IndexerWorker {
 
     private ZooKeeperItf zk;
 
+    private RowLogConfigurationManager rowLogConfMgr;
+
     private RowLog rowLog;
 
     private IndexerModelListener listener = new MyListener();
@@ -73,12 +76,14 @@ public class IndexerWorker {
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, ZooKeeperItf zk,
-            Configuration hbaseConf) throws IOException, org.lilycms.hbaseindex.IndexNotFoundException {
+            Configuration hbaseConf, RowLogConfigurationManager rowLogConfMgr)
+            throws IOException, org.lilycms.hbaseindex.IndexNotFoundException {
         this.indexerModel = indexerModel;
         this.repository = repository;
         this.rowLog = rowLog;
         this.linkIndex = new LinkIndex(new IndexManager(hbaseConf), repository);
         this.zk = zk;
+        this.rowLogConfMgr = rowLogConfMgr;
     }
 
     @PostConstruct
@@ -138,7 +143,7 @@ public class IndexerWorker {
             IndexUpdater indexUpdater = new IndexUpdater(indexer, repository, linkIndex, indexLocker);
 
             RemoteListenerHandler listenerHandler = new RemoteListenerHandler(rowLog, index.getQueueSubscriptionId(),
-                    indexUpdater, zk);
+                    indexUpdater, rowLogConfMgr);
 
             IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater, listenerHandler);
             listenerHandler.start();

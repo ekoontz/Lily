@@ -105,7 +105,7 @@ public abstract class AbstractRepositoryTest {
     }
     
     protected static void setupWal() throws Exception {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfigurationManager);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
@@ -167,7 +167,7 @@ public abstract class AbstractRepositoryTest {
         rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
 
         messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, zooKeeper);
+                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, rowLogConfigurationManager);
         messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
 
         RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
@@ -175,7 +175,7 @@ public abstract class AbstractRepositoryTest {
     }
 
     protected static void setupMessageQueueProcessor() throws RowLogException {
-        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, zooKeeper);
+        messageQueueProcessor = new RowLogProcessorImpl(messageQueue, rowLogConfigurationManager);
         messageQueueProcessor.start();
     }
 

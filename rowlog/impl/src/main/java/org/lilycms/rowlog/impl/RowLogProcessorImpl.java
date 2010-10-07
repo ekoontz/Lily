@@ -34,7 +34,6 @@ import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
-import org.apache.zookeeper.KeeperException;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -49,28 +48,21 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
-import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogProcessor;
-import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.rowlog.api.*;
 
-public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatcherCallBack {
+public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver {
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
     private final Map<String, SubscriptionThread> subscriptionThreads = Collections.synchronizedMap(new HashMap<String, SubscriptionThread>());
     private Channel channel;
     private ChannelFactory channelFactory;
-    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
-    private final ZooKeeperItf zooKeeper;
+    private RowLogConfigurationManager rowLogConfigurationManager;
     private Log log = LogFactory.getLog(getClass());
     
-    public RowLogProcessorImpl(RowLog rowLog, ZooKeeperItf zooKeeper) throws RowLogException {
+    public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
         this.rowLog = rowLog;
-        this.zooKeeper = zooKeeper;
+        this.rowLogConfigurationManager = rowLogConfigurationManager;
         this.shard = rowLog.getShards().get(0); // TODO: For now we only work with one shard
     }
 
@@ -87,20 +79,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
     public synchronized void start() {
         if (stop) {
             stop = false;
-            try {
-                rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-                subscriptionsChanged(rowLogConfigurationManager.getAndMonitorSubscriptions(rowLog.getId(), this));
-            } catch (KeeperException e) {
-                
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (RowLogException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            rowLogConfigurationManager.addSubscriptionsObserver(rowLog.getId(), this);
             startConsumerNotifyListener();
         }
     }
@@ -146,6 +125,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsWatche
 
     public synchronized void stop() {
         stop = true;
+        rowLogConfigurationManager.removeSubscriptionsObserver(rowLog.getId(), this);
         stopConsumerNotifyListener();
         Collection<SubscriptionThread> threadsToStop;
         synchronized (subscriptionThreads) {

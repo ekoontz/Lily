@@ -73,6 +73,7 @@ public class IndexerTest {
     private static TypeManager typeManager;
     private static IdGenerator idGenerator;
     private static SolrServers solrServers;
+    private static RowLogConfigurationManager rowLogConfMgr;
 
     private static FieldType liveTag;
     private static FieldType previewTag;
@@ -119,8 +120,10 @@ public class IndexerTest {
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
 
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
+
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
-                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zk);
+                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 
@@ -135,10 +138,9 @@ public class IndexerTest {
         // Field types should exist before the indexer conf is loaded
         setupSchema();
 
-        RowLogConfigurationManager rowLogMgr = new RowLogConfigurationManagerImpl(zk);
-        rowLogMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 1, 1);
-        rowLogMgr.addSubscription("WAL", "IndexUpdater", SubscriptionContext.Type.VM, 1, 2);
-        rowLogMgr.addSubscription("WAL", "MessageVerifier", SubscriptionContext.Type.VM, 1, 3);
+        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 1, 1);
+        rowLogConfMgr.addSubscription("WAL", "IndexUpdater", SubscriptionContext.Type.VM, 1, 2);
+        rowLogConfMgr.addSubscription("WAL", "MessageVerifier", SubscriptionContext.Type.VM, 1, 3);
 
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/indexerconf1.xml"), repository);
@@ -152,6 +154,7 @@ public class IndexerTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfMgr);
         Closer.close(zk);
 
         HBASE_PROXY.stop();

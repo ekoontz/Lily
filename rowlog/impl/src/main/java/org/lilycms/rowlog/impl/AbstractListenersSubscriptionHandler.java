@@ -7,34 +7,29 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.zookeeper.KeeperException;
+import org.lilycms.rowlog.api.ListenersObserver;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 
-public abstract class AbstractListenersSubscriptionHandler extends AbstractSubscriptionHandler implements ListenersWatcherCallBack {
+public abstract class AbstractListenersSubscriptionHandler extends AbstractSubscriptionHandler implements ListenersObserver {
     protected ExecutorService executorService = Executors.newCachedThreadPool();
-    protected RowLogConfigurationManagerImpl rowLogConfigurationManager;
+    protected RowLogConfigurationManager rowLogConfigurationManager;
     private Map<String, Future<?>> listeners = new ConcurrentHashMap<String, Future<?>>();
     protected volatile boolean stop = false;
 
-    public AbstractListenersSubscriptionHandler(String subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog, RowLogConfigurationManagerImpl rowLogConfigurationManager) {
+    public AbstractListenersSubscriptionHandler(String subscriptionId, MessagesWorkQueue messagesWorkQueue,
+            RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
         super(subscriptionId, messagesWorkQueue, rowLog);
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
 
     public void start() {
-        try {
-            listenersChanged(rowLogConfigurationManager.getAndMonitorListeners(rowLogId, subscriptionId, this));
-        } catch (KeeperException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        rowLogConfigurationManager.addListenersObserver(rowLogId, subscriptionId, this);
     }
 
     public void interrupt() {
         stop = true;
+        rowLogConfigurationManager.removeListenersObserver(rowLogId, subscriptionId, this);
         for (String listenerId : listeners.keySet())
             listenerUnregistered(listenerId);
     }

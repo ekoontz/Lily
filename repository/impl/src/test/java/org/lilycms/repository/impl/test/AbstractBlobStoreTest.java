@@ -23,6 +23,8 @@ import org.lilycms.repository.api.RecordType;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
@@ -37,9 +39,11 @@ public abstract class AbstractBlobStoreTest {
     protected static TypeManager typeManager;
     protected static Configuration configuration;
     protected static StateWatchingZooKeeper zooKeeper;
+    protected static RowLogConfigurationManager rowLogConfMgr;
     
     protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

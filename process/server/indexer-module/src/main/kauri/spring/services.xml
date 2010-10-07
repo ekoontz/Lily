@@ -61,6 +61,7 @@
     <constructor-arg ref="messageQueue"/>
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="hbaseConf"/>
+    <constructor-arg ref="rowLogConfigurationMgr"/>
   </bean>
 
 </beans>

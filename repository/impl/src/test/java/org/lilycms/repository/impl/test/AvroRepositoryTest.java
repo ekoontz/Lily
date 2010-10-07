@@ -78,6 +78,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         if (messageQueueProcessor != null)
             messageQueueProcessor.stop();
+        Closer.close(rowLogConfigurationManager);
         Closer.close(repository);
         if (lilyServer != null) {
             lilyServer.close();

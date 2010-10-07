@@ -89,6 +89,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfMgr);
         Closer.close(repository);
         lilyServer.close();
         lilyServer.join();

@@ -24,11 +24,7 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
-import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.rowlog.api.*;
 
 public class RemoteListenerHandler {
     private final Log log = LogFactory.getLog(getClass());
@@ -36,16 +32,16 @@ public class RemoteListenerHandler {
     private ServerBootstrap bootstrap;
     private final RowLog rowLog;
     private Channel channel;
-    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
     private String listenerId;
     private final String subscriptionId;
-    private final ZooKeeperItf zooKeeper;
+    private final RowLogConfigurationManager rowLogConfMgr;
 
-    public RemoteListenerHandler(RowLog rowLog, String subscriptionId, RowLogMessageListener consumer, ZooKeeperItf zooKeeper) throws RowLogException {
+    public RemoteListenerHandler(RowLog rowLog, String subscriptionId, RowLogMessageListener consumer,
+            RowLogConfigurationManager rowLogConfMgr) throws RowLogException {
         this.rowLog = rowLog;
         this.subscriptionId = subscriptionId;
         this.consumer = consumer;
-        this.zooKeeper = zooKeeper;
+        this.rowLogConfMgr = rowLogConfMgr;
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -62,7 +58,6 @@ public class RemoteListenerHandler {
     }
     
     public void start() throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();
@@ -74,7 +69,7 @@ public class RemoteListenerHandler {
         channel = bootstrap.bind(inetSocketAddress);
         int port = ((InetSocketAddress)channel.getLocalAddress()).getPort();
         listenerId = hostName + ":" + port;
-        rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, listenerId);
+        rowLogConfMgr.addListener(rowLog.getId(), subscriptionId, listenerId);
     }
     
     public void stop() {
@@ -85,7 +80,7 @@ public class RemoteListenerHandler {
         }
         bootstrap.releaseExternalResources();
         try {
-            rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, listenerId);
+            rowLogConfMgr.removeListener(rowLog.getId(), subscriptionId, listenerId);
         } catch (RowLogException e) {
             // TODO log
             e.printStackTrace();

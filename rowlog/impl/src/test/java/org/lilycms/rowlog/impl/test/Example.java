@@ -56,9 +56,12 @@ public class Example {
         // Setup a zooKeeper connection
         String zkConnectionString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
         ZooKeeperItf zooKeeper = new StateWatchingZooKeeper(zkConnectionString, 10000);
-        
+
+        // Create the row log configuration manager
+        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+
         // Create a RowLog instance
-        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, zooKeeper);
+        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, configurationManager);
         
         // Create a shard and register it with the rowlog
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
@@ -68,7 +71,6 @@ public class Example {
         RowLogMessageListenerMapping.INSTANCE.put("FooBar", new FooBarConsumer());
         
         // Add a subscription to the configuration manager for the example Rowlog
-        RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription("Example", "FooBar", Type.VM, 3, 0);
         // The WAL use case 
         
@@ -85,7 +87,7 @@ public class Example {
         // The MQ use case
         
         // Create a processor and start it
-        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, zooKeeper);
+        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, configurationManager);
         processor.start();
         
         message  = rowLog.putMessage(row1, Bytes.toBytes("SomeMoreInfo"), Bytes.toBytes("Re-evaluate:AUserField"), null);

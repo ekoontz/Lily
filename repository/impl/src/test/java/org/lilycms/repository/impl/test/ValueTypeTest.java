@@ -45,6 +45,8 @@ import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.impl.AbstractTypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
@@ -64,6 +66,7 @@ public class ValueTypeTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static ZooKeeperItf zooKeeper;
+    private static RowLogConfigurationManager rowLogConfMgr;
 
     private AbstractTypeManager typeManager;
     private HBaseRepository repository;
@@ -79,12 +82,14 @@ public class ValueTypeTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfMgr);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 
     private RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
-        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);

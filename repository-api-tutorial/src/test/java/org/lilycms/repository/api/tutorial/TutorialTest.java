@@ -35,6 +35,8 @@ import org.junit.Test;
 import org.lilycms.repository.api.*;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
@@ -66,6 +68,7 @@ public class TutorialTest {
     private static RowLog wal;
     private static Configuration configuration;
     private static ZooKeeperItf zooKeeper;
+    private static RowLogConfigurationManager rowLogConfMgr;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -87,13 +90,15 @@ public class TutorialTest {
     }
     
     protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfMgr);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

@@ -16,18 +16,18 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
-import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogProcessorNotifier {
     
     private ClientBootstrap bootstrap;
     private NioClientSocketChannelFactory channelFactory;
     private String[] processorHostAndPort;
-    private RowLogConfigurationManagerImpl rowLogConfigurationManager;
+    private RowLogConfigurationManager rowLogConfigurationManager;
 
-    public RowLogProcessorNotifier(ZooKeeperItf zookeeper) throws RowLogException {
-        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zookeeper);
+    public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
+        this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) {

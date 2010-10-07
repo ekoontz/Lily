@@ -37,6 +37,8 @@ import org.lilycms.repository.avro.AvroLilyImpl;
 import org.lilycms.repository.avro.LilySpecificResponder;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
@@ -62,6 +64,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
     private static Configuration configuration;
     private static ZooKeeperItf zooKeeper;
     private static Server lilyServer;
+    private static RowLogConfigurationManager rowLogConfMgr;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -92,7 +95,8 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
     }
     
     protected static void setupWal() throws IOException, RowLogException {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, zooKeeper);
+        rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
@@ -100,6 +104,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         Closer.close(repository);
+        Closer.close(rowLogConfMgr);
         lilyServer.close();
         lilyServer.join();
         Closer.close(zooKeeper);
