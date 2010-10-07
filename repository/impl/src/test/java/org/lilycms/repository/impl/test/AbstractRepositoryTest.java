@@ -244,17 +244,6 @@ public abstract class AbstractRepositoryTest {
     }
     
     @Test
-    public void testCreateExistingRecordFails() throws Exception {
-        Record record = createDefaultRecord();
-
-        try {
-            repository.create(record);
-            fail();
-        } catch (RecordExistsException expected) {
-        }
-    }
-
-    @Test
     public void testCreateWithNonExistingRecordTypeFails() throws Exception {
         Record record = repository.newRecord(idGenerator.newRecordId());
         record.setRecordType(new QName("foo", "bar"));
@@ -468,7 +457,7 @@ public abstract class AbstractRepositoryTest {
         try {
             repository.read(record.getId(), 0L);
             fail();
-        } catch (VersionNotFoundException expected) {
+        } catch (RecordNotFoundException expected) {
         }
     }
 

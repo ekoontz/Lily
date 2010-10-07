@@ -345,13 +345,13 @@ public class RowLogImpl implements RowLog, SubscriptionsWatcherCallBack {
                 for (SubscriptionContext subscriptionContext : subscriptionContexts) {
                     if (subscriptionContext.getOrderNr() >= subscription.getOrderNr()) {
                         rowLogShard.markProblematic(message, subscriptionContext.getId());
-                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, and it has been marked as problematic", subscriptionContext.getId(), message.getId(), maxTries));
+                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscriptionContext.getId(), message.getId(), maxTries));
                     }
                 }
             } else {
                 getShard().markProblematic(message, subscription.getId());
             }
-            log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, and it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
+            log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
         }
     }
     

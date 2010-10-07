@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
@@ -84,8 +83,6 @@ import org.lilycms.util.repo.RecordEvent.Type;
 /**
  * Repository implementation.
  * 
- * <p>
- * After usage, the Repository should be stopped by calling the stop() method!
  */
 public class HBaseRepository implements Repository {
  
@@ -187,16 +184,25 @@ public class HBaseRepository implements Repository {
                 throw new RecordException("Failed to lock row while creating record <" + recordId
                         + "> in HBase table", null);
 
-
-            // Check if a previous incarnation of the record existed and clear data if needed
-            reincarnateRecord(newRecord, rowId, rowLock);
+            long version = 1L;
+            Get get = new Get(rowId, rowLock);
+            // If the record existed it would have been deleted.
+            // The version numbering continues from where it has been deleted.
+            if (recordTable.exists(get)) {
+                get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
+                Result result = recordTable.get(get);
+                byte[] oldVersion = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
+                if (oldVersion != null) {
+                    version = Bytes.toLong(oldVersion);
+                }
+            }
             
             Record dummyOriginalRecord = newRecord();
             Put put = new Put(newRecord.getId().toBytes(), rowLock);
-            put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, Bytes.toBytes(false));
+            put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, 1L, Bytes.toBytes(false));
             RecordEvent recordEvent = new RecordEvent();
             recordEvent.setType(Type.CREATE);
-            calculateRecordChanges(newRecord, dummyOriginalRecord, 1L, put, recordEvent, false);
+            calculateRecordChanges(newRecord, dummyOriginalRecord, version, put, recordEvent, false);
             // Make sure the record type changed flag stays false for a newly
             // created record
             recordEvent.setRecordTypeChanged(false);
@@ -237,43 +243,6 @@ public class HBaseRepository implements Repository {
             unlockRow(customRowLock);
         }
         return newRecord;
-    }
-
-    private void reincarnateRecord(Record newRecord, byte[] rowId, RowLock rowLock) throws IOException,
-            RecordExistsException {
-        Get get = new Get(rowId, rowLock);
-        if (recordTable.exists(get)) {
-            get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
-            get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
-            Result result = recordTable.get(get);
-            if (result == null || result.isEmpty()) {
-                throw new RecordExistsException(newRecord);
-            } else {
-                byte[] deleted = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
-                if ((deleted != null) && (Bytes.toBoolean(deleted))) {
-                    if (null != result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME)) {
-                        clearData(rowId, rowLock);
-                    }
-                } else {
-                    throw new RecordExistsException(newRecord);
-                }
-            }
-        }
-    }
-
-    private void clearData(byte[] rowId, RowLock rowLock) throws IOException {
-        Delete delete = new Delete(rowId, -1, rowLock);
-        delete.deleteFamily(columnFamilies.get(Scope.NON_VERSIONED));
-        delete.deleteFamily(columnFamilies.get(Scope.VERSIONED));
-        delete.deleteFamily(columnFamilies.get(Scope.VERSIONED_MUTABLE));
-        delete.deleteColumns(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.VERSIONED), VERSIONED_RECORDTYPEID_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.VERSIONED), VERSIONED_RECORDTYPEVERSION_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.VERSIONED), VERSIONED_MUTABLE_RECORDTYPEID_COLUMN_NAME);
-        delete.deleteColumns(systemColumnFamilies.get(Scope.VERSIONED), VERSIONED_MUTABLE_RECORDTYPEVERSION_COLUMN_NAME);
-        recordTable.delete(delete);
     }
 
     private void checkCreatePreconditions(Record record) throws InvalidRecordException {
@@ -387,9 +356,9 @@ public class HBaseRepository implements Repository {
             if (!recordTypeName.equals(originalRecord.getRecordTypeName())
                     || !recordTypeVersion.equals(originalRecord.getRecordTypeVersion())) {
                 recordEvent.setRecordTypeChanged(true);
-                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME, Bytes
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME, 1L, Bytes
                         .toBytes(recordType.getId()));
-                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEVERSION_COLUMN_NAME,
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEVERSION_COLUMN_NAME, 1L,
                         Bytes.toBytes(recordTypeVersion));
             }
             // Always set the record type on the record since the requested
@@ -397,10 +366,10 @@ public class HBaseRepository implements Repository {
             record.setRecordType(recordTypeName, recordTypeVersion);
             if (version != null) {
                 byte[] versionBytes = Bytes.toBytes(version);
-                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME, versionBytes);
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME, 1L, versionBytes);
                 if (VersionTag.hasLastVTag(recordType, typeManager) || VersionTag.hasLastVTag(record, typeManager) || VersionTag.hasLastVTag(originalRecord, typeManager)) {
                     FieldType lastVTagType = VersionTag.getLastVTagType(typeManager);
-                    put.add(columnFamilies.get(Scope.NON_VERSIONED), Bytes.toBytes(lastVTagType.getId()), encodeFieldValue(lastVTagType, version));
+                    put.add(columnFamilies.get(Scope.NON_VERSIONED), Bytes.toBytes(lastVTagType.getId()), 1L, encodeFieldValue(lastVTagType, version));
                     record.setField(lastVTagType.getName(), version);
                 }
             }
@@ -455,9 +424,9 @@ public class HBaseRepository implements Repository {
         changedScopes.addAll(calculateUpdateFields(fields, originalFields, null, version, put, recordEvent));
         for (Scope scope : changedScopes) {
             if (Scope.NON_VERSIONED.equals(scope)) {
-                put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), Bytes.toBytes(recordType
+                put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), 1L, Bytes.toBytes(recordType
                         .getId()));
-                put.add(systemColumnFamilies.get(scope), recordTypeVersionColumnNames.get(scope), Bytes
+                put.add(systemColumnFamilies.get(scope), recordTypeVersionColumnNames.get(scope), 1L, Bytes
                         .toBytes(recordType.getVersion()));
             } else {
                 put.add(systemColumnFamilies.get(scope), recordTypeIdColumnNames.get(scope), version, Bytes
@@ -497,7 +466,7 @@ public class HBaseRepository implements Repository {
                 byte[] encodedFieldValue = encodeFieldValue(fieldType, newValue);
 
                 if (Scope.NON_VERSIONED.equals(scope)) {
-                    put.add(columnFamilies.get(scope), fieldIdAsBytes, encodedFieldValue);
+                    put.add(columnFamilies.get(scope), fieldIdAsBytes, 1L, encodedFieldValue);
                 } else {
                     put.add(columnFamilies.get(scope), fieldIdAsBytes, version, encodedFieldValue);
                     if (originalNextFields != null && !fieldIsNew && originalNextFields.containsKey(fieldName)) {
@@ -687,7 +656,7 @@ public class HBaseRepository implements Repository {
 
         List<FieldType> fields = getFieldTypesFromNames(fieldNames);
 
-        Result result = getRow(recordId, true, fields);
+        Result result = getRow(recordId, toVersion, true, fields);
         if (fromVersion < 1L)
             fromVersion = 1L;
         Long latestVersion = getLatestVersion(result);
@@ -726,13 +695,13 @@ public class HBaseRepository implements Repository {
             RecordException, VersionNotFoundException, TypeException {
         ArgumentValidator.notNull(recordId, "recordId");
 
-        Result result = getRow(recordId, (requestedVersion != null), fields);
+        Result result = getRow(recordId, requestedVersion, false, fields);
 
         Long latestVersion = getLatestVersion(result);
         if (requestedVersion == null) {
             requestedVersion = getLatestVersion(result);
         } else {
-            if (latestVersion == null || latestVersion < requestedVersion || requestedVersion == 0L) {
+            if (latestVersion == null || latestVersion < requestedVersion ) {
                 Record record = newRecord(recordId);
                 record.setVersion(requestedVersion);
                 throw new VersionNotFoundException(record);
@@ -766,29 +735,32 @@ public class HBaseRepository implements Repository {
     }
 
     // Retrieves the row from the table and check if it exists and has not been flagged as deleted
-    private Result getRow(RecordId recordId, boolean multipleVersions, List<FieldType> fields)
+    private Result getRow(RecordId recordId, Long version, boolean multipleVersions, List<FieldType> fields)
             throws RecordNotFoundException, RecordException {
         Result result;
         Get get = new Get(recordId.toBytes());
-        if (multipleVersions) {
-            get.setMaxVersions();
-        }
-        // Add the columns for the fields to get
-        addFieldsToGet(get, fields);
         try {
-            // Test existence of record by testing presence of record type column, which is present in any record
-            Get existsTestGet = new Get(recordId.toBytes());
-            existsTestGet.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), NON_VERSIONED_RECORDTYPEID_COLUMN_NAME);
-            if (!recordTable.exists(existsTestGet)) {
+            if (!recordTable.exists(get))
                 throw new RecordNotFoundException(newRecord(recordId));
+            // Add the columns for the fields to get
+            addFieldsToGet(get, fields);
+            if (version != null)
+                get.setTimeRange(0, version+1);
+            if (multipleVersions) {
+                get.setMaxVersions();
+            } else {
+                get.setMaxVersions(1);
             }
             
             // Retrieve the data from the repository
             result = recordTable.get(get);
             
+            if (result == null)
+                throw new RecordNotFoundException(newRecord(recordId));
+            
             // Check if the record was deleted
             byte[] deleted = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
-            if ((deleted != null) && (Bytes.toBoolean(deleted))) {
+            if ((deleted == null) || (Bytes.toBoolean(deleted))) {
                 throw new RecordNotFoundException(newRecord(recordId));
             }
         } catch (IOException e) {
@@ -805,10 +777,10 @@ public class HBaseRepository implements Repository {
         get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
         Result result = recordTable.get(get);
         if (result == null || result.isEmpty()) {
-            return true;
+            return false;
         } else {
             byte[] deleted = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME);
-            if ((deleted != null) && (Bytes.toBoolean(deleted))) {
+            if ((deleted == null) || (Bytes.toBoolean(deleted))) {
                 return false;
             } else {
                 return true;
@@ -969,7 +941,7 @@ public class HBaseRepository implements Repository {
 
             if (recordExists(rowId, null)) { // Check if the record exists in the first place 
                 Put put = new Put(rowId);
-                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, Bytes.toBytes(true));
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, 1L, Bytes.toBytes(true));
                 RecordEvent recordEvent = new RecordEvent();
                 recordEvent.setType(Type.DELETE);
                 
@@ -977,7 +949,6 @@ public class HBaseRepository implements Repository {
                 if (!rowLocker.put(put, rowLock)) {
                     throw new RecordException("Exception occurred while deleting record <" + recordId + "> on HBase table", null);
                 }
-                clearData(rowId, null);
     
                 if (walMessage != null) {
                     try {
