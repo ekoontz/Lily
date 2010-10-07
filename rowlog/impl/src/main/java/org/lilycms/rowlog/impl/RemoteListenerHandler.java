@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.zookeeper.KeeperException;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferInputStream;
@@ -57,7 +58,7 @@ public class RemoteListenerHandler {
         });
     }
     
-    public void start() throws RowLogException {
+    public void start() throws RowLogException, InterruptedException, KeeperException {
         InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();
@@ -77,14 +78,15 @@ public class RemoteListenerHandler {
         try {
             future.await();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
         bootstrap.releaseExternalResources();
         try {
             rowLogConfMgr.removeListener(rowLog.getId(), subscriptionId, listenerId);
-        } catch (RowLogException e) {
-            // TODO log
-            e.printStackTrace();
-        } 
+        } catch (Exception e) {
+            log.error("Error removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
+                    ", listener ID " + listenerId, e);
+        }
     }
     
     private class MessageDecoder extends OneToOneDecoder {

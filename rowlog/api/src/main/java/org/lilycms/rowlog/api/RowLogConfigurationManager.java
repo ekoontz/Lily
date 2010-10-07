@@ -5,9 +5,17 @@ import org.lilycms.rowlog.api.SubscriptionContext.Type;
 
 public interface RowLogConfigurationManager {
 
+    /**
+     *
+     * <p>This method blocks if the ZK connection is down.
+     */
     void addSubscription(String rowLogId, String subscriptionId, Type type, int maxTries, int orderNr) throws KeeperException,
-            InterruptedException;
+            InterruptedException, SubscriptionExistsException;
 
+    /**
+     *
+     * <p>This method blocks if the ZK connection is down.
+     */
     void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;
 
     /**
@@ -32,8 +40,20 @@ public interface RowLogConfigurationManager {
 
     String getProcessorHost(String rowLogId, String shardId);
 
-    void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException;
+    /**
+     *
+     * <p>This method blocks if the ZK connection is down.
+     *
+     * <p>If the listener would already exist, this method silently returns.
+     */
+    void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException, InterruptedException, KeeperException;
 
-    void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException;
+    /**
+     *
+     * <p>This method blocks if the ZK connection is down.
+     *
+     * <p>If the listener would not exist, this method silently returns.
+     */
+    void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException, InterruptedException, KeeperException;
 
 }

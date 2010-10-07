@@ -5,10 +5,7 @@ import java.util.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.rowlog.api.*;
@@ -16,6 +13,7 @@ import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
+import org.lilycms.util.zookeeper.ZooKeeperOperation;
 
 import javax.annotation.PreDestroy;
 
@@ -50,21 +48,43 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         observerSupport.removeSubscriptionsObserver(rowLogId, observer);
     }
 
-    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type, int maxTries, int orderNr) throws KeeperException, InterruptedException {
-        String path = subscriptionPath(rowLogId, subscriptionId);
+    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type,
+            int maxTries, int orderNr) throws KeeperException, InterruptedException, SubscriptionExistsException {
+        ZkUtil.createPath(zooKeeper, subscriptionsPath(rowLogId));
+
+        final String path = subscriptionPath(rowLogId, subscriptionId);
         byte[] data = Bytes.toBytes(maxTries);
         data = Bytes.add(data, Bytes.toBytes(orderNr));
         data = Bytes.add(data, Bytes.toBytes(type.name()));
-        if (zooKeeper.exists(path, false) == null) { // TODO currently not possible to update a subscription or add it twice
-            ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);
+
+        final byte[] finalData = data;
+
+        try {
+            zooKeeper.retryOperation(new ZooKeeperOperation<String>() {
+                public String execute() throws KeeperException, InterruptedException {
+                    return zooKeeper.create(path, finalData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                }
+            });
+        } catch (KeeperException.NodeExistsException e) {
+            // Note that this might also occur because of retryOperation.
+            // OTOH, it might also occur because two threads/processes/nodes try to create the same subscription
+            // concurrently.
+            throw new SubscriptionExistsException(rowLogId, subscriptionId);
         }
     }
     
     public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException {
-        String path = subscriptionPath(rowLogId, subscriptionId);
+        final String path = subscriptionPath(rowLogId, subscriptionId);
+
         try {
-            zooKeeper.delete(path, -1);
+            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                public Object execute() throws KeeperException, InterruptedException {
+                    zooKeeper.delete(path, -1);
+                    return null;
+                }
+            });
         } catch (KeeperException.NoNodeException ignore) {
+            // Silently ignore, might fail because of retryOperation
         } catch (KeeperException.NotEmptyException e) {
             // TODO Think what should happen here
             // Remove listeners first?
@@ -81,25 +101,37 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         observerSupport.removeListenersObserver(new ListenerKey(rowLogId, subscriptionId), observer);
     }
 
-    public void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException {
-        String path = listenerPath(rowLogId, subscriptionId, listenerId);
+    public void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException,
+            InterruptedException, KeeperException {
+        final String path = listenerPath(rowLogId, subscriptionId, listenerId);
         try {
-            if (zooKeeper.exists(path, false) == null) {
-                ZkUtil.createPath(zooKeeper, path, null, CreateMode.EPHEMERAL);
-            }
-        } catch (Exception e) {
-            throw new RowLogException("Failed to add listener to rowlog configuration", e);
+            zooKeeper.retryOperation(new ZooKeeperOperation<String>() {
+                public String execute() throws KeeperException, InterruptedException {
+                    return zooKeeper.create(path, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                }
+            });
+        } catch (KeeperException.NoNodeException e) {
+            // This is thrown when the parent does not exist
+            throw new RowLogException("Cannot add listener: subscription does not exist. Row log ID " +
+                    rowLogId + ", subscription ID " + subscriptionId + ", listener ID " + listenerId);
+        } catch (KeeperException.NodeExistsException e) {
+            // Silently ignore. Might occur because we use a retryOperation.
         }
     }
     
-    public void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException {
-        String path = listenerPath(rowLogId, subscriptionId, listenerId);
+    public void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException,
+            InterruptedException, KeeperException {
+        final String path = listenerPath(rowLogId, subscriptionId, listenerId);
         try {
-            zooKeeper.delete(path, -1);
+            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                public Object execute() throws KeeperException, InterruptedException {
+                    zooKeeper.delete(path, -1);
+                    return null;
+                }
+            });
         } catch (KeeperException.NoNodeException ignore) {
-        } catch (Exception e) {
-            throw new RowLogException("Failed to remove listener from rowlog configuration", e);
-        } 
+            // Silently ignore. Might occur because we use retryOperation.
+        }
     }
     
     // Processor Host
