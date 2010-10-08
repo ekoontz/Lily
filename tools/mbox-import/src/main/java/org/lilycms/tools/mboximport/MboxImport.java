@@ -225,6 +225,17 @@ public class MboxImport extends BaseZkCliTool {
         }
 
         // Now create the records in Lily
+
+
+        // Since we want to link the messages and parts bidirectionally, and for performance we want to avoid
+        // having to update the message, we generate record IDs ourselves.
+        // Since for the current usage typically parts are indexed with information dereferenced from messages,
+        // we can save additional indexer work (update of dereferenced data) by first creating the messages
+        // and then the parts.
+        List<RecordId> partRecordIds = new ArrayList<RecordId>(message.parts.size());
+        for (Part part : message.parts)
+            partRecordIds.add(repository.getIdGenerator().newRecordId());
+
         Record messageRecord = repository.newRecord();
         messageRecord.setRecordType(new QName(NS, "Message"));
         if (message.subject != null)
@@ -246,11 +257,16 @@ public class MboxImport extends BaseZkCliTool {
             return;
         }
 
+        List<Link> partLinks = new ArrayList<Link>(message.parts.size());
+        for (RecordId recordId : partRecordIds) {
+            partLinks.add(new Link(recordId));
+        }
+        messageRecord.setField(new QName(NS, "parts"), partLinks);
         messageRecord = repository.create(messageRecord);
-        messageCount++;
 
-        for (Part part : message.parts) {
-            Record partRecord = repository.newRecord();
+        for (int i = 0; i < message.parts.size(); i++) {
+            Part part = message.parts.get(i);
+            Record partRecord = repository.newRecord(partRecordIds.get(i));
             partRecord.setRecordType(new QName(NS, "Part"));
             partRecord.setField(new QName(NS, "mediaType"), part.blob.getMimetype());
             partRecord.setField(new QName(NS, "content"), part.blob);
@@ -263,14 +279,7 @@ public class MboxImport extends BaseZkCliTool {
             System.out.println("Created part record: " + partRecord.getId());
         }
 
-        List<Link> partLinks = new ArrayList<Link>(message.parts.size());
-        for (Part part : message.parts) {
-            partLinks.add(new Link(part.recordId));
-        }
-
-        messageRecord.setField(new QName(NS, "parts"), partLinks);
-        repository.update(messageRecord);
-
+        messageCount++;
         System.out.println("Created message record " + messageRecord.getId());
     }
 
