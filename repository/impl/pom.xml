@@ -64,6 +64,11 @@
       <groupId>org.lilycms</groupId>
       <artifactId>lily-hbase-util</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-zk-util</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.lilycms</groupId>
