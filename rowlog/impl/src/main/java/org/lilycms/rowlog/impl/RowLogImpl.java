@@ -168,7 +168,6 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         synchronized (subscriptions) {
             for (RowLogSubscription subscription : subscriptions.values()) {
                 executionState.setState(subscription.getId(), false);
-                executionState.incTryCount(subscription.getId());
             }
         }
         if (put != null) {

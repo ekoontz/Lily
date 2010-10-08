@@ -15,23 +15,24 @@
  */
 package org.lilycms.rowlog.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.JsonNodeFactory;
-import org.codehaus.jackson.node.ObjectNode;
-import org.lilycms.util.json.JsonFormat;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.avro.specific.SpecificDatumWriter;
+import org.lilycms.rowlog.avro.AvroExecState;
+import org.lilycms.rowlog.avro.AvroExecStateEntry;
 
 public class SubscriptionExecutionState {
 
     private final byte[] messageId;
-    Map<String, Boolean> states = new HashMap<String, Boolean>();
-    Map<String, Integer> tryCounts = new HashMap<String, Integer>();
-    Map<String, byte[]> locks = new HashMap<String, byte[]>();
+
+    private final Map<CharSequence, AvroExecStateEntry> entries = new HashMap<CharSequence, AvroExecStateEntry>();
 
     public SubscriptionExecutionState(byte[] messageId) {
         this.messageId = messageId;
@@ -40,129 +41,112 @@ public class SubscriptionExecutionState {
     public byte[] getMessageId() {
         return messageId;
     }
-    
+
+    public AvroExecStateEntry getEntry(String subscriptionId) {
+        AvroExecStateEntry entry = entries.get(subscriptionId);
+        if (entry == null) {
+            entry = new AvroExecStateEntry();
+            entry.done = false;
+            entry.tryCount = 0;
+            entries.put(subscriptionId, entry);
+        }
+        return entry;
+    }
+
     public void setState(String subscriptionId, boolean state) {
-        states.put(subscriptionId, state);
+        getEntry(subscriptionId).done = state;
     }
     
     public boolean getState(String subscriptionId) {
-        Boolean state = states.get(subscriptionId);
-        if (state == null) return true;
-        return state;
-    }
-    
-    public void incTryCount(String subscriptionId) {
-        Integer count = tryCounts.get(subscriptionId);
-        if (count == null) {
-            tryCounts.put(subscriptionId, 0);
+        AvroExecStateEntry entry = entries.get(subscriptionId);
+        if (entry != null) {
+            return entry.done;
         } else {
-            tryCounts.put(subscriptionId, count+1);
+            return true;
         }
     }
     
+    public void incTryCount(String subscriptionId) {
+        AvroExecStateEntry entry = getEntry(subscriptionId);
+        entry.tryCount = entry.tryCount + 1;
+    }
+    
     public void decTryCount(String subscriptionId) {
-        Integer count = tryCounts.get(subscriptionId);
-        if (count == null || count <= 0) {
-            tryCounts.put(subscriptionId, 0);
+        AvroExecStateEntry entry = getEntry(subscriptionId);
+        if (entry.tryCount <= 0) {
+            entry.tryCount = 0;
         } else {
-            tryCounts.put(subscriptionId, count-1);
+            entry.tryCount = entry.tryCount - 1;
         }
     }
     
     public int getTryCount(String subscriptionId) {
-        Integer count = tryCounts.get(subscriptionId);
-        if (count == null) return 0;
-        return count;
+        AvroExecStateEntry entry = entries.get(subscriptionId);
+        if (entry != null) {
+            return entry.tryCount;
+        } else {
+            return 0;
+        }
     }
     
     public void setLock(String subscriptionId, byte[] lock) {
-        locks.put(subscriptionId, lock);
+        getEntry(subscriptionId).lock = lock == null ? null : ByteBuffer.wrap(lock);
     }
     
     public byte[] getLock(String subscriptionId) {
-        return locks.get(subscriptionId);
+        AvroExecStateEntry entry = entries.get(subscriptionId);
+        if (entry != null) {
+            return entry.lock == null ? null : entry.lock.array();
+        } else {
+            return null;
+        }
     }
+
+    private static final SpecificDatumWriter<AvroExecState> STATE_WRITER =
+            new SpecificDatumWriter<AvroExecState>(AvroExecState.class);
+
+    private static final SpecificDatumReader<AvroExecState> STATE_READER =
+            new SpecificDatumReader<AvroExecState>(AvroExecState.class);
 
     public byte[] toBytes() {
-        JsonNodeFactory factory = JsonNodeFactory.instance;
-        ObjectNode object = factory.objectNode();
+        AvroExecState state = new AvroExecState();
+        state.messageId = ByteBuffer.wrap(messageId);
+        state.entries = entries;
 
-        object.put("id", messageId);
-        
-        ArrayNode consumerStatesNode = object.putArray("states");
-        for (Entry<String, Boolean> entry : states.entrySet()) {
-            ObjectNode consumerStateNode = factory.objectNode();
-            consumerStateNode.put("id", entry.getKey());
-            consumerStateNode.put("state", entry.getValue());
-            consumerStatesNode.add(consumerStateNode);
-        }
-
-        ArrayNode consumerTryCountsNode = object.putArray("counts");
-        for (Entry<String, Integer> entry : tryCounts.entrySet()) {
-            ObjectNode consumerTryCountNode = factory.objectNode();
-            consumerTryCountNode.put("id", entry.getKey());
-            consumerTryCountNode.put("count", entry.getValue());
-            consumerTryCountsNode.add(consumerTryCountNode);
-        }
-
-        ArrayNode consumerLocksNode = object.putArray("locks");
-        for (Entry<String, byte[]> entry : locks.entrySet()) {
-            ObjectNode consumerLockNode = factory.objectNode();
-            consumerLockNode.put("id", entry.getKey());
-            consumerLockNode.put("lock", entry.getValue());
-            consumerLocksNode.add(consumerLockNode);
-        }
-        
-        return toJsonBytes(object);
-    }
-    
-    public byte[] toJsonBytes(JsonNode jsonNode) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream(400);
+        BinaryEncoder encoder = new BinaryEncoder(os);
         try {
-            return JsonFormat.serializeAsBytes(jsonNode);
+            STATE_WRITER.write(state, encoder);
         } catch (IOException e) {
-            throw new RuntimeException("Error serializing subscription execution state to JSON.", e);
+            throw new RuntimeException(e);
+        }
+
+        return os.toByteArray();
+    }
+
+    private void setEntries(Map<CharSequence, AvroExecStateEntry> entries) {
+        // The reason for copying over the entries, rather than simply assigning the full Map, is that
+        // the Map created by Avro will contain Utf8 objects as key.
+        for (Map.Entry<CharSequence, AvroExecStateEntry> entry : entries.entrySet()) {
+            this.entries.put(entry.getKey().toString(), entry.getValue());
         }
     }
-    
+
     public static SubscriptionExecutionState fromBytes(byte[] bytes) throws IOException {
+        AvroExecState state = STATE_READER.read(null, DecoderFactory.defaultFactory().createBinaryDecoder(bytes, null));
 
-        JsonNode node = JsonFormat.deserialize(bytes);
-        SubscriptionExecutionState executionState = new SubscriptionExecutionState(node.get("id").getBinaryValue());
-        
-        JsonNode consumerStatesNode = node.get("states");
-        for (int i = 0; i < consumerStatesNode.size(); i++) {
-            JsonNode consumerStateNode = consumerStatesNode.get(i);
-            String id = consumerStateNode.get("id").getTextValue();
-            Boolean state = consumerStateNode.get("state").getBooleanValue();
-            executionState.setState(id, state);
-        }
+        SubscriptionExecutionState result = new SubscriptionExecutionState(state.messageId.array());
 
-        JsonNode consumerTryCountsNode = node.get("counts");
-        for (int i = 0; i < consumerTryCountsNode.size(); i++) {
-            JsonNode consumerTryCountNode = consumerTryCountsNode.get(i);
-            String id = consumerTryCountNode.get("id").getTextValue();
-            Integer tryCount = consumerTryCountNode.get("count").getIntValue();
-            executionState.tryCounts.put(id, tryCount);
-        }
-        
-        JsonNode consumerLocksNode = node.get("locks");
-        for (int i = 0; i < consumerLocksNode.size(); i++) {
-            JsonNode consumerLockNode = consumerLocksNode.get(i);
-            String id = consumerLockNode.get("id").getTextValue();
-            byte[] lock = consumerLockNode.get("lock").getBinaryValue();
-            executionState.setLock(id, lock);
-        }
-        
-        return executionState;
+        result.setEntries(state.entries);
+
+        return result;
     }
 
     public boolean allDone() {
-        for (Boolean consumerDone : states.values()) {
-            if (!consumerDone)
+        for (AvroExecStateEntry entry : entries.values()) {
+            if (!entry.done)
                 return false;
         }
         return true;
     }
-
-    
 }

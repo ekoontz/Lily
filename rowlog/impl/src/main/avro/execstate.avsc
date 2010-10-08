@@ -1,0 +1,23 @@
+{
+  "namespace":"org.lilycms.rowlog.avro",
+  "name": "AvroExecState",
+  "type": "record",
+  "fields": [
+    { "name": "messageId", "type": "bytes" },
+    { "name": "entries",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "record",
+          "name": "AvroExecStateEntry",
+          "namespace":"org.lilycms.rowlog.avro",
+          "fields": [
+            {"name": "done", "type": "boolean"},
+            {"name": "tryCount", "type": "int"},
+            {"name": "lock", "type": ["bytes", "null"]}
+          ]
+        }
+      }
+    }
+  ]
+}
