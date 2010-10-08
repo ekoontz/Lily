@@ -74,18 +74,24 @@ public class RemoteListenerHandler {
     }
     
     public void stop() {
-        ChannelFuture future = channel.close();
-        try {
-            future.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (channel != null) {
+            ChannelFuture future = channel.close();
+            try {
+                future.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
+
         bootstrap.releaseExternalResources();
-        try {
-            rowLogConfMgr.removeListener(rowLog.getId(), subscriptionId, listenerId);
-        } catch (Exception e) {
-            log.error("Error removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
-                    ", listener ID " + listenerId, e);
+
+        if (listenerId != null) {
+            try {
+                rowLogConfMgr.removeListener(rowLog.getId(), subscriptionId, listenerId);
+            } catch (Exception e) {
+                log.error("Error removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
+                        ", listener ID " + listenerId, e);
+            }
         }
     }
     

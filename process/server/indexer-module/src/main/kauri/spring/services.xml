@@ -12,6 +12,12 @@
 
   <context:annotation-config/>
 
+  <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module" conf="confRegistry"/>
+
+  <bean class="org.kauriproject.runtime.rapi.ConfPlaceholderConfigurer">
+    <constructor-arg ref="confRegistry"/>
+  </bean>
+
   <kauri:import-service
       id="hadoopConfFactory"
       service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
@@ -62,6 +68,7 @@
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="hbaseConf"/>
     <constructor-arg ref="rowLogConfigurationMgr"/>
+    <constructor-arg value="${worker:listenersPerIndex}"/>    
   </bean>
 
 </beans>

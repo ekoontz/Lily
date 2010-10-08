@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<indexerWorker>
+  <!--
+    The amount of message queue listeners (index updaters) that should be
+    started (on one Lily node) per index.
+
+    Since an index updater spends some time waiting on I/O, indexing will
+    go faster when running multiple index updaters in parallel on each Lily
+    node.
+  -->
+  <listenersPerIndex>3</listenersPerIndex>
+</indexerWorker>

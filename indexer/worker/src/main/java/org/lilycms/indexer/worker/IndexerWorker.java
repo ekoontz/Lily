@@ -5,6 +5,7 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.zookeeper.KeeperException;
 import org.lilycms.hbaseindex.*;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.IndexUpdater;
@@ -22,6 +23,7 @@ import org.lilycms.linkindex.LinkIndex;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -59,6 +61,8 @@ public class IndexerWorker {
 
     private RowLog rowLog;
 
+    private final int listenersPerIndex;
+
     private IndexerModelListener listener = new MyListener();
 
     private Map<String, IndexUpdaterHandle> indexUpdaters = new HashMap<String, IndexUpdaterHandle>();
@@ -76,7 +80,7 @@ public class IndexerWorker {
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerWorker(IndexerModel indexerModel, Repository repository, RowLog rowLog, ZooKeeperItf zk,
-            Configuration hbaseConf, RowLogConfigurationManager rowLogConfMgr)
+            Configuration hbaseConf, RowLogConfigurationManager rowLogConfMgr, int listenersPerIndex)
             throws IOException, org.lilycms.hbaseindex.IndexNotFoundException {
         this.indexerModel = indexerModel;
         this.repository = repository;
@@ -84,6 +88,7 @@ public class IndexerWorker {
         this.linkIndex = new LinkIndex(new IndexManager(hbaseConf), repository);
         this.zk = zk;
         this.rowLogConfMgr = rowLogConfMgr;
+        this.listenersPerIndex = listenersPerIndex;
     }
 
     @PostConstruct
@@ -117,13 +122,14 @@ public class IndexerWorker {
         }
 
         for (IndexUpdaterHandle handle : indexUpdaters.values()) {
-            handle.listenerHandler.stop();
+            handle.stop();
         }
 
         connectionManager.shutdown();
     }
 
     private void addIndexUpdater(IndexDefinition index) {
+        IndexUpdaterHandle handle = null;
         try {
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(index.getConfiguration()), repository);
 
@@ -142,17 +148,36 @@ public class IndexerWorker {
 
             IndexUpdater indexUpdater = new IndexUpdater(indexer, repository, linkIndex, indexLocker);
 
-            RemoteListenerHandler listenerHandler = new RemoteListenerHandler(rowLog, index.getQueueSubscriptionId(),
-                    indexUpdater, rowLogConfMgr);
+            List<RemoteListenerHandler> listenerHandlers = new ArrayList<RemoteListenerHandler>();
 
-            IndexUpdaterHandle handle = new IndexUpdaterHandle(index, indexUpdater, listenerHandler);
-            listenerHandler.start();
+            for (int i = 0; i < listenersPerIndex; i++) {
+                RemoteListenerHandler handler = new RemoteListenerHandler(rowLog, index.getQueueSubscriptionId(),
+                        indexUpdater, rowLogConfMgr);
+                listenerHandlers.add(handler);
+            }
+
+            handle = new IndexUpdaterHandle(index, indexUpdater, listenerHandlers);
+            handle.start();
 
             indexUpdaters.put(index.getName(), handle);
 
             log.info("Started index updater for index " + index.getName());
         } catch (Throwable t) {
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+
             log.error("Problem starting index updater for index " + index.getName(), t);
+
+            if (handle != null) {
+                // stop any listeners that might have been started
+                try {
+                    handle.stop();
+                } catch (Throwable t2) {
+                    log.error("Problem stopping listeners for failed-to-start index updater for index '" +
+                            index.getName() + "'", t2);
+                }
+            }
         }
     }
 
@@ -192,7 +217,7 @@ public class IndexerWorker {
         }
 
         try {
-            handle.listenerHandler.stop();
+            handle.stop();
             indexUpdaters.remove(indexName);
             log.info("Stopped indexer updater for index " + indexName);
             return true;
@@ -224,12 +249,24 @@ public class IndexerWorker {
     private class IndexUpdaterHandle {
         private IndexDefinition indexDef;
         private IndexUpdater updater;
-        private RemoteListenerHandler listenerHandler;
+        private List<RemoteListenerHandler> listenerHandlers;
 
-        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, RemoteListenerHandler listenerHandler) {
+        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, List<RemoteListenerHandler> listenerHandlers) {
             this.indexDef = indexDef;
             this.updater = updater;
-            this.listenerHandler = listenerHandler;
+            this.listenerHandlers = listenerHandlers;
+        }
+
+        public void start() throws RowLogException, InterruptedException, KeeperException {
+            for (RemoteListenerHandler handler : listenerHandlers) {
+                handler.start();
+            }
+        }
+
+        public void stop() {
+            for (RemoteListenerHandler handler : listenerHandlers) {
+                handler.stop();
+            }
         }
     }
 
