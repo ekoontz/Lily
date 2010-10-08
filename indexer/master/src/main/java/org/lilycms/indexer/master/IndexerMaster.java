@@ -137,11 +137,15 @@ public class IndexerMaster {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsSubscriptionIdAssigned(index)) {
-                    String subscriptionId = index.getName(); // TODO guarantee uniqueness
+                    // We assume we are the only process which creates subscriptions which begin with the
+                    // prefix "IndexUpdater:". This way we are sure there are no naming conflicts or conflicts
+                    // due to concurrent operations (e.g. someone deleting this subscription right after we
+                    // created it).
+                    String subscriptionId = subscriptionId(index.getName());
                     rowLogConfMgr.addSubscription("MQ", subscriptionId, RowLogSubscription.Type.Netty, 3, 1);
                     index.setQueueSubscriptionId(subscriptionId);
                     indexerModel.updateIndexInternal(index);
-                    log.info("Assigned queue subscription ID " + subscriptionId + " to index " + indexName);
+                    log.info("Assigned queue subscription ID '" + subscriptionId + "' to index '" + indexName + "'");
                 }
             } finally {
                 indexerModel.unlockIndex(lock);
@@ -149,6 +153,10 @@ public class IndexerMaster {
         } catch (Throwable t) {
             log.error("Error trying to assign a queue subscription to index " + indexName, t);
         }
+    }
+
+    private String subscriptionId(String indexName) {
+        return "IndexUpdater: " + indexName;
     }
 
     private void startFullIndexBuild(String indexName) {

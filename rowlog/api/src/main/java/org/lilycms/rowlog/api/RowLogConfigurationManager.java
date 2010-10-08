@@ -6,17 +6,31 @@ import org.lilycms.rowlog.api.RowLogSubscription.Type;
 public interface RowLogConfigurationManager {
 
     /**
+     * Adds a subscription.
      *
-     * <p>This method blocks if the ZK connection is down.
+     * <p>This method blocks if the ZooKeeper connection is down.
+     *
+     * <p>If the subscription would already exist, this method will silently return. Due to the nature of the
+     * implementation of this method, it is difficult to know if it was really this process which created the node.
+     * Note that there is also a chance the current process is interrupted or dies after the subscription is
+     * created but before this method returned. It might also be that someone else removes the subscription again
+     * by the time this method returns into your code. Therefore, the advice is that subscriptionId's should be
+     * selected such that it does not matter if the subscription already existed, but only that the outcome is
+     * 'a subscription with this id exists'.
      */
     void addSubscription(String rowLogId, String subscriptionId, Type type, int maxTries, int orderNr) throws KeeperException,
-            InterruptedException, SubscriptionExistsException;
+            InterruptedException;
 
     /**
+     * Deletes a subscription.
      *
      * <p>This method blocks if the ZK connection is down.
+     *
+     * <p>If the subscription would not exist, this method silently returns.
      */
     void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;
+
+    boolean subscriptionExists(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;
 
     /**
      * Add a new subscriptions observer. After registration, the observer will asynchronously be called to

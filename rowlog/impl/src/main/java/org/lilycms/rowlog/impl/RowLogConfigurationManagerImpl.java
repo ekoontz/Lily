@@ -47,8 +47,18 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         observerSupport.removeSubscriptionsObserver(rowLogId, observer);
     }
 
+    public boolean subscriptionExists(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException {
+        final String path = subscriptionPath(rowLogId, subscriptionId);
+
+        return zooKeeper.retryOperation(new ZooKeeperOperation<Boolean>() {
+            public Boolean execute() throws KeeperException, InterruptedException {
+                return zooKeeper.exists(path, false) != null;
+            }
+        });
+    }
+
     public synchronized void addSubscription(String rowLogId, String subscriptionId, RowLogSubscription.Type type,
-            int maxTries, int orderNr) throws KeeperException, InterruptedException, SubscriptionExistsException {
+            int maxTries, int orderNr) throws KeeperException, InterruptedException {
 
         ZkUtil.createPath(zooKeeper, subscriptionsPath(rowLogId));
 
@@ -64,11 +74,18 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 }
             });
         } catch (KeeperException.NodeExistsException e) {
-            // Note that this might also occur because of retryOperation.
-            // OTOH, it might also occur because two threads/processes/nodes try to create the same subscription
-            // concurrently.
-            throw new SubscriptionExistsException(rowLogId, subscriptionId);
+            // The subscription already exists. This can be because someone else already created it, but also
+            // because of the use of retryOperation. We silently ignore this situation.
         }
+
+        // TODO if the subscription already existed, the configuration will not be adjusted to what is
+        // specified here. I think it should however do this, but leaving this out since we do not
+        // have a way to update subscriptions yet. Once done, should document this in the interface.
+        // We should not bother with situations such as 'what if the subscription would have been removed
+        // since the above create call and the current setData call'. After all, even if we do not do
+        // the setData call, the subscription could have been removed again by the time this method returns.
+        // We assume the processes that are adding subscriptions, as far as they run concurrently, to use
+        // subscriptionIds which do not collide.
     }
     
     public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException {
@@ -85,7 +102,9 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             // Silently ignore, might fail because of retryOperation
         } catch (KeeperException.NotEmptyException e) {
             // TODO Think what should happen here
-            // Remove listeners first?
+            // Remove listeners first? Yes, I think this is best, otherwise if some listener does not want
+            // to go away, we could be unable to remove a subscription. Nothing bad can happen: if listeners
+            // are still running, they will simply not receive messages anymore.
         }
     }
     
