@@ -30,12 +30,12 @@ public class RowLogSetup {
     public void start() throws InterruptedException, KeeperException, IOException, RowLogException, LeaderElectionSetupException {
         // If the subscription already exists, this method will silently return
         try {
-            confMgr.addSubscription("WAL", "LinkIndexUpdater", SubscriptionContext.Type.VM, 3, 10);
+            confMgr.addSubscription("WAL", "LinkIndexUpdater", Subscription.Type.VM, 3, 10);
         } catch (SubscriptionExistsException e) {
             // ok
         }
         try {
-            confMgr.addSubscription("WAL", "MQFeeder", SubscriptionContext.Type.VM, 3, 20);
+            confMgr.addSubscription("WAL", "MQFeeder", Subscription.Type.VM, 3, 20);
         } catch (SubscriptionExistsException e) {
             // ok
         }

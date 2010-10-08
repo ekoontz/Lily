@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.api.Subscription.Type;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;

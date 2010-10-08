@@ -13,8 +13,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.ListenersObserver;
-import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.api.Subscription;
+import org.lilycms.rowlog.api.Subscription.Type;
 import org.lilycms.rowlog.api.SubscriptionsObserver;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -61,19 +61,19 @@ public class RowLogConfigurationManagerTest {
         RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         SubscriptionsCallBack callBack = new SubscriptionsCallBack();
         Assert.assertTrue(callBack.subscriptions.isEmpty());
-        callBack.expect(Collections.<SubscriptionContext>emptyList());
+        callBack.expect(Collections.<Subscription>emptyList());
         rowLogConfigurationManager.addSubscriptionsObserver(rowLogId, callBack);
 
         // After adding the observer we will receive an initial report of the subscriptions
         callBack.validate();
 
         // Add subscription
-        SubscriptionContext expectedSubscriptionContext = new SubscriptionContext(subscriptionId1, Type.VM, 3, 1);
+        Subscription expectedSubscriptionContext = new Subscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.expect(Arrays.asList(expectedSubscriptionContext));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.validate();
 
-        SubscriptionContext expectedSubscriptionContext2 = new SubscriptionContext(subscriptionId2, Type.Netty, 5, 2);
+        Subscription expectedSubscriptionContext2 = new Subscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.expect(Arrays.asList(expectedSubscriptionContext, expectedSubscriptionContext2));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.validate();
@@ -83,7 +83,7 @@ public class RowLogConfigurationManagerTest {
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId1);
         callBack.validate();
         
-        callBack.expect(Collections.<SubscriptionContext>emptyList());
+        callBack.expect(Collections.<Subscription>emptyList());
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId2);
         callBack.validate();
 
@@ -91,25 +91,25 @@ public class RowLogConfigurationManagerTest {
     }
     
     private class SubscriptionsCallBack implements SubscriptionsObserver {
-        public List<SubscriptionContext> subscriptions = new ArrayList<SubscriptionContext>();
-        private List<SubscriptionContext> expectedSubscriptions;
+        public List<Subscription> subscriptions = new ArrayList<Subscription>();
+        private List<Subscription> expectedSubscriptions;
         private Semaphore semaphore = new Semaphore(0);
         
-        public void subscriptionsChanged(List<SubscriptionContext> subscriptions) {
+        public void subscriptionsChanged(List<Subscription> subscriptions) {
             this.subscriptions = subscriptions;
             semaphore.release();
         }
 
-        public void expect(List<SubscriptionContext> asList) {
+        public void expect(List<Subscription> asList) {
             this.expectedSubscriptions = asList;
         }
         
         public void validate() throws Exception{
             semaphore.tryAcquire(10, TimeUnit.SECONDS);
-            for (SubscriptionContext subscriptionContext : subscriptions) {
+            for (Subscription subscriptionContext : subscriptions) {
                 Assert.assertTrue(expectedSubscriptions.contains(subscriptionContext));
             }
-            for (SubscriptionContext subscriptionContext : expectedSubscriptions) {
+            for (Subscription subscriptionContext : expectedSubscriptions) {
                 Assert.assertTrue(subscriptions.contains(subscriptionContext));
             }
         }

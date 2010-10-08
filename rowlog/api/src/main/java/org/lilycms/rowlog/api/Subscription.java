@@ -1,21 +1,29 @@
 package org.lilycms.rowlog.api;
 
+import org.lilycms.util.ObjectUtils;
 
-public class SubscriptionContext implements Comparable<SubscriptionContext>{
+
+public class Subscription implements Comparable<Subscription> {
+    private final String rowLogId;
     private final String id;
     private final Type type;
     private final int maxTries;
     private final int orderNr;
 
-    public enum Type{VM, Netty}
+    public enum Type {VM, Netty}
     
-    public SubscriptionContext(String id, Type type, int maxTries, int orderNr) {
+    public Subscription(String rowLogId, String id, Type type, int maxTries, int orderNr) {
+        this.rowLogId = rowLogId;
         this.id = id;
         this.type = type;
         this.maxTries = maxTries;
         this.orderNr = orderNr;
     }
-    
+
+    public String getRowLogId() {
+        return rowLogId;
+    }
+
     public String getId() {
         return id;
     }
@@ -36,6 +44,7 @@ public class SubscriptionContext implements Comparable<SubscriptionContext>{
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((rowLogId == null) ? 0 : rowLogId.hashCode());
         result = prime * result + ((id == null) ? 0 : id.hashCode());
         result = prime * result + maxTries;
         result = prime * result + orderNr;
@@ -51,25 +60,21 @@ public class SubscriptionContext implements Comparable<SubscriptionContext>{
             return false;
         if (getClass() != obj.getClass())
             return false;
-        SubscriptionContext other = (SubscriptionContext) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
+        Subscription other = (Subscription) obj;
+        if (!ObjectUtils.safeEquals(rowLogId, other.rowLogId))
+            return false;
+        if (!ObjectUtils.safeEquals(id, other.id))
             return false;
         if (maxTries != other.maxTries)
             return false;
         if (orderNr != other.orderNr)
             return false;
-        if (type == null) {
-            if (other.type != null)
-                return false;
-        } else if (!type.equals(other.type))
+        if (!ObjectUtils.safeEquals(type, other.type))
             return false;
         return true;
     }
 
-    public int compareTo(SubscriptionContext other) {
+    public int compareTo(Subscription other) {
         return orderNr - other.orderNr;
     }
 }

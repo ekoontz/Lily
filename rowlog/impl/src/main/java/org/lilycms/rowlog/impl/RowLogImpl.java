@@ -46,7 +46,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     private final byte[] payloadColumnFamily;
     private final byte[] executionStateColumnFamily;
     
-    private Map<String, SubscriptionContext> subscriptions = Collections.synchronizedMap(new HashMap<String, SubscriptionContext>());
+    private Map<String, Subscription> subscriptions = Collections.synchronizedMap(new HashMap<String, Subscription>());
     private final long lockTimeout;
     private final String id;
     private RowLogProcessorNotifier processorNotifier = null;
@@ -166,7 +166,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     private void initializeSubscriptions(RowLogMessage message, Put put) throws IOException {
         SubscriptionExecutionState executionState = new SubscriptionExecutionState(message.getId());
         synchronized (subscriptions) {
-            for (SubscriptionContext subscription : subscriptions.values()) {
+            for (Subscription subscription : subscriptions.values()) {
                 executionState.setState(subscription.getId(), false);
                 executionState.incTryCount(subscription.getId());
             }
@@ -206,11 +206,11 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
 
     private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException {
         boolean allDone = true;
-        List<SubscriptionContext> subscriptionsSnapshot = getSubscriptions();
+        List<Subscription> subscriptionsSnapshot = getSubscriptions();
         if (respectOrder) {
             Collections.sort(subscriptionsSnapshot);
         }
-        for (SubscriptionContext subscription : getSubscriptions()) {
+        for (Subscription subscription : getSubscriptions()) {
             String subscriptionId = subscription.getId();
             if (!executionState.getState(subscriptionId)) {
                 boolean done = false;
@@ -238,9 +238,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         return allDone;
     }
     
-    public List<SubscriptionContext> getSubscriptions() {
+    public List<Subscription> getSubscriptions() {
         synchronized (subscriptions) {
-            return new ArrayList<SubscriptionContext>(subscriptions.values());
+            return new ArrayList<Subscription>(subscriptions.values());
         }
     }
     
@@ -330,15 +330,15 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         }
     }
 
-    private void checkAndMarkProblematic(RowLogMessage message, SubscriptionContext subscription,
+    private void checkAndMarkProblematic(RowLogMessage message, Subscription subscription,
             SubscriptionExecutionState executionState) throws RowLogException {
         int maxTries = subscription.getMaxTries();
         RowLogShard rowLogShard = getShard();
         if (executionState.getTryCount(subscription.getId()) >= maxTries) {
             if (respectOrder) {
-                List<SubscriptionContext> subscriptionContexts = getSubscriptions();
+                List<Subscription> subscriptionContexts = getSubscriptions();
                 Collections.sort(subscriptionContexts);
-                for (SubscriptionContext subscriptionContext : subscriptionContexts) {
+                for (Subscription subscriptionContext : subscriptionContexts) {
                     if (subscriptionContext.getOrderNr() >= subscription.getOrderNr()) {
                         rowLogShard.markProblematic(message, subscriptionContext.getId());
                         log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscriptionContext.getId(), message.getId(), maxTries));
@@ -440,9 +440,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         if (executionState == null)
             return false;
         if (respectOrder) {
-            List<SubscriptionContext> subscriptionsContexts = getSubscriptions();
+            List<Subscription> subscriptionsContexts = getSubscriptions();
             Collections.sort(subscriptionsContexts);
-            for (SubscriptionContext subscriptionContext : subscriptionsContexts) {
+            for (Subscription subscriptionContext : subscriptionsContexts) {
                 if (subscriptionId.equals(subscriptionContext.getId()))
                     break;
                 if (!executionState.getState(subscriptionContext.getId())) {
@@ -512,15 +512,15 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         return getShard().isProblematic(message, subscriptionId);
     }
     
-    public void subscriptionsChanged(List<SubscriptionContext> newSubscriptions) {
+    public void subscriptionsChanged(List<Subscription> newSubscriptions) {
         synchronized (subscriptions) {
-            for (SubscriptionContext subscription : newSubscriptions) {
+            for (Subscription subscription : newSubscriptions) {
                 if (!subscriptions.containsKey(subscription.getId()))
                     subscriptions.put(subscription.getId(), subscription);
             }
-            Iterator<SubscriptionContext> iterator = subscriptions.values().iterator();
+            Iterator<Subscription> iterator = subscriptions.values().iterator();
             while (iterator.hasNext()) {
-                SubscriptionContext subscription = iterator.next();
+                Subscription subscription = iterator.next();
                 if (!newSubscriptions.contains(subscription))
                     iterator.remove();
             }

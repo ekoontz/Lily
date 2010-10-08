@@ -68,7 +68,7 @@ public class DummyRowLog implements RowLog {
         throw new RuntimeException(failMessage);
     }
 
-    public List<SubscriptionContext> getSubscriptions() {
+    public List<Subscription> getSubscriptions() {
         throw new RuntimeException(failMessage);
     }
 

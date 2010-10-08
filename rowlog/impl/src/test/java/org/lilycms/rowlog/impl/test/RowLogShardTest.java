@@ -16,12 +16,12 @@
 package org.lilycms.rowlog.impl.test;
 
 
+import static java.util.Arrays.asList;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.classextension.EasyMock.createControl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hbase.util.Bytes;
@@ -33,8 +33,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.SubscriptionContext;
-import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.api.Subscription;
+import org.lilycms.rowlog.api.Subscription.Type;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -77,7 +77,7 @@ public class RowLogShardTest {
     public void testSingleMessage() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId,Type.VM, 3, 1)})).anyTimes();
+        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -97,7 +97,7 @@ public class RowLogShardTest {
     public void testMultipleMessages() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId,Type.VM, 3, 1)})).anyTimes();
+        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -124,7 +124,7 @@ public class RowLogShardTest {
     public void testBatchSize() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId,Type.VM, 3, 1)})).anyTimes();
+        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
@@ -159,7 +159,9 @@ public class RowLogShardTest {
         String subscriptionId1 = "Subscription1";
         String subscriptionId2 = "Subscription2";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId1,Type.VM, 3, 1), new SubscriptionContext(subscriptionId2,Type.VM, 3, 2)})).anyTimes();
+        expectLastCall().andReturn(asList(
+                new Subscription("id", subscriptionId1, Type.VM, 3, 1),
+                new Subscription("id", subscriptionId2, Type.VM, 3, 2))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -193,7 +195,7 @@ public class RowLogShardTest {
         String subscriptionId1 = "Subscription1";
         String subscriptionId2 = "Subscription2";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId1,Type.VM, 3, 1)})).anyTimes();
+        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId1, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -215,7 +217,7 @@ public class RowLogShardTest {
     public void testProblematicMessage() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(Arrays.asList(new SubscriptionContext[]{new SubscriptionContext(subscriptionId,Type.VM, 3, 1)})).anyTimes();
+        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");

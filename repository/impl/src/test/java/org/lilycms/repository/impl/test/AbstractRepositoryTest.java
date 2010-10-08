@@ -40,7 +40,6 @@ import org.lilycms.repository.api.IdRecord;
 import org.lilycms.repository.api.InvalidRecordException;
 import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.Record;
-import org.lilycms.repository.api.RecordExistsException;
 import org.lilycms.repository.api.RecordId;
 import org.lilycms.repository.api.RecordNotFoundException;
 import org.lilycms.repository.api.RecordType;
@@ -55,7 +54,7 @@ import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.api.SubscriptionContext.Type;
+import org.lilycms.rowlog.api.Subscription.Type;
 import org.lilycms.rowlog.impl.MessageQueueFeeder;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
@@ -63,7 +62,6 @@ import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.repo.VersionTag;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractRepositoryTest {

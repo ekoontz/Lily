@@ -9,7 +9,6 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.rowlog.api.SubscriptionContext.Type;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -48,21 +47,20 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         observerSupport.removeSubscriptionsObserver(rowLogId, observer);
     }
 
-    public synchronized void addSubscription(String rowLogId, String subscriptionId, SubscriptionContext.Type type,
+    public synchronized void addSubscription(String rowLogId, String subscriptionId, Subscription.Type type,
             int maxTries, int orderNr) throws KeeperException, InterruptedException, SubscriptionExistsException {
+
         ZkUtil.createPath(zooKeeper, subscriptionsPath(rowLogId));
 
         final String path = subscriptionPath(rowLogId, subscriptionId);
-        byte[] data = Bytes.toBytes(maxTries);
-        data = Bytes.add(data, Bytes.toBytes(orderNr));
-        data = Bytes.add(data, Bytes.toBytes(type.name()));
 
-        final byte[] finalData = data;
+        Subscription subscription = new Subscription(rowLogId, subscriptionId, type, maxTries, orderNr);
+        final byte[] data = SubscriptionConverter.INSTANCE.toJsonBytes(subscription);
 
         try {
             zooKeeper.retryOperation(new ZooKeeperOperation<String>() {
                 public String execute() throws KeeperException, InterruptedException {
-                    return zooKeeper.create(path, finalData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                    return zooKeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
             });
         } catch (KeeperException.NodeExistsException e) {
@@ -356,7 +354,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             private String rowLogId;
             private SubscriptionsWatcher watcher;
             private Set<SubscriptionsObserver> observers = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<SubscriptionsObserver, Boolean>()));
-            private List<SubscriptionContext> subscriptions = Collections.emptyList();
+            private List<Subscription> subscriptions = Collections.emptyList();
 
             public SubscriptionsObservers(String rowLogId) {
                 this.rowLogId = rowLogId;
@@ -368,7 +366,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             }
 
             public boolean refresh() throws InterruptedException, KeeperException {
-                List<SubscriptionContext> subscriptions = new ArrayList<SubscriptionContext>();
+                List<Subscription> subscriptions = new ArrayList<Subscription>();
 
                 List<String> subscriptionIds;
                 Stat stat = new Stat();
@@ -391,10 +389,8 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 for (String subscriptionId : subscriptionIds) {
                     try {
                         byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, subscriptionId), watcher, new Stat());
-                        int maxTries = Bytes.toInt(data);
-                        int orderNr = Bytes.toInt(data, Bytes.SIZEOF_INT);
-                        Type type = Type.valueOf(Bytes.toString(data, Bytes.SIZEOF_INT * 2, data.length - (Bytes.SIZEOF_INT*2)));
-                        subscriptions.add(new SubscriptionContext(subscriptionId, type, maxTries, orderNr));
+                        Subscription subscription = SubscriptionConverter.INSTANCE.fromJsonBytes(rowLogId, subscriptionId, data);
+                        subscriptions.add(subscription);
                     } catch (NoNodeException e) {
                         // subscription was removed since the getChildren call, skip it
                     }
