@@ -82,7 +82,7 @@ public class LinkIndexTest {
         LinkIndex.createIndexes(indexManager);
         linkIndex = new LinkIndex(indexManager, repository);
 
-        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", Subscription.Type.VM, 1, 1);
+        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", RowLogSubscription.Type.VM, 1, 1);
         RowLogMessageListenerMapping.INSTANCE.put("LinkIndexUpdater", new LinkIndexUpdater(repository, linkIndex));
     }
 

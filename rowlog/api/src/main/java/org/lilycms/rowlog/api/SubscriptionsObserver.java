@@ -12,5 +12,5 @@ public interface SubscriptionsObserver {
      *
      * @param subscriptions the full list of current subscriptions.
      */
-    void subscriptionsChanged(List<Subscription> subscriptions);
+    void subscriptionsChanged(List<RowLogSubscription> subscriptions);
 }

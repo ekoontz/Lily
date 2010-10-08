@@ -34,7 +34,7 @@ import org.apache.hadoop.hbase.client.RowLock;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.rowlog.api.Subscription;
+import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
 
@@ -70,7 +70,7 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void putMessage(RowLogMessage message) throws RowLogException {
-        for (Subscription subscription : rowLog.getSubscriptions()) {
+        for (RowLogSubscription subscription : rowLog.getSubscriptions()) {
             putMessage(message, subscription.getId());
         }
     }

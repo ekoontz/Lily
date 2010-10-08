@@ -85,11 +85,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     }
 
     //  synchronized because we do not want to run this concurrently with the start/stop methods
-    public synchronized void subscriptionsChanged(List<Subscription> newSubscriptions) {
+    public synchronized void subscriptionsChanged(List<RowLogSubscription> newSubscriptions) {
         synchronized (subscriptionThreads) {
             if (!stop) {
                 List<String> newSubscriptionIds = new ArrayList<String>();
-                for (Subscription newSubscription : newSubscriptions) {
+                for (RowLogSubscription newSubscription : newSubscriptions) {
                     newSubscriptionIds.add(newSubscription.getId());
                     if (!subscriptionThreads.containsKey(newSubscription.getId())) {
                         SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
@@ -108,7 +108,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         }
     }
 
-    private SubscriptionThread startSubscriptionThread(Subscription subscription) {
+    private SubscriptionThread startSubscriptionThread(RowLogSubscription subscription) {
         SubscriptionThread subscriptionThread = new SubscriptionThread(subscription);
         subscriptionThread.start();
         return subscriptionThread;
@@ -248,7 +248,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private SubscriptionHandler subscriptionHandler;
         private String subscriptionId;
 
-        public SubscriptionThread(Subscription subscription) {
+        public SubscriptionThread(RowLogSubscription subscription) {
             this.subscriptionId = subscription.getId();
             this.metrics = new ProcessorMetrics();
             switch (subscription.getType()) {

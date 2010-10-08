@@ -192,7 +192,7 @@ public interface RowLog {
     
     boolean isProblematic(RowLogMessage message, String subscriptionId) throws RowLogException;
     
-    List<Subscription> getSubscriptions();
+    List<RowLogSubscription> getSubscriptions();
 
     List<RowLogShard> getShards();
 

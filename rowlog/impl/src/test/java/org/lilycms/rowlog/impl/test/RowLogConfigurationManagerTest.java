@@ -13,8 +13,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.ListenersObserver;
-import org.lilycms.rowlog.api.Subscription;
-import org.lilycms.rowlog.api.Subscription.Type;
+import org.lilycms.rowlog.api.RowLogSubscription;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.api.SubscriptionsObserver;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -61,19 +61,19 @@ public class RowLogConfigurationManagerTest {
         RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         SubscriptionsCallBack callBack = new SubscriptionsCallBack();
         Assert.assertTrue(callBack.subscriptions.isEmpty());
-        callBack.expect(Collections.<Subscription>emptyList());
+        callBack.expect(Collections.<RowLogSubscription>emptyList());
         rowLogConfigurationManager.addSubscriptionsObserver(rowLogId, callBack);
 
         // After adding the observer we will receive an initial report of the subscriptions
         callBack.validate();
 
         // Add subscription
-        Subscription expectedSubscriptionContext = new Subscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
+        RowLogSubscription expectedSubscriptionContext = new RowLogSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.expect(Arrays.asList(expectedSubscriptionContext));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         callBack.validate();
 
-        Subscription expectedSubscriptionContext2 = new Subscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
+        RowLogSubscription expectedSubscriptionContext2 = new RowLogSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.expect(Arrays.asList(expectedSubscriptionContext, expectedSubscriptionContext2));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.validate();
@@ -83,7 +83,7 @@ public class RowLogConfigurationManagerTest {
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId1);
         callBack.validate();
         
-        callBack.expect(Collections.<Subscription>emptyList());
+        callBack.expect(Collections.<RowLogSubscription>emptyList());
         rowLogConfigurationManager.removeSubscription(rowLogId, subscriptionId2);
         callBack.validate();
 
@@ -91,25 +91,25 @@ public class RowLogConfigurationManagerTest {
     }
     
     private class SubscriptionsCallBack implements SubscriptionsObserver {
-        public List<Subscription> subscriptions = new ArrayList<Subscription>();
-        private List<Subscription> expectedSubscriptions;
+        public List<RowLogSubscription> subscriptions = new ArrayList<RowLogSubscription>();
+        private List<RowLogSubscription> expectedSubscriptions;
         private Semaphore semaphore = new Semaphore(0);
         
-        public void subscriptionsChanged(List<Subscription> subscriptions) {
+        public void subscriptionsChanged(List<RowLogSubscription> subscriptions) {
             this.subscriptions = subscriptions;
             semaphore.release();
         }
 
-        public void expect(List<Subscription> asList) {
+        public void expect(List<RowLogSubscription> asList) {
             this.expectedSubscriptions = asList;
         }
         
         public void validate() throws Exception{
             semaphore.tryAcquire(10, TimeUnit.SECONDS);
-            for (Subscription subscriptionContext : subscriptions) {
+            for (RowLogSubscription subscriptionContext : subscriptions) {
                 Assert.assertTrue(expectedSubscriptions.contains(subscriptionContext));
             }
-            for (Subscription subscriptionContext : expectedSubscriptions) {
+            for (RowLogSubscription subscriptionContext : expectedSubscriptions) {
                 Assert.assertTrue(subscriptions.contains(subscriptionContext));
             }
         }

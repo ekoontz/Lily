@@ -47,14 +47,14 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         observerSupport.removeSubscriptionsObserver(rowLogId, observer);
     }
 
-    public synchronized void addSubscription(String rowLogId, String subscriptionId, Subscription.Type type,
+    public synchronized void addSubscription(String rowLogId, String subscriptionId, RowLogSubscription.Type type,
             int maxTries, int orderNr) throws KeeperException, InterruptedException, SubscriptionExistsException {
 
         ZkUtil.createPath(zooKeeper, subscriptionsPath(rowLogId));
 
         final String path = subscriptionPath(rowLogId, subscriptionId);
 
-        Subscription subscription = new Subscription(rowLogId, subscriptionId, type, maxTries, orderNr);
+        RowLogSubscription subscription = new RowLogSubscription(rowLogId, subscriptionId, type, maxTries, orderNr);
         final byte[] data = SubscriptionConverter.INSTANCE.toJsonBytes(subscription);
 
         try {
@@ -354,7 +354,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             private String rowLogId;
             private SubscriptionsWatcher watcher;
             private Set<SubscriptionsObserver> observers = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<SubscriptionsObserver, Boolean>()));
-            private List<Subscription> subscriptions = Collections.emptyList();
+            private List<RowLogSubscription> subscriptions = Collections.emptyList();
 
             public SubscriptionsObservers(String rowLogId) {
                 this.rowLogId = rowLogId;
@@ -366,7 +366,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             }
 
             public boolean refresh() throws InterruptedException, KeeperException {
-                List<Subscription> subscriptions = new ArrayList<Subscription>();
+                List<RowLogSubscription> subscriptions = new ArrayList<RowLogSubscription>();
 
                 List<String> subscriptionIds;
                 Stat stat = new Stat();
@@ -389,7 +389,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 for (String subscriptionId : subscriptionIds) {
                     try {
                         byte[] data = zooKeeper.getData(subscriptionPath(rowLogId, subscriptionId), watcher, new Stat());
-                        Subscription subscription = SubscriptionConverter.INSTANCE.fromJsonBytes(rowLogId, subscriptionId, data);
+                        RowLogSubscription subscription = SubscriptionConverter.INSTANCE.fromJsonBytes(rowLogId, subscriptionId, data);
                         subscriptions.add(subscription);
                     } catch (NoNodeException e) {
                         // subscription was removed since the getChildren call, skip it

@@ -24,7 +24,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.rowlog.api.Subscription.Type;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;

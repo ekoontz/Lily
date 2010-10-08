@@ -10,7 +10,7 @@ import org.apache.hadoop.mapred.RunningJob;
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
-import org.lilycms.rowlog.api.Subscription;
+import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.util.zookeeper.*;
 
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
@@ -138,7 +138,7 @@ public class IndexerMaster {
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsSubscriptionIdAssigned(index)) {
                     String subscriptionId = index.getName(); // TODO guarantee uniqueness
-                    rowLogConfMgr.addSubscription("MQ", subscriptionId, Subscription.Type.Netty, 3, 1);
+                    rowLogConfMgr.addSubscription("MQ", subscriptionId, RowLogSubscription.Type.Netty, 3, 1);
                     index.setQueueSubscriptionId(subscriptionId);
                     indexerModel.updateIndexInternal(index);
                     log.info("Assigned queue subscription ID " + subscriptionId + " to index " + indexName);

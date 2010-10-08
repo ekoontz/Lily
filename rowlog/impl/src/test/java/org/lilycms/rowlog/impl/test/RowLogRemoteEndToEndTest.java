@@ -20,7 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.Subscription;
+import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
 
 public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
@@ -32,7 +32,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     public void setUp() throws Exception {
         validationListener = new ValidationMessageListener();
         subscriptionId = "Test";
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  Subscription.Type.Netty, 3, 1);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.Netty, 3, 1);
         remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, rowLogConfigurationManager);
         remoteListener.start();
     }
@@ -46,7 +46,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     @Test
     public void testMultipleConsumers() throws Exception {
         ValidationMessageListener validationListener2 = new ValidationMessageListener();
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", Subscription.Type.Netty, 3, 2);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", RowLogSubscription.Type.Netty, 3, 2);
         RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, rowLogConfigurationManager);
         remoteListener2.start();
         validationListener.expectMessages(10);

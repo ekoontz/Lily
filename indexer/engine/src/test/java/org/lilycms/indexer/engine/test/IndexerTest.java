@@ -138,9 +138,9 @@ public class IndexerTest {
         // Field types should exist before the indexer conf is loaded
         setupSchema();
 
-        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", Subscription.Type.VM, 1, 1);
-        rowLogConfMgr.addSubscription("WAL", "IndexUpdater", Subscription.Type.VM, 1, 2);
-        rowLogConfMgr.addSubscription("WAL", "MessageVerifier", Subscription.Type.VM, 1, 3);
+        rowLogConfMgr.addSubscription("WAL", "LinkIndexUpdater", RowLogSubscription.Type.VM, 1, 1);
+        rowLogConfMgr.addSubscription("WAL", "IndexUpdater", RowLogSubscription.Type.VM, 1, 2);
+        rowLogConfMgr.addSubscription("WAL", "MessageVerifier", RowLogSubscription.Type.VM, 1, 3);
 
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/indexerconf1.xml"), repository);

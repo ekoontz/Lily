@@ -54,7 +54,7 @@ import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.api.Subscription.Type;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.MessageQueueFeeder;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;

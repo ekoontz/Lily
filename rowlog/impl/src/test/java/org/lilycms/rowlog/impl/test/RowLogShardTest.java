@@ -33,8 +33,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.Subscription;
-import org.lilycms.rowlog.api.Subscription.Type;
+import org.lilycms.rowlog.api.RowLogSubscription;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
@@ -77,7 +77,7 @@ public class RowLogShardTest {
     public void testSingleMessage() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
+        expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -97,7 +97,7 @@ public class RowLogShardTest {
     public void testMultipleMessages() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
+        expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -124,7 +124,7 @@ public class RowLogShardTest {
     public void testBatchSize() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
+        expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
@@ -160,8 +160,8 @@ public class RowLogShardTest {
         String subscriptionId2 = "Subscription2";
         rowLog.getSubscriptions();
         expectLastCall().andReturn(asList(
-                new Subscription("id", subscriptionId1, Type.VM, 3, 1),
-                new Subscription("id", subscriptionId2, Type.VM, 3, 2))).anyTimes();
+                new RowLogSubscription("id", subscriptionId1, Type.VM, 3, 1),
+                new RowLogSubscription("id", subscriptionId2, Type.VM, 3, 2))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -195,7 +195,7 @@ public class RowLogShardTest {
         String subscriptionId1 = "Subscription1";
         String subscriptionId2 = "Subscription2";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId1, Type.VM, 3, 1))).anyTimes();
+        expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId1, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -217,7 +217,7 @@ public class RowLogShardTest {
     public void testProblematicMessage() throws Exception {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
-        expectLastCall().andReturn(asList(new Subscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
+        expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
         byte[] messageId1 = Bytes.toBytes("messageId1");

@@ -3,7 +3,7 @@ package org.lilycms.rowlog.api;
 import org.lilycms.util.ObjectUtils;
 
 
-public class Subscription implements Comparable<Subscription> {
+public class RowLogSubscription implements Comparable<RowLogSubscription> {
     private final String rowLogId;
     private final String id;
     private final Type type;
@@ -12,7 +12,7 @@ public class Subscription implements Comparable<Subscription> {
 
     public enum Type {VM, Netty}
     
-    public Subscription(String rowLogId, String id, Type type, int maxTries, int orderNr) {
+    public RowLogSubscription(String rowLogId, String id, Type type, int maxTries, int orderNr) {
         this.rowLogId = rowLogId;
         this.id = id;
         this.type = type;
@@ -60,7 +60,7 @@ public class Subscription implements Comparable<Subscription> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Subscription other = (Subscription) obj;
+        RowLogSubscription other = (RowLogSubscription) obj;
         if (!ObjectUtils.safeEquals(rowLogId, other.rowLogId))
             return false;
         if (!ObjectUtils.safeEquals(id, other.id))
@@ -74,7 +74,7 @@ public class Subscription implements Comparable<Subscription> {
         return true;
     }
 
-    public int compareTo(Subscription other) {
+    public int compareTo(RowLogSubscription other) {
         return orderNr - other.orderNr;
     }
 }

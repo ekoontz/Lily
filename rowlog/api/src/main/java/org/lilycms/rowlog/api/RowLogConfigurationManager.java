@@ -1,7 +1,7 @@
 package org.lilycms.rowlog.api;
 
 import org.apache.zookeeper.KeeperException;
-import org.lilycms.rowlog.api.Subscription.Type;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 
 public interface RowLogConfigurationManager {
 

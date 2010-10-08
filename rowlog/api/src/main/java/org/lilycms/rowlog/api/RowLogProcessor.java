@@ -41,7 +41,7 @@ public interface RowLogProcessor {
      */
     boolean isRunning(int consumerId);
 
-    void subscriptionsChanged(List<Subscription> andWatchSubscriptions);
+    void subscriptionsChanged(List<RowLogSubscription> andWatchSubscriptions);
 
     /**
      * The RowLog for which this processor is working.
