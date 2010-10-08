@@ -99,7 +99,7 @@ public class ValueTypeTest {
     @Before
     public void setUp() throws Exception {
         idGenerator = new IdGeneratorImpl();
-        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
+        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, initializeWal(HBASE_PROXY.getConf()), HBASE_PROXY.getConf());

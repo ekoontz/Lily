@@ -75,10 +75,6 @@ public abstract class AbstractTypeManager implements TypeManager {
         return new ValueTypeImpl(type, multivalue, hierarchy);
     }
     
-    protected void initialize() {
-        registerDefaultValueTypes();
-    }
-    
     // TODO get this from some configuration file
     protected void registerDefaultValueTypes() {
         //

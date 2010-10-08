@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.zookeeper.KeeperException;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
@@ -48,11 +49,10 @@ import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.VersionNotFoundException;
-import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
-import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.MessageQueueFeeder;
@@ -61,6 +61,7 @@ import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.util.repo.VersionTag;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -172,7 +173,7 @@ public abstract class AbstractRepositoryTest {
         listenerClassMapping.put("MQFeeder", new MessageQueueFeeder(messageQueue));
     }
 
-    protected static void setupMessageQueueProcessor() throws RowLogException {
+    protected static void setupMessageQueueProcessor() throws RowLogException, KeeperException, InterruptedException {
         messageQueueProcessor = new RowLogProcessorImpl(messageQueue, rowLogConfigurationManager);
         messageQueueProcessor.start();
     }

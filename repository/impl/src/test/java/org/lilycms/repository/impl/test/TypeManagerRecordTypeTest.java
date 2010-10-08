@@ -21,6 +21,8 @@ import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 /**
  *
@@ -28,17 +30,20 @@ import org.lilycms.testfw.TestHelper;
 public class TypeManagerRecordTypeTest extends AbstractTypeManagerRecordTypeTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    private static StateWatchingZooKeeper zooKeeper;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf());
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         setupFieldTypes();
     }
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 

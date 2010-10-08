@@ -49,11 +49,11 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             idGenerator = new IdGeneratorImpl();
 
-            TypeManager typeManager = new HBaseTypeManager(idGenerator, conf);
-
             String zkConnectString = jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperConnectString");
             int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout"));
             zk = ZkUtil.connect(zkConnectString, zkSessionTimeout);
+
+            TypeManager typeManager = new HBaseTypeManager(idGenerator, conf, zk);
 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 

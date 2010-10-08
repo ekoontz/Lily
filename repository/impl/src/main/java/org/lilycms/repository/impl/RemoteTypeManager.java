@@ -41,7 +41,7 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
         client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
 
         lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
-        initialize();
+        registerDefaultValueTypes();
     }
 
     public void close() throws IOException {

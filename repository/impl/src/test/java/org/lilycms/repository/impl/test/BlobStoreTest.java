@@ -45,7 +45,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
         IdGenerator idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        typeManager = new HBaseTypeManager(idGenerator, configuration);
+        typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 

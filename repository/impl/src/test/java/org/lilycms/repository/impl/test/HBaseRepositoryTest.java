@@ -45,7 +45,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         configuration = HBASE_PROXY.getConf();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
         setupRowLogConfigurationManager(zooKeeper);
-        typeManager = new HBaseTypeManager(idGenerator, configuration);
+        typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         setupWal();
@@ -65,7 +65,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     
     @Test
     public void testFieldTypeCacheInitialization() throws Exception {
-        TypeManager newTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf());
+        TypeManager newTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
         assertEquals(fieldType1, newTypeManager.getFieldTypeByName(fieldType1.getName()));
     }
     

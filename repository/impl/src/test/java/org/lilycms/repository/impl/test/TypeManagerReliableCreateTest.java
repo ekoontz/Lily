@@ -14,9 +14,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.repository.api.FieldType;
+import org.lilycms.repository.api.FieldTypeExistsException;
 import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.RecordTypeExistsException;
 import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeException;
@@ -27,6 +29,8 @@ import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.hbase.LocalHTable;
+import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 
 public class TypeManagerReliableCreateTest {
 
@@ -35,17 +39,20 @@ public class TypeManagerReliableCreateTest {
     private static final byte[] CONCURRENT_COUNTER_COLUMN_NAME = Bytes.toBytes("$cc");
     private static ValueType valueType;
     private static TypeManager basicTypeManager;
+    private static StateWatchingZooKeeper zooKeeper;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        basicTypeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf());
+        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        basicTypeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         valueType = basicTypeManager.getValueType("LONG", false, false);
     }
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 
@@ -76,7 +83,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf()) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -86,6 +93,9 @@ public class TypeManagerReliableCreateTest {
             typeManager.createRecordType(typeManager.newRecordType(new QName("NS", "name")));
             fail();
         } catch (TypeException expected) {
+        } catch (RecordTypeExistsException expected) {
+            // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
+            // Through ZooKeeper the cache will have been marked as invalidated
         }
     }
     
@@ -108,7 +118,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf()) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -119,6 +129,9 @@ public class TypeManagerReliableCreateTest {
             typeManager.createRecordType(typeManager.newRecordType(new QName("NS", "name2")));
             fail();
         } catch (TypeException expected) {
+        } catch (RecordTypeExistsException expected) {
+            // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
+            // Through ZooKeeper the cache will have been marked as invalidated
         }
     }
 
@@ -139,7 +152,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf()) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -149,6 +162,9 @@ public class TypeManagerReliableCreateTest {
             typeManager.createFieldType(typeManager.newFieldType(valueType, new QName("NS", "name"), Scope.VERSIONED));
             fail();
         } catch (TypeException expected) {
+        } catch (FieldTypeExistsException expected) {
+            // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
+            // Through ZooKeeper the cache will have been marked as invalidated
         }
     }
     
@@ -171,7 +187,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf()) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -182,13 +198,16 @@ public class TypeManagerReliableCreateTest {
             typeManager.createFieldType(typeManager.newFieldType(valueType, new QName("NS", "name2"), Scope.VERSIONED));
             fail();
         } catch (TypeException expected) {
+        } catch (FieldTypeExistsException expected) {
+            // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
+            // Through ZooKeeper the cache will have been marked as invalidated
         }
     }
     
     @Test
     public void testGetTypeIgnoresConcurrentCounterRows() throws Exception {
         HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable"));
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf());
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         UUID id = UUID.randomUUID();
         byte[] rowId;
         rowId = new byte[16];
