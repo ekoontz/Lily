@@ -156,7 +156,7 @@ public class IndexerMaster {
     }
 
     private String subscriptionId(String indexName) {
-        return "IndexUpdater: " + indexName;
+        return "IndexUpdater_" + indexName;
     }
 
     private void startFullIndexBuild(String indexName) {
