@@ -1,11 +1,6 @@
 package org.lilycms.process.test;
 
-import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.MappingJsonFactory;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
@@ -19,6 +14,7 @@ import static org.junit.Assert.*;
 
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.util.io.Closer;
+import org.lilycms.util.json.JsonFormat;
 import org.lilycms.util.json.JsonUtil;
 import org.restlet.Client;
 import org.restlet.Request;
@@ -865,14 +861,9 @@ public class RestTest {
     }
 
     public static JsonNode readJson(Representation representation) throws IOException {
-        JsonFactory jsonFactory = new MappingJsonFactory();
         InputStream is = representation.getStream();
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
-            mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-            mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-            return mapper.readTree(is);
+            return JsonFormat.deserialize(is);
         } finally {
             Closer.close(is);
         }

@@ -92,8 +92,7 @@ public class IndexDefinitionConverter {
 
     public byte[] toJsonBytes(IndexDefinition index) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsBytes(toJson(index));
+            return JsonFormat.serializeAsBytes(toJson(index));
         } catch (IOException e) {
             throw new RuntimeException("Error serializing index definition to JSON.", e);
         }

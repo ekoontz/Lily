@@ -15,17 +15,16 @@
  */
 package org.lilycms.rowlog.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
+import org.lilycms.util.json.JsonFormat;
 
 public class SubscriptionExecutionState {
 
@@ -118,20 +117,16 @@ public class SubscriptionExecutionState {
     }
     
     public byte[] toJsonBytes(JsonNode jsonNode) {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        ObjectMapper mapper = new ObjectMapper();
         try {
-            mapper.writeValue(os, jsonNode);
+            return JsonFormat.serializeAsBytes(jsonNode);
         } catch (IOException e) {
-            // Small chance of this happening, since we are writing to a byte array
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error serializing subscription execution state to JSON.", e);
         }
-        return os.toByteArray();
     }
     
     public static SubscriptionExecutionState fromBytes(byte[] bytes) throws IOException {
-        
-        JsonNode node = new ObjectMapper().readValue(bytes, 0, bytes.length, JsonNode.class);
+
+        JsonNode node = JsonFormat.deserialize(bytes);
         SubscriptionExecutionState executionState = new SubscriptionExecutionState(node.get("id").getBinaryValue());
         
         JsonNode consumerStatesNode = node.get("states");

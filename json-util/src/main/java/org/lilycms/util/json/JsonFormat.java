@@ -10,17 +10,30 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class JsonFormat {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final MappingJsonFactory JSON_FACTORY;
+    static {
+        JSON_FACTORY = new MappingJsonFactory();
+        JSON_FACTORY.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        JSON_FACTORY.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        JSON_FACTORY.getCodec().getDeserializationConfig().enable(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS);
+    }
+
     public static void serialize(JsonNode jsonNode, OutputStream outputStream) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(outputStream, jsonNode);
+        OBJECT_MAPPER.writeValue(outputStream, jsonNode);
+    }
+
+    public static byte[] serializeAsBytes(JsonNode jsonNode) throws IOException {
+        return OBJECT_MAPPER.writeValueAsBytes(jsonNode);
     }
 
     public static JsonNode deserialize(InputStream inputStream) throws IOException {
-        MappingJsonFactory jsonFactory = new MappingJsonFactory();
-        jsonFactory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        jsonFactory.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        jsonFactory.getCodec().getDeserializationConfig().enable(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS);
-        JsonParser jp = jsonFactory.createJsonParser(inputStream);
+        JsonParser jp = JSON_FACTORY.createJsonParser(inputStream);
+        return jp.readValueAsTree();
+    }
+
+    public static JsonNode deserialize(byte[] data) throws IOException {
+        JsonParser jp = JSON_FACTORY.createJsonParser(data);
         return jp.readValueAsTree();
     }
 }

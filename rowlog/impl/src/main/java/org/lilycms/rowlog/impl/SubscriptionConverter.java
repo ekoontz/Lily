@@ -1,6 +1,5 @@
 package org.lilycms.rowlog.impl;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.rowlog.api.RowLogSubscription;
@@ -34,8 +33,7 @@ public class SubscriptionConverter {
 
     public byte[] toJsonBytes(RowLogSubscription subscription) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsBytes(toJson(subscription));
+            return JsonFormat.serializeAsBytes(toJson(subscription));
         } catch (IOException e) {
             throw new RuntimeException("Error serializing row log subscription to JSON. Row log ID " +
                     subscription.getRowLogId() + ", subscription ID " + subscription.getId(), e);

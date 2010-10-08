@@ -16,12 +16,11 @@
 package org.lilycms.util.repo;
 
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
+import org.lilycms.util.json.JsonFormat;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -61,7 +60,7 @@ public class RecordEvent {
      * Creates a record event from the json data supplied as bytes.
      */
     public RecordEvent(byte[] data) throws IOException {
-        JsonNode msgData = new ObjectMapper().readValue(data, 0, data.length, JsonNode.class);
+        JsonNode msgData = JsonFormat.deserialize(data);
 
         String messageType = msgData.get("type").getTextValue();
         if (messageType.equals(Type.CREATE.getName())) {
@@ -171,15 +170,11 @@ public class RecordEvent {
     }
 
     public byte[] toJsonBytes() {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        ObjectMapper mapper = new ObjectMapper();
         try {
-            mapper.writeValue(os, toJson());
+            return JsonFormat.serializeAsBytes(toJson());
         } catch (IOException e) {
-            // Small chance of this happening, since we are writing to a byte array
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error serializing record event to JSON", e);
         }
-        return os.toByteArray();
     }
 
     @Override
