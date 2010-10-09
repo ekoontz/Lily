@@ -9,88 +9,88 @@ import java.io.*;
  * is not part of the message.
  */
 public class MboxInputStream extends InputStream {
-    // TODO probably needs to support other line endings than \n
-    private final static byte[] MSG_END_PATTERN = new byte[] {'\n', 'F', 'r', 'o', 'm', ' '};
-    private final static byte[] MSG_START_PATTERN = new byte[] {'F', 'r', 'o', 'm', ' '};
-
-    /** A circular buffer. */
-    private int[] buffer = new int[MSG_END_PATTERN.length];
-
-    /** Current 'zero' position in the buffer. */
-    private int pos = 0;
-
-    /** Length of the buffer. */
-    private int length;
-
-    private boolean endOfMsg;
-
     private InputStream delegate;
+    private byte[] buffer;
+    private int currentLineLength;
+    private int currentLinePos;
+    private boolean atFromLine;
+    private boolean eof;
 
-    public MboxInputStream(InputStream delegate) {
-        this.delegate = delegate;
+    public MboxInputStream(InputStream delegate, int maxLineLength) throws IOException {
+        this.delegate = new BufferedInputStream(delegate, maxLineLength);
+        buffer = new byte[maxLineLength];
+        readLine();
+        currentLinePos = -1;
     }
 
     public boolean nextMessage() throws IOException {
-        fillBuffer();
+        if (eof)
+            return false;
 
-        if (!atStartOfMessage()) {
+        if (!atFromLine) {
             return false;
         }
 
-        endOfMsg = false;
+        readLine();
 
-        // search to the next newline, continue from there
-        int next = read();
-        while (next != -1 && next != '\n') {
-            next = read();
-        }
-
-        return next != -1;
+        return true;
     }
 
     @Override
     public int read() throws IOException {
-        if (endOfMsg)
+        if (atFromLine || eof)
             return -1;
 
-        fillBuffer();
-        if (atEndOfMessage()) {
-            endOfMsg = true;
+        currentLinePos++;
+
+        if (currentLinePos >= currentLineLength) {
+            readLine();
+            currentLinePos = -1;
+            return '\n';
         }
 
-        int result = buffer[pos];
-        
-        pos++;
-        length--;
-        if (pos == buffer.length)
-            pos = 0;
-
-        return result;
+        return buffer[currentLinePos];
     }
 
-    private void fillBuffer() throws IOException {
-        while (length < buffer.length) {
-            int writePos = pos + length < buffer.length ? pos + length : (pos + length) % buffer.length;
-            buffer[writePos] = delegate.read(); // will fill the buffer with -1's when at end of input
-            length++;
+    public int read(byte b[], int off, int len) throws IOException {
+        if (atFromLine || eof)
+            return -1;
+
+        currentLinePos++;
+
+        if (currentLinePos >= currentLineLength) {
+            readLine();
+            currentLinePos = -1;
+            b[off] = '\n';
+            return 1;
         }
+
+        int amount = Math.min(currentLineLength - currentLinePos, len);
+
+        System.arraycopy(buffer, currentLinePos, b, off, amount);
+
+        currentLinePos += amount - 1;
+
+        return amount;
     }
 
-    private boolean atEndOfMessage() {
-        for (int i = 0; i < MSG_END_PATTERN.length; i++) {
-            int bufferPos = pos + i < buffer.length ? pos + i : (pos + i) % buffer.length;
-            if (buffer[bufferPos] != MSG_END_PATTERN[i])
-                return false;
-        }
-        return true;
-    }
+    private void readLine() throws IOException {
+        int pos = 0;
+        int next = delegate.read();
 
-    private boolean atStartOfMessage() {
-        for (int i = 0; i < MSG_START_PATTERN.length; i++) {
-            int bufferPos = pos + i < buffer.length ? pos + i : (pos + i) % buffer.length;
-            if (buffer[bufferPos] != MSG_START_PATTERN[i])
-                return false;
+        if (next == -1) {
+            eof = true;
+            return;
         }
-        return true;
+
+        while (next != -1 && next != '\n') {
+            buffer[pos] = (byte)next;
+            pos++;
+            next = delegate.read();
+        }
+        currentLineLength = pos;
+
+        atFromLine = currentLineLength >= 5 &&
+                buffer[0] == 'F' && buffer[1] == 'r' && buffer[2] == 'o' && buffer[3] == 'm' && buffer[4] == ' ';
     }
 }

@@ -40,6 +40,8 @@ public class MboxImport extends BaseZkCliTool {
 
     private static final String NS = "org.lilycms.mail";
 
+    private static final int MAX_LINE_LENGTH = 10000;
+
     @Override
     protected String getCmdName() {
         return "lily-mbox-import";
@@ -125,17 +127,17 @@ public class MboxImport extends BaseZkCliTool {
         System.out.println("Processing file " + file.getAbsolutePath());
         InputStream is = null;
         try {
-            is = new BufferedInputStream(new FileInputStream(file));
+            is = new FileInputStream(file);
 
             if (file.getName().endsWith(".gz")) {
                 is = new GZIPInputStream(is);
             }
 
-            MboxInputStream mboxStream = new MboxInputStream(is);
+            MboxInputStream mboxStream = new MboxInputStream(is, MAX_LINE_LENGTH);
 
             while (mboxStream.nextMessage()) {
                 MimeTokenStream stream = new MyMimeTokenStream();
-                stream.parse(new BufferedInputStream(mboxStream));
+                stream.parse(mboxStream);
                 importMessage(stream, lilyClient.getRepository());
             }
 
@@ -152,7 +154,7 @@ public class MboxImport extends BaseZkCliTool {
 
         private static MimeEntityConfig getConfig() {
             MimeEntityConfig config = new MimeEntityConfig();
-            config.setMaxLineLen(10000);
+            config.setMaxLineLen(MAX_LINE_LENGTH);
             return config;
         }
     }
