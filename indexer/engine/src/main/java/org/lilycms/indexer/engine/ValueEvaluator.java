@@ -31,6 +31,8 @@ public class ValueEvaluator {
 
     private IndexerConf conf;
 
+    private Parser tikaParser = new AutoDetectParser();
+
     public ValueEvaluator(IndexerConf conf) {
         this.conf = conf;
     }
@@ -69,8 +71,6 @@ public class ValueEvaluator {
 
         List<String> result = new ArrayList<String>(blobs.size());
 
-        Parser parser = new AutoDetectParser();
-
         // TODO add some debug (or even info) logging to indicate what we are working on.
         for (Blob blob : blobs) {
             InputStream is = null;
@@ -87,7 +87,7 @@ public class ValueEvaluator {
 
                 ParseContext parseContext = new ParseContext();
 
-                parser.parse(is, ch, metadata, parseContext);
+                tikaParser.parse(is, ch, metadata, parseContext);
 
                 String text = ch.toString();
                 if (text.length() > 0)
