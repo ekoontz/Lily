@@ -8,5 +8,5 @@
     go faster when running multiple index updaters in parallel on each Lily
     node.
   -->
-  <listenersPerIndex>3</listenersPerIndex>
+  <listenersPerIndex>1</listenersPerIndex>
 </indexerWorker>
