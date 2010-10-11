@@ -154,6 +154,8 @@ public class IndexerTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(typeManager);
+        Closer.close(repository);
         Closer.close(rowLogConfMgr);
         Closer.close(zk);
 

@@ -1,11 +1,13 @@
 package org.lilycms.rowlog.impl.test;
 
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -14,28 +16,24 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilycms.rowlog.api.ListenersObserver;
 import org.lilycms.rowlog.api.RowLogSubscription;
-import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.api.SubscriptionsObserver;
+import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
-
-import static org.junit.Assert.assertEquals;
 
 public class RowLogConfigurationManagerTest {
     protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
-    private static Configuration configuration;
     private static ZooKeeperItf zooKeeper;
     
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
     }
 
     @AfterClass

@@ -36,7 +36,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilycms.rowlog.api.*;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogMessage;
+import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
@@ -44,7 +48,7 @@ import org.lilycms.rowlog.impl.RowLogMessageImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class RowLogTest {
@@ -64,7 +68,7 @@ public class RowLogTest {
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
         control = createControl();

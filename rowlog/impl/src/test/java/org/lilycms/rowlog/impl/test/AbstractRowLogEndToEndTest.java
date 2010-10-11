@@ -8,7 +8,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogProcessor;
@@ -20,7 +22,7 @@ import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractRowLogEndToEndTest {
@@ -33,14 +35,16 @@ public abstract class AbstractRowLogEndToEndTest {
     protected ValidationMessageListener validationListener;
     private static Configuration configuration;
     protected static ZooKeeperItf zooKeeper;
-    
+
+    @Rule public TestName name = new TestName();
+
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
                 RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, rowLogConfigurationManager);

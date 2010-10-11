@@ -45,21 +45,21 @@ import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.impl.AbstractTypeManager;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
-import org.lilycms.rowlog.api.RowLogConfigurationManager;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class ValueTypeTest {
@@ -68,26 +68,34 @@ public class ValueTypeTest {
     private static ZooKeeperItf zooKeeper;
     private static RowLogConfigurationManager rowLogConfMgr;
 
-    private AbstractTypeManager typeManager;
-    private HBaseRepository repository;
+    private static AbstractTypeManager typeManager;
+    private static HBaseRepository repository;
 
-    private IdGeneratorImpl idGenerator;
+    private static IdGeneratorImpl idGenerator;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        idGenerator = new IdGeneratorImpl();
+        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
+        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
+        BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, initializeWal(HBASE_PROXY.getConf()), HBASE_PROXY.getConf());
+
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         Closer.close(rowLogConfMgr);
+        Closer.close(typeManager);
+        Closer.close(repository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 
-    private RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
+    private static RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         // Work with only one shard for now
@@ -98,11 +106,6 @@ public class ValueTypeTest {
     
     @Before
     public void setUp() throws Exception {
-        idGenerator = new IdGeneratorImpl();
-        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
-        DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
-        BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, initializeWal(HBASE_PROXY.getConf()), HBASE_PROXY.getConf());
     }
 
     @After

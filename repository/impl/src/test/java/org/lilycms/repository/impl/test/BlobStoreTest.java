@@ -34,6 +34,7 @@ import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 
 public class BlobStoreTest extends AbstractBlobStoreTest {
 
@@ -44,7 +45,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGenerator idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
@@ -59,6 +60,7 @@ public class BlobStoreTest extends AbstractBlobStoreTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         Closer.close(rowLogConfMgr);
+        Closer.close(typeManager);
         Closer.close(repository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();

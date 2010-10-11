@@ -98,6 +98,8 @@ public class TutorialTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(typeManager);
+        Closer.close(repository);
         Closer.close(rowLogConfMgr);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();

@@ -33,7 +33,7 @@ import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 
 public class HBaseRepositoryTest extends AbstractRepositoryTest {
 
@@ -43,7 +43,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         setupRowLogConfigurationManager(zooKeeper);
         typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
@@ -59,6 +59,8 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         messageQueueProcessor.stop();
         Closer.close(rowLogConfigurationManager);
+        Closer.close(typeManager);
+        Closer.close(repository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
@@ -67,6 +69,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     public void testFieldTypeCacheInitialization() throws Exception {
         TypeManager newTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
         assertEquals(fieldType1, newTypeManager.getFieldTypeByName(fieldType1.getName()));
+        Closer.close(newTypeManager);
     }
     
     @Test

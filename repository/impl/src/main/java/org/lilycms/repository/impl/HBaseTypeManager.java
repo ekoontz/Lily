@@ -18,14 +18,12 @@ package org.lilycms.repository.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.Map.Entry;
 
-import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -40,10 +38,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.lilycms.repository.api.FieldType;
 import org.lilycms.repository.api.FieldTypeEntry;
 import org.lilycms.repository.api.FieldTypeExistsException;
@@ -61,13 +55,9 @@ import org.lilycms.repository.api.ValueType;
 import org.lilycms.util.ArgumentValidator;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class HBaseTypeManager extends AbstractTypeManager implements TypeManager {
-
-    private Log log = LogFactory.getLog(getClass());
-
     private static final byte[] TYPE_TABLE = Bytes.toBytes("typeTable");
     private static final byte[] NON_VERSIONED_COLUMN_FAMILY = Bytes.toBytes("NVCF");
     private static final byte[] FIELDTYPEENTRY_COLUMN_FAMILY = Bytes.toBytes("FTECF");
@@ -81,20 +71,13 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
     private static final byte[] FIELDTPYE_SCOPE_COLUMN_NAME = Bytes.toBytes("$scope");
     private static final byte[] CONCURRENT_COUNTER_COLUMN_NAME = Bytes.toBytes("$cc");
 
-    private static final String CACHE_INVALIDATION_PATH = "/lily/typemanager/cache";
-
     private HTableInterface typeTable;
-    private Map<QName, FieldType> fieldTypeNameCache = new HashMap<QName, FieldType>();
-    private Map<QName, RecordType> recordTypeNameCache = new HashMap<QName, RecordType>();
-    private Map<String, FieldType> fieldTypeIdCache = new HashMap<String, FieldType>();
-    private Map<String, RecordType> recordTypeIdCache = new HashMap<String, RecordType>();
-    private final ZooKeeperItf zooKeeper;
-    private final CacheWatcher cacheWatcher = new CacheWatcher();
 
     public HBaseTypeManager(IdGenerator idGenerator, Configuration configuration, ZooKeeperItf zooKeeper)
             throws IOException, InterruptedException, KeeperException {
+        super(zooKeeper);
+        log = LogFactory.getLog(getClass());
         this.idGenerator = idGenerator;
-        this.zooKeeper = zooKeeper;
 
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
@@ -111,43 +94,24 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
 
         this.typeTable = new LocalHTable(configuration, TYPE_TABLE);
         registerDefaultValueTypes();
-
-        ZkUtil.createPath(zooKeeper, CACHE_INVALIDATION_PATH);
-        zooKeeper.addDefaultWatcher(new ConnectionWatcher());
-        initializeCaches();
+        setupCaches();
     }
-
-    private class CacheWatcher implements Watcher {
-        public void process(WatchedEvent event) {
-            new Thread() {
-                public void run() {
-                    try {
-                        initializeCaches();
-                    } catch (InterruptedException e) {
-                        // Stop
-                    }
-                };
-            }.start();
+    
+    protected void cacheInvalidationReconnected() throws InterruptedException {
+        super.cacheInvalidationReconnected();
+        try {
+            // A previous notify might have failed because of a disconnection
+            // To be sure we try to send a notify again
+            notifyCacheInvalidate();
+        } catch (KeeperException e) {
+            log.info("Exception occured while sending a cache invalidation notification after reconnecting to zookeeper");
         }
     }
-
-    private class ConnectionWatcher implements Watcher {
-        public void process(WatchedEvent event) {
-            if (EventType.None.equals(event.getType()) && KeeperState.SyncConnected.equals(event.getState())) {
-                new Thread() {
-                    public void run() {
-                        try {
-                            initializeCaches();
-                        } catch (InterruptedException e) {
-                            // Stop
-                        }
-                    }
-                }.start();
-            }
-        }
-    }
-
-    public void close() throws IOException {
+    
+    // Only invalidate the cache from the server-side
+    // Updates from the RemoteTypeManager will have to pass through (server-side) HBaseTypeManager anyway
+    private void notifyCacheInvalidate() throws KeeperException, InterruptedException {
+        zooKeeper.setData(CACHE_INVALIDATION_PATH, null, -1);
     }
 
     public RecordType createRecordType(RecordType recordType) throws RecordTypeExistsException,
@@ -163,7 +127,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             long concurrentCounter = getTypeTable().incrementColumnValue(nameBytes, NON_VERSIONED_COLUMN_FAMILY,
                     CONCURRENT_COUNTER_COLUMN_NAME, 1);
 
-            if (getRecordTypeFromCache(recordType.getName()) != null) 
+            if (getRecordTypeFromCache(recordType.getName()) != null)
                 throw new RecordTypeExistsException(recordType);
 
             Put put = new Put(rowId);
@@ -187,7 +151,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             }
             newRecordType.setId(uuid.toString());
             newRecordType.setVersion(recordTypeVersion);
-            updateRecordTypeCache(newRecordType.clone(), null);
+            updateRecordTypeCache(newRecordType.clone());
+            notifyCacheInvalidate();
         } catch (IOException e) {
             throw new TypeException("Exception occurred while creating recordType <" + recordType.getName()
                     + "> on HBase", e);
@@ -199,6 +164,13 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
                     + "> on HBase", e);
         }
         return newRecordType;
+    }
+
+    private Long putMixinOnRecordType(Long recordTypeVersion, Put put, String mixinId, Long mixinVersion)
+            throws RecordTypeNotFoundException, TypeException {
+        Long newMixinVersion = getRecordTypeByIdWithoutCache(mixinId, mixinVersion).getVersion();
+        put.add(MIXIN_COLUMN_FAMILY, Bytes.toBytes(mixinId), recordTypeVersion, Bytes.toBytes(newMixinVersion));
+        return newMixinVersion;
     }
 
     public RecordType updateRecordType(RecordType recordType) throws RecordTypeNotFoundException,
@@ -220,7 +192,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             byte[] nameBytes = encodeName(recordType.getName());
             long concurrentCount = getTypeTable().incrementColumnValue(nameBytes, NON_VERSIONED_COLUMN_FAMILY,
                     CONCURRENT_COUNTER_COLUMN_NAME, 1);
-            RecordType latestRecordType = getRecordTypeByIdFromHBase(id, null);
+            RecordType latestRecordType = getRecordTypeByIdWithoutCache(id, null);
             Long latestRecordTypeVersion = latestRecordType.getVersion();
             Long newRecordTypeVersion = latestRecordTypeVersion + 1;
 
@@ -241,7 +213,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
                 newRecordType.setVersion(latestRecordTypeVersion);
             }
 
-            updateRecordTypeCache(newRecordType, latestRecordType);
+            updateRecordTypeCache(newRecordType);
+            notifyCacheInvalidate();
         } catch (IOException e) {
             throw new TypeException("Exception occurred while updating recordType <" + newRecordType.getId()
                     + "> on HBase", e);
@@ -270,7 +243,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return false;
     }
 
-    private RecordType getRecordTypeByIdFromHBase(String id, Long version) throws RecordTypeNotFoundException, TypeException {
+    protected RecordType getRecordTypeByIdWithoutCache(String id, Long version) throws RecordTypeNotFoundException,
+            TypeException {
         ArgumentValidator.notNull(id, "recordTypeId");
         Get get = new Get(idToBytes(id));
         if (version != null) {
@@ -306,53 +280,6 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         extractFieldTypeEntries(result, version, recordType);
         extractMixins(result, version, recordType);
         return recordType;
-    }
-
-    public RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException {
-        ArgumentValidator.notNull(id, "id");
-        RecordType recordType = getRecordTypeFromCache(id);
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(id, version);
-        }
-        // The cache only keeps the latest (known) RecordType
-        if (version != null && !version.equals(recordType.getVersion())) {
-            recordType = getRecordTypeByIdFromHBase(id, version);
-        }
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(id, version);
-        }
-        return recordType.clone();
-    }
-    
-    public RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException {
-        ArgumentValidator.notNull(name, "name");
-        RecordType recordType = getRecordTypeFromCache(name);
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(name, version);
-        }
-        // The cache only keeps the latest (known) RecordType
-        if (version != null && !version.equals(recordType.getVersion())) {
-            recordType = getRecordTypeByIdFromHBase(recordType.getId(), version);
-        }
-        if (recordType == null) {
-            throw new RecordTypeNotFoundException(name, version);
-        }
-        return recordType.clone();
-    }
-
-    public synchronized Collection<RecordType> getRecordTypes() {
-        List<RecordType> recordTypes = new ArrayList<RecordType>();
-        for (RecordType recordType : recordTypeNameCache.values()) {
-            recordTypes.add(recordType.clone());
-        }
-        return recordTypes;
-    }
-
-    private Long putMixinOnRecordType(Long recordTypeVersion, Put put, String mixinId, Long mixinVersion)
-            throws RecordTypeNotFoundException, TypeException {
-        Long newMixinVersion = getRecordTypeByIdFromHBase(mixinId, mixinVersion).getVersion();
-        put.add(MIXIN_COLUMN_FAMILY, Bytes.toBytes(mixinId), recordTypeVersion, Bytes.toBytes(newMixinVersion));
-        return newMixinVersion;
     }
 
     private boolean updateFieldTypeEntries(Put put, Long newRecordTypeVersion, RecordType recordType,
@@ -490,8 +417,6 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return new FieldTypeEntryImpl(fieldTypeId, mandatory);
     }
 
-    
-
     public FieldType createFieldType(FieldType fieldType) throws FieldTypeExistsException, TypeException {
         ArgumentValidator.notNull(fieldType, "fieldType");
 
@@ -519,7 +444,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             }
             newFieldType = fieldType.clone();
             newFieldType.setId(uuid.toString());
-            updateFieldTypeCache(newFieldType, null);
+            updateFieldTypeCache(newFieldType);
+            notifyCacheInvalidate();
         } catch (IOException e) {
             throw new TypeException("Exception occurred while creating fieldType <" + fieldType.getName()
                     + "> version: <" + version + "> on HBase", e);
@@ -547,7 +473,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             byte[] nameBytes = encodeName(fieldType.getName());
             long concurrentCounter = getTypeTable().incrementColumnValue(nameBytes, NON_VERSIONED_COLUMN_FAMILY,
                     CONCURRENT_COUNTER_COLUMN_NAME, 1);
-            FieldType latestFieldType = getFieldTypeByIdFromHBase(fieldType.getId());
+            FieldType latestFieldType = getFieldTypeByIdWithoutCache(fieldType.getId());
             if (!fieldType.getValueType().equals(latestFieldType.getValueType())) {
                 throw new FieldTypeUpdateException("Changing the valueType of a fieldType <" + fieldType.getId()
                         + "> is not allowed; old<" + latestFieldType.getValueType() + "> new<"
@@ -571,7 +497,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
                 getTypeTable().checkAndPut(nameBytes, NON_VERSIONED_COLUMN_FAMILY, CONCURRENT_COUNTER_COLUMN_NAME,
                         Bytes.toBytes(concurrentCounter), put);
             }
-            updateFieldTypeCache(fieldType, latestFieldType);
+            updateFieldTypeCache(fieldType);
+            notifyCacheInvalidate();
         } catch (IOException e) {
             throw new TypeException("Exception occurred while updating fieldType <" + fieldType.getId() + "> on HBase",
                     e);
@@ -584,9 +511,8 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         }
         return fieldType.clone();
     }
-
     
-    private FieldType getFieldTypeByIdFromHBase(String id) throws FieldTypeNotFoundException, TypeException {
+    private FieldType getFieldTypeByIdWithoutCache(String id) throws FieldTypeNotFoundException, TypeException {
         ArgumentValidator.notNull(id, "id");
         Result result;
         Get get = new Get(idToBytes(id));
@@ -612,132 +538,38 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return new FieldTypeImpl(id, valueType, name, scope);
     }
 
-    public FieldType getFieldTypeById(String id) throws FieldTypeNotFoundException {
-        ArgumentValidator.notNull(id, "id");
-        FieldType fieldType = getFieldTypeFromCache(id);
-        if (fieldType == null) {
-            throw new FieldTypeNotFoundException(id);
-        }
-        return fieldType.clone();
-    }
-
-    public FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException {
-        ArgumentValidator.notNull(name, "name");
-        FieldType fieldType = getFieldTypeFromCache(name);
-        if (fieldType == null) {
-            throw new FieldTypeNotFoundException(name);
-        }
-        return fieldType.clone();
-    }
-
-    public synchronized List<FieldType> getFieldTypes() {
+    protected List<FieldType> getFieldTypesWithoutCache() throws IOException, FieldTypeNotFoundException,
+            TypeException {
         List<FieldType> fieldTypes = new ArrayList<FieldType>();
-        for (FieldType fieldType : fieldTypeNameCache.values()) {
-            fieldTypes.add(fieldType.clone());
-        }
-        return fieldTypes;
-    }
-
-    private synchronized FieldType getFieldTypeFromCache(QName name) {
-        return fieldTypeNameCache.get(name);
-    }
-    
-    private synchronized FieldType getFieldTypeFromCache(String id) {
-        return fieldTypeIdCache.get(id);
-    }
-    
-    private synchronized RecordType getRecordTypeFromCache(QName name) {
-        return recordTypeNameCache.get(name);
-    }
-
-    private synchronized RecordType getRecordTypeFromCache(String id) {
-        return recordTypeIdCache.get(id);
-    }
-    
-    private synchronized void initializeCaches() throws InterruptedException {
-        try {
-            zooKeeper.getData(CACHE_INVALIDATION_PATH, cacheWatcher, null);
-        } catch (KeeperException e) {
-            // Failed to put our watcher.
-            // Relying on the ConnectionWatcher to put it again and initialize
-            // the caches.
-        }
-        initializeFieldTypeCache();
-        initializeRecordTypeCache();
-    }
-
-    private synchronized void initializeFieldTypeCache() {
-        Map<QName, FieldType> newFieldTypeNameCache = new HashMap<QName, FieldType>();
-        Map<String, FieldType> newFieldTypeIdCache = new HashMap<String, FieldType>();
         ResultScanner scanner = null;
         try {
             scanner = getTypeTable().getScanner(NON_VERSIONED_COLUMN_FAMILY, FIELDTYPE_NAME_COLUMN_NAME);
             for (Result result : scanner) {
                 String id = idFromBytes(result.getRow());
-                FieldType fieldType = getFieldTypeByIdFromHBase(id);
-                QName name = decodeName(result.getValue(NON_VERSIONED_COLUMN_FAMILY, FIELDTYPE_NAME_COLUMN_NAME));
-                newFieldTypeNameCache.put(name, fieldType);
-                newFieldTypeIdCache.put(id, fieldType);
+                FieldType fieldType = getFieldTypeByIdWithoutCache(id);
+                fieldTypes.add(fieldType);
             }
-            fieldTypeNameCache = newFieldTypeNameCache;
-            fieldTypeIdCache = newFieldTypeIdCache;
-        } catch (Exception e) {
-            // We keep on working with the old cache
-            log.warn("Exception while initializing FieldType cache. Cache is possibly out of date.", e);
         } finally {
             Closer.close(scanner);
         }
+        return fieldTypes;
     }
 
-    private synchronized void initializeRecordTypeCache() {
-        Map<QName, RecordType> newRecordTypeNameCache = new HashMap<QName, RecordType>();
-        Map<String, RecordType> newRecordTypeIdCache = new HashMap<String, RecordType>();
+    protected List<RecordType> getRecordTypesWithoutCache() throws IOException, RecordTypeNotFoundException,
+            TypeException {
+        List<RecordType> recordTypes = new ArrayList<RecordType>();
         ResultScanner scanner = null;
         try {
             scanner = getTypeTable().getScanner(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME);
             for (Result result : scanner) {
                 String id = idFromBytes(result.getRow());
-                RecordType recordType = getRecordTypeByIdFromHBase(id, null);
-                QName name = decodeName(result.getValue(NON_VERSIONED_COLUMN_FAMILY, RECORDTYPE_NAME_COLUMN_NAME));
-                newRecordTypeNameCache.put(name, recordType);
-                newRecordTypeIdCache.put(id, recordType);
+                RecordType recordType = getRecordTypeByIdWithoutCache(id, null);
+                recordTypes.add(recordType);
             }
-            recordTypeNameCache = newRecordTypeNameCache;
-            recordTypeIdCache = newRecordTypeIdCache;
-        } catch (Exception e) {
-            // We keep on working with the old cache
-            log.warn("Exception while initializing RecordType cache. Cache is possibly out of date.", e);
         } finally {
             Closer.close(scanner);
         }
-    }
-
-    // FieldType name cache
-    private synchronized void updateFieldTypeCache(FieldType fieldType, FieldType oldFieldType) throws KeeperException,
-            InterruptedException {
-        if (oldFieldType != null) {
-            fieldTypeNameCache.remove(oldFieldType.getName());
-            fieldTypeIdCache.remove(oldFieldType.getId());
-        }
-        fieldTypeNameCache.put(fieldType.getName(), fieldType);
-        fieldTypeIdCache.put(fieldType.getId(), fieldType);
-        notifyCacheInvalidate();
-    }
-
-    // RecordType name cache
-    private synchronized void updateRecordTypeCache(RecordType recordType, RecordType oldType) throws KeeperException,
-            InterruptedException {
-        if (oldType != null) {
-            recordTypeNameCache.remove(oldType.getName());
-            recordTypeIdCache.remove(oldType.getId());
-        }
-        recordTypeNameCache.put(recordType.getName(), recordType);
-        recordTypeIdCache.put(recordType.getId(), recordType);
-        notifyCacheInvalidate();
-    }
-
-    private void notifyCacheInvalidate() throws KeeperException, InterruptedException {
-        zooKeeper.setData(CACHE_INVALIDATION_PATH, null, -1);
+        return recordTypes;
     }
 
     private byte[] encodeName(QName qname) {

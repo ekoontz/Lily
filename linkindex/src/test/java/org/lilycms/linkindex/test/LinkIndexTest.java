@@ -88,6 +88,8 @@ public class LinkIndexTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(typeManager);
+        Closer.close(repository);
         Closer.close(rowLogConfMgr);
         Closer.close(zk);
         HBASE_PROXY.stop();

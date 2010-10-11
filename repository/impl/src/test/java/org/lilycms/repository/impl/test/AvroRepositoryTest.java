@@ -37,21 +37,22 @@ import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 
 public class AvroRepositoryTest extends AbstractRepositoryTest {
     private static HBaseRepository serverRepository;
     private static HttpServer lilyServer;
+    private static TypeManager serverTypeManager;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         setupRowLogConfigurationManager(zooKeeper);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
-        TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         setupWal();
@@ -65,7 +66,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
-                remoteConverter, idGenerator);
+                remoteConverter, idGenerator, zooKeeper);
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
@@ -78,13 +79,17 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
     public static void tearDownAfterClass() throws Exception {
         if (messageQueueProcessor != null)
             messageQueueProcessor.stop();
+        Closer.close(typeManager);
         Closer.close(rowLogConfigurationManager);
         Closer.close(repository);
         if (lilyServer != null) {
             lilyServer.close();
             lilyServer.join();
         }
+        Closer.close(serverTypeManager);
+        Closer.close(serverRepository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
 }
+

@@ -16,12 +16,17 @@ public class ValidationMessageListener implements RowLogMessageListener {
     public List<RowLogMessage> problematicMessages = new ArrayList<RowLogMessage>();
     private int count = 0;
     private int numberOfMessagesToBeExpected = 0;
-
-    public void expectMessage(RowLogMessage message) throws Exception {
+    private final String name;
+    
+    public ValidationMessageListener(String name) {
+        this.name = name;
+    }
+    
+    public synchronized void expectMessage(RowLogMessage message) throws Exception {
         expectMessage(message, 1);
     }
 
-    public void expectMessage(RowLogMessage message, int times) throws Exception {
+    public synchronized void expectMessage(RowLogMessage message, int times) throws Exception {
         if (earlyMessages.containsKey(message)) {
             int timesEarlyReceived = earlyMessages.get(message);
             count = count + timesEarlyReceived;
@@ -37,11 +42,11 @@ public class ValidationMessageListener implements RowLogMessageListener {
         }
     }
 
-    public void expectMessages(int i) {
+    public synchronized void expectMessages(int i) {
         numberOfMessagesToBeExpected = i;
     }
 
-    public boolean processMessage(RowLogMessage message) {
+    public synchronized boolean processMessage(RowLogMessage message) {
         boolean result;
         if (!expectedMessages.containsKey(message)) {
             if (earlyMessages.containsKey(message)) {

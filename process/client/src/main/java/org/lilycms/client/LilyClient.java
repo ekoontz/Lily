@@ -102,7 +102,7 @@ public class LilyClient implements Closeable {
         }
     }
 
-    public synchronized Repository getRepository() throws IOException, ServerUnavailableException {
+    public synchronized Repository getRepository() throws IOException, ServerUnavailableException, InterruptedException, KeeperException {
         if (servers.size() == 0) {
             throw new ServerUnavailableException("No servers available");
         }
@@ -116,11 +116,11 @@ public class LilyClient implements Closeable {
         return server.repository;
     }
 
-    private void constructRepository(ServerNode server) throws IOException {
+    private void constructRepository(ServerNode server) throws IOException, InterruptedException, KeeperException {
         AvroConverter remoteConverter = new AvroConverter();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         TypeManager typeManager = new RemoteTypeManager(parseAddressAndPort(server.lilyAddressAndPort),
-                remoteConverter, idGenerator);
+                remoteConverter, idGenerator, zk);
         
         BlobStoreAccessFactory blobStoreAccessFactory = getBlobStoreAccess(zk);
         

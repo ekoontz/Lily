@@ -15,24 +15,26 @@
  */
 package org.lilycms.rowlog.impl.test;
 
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.lilycms.rowlog.api.RowLogMessage;
+import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
+import org.lilycms.rowlog.api.RowLogSubscription;
 
-public class RowLogLocalEndToEndTest {
-    @Test
-    public void foo() {
-        
-    }
-}/*
-extends AbstractRowLogEndToEndTest {
+public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
     private ValidationMessageListener validationListener2;
 
     @Before
     public void setUp() throws Exception {
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName());
         try {
-            validationListener = new ValidationMessageListener();
+            validationListener = new ValidationMessageListener("VML1");
             RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
-            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  SubscriptionContext.Type.VM, 3, 1);
+            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.VM, 3, 1);
             rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,10 +55,10 @@ extends AbstractRowLogEndToEndTest {
 
     @Test
     public void testMultipleSubscriptions() throws Exception {
-        validationListener2 = new ValidationMessageListener();
+        validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 2);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 2);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         validationListener.expectMessages(10);
         validationListener2.expectMessages(10);
@@ -82,10 +84,10 @@ extends AbstractRowLogEndToEndTest {
     
     @Test
     public void testMultipleSubscriptionsOrder() throws Exception {
-        validationListener2 = new ValidationMessageListener();
+        validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, SubscriptionContext.Type.VM, 3, 0);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 0);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         int rownr = 222;
         byte[] data = Bytes.toBytes(222);
@@ -106,6 +108,5 @@ extends AbstractRowLogEndToEndTest {
         Assert.assertTrue(rowLog.isProblematic(message, subscriptionId)); 
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
-    }
+    } 
 }
-*/

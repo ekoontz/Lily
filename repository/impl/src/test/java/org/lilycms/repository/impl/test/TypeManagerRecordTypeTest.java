@@ -16,13 +16,17 @@
 package org.lilycms.repository.impl.test;
 
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 /**
  *
@@ -30,19 +34,20 @@ import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
 public class TypeManagerRecordTypeTest extends AbstractTypeManagerRecordTypeTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
-    private static StateWatchingZooKeeper zooKeeper;
+    private static ZooKeeperItf zooKeeper;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         setupFieldTypes();
     }
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(typeManager);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

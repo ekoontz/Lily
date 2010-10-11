@@ -30,7 +30,8 @@ import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class TypeManagerReliableCreateTest {
 
@@ -39,19 +40,20 @@ public class TypeManagerReliableCreateTest {
     private static final byte[] CONCURRENT_COUNTER_COLUMN_NAME = Bytes.toBytes("$cc");
     private static ValueType valueType;
     private static TypeManager basicTypeManager;
-    private static StateWatchingZooKeeper zooKeeper;
+    private static ZooKeeperItf zooKeeper;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         basicTypeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         valueType = basicTypeManager.getValueType("LONG", false, false);
     }
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(basicTypeManager);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }
@@ -97,6 +99,7 @@ public class TypeManagerReliableCreateTest {
             // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
             // Through ZooKeeper the cache will have been marked as invalidated
         }
+        typeManager.close();
     }
     
     @Test
@@ -133,6 +136,7 @@ public class TypeManagerReliableCreateTest {
             // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
             // Through ZooKeeper the cache will have been marked as invalidated
         }
+        typeManager.close();
     }
 
     @Test
@@ -166,6 +170,7 @@ public class TypeManagerReliableCreateTest {
             // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
             // Through ZooKeeper the cache will have been marked as invalidated
         }
+        typeManager.close();
     }
     
     @Test
@@ -202,6 +207,7 @@ public class TypeManagerReliableCreateTest {
             // This will be thrown when the cache of the typeManager was updated as a consequence of the update on basicTypeManager
             // Through ZooKeeper the cache will have been marked as invalidated
         }
+        typeManager.close();
     }
     
     @Test
@@ -224,5 +230,6 @@ public class TypeManagerReliableCreateTest {
             fail();
         } catch (RecordTypeNotFoundException expected) {
         }
+        typeManager.close();
     }
 }

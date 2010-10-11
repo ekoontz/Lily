@@ -15,25 +15,276 @@
  */
 package org.lilycms.repository.impl;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.lilycms.repository.api.FieldType;
 import org.lilycms.repository.api.FieldTypeEntry;
+import org.lilycms.repository.api.FieldTypeNotFoundException;
 import org.lilycms.repository.api.IdGenerator;
 import org.lilycms.repository.api.PrimitiveValueType;
 import org.lilycms.repository.api.QName;
 import org.lilycms.repository.api.RecordType;
+import org.lilycms.repository.api.RecordTypeNotFoundException;
 import org.lilycms.repository.api.Scope;
+import org.lilycms.repository.api.TypeException;
 import org.lilycms.repository.api.TypeManager;
 import org.lilycms.repository.api.ValueType;
-import org.lilycms.repository.impl.primitivevaluetype.*;
+import org.lilycms.repository.impl.primitivevaluetype.BlobValueType;
+import org.lilycms.repository.impl.primitivevaluetype.BooleanValueType;
+import org.lilycms.repository.impl.primitivevaluetype.DateTimeValueType;
+import org.lilycms.repository.impl.primitivevaluetype.DateValueType;
+import org.lilycms.repository.impl.primitivevaluetype.DecimalValueType;
+import org.lilycms.repository.impl.primitivevaluetype.DoubleValueType;
+import org.lilycms.repository.impl.primitivevaluetype.IntegerValueType;
+import org.lilycms.repository.impl.primitivevaluetype.LinkValueType;
+import org.lilycms.repository.impl.primitivevaluetype.LongValueType;
+import org.lilycms.repository.impl.primitivevaluetype.StringValueType;
+import org.lilycms.repository.impl.primitivevaluetype.UriValueType;
 import org.lilycms.util.ArgumentValidator;
+import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractTypeManager implements TypeManager {
+    protected Log log;
+
+    protected boolean stop = false;
+    
     protected Map<String, PrimitiveValueType> primitiveValueTypes = new HashMap<String, PrimitiveValueType>();
     protected IdGenerator idGenerator;
+    
+    //
+    // Caching
+    //
+    protected ZooKeeperItf zooKeeper;
+    private Map<QName, FieldType> fieldTypeNameCache = new HashMap<QName, FieldType>();
+    private Map<QName, RecordType> recordTypeNameCache = new HashMap<QName, RecordType>();
+    private Map<String, FieldType> fieldTypeIdCache = new HashMap<String, FieldType>();
+    private Map<String, RecordType> recordTypeIdCache = new HashMap<String, RecordType>();
+    private final CacheWatcher cacheWatcher = new CacheWatcher();
+    protected static final String CACHE_INVALIDATION_PATH = "/lily/typemanager/cache";
+    
+    public AbstractTypeManager(ZooKeeperItf zooKeeper) {
+        this.zooKeeper = zooKeeper;
+    }
+    
+    public void close() throws IOException {
+        this.stop = true;
+    }
+    
+    private class CacheWatcher implements Watcher {
+        public void process(WatchedEvent event) {
+            if (!stop) {
+                new Thread() {
+                    public void run() {
+                        try {
+                            if (!stop) 
+                                refreshCaches();
+                        } catch (InterruptedException e) {
+                            // End thread
+                        }
+                    };
+                }.start();
+            }
+        }
+    }
 
+    protected class ConnectionWatcher implements Watcher {
+        public void process(WatchedEvent event) {
+            if (EventType.None.equals(event.getType()) && KeeperState.SyncConnected.equals(event.getState())) {
+                if (!stop) {
+                    new Thread() {
+                        public void run() {
+                            try {
+                                if (!stop)
+                                    cacheInvalidationReconnected();
+                            } catch (InterruptedException e) {
+                                // End thread
+                            }
+                        }
+                    }.start();
+                }
+            }
+        }
+    }
+
+    protected void cacheInvalidationReconnected() throws InterruptedException {
+        refreshCaches();
+    }
+
+    protected void setupCaches() throws InterruptedException, KeeperException {
+        ZkUtil.createPath(zooKeeper, CACHE_INVALIDATION_PATH);
+        zooKeeper.addDefaultWatcher(new ConnectionWatcher());
+        refreshCaches();
+    }
+
+    private synchronized void refreshCaches() throws InterruptedException {
+        try {
+            zooKeeper.getData(CACHE_INVALIDATION_PATH, cacheWatcher, null);
+        } catch (KeeperException e) {
+            // Failed to put our watcher.
+            // Relying on the ConnectionWatcher to put it again and initialize
+            // the caches.
+        }
+        initializeFieldTypeCache();
+        initializeRecordTypeCache();
+    }
+
+    private synchronized void initializeFieldTypeCache() {
+        Map<QName, FieldType> newFieldTypeNameCache = new HashMap<QName, FieldType>();
+        Map<String, FieldType> newFieldTypeIdCache = new HashMap<String, FieldType>();
+        try {
+            List<FieldType> fieldTypes = getFieldTypesWithoutCache();
+            for (FieldType fieldType : fieldTypes) {
+                newFieldTypeNameCache.put(fieldType.getName(), fieldType);
+                newFieldTypeIdCache.put(fieldType.getId(), fieldType);
+            }
+            fieldTypeNameCache = newFieldTypeNameCache;
+            fieldTypeIdCache = newFieldTypeIdCache;
+        } catch (Exception e) {
+            // We keep on working with the old cache
+            log.warn("Exception while initializing FieldType cache. Cache is possibly out of date.", e);
+        }
+    }
+    
+    private synchronized void initializeRecordTypeCache() {
+        Map<QName, RecordType> newRecordTypeNameCache = new HashMap<QName, RecordType>();
+        Map<String, RecordType> newRecordTypeIdCache = new HashMap<String, RecordType>();
+        try {
+            List<RecordType> recordTypes = getRecordTypesWithoutCache();
+            for (RecordType recordType : recordTypes) {
+                newRecordTypeNameCache.put(recordType.getName(), recordType);
+                newRecordTypeIdCache.put(recordType.getId(), recordType);
+            }
+            recordTypeNameCache = newRecordTypeNameCache;
+            recordTypeIdCache = newRecordTypeIdCache;
+        } catch (Exception e) {
+            // We keep on working with the old cache
+            log.warn("Exception while initializing RecordType cache. Cache is possibly out of date.", e);
+        } 
+    }
+
+    abstract protected List<FieldType> getFieldTypesWithoutCache() throws IOException, FieldTypeNotFoundException, TypeException;
+    abstract protected List<RecordType> getRecordTypesWithoutCache() throws IOException, RecordTypeNotFoundException, TypeException;
+    
+    
+    protected synchronized void updateFieldTypeCache(FieldType fieldType) {
+        FieldType oldFieldType = getFieldTypeFromCache(fieldType.getId());
+        if (oldFieldType != null) {
+            fieldTypeNameCache.remove(oldFieldType.getName());
+            fieldTypeIdCache.remove(oldFieldType.getId());
+        }
+        fieldTypeNameCache.put(fieldType.getName(), fieldType);
+        fieldTypeIdCache.put(fieldType.getId(), fieldType);
+    }
+
+    protected synchronized void updateRecordTypeCache(RecordType recordType) {
+        RecordType oldType = getRecordTypeFromCache(recordType.getId());
+        if (oldType != null) {
+            recordTypeNameCache.remove(oldType.getName());
+            recordTypeIdCache.remove(oldType.getId());
+        }
+        recordTypeNameCache.put(recordType.getName(), recordType);
+        recordTypeIdCache.put(recordType.getId(), recordType);
+    }
+    
+    public synchronized Collection<RecordType> getRecordTypes() {
+        List<RecordType> recordTypes = new ArrayList<RecordType>();
+        for (RecordType recordType : recordTypeNameCache.values()) {
+            recordTypes.add(recordType.clone());
+        }
+        return recordTypes;
+    }
+    
+    public synchronized List<FieldType> getFieldTypes() {
+        List<FieldType> fieldTypes = new ArrayList<FieldType>();
+        for (FieldType fieldType : fieldTypeNameCache.values()) {
+            fieldTypes.add(fieldType.clone());
+        }
+        return fieldTypes;
+    }
+
+    protected synchronized FieldType getFieldTypeFromCache(QName name) {
+        return fieldTypeNameCache.get(name);
+    }
+    
+    protected synchronized FieldType getFieldTypeFromCache(String id) {
+        return fieldTypeIdCache.get(id);
+    }
+    
+    protected synchronized RecordType getRecordTypeFromCache(QName name) {
+        return recordTypeNameCache.get(name);
+    }
+
+    protected synchronized RecordType getRecordTypeFromCache(String id) {
+        return recordTypeIdCache.get(id);
+    }
+    
+    public RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException {
+        ArgumentValidator.notNull(id, "id");
+        RecordType recordType = getRecordTypeFromCache(id);
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(id, version);
+        }
+        // The cache only keeps the latest (known) RecordType
+        if (version != null && !version.equals(recordType.getVersion())) {
+            recordType = getRecordTypeByIdWithoutCache(id, version);
+        }
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(id, version);
+        }
+        return recordType.clone();
+    }
+    
+    public RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException {
+        ArgumentValidator.notNull(name, "name");
+        RecordType recordType = getRecordTypeFromCache(name);
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(name, version);
+        }
+        // The cache only keeps the latest (known) RecordType
+        if (version != null && !version.equals(recordType.getVersion())) {
+            recordType = getRecordTypeByIdWithoutCache(recordType.getId(), version);
+        }
+        if (recordType == null) {
+            throw new RecordTypeNotFoundException(name, version);
+        }
+        return recordType.clone();
+    }
+    
+    abstract protected RecordType getRecordTypeByIdWithoutCache(String id, Long version) throws RecordTypeNotFoundException, TypeException;
+    
+    public FieldType getFieldTypeById(String id) throws FieldTypeNotFoundException {
+        ArgumentValidator.notNull(id, "id");
+        FieldType fieldType = getFieldTypeFromCache(id);
+        if (fieldType == null) {
+            throw new FieldTypeNotFoundException(id);
+        }
+        return fieldType.clone();
+    }
+
+    public FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException {
+        ArgumentValidator.notNull(name, "name");
+        FieldType fieldType = getFieldTypeFromCache(name);
+        if (fieldType == null) {
+            throw new FieldTypeNotFoundException(name);
+        }
+        return fieldType.clone();
+    }
+    
+    //
+    // Object creation methods
+    //
     public RecordType newRecordType(QName name) {
         return new RecordTypeImpl(null, name);
     }
@@ -62,6 +313,9 @@ public abstract class AbstractTypeManager implements TypeManager {
                 return new FieldTypeImpl(id, valueType, name, scope);
             }
 
+    //
+    // Primitive value types
+    //
     public void registerPrimitiveValueType(PrimitiveValueType primitiveValueType) {
         primitiveValueTypes.put(primitiveValueType.getName(), primitiveValueType);
     }

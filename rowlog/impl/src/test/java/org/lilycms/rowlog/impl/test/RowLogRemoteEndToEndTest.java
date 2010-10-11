@@ -30,7 +30,8 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     // Not in separate VM yet, but at least communication goes over channels.
     @Before
     public void setUp() throws Exception {
-        validationListener = new ValidationMessageListener();
+        System.out.println(">>RowLogRemoteEndToEndTest#"+name.getMethodName());
+        validationListener = new ValidationMessageListener("VML1");
         subscriptionId = "Test";
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.Netty, 3, 1);
         remoteListener = new RemoteListenerHandler(rowLog, subscriptionId, validationListener, rowLogConfigurationManager);
@@ -44,8 +45,8 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
     }
 
     @Test
-    public void testMultipleConsumers() throws Exception {
-        ValidationMessageListener validationListener2 = new ValidationMessageListener();
+    public void testMultipleSubscriptions() throws Exception {
+        ValidationMessageListener validationListener2 = new ValidationMessageListener("VML2");
         rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", RowLogSubscription.Type.Netty, 3, 2);
         RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, rowLogConfigurationManager);
         remoteListener2.start();

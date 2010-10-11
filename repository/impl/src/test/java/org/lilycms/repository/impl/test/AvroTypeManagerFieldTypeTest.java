@@ -37,23 +37,23 @@ import org.lilycms.repository.avro.AvroLilyImpl;
 import org.lilycms.repository.avro.LilySpecificResponder;
 import org.lilycms.repository.impl.DFSBlobStoreAccess;
 import org.lilycms.repository.impl.HBaseRepository;
-import org.lilycms.rowlog.api.RowLogConfigurationManager;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.repository.impl.HBaseTypeManager;
 import org.lilycms.repository.impl.IdGeneratorImpl;
 import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTest {
@@ -65,6 +65,8 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
     private static ZooKeeperItf zooKeeper;
     private static Server lilyServer;
     private static RowLogConfigurationManager rowLogConfMgr;
+    private static TypeManager serverTypeManager;
+    private static HBaseRepository serverRepository;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -72,12 +74,12 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
 
-        HBaseRepository serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
+        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
@@ -87,7 +89,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
-                remoteConverter, idGenerator);
+                remoteConverter, idGenerator, zooKeeper);
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
@@ -103,10 +105,13 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+        Closer.close(typeManager);
         Closer.close(repository);
         Closer.close(rowLogConfMgr);
         lilyServer.close();
         lilyServer.join();
+        Closer.close(serverTypeManager);
+        Closer.close(serverRepository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

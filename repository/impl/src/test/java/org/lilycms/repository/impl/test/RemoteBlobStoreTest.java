@@ -19,7 +19,6 @@ package org.lilycms.repository.impl.test;
 import java.net.InetSocketAddress;
 
 import org.apache.avro.ipc.HttpServer;
-import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Server;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -44,13 +43,14 @@ import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.zookeeper.ZkUtil;
 
 public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
     private static HBaseRepository serverRepository;
     private static Server lilyServer;
+    private static TypeManager serverTypeManager;
     
 
     @BeforeClass
@@ -59,8 +59,8 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
-        zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);
-        TypeManager serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
@@ -78,7 +78,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
-                remoteConverter, idGenerator);
+                remoteConverter, idGenerator, zooKeeper);
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         repository.registerBlobStoreAccess(dfsBlobStoreAccess);
@@ -90,9 +90,12 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         Closer.close(rowLogConfMgr);
+        Closer.close(typeManager);
         Closer.close(repository);
         lilyServer.close();
         lilyServer.join();
+        Closer.close(serverTypeManager);
+        Closer.close(serverRepository);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
     }

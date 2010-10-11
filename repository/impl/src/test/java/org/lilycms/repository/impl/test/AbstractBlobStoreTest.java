@@ -23,22 +23,22 @@ import org.lilycms.repository.api.RecordType;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.api.Scope;
 import org.lilycms.repository.api.TypeManager;
-import org.lilycms.rowlog.api.RowLogConfigurationManager;
-import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
-import org.lilycms.util.hbase.HBaseTableUtil;
 import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogShardImpl;
-import org.lilycms.util.zookeeper.StateWatchingZooKeeper;
+import org.lilycms.util.hbase.HBaseTableUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 public abstract class AbstractBlobStoreTest {
     protected static RowLog wal;
     protected static Repository repository;
     protected static TypeManager typeManager;
     protected static Configuration configuration;
-    protected static StateWatchingZooKeeper zooKeeper;
+    protected static ZooKeeperItf zooKeeper;
     protected static RowLogConfigurationManager rowLogConfMgr;
     
     protected static void setupWal() throws IOException, RowLogException {
