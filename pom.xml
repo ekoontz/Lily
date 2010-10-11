@@ -19,11 +19,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <properties>
-    <hbase.version>0.89.0-r1004203-3076</hbase.version>
+    <hbase.version>0.89.20100924+28-1485-3064</hbase.version>
     <!-- When changing the hbase version, also change the hadoop and zookeeper version below to match
          what is in HBase's pom.xml -->
 
-    <hadoop.version>0.20.3-append-r964955-1240</hadoop.version>
+    <hadoop.version>0.20.2+737</hadoop.version>
     <zookeeper.version>3.3.1</zookeeper.version>
     <version.maven>2.0.9</version.maven>
 
@@ -467,9 +467,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.5</version>
         <configuration>
-            <!--
           <forkMode>always</forkMode>
-          -->
           <argLine>-Xmx256m ${argLine}</argLine>
           <systemPropertyVariables>
             <lily.test.hbase>${lily.test.hbase}</lily.test.hbase>

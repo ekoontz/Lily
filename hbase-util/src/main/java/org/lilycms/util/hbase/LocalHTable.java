@@ -162,17 +162,4 @@ public class LocalHTable extends ThreadLocal<HTable> implements HTableInterface 
     public void unlockRow(RowLock rl) throws IOException {
         get().unlockRow(rl);
     }
-
-    public Result[] batch(List<Row> actions) throws IOException {
-        return get().batch(actions);
-    }
-
-    public void batch(List<Row> actions, Result[] results) throws IOException {
-        get().batch(actions, results);
-        
-    }
-
-    public Result[] get(List<Get> gets) throws IOException {
-        return get(gets);
-    }
 }
