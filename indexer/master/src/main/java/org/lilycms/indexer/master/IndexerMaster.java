@@ -125,6 +125,10 @@ public class IndexerMaster {
                 index.getUpdateState() != IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() == null;
     }
 
+    private boolean needsSubscriptionIdUnassigned(IndexDefinition index) {
+        return index.getUpdateState() == IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() != null;
+    }
+
     private boolean needsFullBuildStart(IndexDefinition index) {
         return !index.getGeneralState().isDeleteState() &&
                 index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
@@ -152,6 +156,26 @@ public class IndexerMaster {
             }
         } catch (Throwable t) {
             log.error("Error trying to assign a queue subscription to index " + indexName, t);
+        }
+    }
+
+    private void unassignSubscription(String indexName) {
+        try {
+            String lock = indexerModel.lockIndex(indexName);
+            try {
+                // Read current situation of record and assure it is still actual
+                IndexDefinition index = indexerModel.getMutableIndex(indexName);
+                if (needsSubscriptionIdUnassigned(index)) {
+                    rowLogConfMgr.removeSubscription("MQ", index.getQueueSubscriptionId());
+                    log.info("Deleted queue subscription for index " + indexName);
+                    index.setQueueSubscriptionId(null);
+                    indexerModel.updateIndexInternal(index);
+                }
+            } finally {
+                indexerModel.unlockIndex(lock);
+            }
+        } catch (Throwable t) {
+            log.error("Error trying to delete the queue subscription for index " + indexName, t);
         }
     }
 
@@ -350,6 +374,10 @@ public class IndexerMaster {
 
                             if (needsSubscriptionIdAssigned(index)) {
                                 assignSubscription(index.getName());
+                            }
+
+                            if (needsSubscriptionIdUnassigned(index)) {
+                                unassignSubscription(index.getName());
                             }
 
                             if (needsFullBuildStart(index)) {

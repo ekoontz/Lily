@@ -105,6 +105,8 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             // Remove listeners first? Yes, I think this is best, otherwise if some listener does not want
             // to go away, we could be unable to remove a subscription. Nothing bad can happen: if listeners
             // are still running, they will simply not receive messages anymore.
+            log.error("Removal of subscription failed because there are still listeners. Row log " + rowLogId +
+                    ", subscription " + subscriptionId);
         }
     }
     
