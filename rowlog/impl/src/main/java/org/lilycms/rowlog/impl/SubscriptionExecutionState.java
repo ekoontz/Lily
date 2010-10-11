@@ -25,6 +25,7 @@ import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.avro.AvroExecState;
 import org.lilycms.rowlog.avro.AvroExecStateEntry;
 
@@ -33,6 +34,8 @@ public class SubscriptionExecutionState {
     private final byte[] messageId;
 
     private final Map<CharSequence, AvroExecStateEntry> entries = new HashMap<CharSequence, AvroExecStateEntry>();
+
+    private static final short FORMAT_VERSION = 1;
 
     public SubscriptionExecutionState(byte[] messageId) {
         this.messageId = messageId;
@@ -116,6 +119,9 @@ public class SubscriptionExecutionState {
         ByteArrayOutputStream os = new ByteArrayOutputStream(400);
         BinaryEncoder encoder = new BinaryEncoder(os);
         try {
+            // First write a version number to support future evolution of the serialization format
+            os.write(Bytes.toBytes(FORMAT_VERSION));
+
             STATE_WRITER.write(state, encoder);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -133,7 +139,14 @@ public class SubscriptionExecutionState {
     }
 
     public static SubscriptionExecutionState fromBytes(byte[] bytes) throws IOException {
-        AvroExecState state = STATE_READER.read(null, DecoderFactory.defaultFactory().createBinaryDecoder(bytes, null));
+        short version = Bytes.toShort(bytes, 0, 2);
+
+        if (version != FORMAT_VERSION) {
+            throw new RuntimeException("Unsupported subscription execution state serialized format version: " + version);
+        }
+
+        AvroExecState state = STATE_READER.read(null,
+                DecoderFactory.defaultFactory().createBinaryDecoder(bytes, 2, bytes.length - 2, null));
 
         SubscriptionExecutionState result = new SubscriptionExecutionState(state.messageId.array());
 
