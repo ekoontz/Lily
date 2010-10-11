@@ -863,7 +863,7 @@ public class RestTest {
     public static JsonNode readJson(Representation representation) throws IOException {
         InputStream is = representation.getStream();
         try {
-            return JsonFormat.deserialize(is);
+            return JsonFormat.deserializeNonStd(is);
         } finally {
             Closer.close(is);
         }

@@ -1,10 +1,8 @@
 package org.lilycms.tools.import_.cli;
 
-import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.MappingJsonFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.tools.import_.core.*;
@@ -42,9 +40,7 @@ public class JsonImport {
 
         namespaces.clear();
 
-        MappingJsonFactory jsonFactory = new MappingJsonFactory();
-        JsonFormat.setNonStdFeatures(jsonFactory);
-        JsonParser jp = jsonFactory.createJsonParser(is);
+        JsonParser jp = JsonFormat.JSON_FACTORY_NON_STD.createJsonParser(is);
 
         JsonToken current;
         current = jp.nextToken();

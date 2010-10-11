@@ -12,12 +12,14 @@ import java.io.*;
  */
 public class JsonFormat {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static final ObjectMapper OBJECT_MAPPER_NON_STD = new ObjectMapper();
+    public static final MappingJsonFactory JSON_FACTORY = new MappingJsonFactory();
+
+    public static final MappingJsonFactory JSON_FACTORY_NON_STD;
     static {
-        // These non-standard features (could) make parsing slightly slower.
-        OBJECT_MAPPER_NON_STD.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        OBJECT_MAPPER_NON_STD.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        OBJECT_MAPPER_NON_STD.getDeserializationConfig().enable(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS);
+        JSON_FACTORY_NON_STD = new MappingJsonFactory();
+        JSON_FACTORY_NON_STD.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        JSON_FACTORY_NON_STD.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        JSON_FACTORY_NON_STD.getCodec().getDeserializationConfig().enable(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS);
     }
 
     public static void serialize(JsonNode jsonNode, OutputStream outputStream) throws IOException {
@@ -29,24 +31,22 @@ public class JsonFormat {
     }
 
     public static JsonNode deserialize(InputStream inputStream) throws IOException {
-        return OBJECT_MAPPER.readTree(inputStream);
+        JsonParser jp = JSON_FACTORY.createJsonParser(inputStream);
+        return jp.readValueAsTree();
     }
 
     public static JsonNode deserializeNonStd(InputStream inputStream) throws IOException {
-        return OBJECT_MAPPER_NON_STD.readTree(inputStream);
+        JsonParser jp = JSON_FACTORY_NON_STD.createJsonParser(inputStream);
+        return jp.readValueAsTree();
     }
 
     public static JsonNode deserialize(byte[] data) throws IOException {
-        return OBJECT_MAPPER.readTree(new ByteArrayInputStream(data));
+        JsonParser jp = JSON_FACTORY.createJsonParser(data);
+        return jp.readValueAsTree();
     }
 
     public static JsonNode deserializeNonStd(byte[] data) throws IOException {
-        return OBJECT_MAPPER_NON_STD.readTree(new ByteArrayInputStream(data));
-    }
-
-    public static void setNonStdFeatures(MappingJsonFactory jsonFactory) {
-        jsonFactory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        jsonFactory.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        jsonFactory.getCodec().getDeserializationConfig().enable(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS);
+        JsonParser jp = JSON_FACTORY_NON_STD.createJsonParser(data);
+        return jp.readValueAsTree();
     }
 }
