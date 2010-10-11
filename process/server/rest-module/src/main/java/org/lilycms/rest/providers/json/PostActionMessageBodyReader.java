@@ -47,7 +47,7 @@ public class PostActionMessageBodyReader extends RepositoryEnabled implements Me
 
         Type entityType = ((ParameterizedType)genericType).getActualTypeArguments()[0];
 
-        JsonNode node = JsonFormat.deserialize(entityStream);
+        JsonNode node = JsonFormat.deserializeNonStd(entityStream);
 
         if (!(node instanceof ObjectNode)) {
             throw new ResourceException("Request body should be a JSON object.", BAD_REQUEST.getStatusCode());

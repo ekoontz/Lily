@@ -49,7 +49,7 @@ public class JsonShardSelectorBuilder {
     public static ShardSelector build(byte[] configData) throws ShardingConfigException {
         JsonNode node;
         try {
-            node = JsonFormat.deserialize(new ByteArrayInputStream(configData));
+            node = JsonFormat.deserializeNonStd(new ByteArrayInputStream(configData));
         } catch (IOException e) {
             throw new ShardingConfigException("Error reading the sharding configuration.", e);
         }

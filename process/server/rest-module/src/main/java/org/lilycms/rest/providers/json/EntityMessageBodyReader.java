@@ -37,7 +37,7 @@ public class EntityMessageBodyReader extends RepositoryEnabled implements Messag
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
 
-        JsonNode node = JsonFormat.deserialize(entityStream);
+        JsonNode node = JsonFormat.deserializeNonStd(entityStream);
 
         if (!(node instanceof ObjectNode)) {
             throw new ResourceException("Request body should be a JSON object.", BAD_REQUEST.getStatusCode());

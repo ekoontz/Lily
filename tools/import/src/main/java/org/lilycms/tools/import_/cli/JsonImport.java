@@ -9,6 +9,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.lilycms.repository.api.*;
 import org.lilycms.tools.import_.core.*;
 import org.lilycms.tools.import_.json.*;
+import org.lilycms.util.json.JsonFormat;
 
 import java.io.InputStream;
 
@@ -41,9 +42,8 @@ public class JsonImport {
 
         namespaces.clear();
 
-        JsonFactory jsonFactory = new MappingJsonFactory();
-        jsonFactory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        jsonFactory.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        MappingJsonFactory jsonFactory = new MappingJsonFactory();
+        JsonFormat.setNonStdFeatures(jsonFactory);
         JsonParser jp = jsonFactory.createJsonParser(is);
 
         JsonToken current;

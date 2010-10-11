@@ -19,8 +19,6 @@ import de.svenjacobs.loremipsum.LoremIpsum;
 import org.apache.hadoop.metrics.*;
 import org.apache.zookeeper.KeeperException;
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -29,15 +27,13 @@ import org.lilycms.client.ServerUnavailableException;
 import org.lilycms.repository.api.*;
 import org.lilycms.tools.import_.cli.*;
 import org.lilycms.tools.import_.json.*;
+import org.lilycms.util.json.JsonFormat;
 import org.lilycms.util.json.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.ZkConnectException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -86,10 +82,9 @@ public class Tester {
             ServerUnavailableException, RepositoryException, ImportConflictException, ImportException,
             JsonFormatException, ZkConnectException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        JsonNode configNode = objectMapper.readValue(new File(configFileName), JsonNode.class);
+        InputStream is = new FileInputStream(configFileName);
+        JsonNode configNode = JsonFormat.deserializeNonStd(is);
+        is.close();
 
         readConfig(configNode);
 
