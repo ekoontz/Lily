@@ -5,6 +5,7 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.MappingJsonFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,12 +29,10 @@ public class JsonFormat {
     }
 
     public static JsonNode deserialize(InputStream inputStream) throws IOException {
-        JsonParser jp = JSON_FACTORY.createJsonParser(inputStream);
-        return jp.readValueAsTree();
+        return OBJECT_MAPPER.readTree(inputStream);
     }
 
     public static JsonNode deserialize(byte[] data) throws IOException {
-        JsonParser jp = JSON_FACTORY.createJsonParser(data);
-        return jp.readValueAsTree();
+        return OBJECT_MAPPER.readTree(new ByteArrayInputStream(data));
     }
 }
