@@ -44,7 +44,10 @@ public abstract class AbstractRowLogEndToEndTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
-        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        // Using a large ZooKeeper timeout, seems to help the build to succeed on Hudson (not sure if this is
+        // the problem or the sympton, but HBase's Sleeper thread also reports it slept to long, so it appears
+        // to be JVM-level).
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 120000);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
                 RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, rowLogConfigurationManager);
