@@ -52,7 +52,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName() + " teardown done " + (System.currentTimeMillis() - t0));
     }
 
-    @Test()
+    @Test(timeout=270000)
     public void testMultipleSubscriptions() throws Exception {
         validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
@@ -82,7 +82,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener.validate();
     }
 
-    @Test
+    @Test(timeout=150000)
     public void testMultipleSubscriptionsOrder() throws Exception {
         validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";

@@ -45,7 +45,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
     }
 
-    @Test
+    @Test(timeout=270000)
     public void testMultipleSubscriptions() throws Exception {
         ValidationMessageListener validationListener2 = new ValidationMessageListener("VML2");
         rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", RowLogSubscription.Type.Netty, 3, 2);
