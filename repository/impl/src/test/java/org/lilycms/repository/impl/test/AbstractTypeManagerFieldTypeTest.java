@@ -58,6 +58,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         ValueType valueType2 = typeManager.getValueType("INTEGER", false, false);
         FieldType fieldType2 = typeManager.newFieldType(valueType2, name, Scope.NON_VERSIONED);
         try {
+            System.out.println("Expecting FieldTypeExistsException");
             fieldType = typeManager.createFieldType(fieldType2);
             fail();
         } catch (FieldTypeExistsException expected) {
@@ -94,6 +95,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         
         fieldType.setValueType(typeManager.getValueType("INTEGER", false, false));
         try {
+            System.out.println("Expecting FieldTypeUpdateException");
             typeManager.updateFieldType(fieldType);
             fail("Changing the valueType of a fieldType is not allowed.");
         } catch (FieldTypeUpdateException e) {
@@ -109,6 +111,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         
         fieldType.setScope(Scope.NON_VERSIONED);
         try {
+            System.out.println("Expecting FieldTypeUpdateException");
             typeManager.updateFieldType(fieldType);
             fail("Changing the scope of a fieldType is not allowed.");
         } catch (FieldTypeUpdateException e) {
@@ -129,6 +132,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         
         fieldType.setName(name2);
         try {
+            System.out.println("Expecting FieldTypeUpdateException");
             typeManager.updateFieldType(fieldType);
             fail("Updating to a fieldType with an existing name is not allowed.");
         } catch (FieldTypeUpdateException e) {

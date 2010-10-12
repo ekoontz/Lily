@@ -55,7 +55,7 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
     private HttpTransceiver client;
 
     public RemoteTypeManager(InetSocketAddress address, AvroConverter converter, IdGenerator idGenerator, ZooKeeperItf zooKeeper)
-            throws IOException, InterruptedException, KeeperException {
+            throws IOException {
         super(zooKeeper);
         log = LogFactory.getLog(getClass());
         this.converter = converter;
@@ -65,6 +65,15 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
 
         lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
         registerDefaultValueTypes();
+    }
+    
+    /**
+     * Start should be called for the RemoteTypeManager after the typemanager has been assigned to the repository,
+     * after the repository has been assigned to the AvroConverter and before using the typemanager and repository.
+     * @throws InterruptedException
+     * @throws KeeperException
+     */
+    public void start() throws InterruptedException, KeeperException {
         setupCaches();
     }
 

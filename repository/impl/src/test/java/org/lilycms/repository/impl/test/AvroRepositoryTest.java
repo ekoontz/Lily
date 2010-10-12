@@ -70,6 +70,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()), remoteConverter,
                 (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
+        ((RemoteTypeManager)typeManager).start();
         setupTypes();
         setupMessageQueue();
         setupMessageQueueProcessor();

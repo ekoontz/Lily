@@ -119,7 +119,7 @@ public class LilyClient implements Closeable {
     private void constructRepository(ServerNode server) throws IOException, InterruptedException, KeeperException {
         AvroConverter remoteConverter = new AvroConverter();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
-        TypeManager typeManager = new RemoteTypeManager(parseAddressAndPort(server.lilyAddressAndPort),
+        RemoteTypeManager typeManager = new RemoteTypeManager(parseAddressAndPort(server.lilyAddressAndPort),
                 remoteConverter, idGenerator, zk);
         
         BlobStoreAccessFactory blobStoreAccessFactory = getBlobStoreAccess(zk);
@@ -128,6 +128,7 @@ public class LilyClient implements Closeable {
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         
         remoteConverter.setRepository(repository);
+        typeManager.start();
         server.repository = repository;
     }
 

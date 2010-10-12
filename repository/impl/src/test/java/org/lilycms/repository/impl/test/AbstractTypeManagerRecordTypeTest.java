@@ -80,6 +80,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         
         recordType = typeManager.newRecordType(name);
         try {
+            System.out.println("Expecting RecordTypeExistsException");
             typeManager.createRecordType(recordType);
             fail();
         } catch (RecordTypeExistsException expected) {
@@ -124,6 +125,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
     public void testReadNonExistingRecordTypeFails() throws Exception {
         QName name = new QName("testNS", "testReadNonExistingRecordTypeFails");
         try {
+            System.out.println("Expecting RecordTypeNotFoundException");
             typeManager.getRecordTypeByName(name, null);
             fail();
         } catch (RecordTypeNotFoundException expected) {
@@ -131,6 +133,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         
         typeManager.createRecordType(typeManager.newRecordType(name));
         try {
+            System.out.println("Expecting RecordTypeNotFoundException");
             typeManager.getRecordTypeByName(name, Long.valueOf(2));
             fail();
         } catch (RecordTypeNotFoundException expected) {
@@ -142,12 +145,14 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         QName name = new QName("testNS", "testUpdateNonExistingRecordTypeFails");
         RecordType recordType = typeManager.newRecordType(name);
         try {
+            System.out.println("Expecting RecordTypeNotFoundException");
             typeManager.updateRecordType(recordType);
             fail();
         } catch (RecordTypeNotFoundException expected) {
         }
         recordType.setId(UUID.randomUUID().toString());
         try {
+            System.out.println("Expecting RecordTypeNotFoundException");
             typeManager.updateRecordType(recordType);
             fail();
         } catch (RecordTypeNotFoundException expected) {
@@ -160,6 +165,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         RecordType recordType = typeManager.newRecordType(name);
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(UUID.randomUUID().toString(), false));
         try {
+            System.out.println("Expecting FieldTypeNotFoundException");
             typeManager.createRecordType(recordType);
             fail();
         } catch (FieldTypeNotFoundException expected) {
@@ -174,6 +180,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
         
         recordType.addFieldTypeEntry(typeManager.newFieldTypeEntry(UUID.randomUUID().toString(), false));
         try {
+            System.out.println("Expecting FieldTypeNotFoundException");
             typeManager.updateRecordType(recordType);
             fail();
         } catch (FieldTypeNotFoundException expected) {
@@ -352,6 +359,7 @@ public abstract class AbstractTypeManagerRecordTypeTest {
 
         recordType.setName(name2);
         try {
+            System.out.println("Expecting TypeException"); 
             recordType = typeManager.updateRecordType(recordType);
             fail();
         } catch (TypeException expected){

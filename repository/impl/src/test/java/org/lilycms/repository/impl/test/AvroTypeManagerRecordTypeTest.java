@@ -105,7 +105,7 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
         Repository repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
-
+        ((RemoteTypeManager)typeManager).start();
         setupFieldTypes();
     }
     

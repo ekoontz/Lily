@@ -85,6 +85,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         repository.registerBlobStoreAccess(hbaseBlobStoreAccess);
         repository.registerBlobStoreAccess(inlineBlobStoreAccess);
         remoteConverter.setRepository(repository);
+        ((RemoteTypeManager)typeManager).start();
     }
 
     @AfterClass

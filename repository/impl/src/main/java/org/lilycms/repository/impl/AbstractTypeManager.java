@@ -136,11 +136,11 @@ public abstract class AbstractTypeManager implements TypeManager {
             // Relying on the ConnectionWatcher to put it again and initialize
             // the caches.
         }
-        initializeFieldTypeCache();
-        initializeRecordTypeCache();
+        refreshFieldTypeCache();
+        refreshRecordTypeCache();
     }
 
-    private synchronized void initializeFieldTypeCache() {
+    private synchronized void refreshFieldTypeCache() {
         Map<QName, FieldType> newFieldTypeNameCache = new HashMap<QName, FieldType>();
         Map<String, FieldType> newFieldTypeIdCache = new HashMap<String, FieldType>();
         try {
@@ -153,11 +153,11 @@ public abstract class AbstractTypeManager implements TypeManager {
             fieldTypeIdCache = newFieldTypeIdCache;
         } catch (Exception e) {
             // We keep on working with the old cache
-            log.warn("Exception while initializing FieldType cache. Cache is possibly out of date.", e);
+            log.warn("Exception while refreshing FieldType cache. Cache is possibly out of date.", e);
         }
     }
     
-    private synchronized void initializeRecordTypeCache() {
+    private synchronized void refreshRecordTypeCache() {
         Map<QName, RecordType> newRecordTypeNameCache = new HashMap<QName, RecordType>();
         Map<String, RecordType> newRecordTypeIdCache = new HashMap<String, RecordType>();
         try {
@@ -170,7 +170,7 @@ public abstract class AbstractTypeManager implements TypeManager {
             recordTypeIdCache = newRecordTypeIdCache;
         } catch (Exception e) {
             // We keep on working with the old cache
-            log.warn("Exception while initializing RecordType cache. Cache is possibly out of date.", e);
+            log.warn("Exception while refreshing RecordType cache. Cache is possibly out of date.", e);
         } 
     }
 

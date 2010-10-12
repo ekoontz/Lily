@@ -93,7 +93,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
         repository = new RemoteRepository(new InetSocketAddress(lilyServer.getPort()),
                 remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
         remoteConverter.setRepository(repository);
-
+        ((RemoteTypeManager)typeManager).start();
     }
     
     protected static void setupWal() throws IOException, RowLogException {
