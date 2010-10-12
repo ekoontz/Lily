@@ -70,17 +70,18 @@ public class ValidationMessageListener implements RowLogMessageListener {
     }
 
     public void waitUntilMessagesConsumed(long timeout) throws Exception {
-        long waitUntil = System.currentTimeMillis() + timeout;
+//        long waitUntil = System.currentTimeMillis() + timeout;
         while ((!expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected))
-                && System.currentTimeMillis() < waitUntil) {
+//                && System.currentTimeMillis() < waitUntil
+                ) {
             Thread.sleep(100);
         }
     }
 
     public void validate() throws Exception {
-        Assert.assertFalse("Received less messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count < numberOfMessagesToBeExpected));
-        Assert.assertFalse("Received more messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count > numberOfMessagesToBeExpected));
-        Assert.assertTrue("EarlyMessages list is not empty <"+earlyMessages.keySet()+">", earlyMessages.isEmpty());
-        Assert.assertTrue("Expected messages not processed within timeout", expectedMessages.isEmpty());
+        Assert.assertFalse(name+" Received less messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count < numberOfMessagesToBeExpected));
+        Assert.assertFalse(name+" Received more messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count > numberOfMessagesToBeExpected));
+        Assert.assertTrue(name+" EarlyMessages list is not empty <"+earlyMessages.keySet()+">", earlyMessages.isEmpty());
+        Assert.assertTrue(name+" Expected messages not processed within timeout", expectedMessages.isEmpty());
     }
 }

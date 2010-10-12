@@ -151,8 +151,10 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             
             RowLogMessage message = new RowLogMessageImpl(messageId, rowKey, seqnr, data, this);
         
-            shard.putMessage(message);
-            initializeSubscriptions(message, put);
+            synchronized(subscriptions) {
+                shard.putMessage(message);
+                initializeSubscriptions(message, put);
+            }
             if (processorNotifier != null) {
                 processorNotifier.notifyProcessor(id, shard.getId());
             }

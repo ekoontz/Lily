@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -15,6 +16,7 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
@@ -139,5 +141,20 @@ public abstract class AbstractRowLogEndToEndTest {
         processor.stop();
         Assert.assertTrue(rowLog.isProblematic(message, subscriptionId));
         validationListener.validate();
+    }
+    
+    protected void waitForSubscription(String subscriptionId) throws InterruptedException {
+        boolean subscriptionKnown = false;
+        long waitUntil = System.currentTimeMillis() + 10000;
+        while (!subscriptionKnown && System.currentTimeMillis() < waitUntil) {
+            for (RowLogSubscription subscription : rowLog.getSubscriptions()) {
+                if (subscriptionId.equals(subscription.getId())) {
+                    subscriptionKnown = true;
+                    break;
+                }
+            }
+            Thread.sleep(10);
+        }
+        Assert.assertTrue("Subscription <" + subscriptionId +"> not known to rowlog within reasonable time <10s>", subscriptionKnown);
     }
 }

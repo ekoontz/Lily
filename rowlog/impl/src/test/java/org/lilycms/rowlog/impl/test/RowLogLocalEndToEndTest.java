@@ -15,6 +15,10 @@
  */
 package org.lilycms.rowlog.impl.test;
 
+import java.util.List;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.After;
 import org.junit.Assert;
@@ -24,53 +28,42 @@ import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListenerMapping;
 import org.lilycms.rowlog.api.RowLogSubscription;
 
-public class RowLogLocalEndToEndTest {
-    @Test
-    public void testDummy() {
-        
-    }
-}
-/*extends AbstractRowLogEndToEndTest {
+public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
-
+    Log log = LogFactory.getLog(getClass());
     private ValidationMessageListener validationListener2;
+    long t0 = 0;
 
     @Before
     public void setUp() throws Exception {
+        t0 = System.currentTimeMillis();
         System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName());
-        try {
-            validationListener = new ValidationMessageListener("VML1");
-            RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
-            rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.VM, 3, 1);
-            rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        validationListener = new ValidationMessageListener("VML1");
+        RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.VM, 3, 1);
+        waitForSubscription(subscriptionId);
+        rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
     }
 
     @After
     public void tearDown() throws Exception {
-        try {
-            rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
-            rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName() + " teardown done " + (System.currentTimeMillis() - t0));
     }
 
-    @Test
+    @Test()
     public void testMultipleSubscriptions() throws Exception {
         validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 2);
+        waitForSubscription(subscriptionId2); // Avoid putting messages on the rowlog before all subscriptions are setup
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         validationListener.expectMessages(10);
         validationListener2.expectMessages(10);
         RowLogMessage message;
-        for (long seqnr = 0L; seqnr < 2; seqnr++) {
+        for (long seqnr = 0; seqnr < 2; seqnr++) {
             for (int rownr = 20; rownr < 25; rownr++) {
                 byte[] data = Bytes.toBytes(rownr);
                 data = Bytes.add(data, Bytes.toBytes(seqnr));
@@ -88,13 +81,14 @@ public class RowLogLocalEndToEndTest {
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
         validationListener.validate();
     }
-    
+
     @Test
     public void testMultipleSubscriptionsOrder() throws Exception {
         validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 0);
+        waitForSubscription(subscriptionId2);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId2, "Listener2");
         int rownr = 222;
         byte[] data = Bytes.toBytes(222);
@@ -116,4 +110,4 @@ public class RowLogLocalEndToEndTest {
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
     } 
-}*/
+}
