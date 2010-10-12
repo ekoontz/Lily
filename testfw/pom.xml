@@ -36,7 +36,10 @@
         <artifactId>lily-genscript-plugin</artifactId>
         <configuration>
           <scripts>
-            <script><basename>launch-hadoop</basename><mainClass>org.lilycms.testfw.HBaseRunner</mainClass></script>
+            <script>
+              <basename>launch-hadoop</basename>
+              <mainClass>org.lilycms.testfw.HBaseRunner</mainClass>
+            </script>
           </scripts>
         </configuration>
         <executions>

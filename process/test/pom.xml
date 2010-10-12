@@ -91,7 +91,7 @@
     <plugins>
       <plugin>
         <groupId>org.lilycms</groupId>
-        <artifactId>kauri-dependency-resolver-plugin</artifactId>
+        <artifactId>lily-kauri-plugin</artifactId>
         <version>0.2-SNAPSHOT</version>
         <configuration>
           <confDirectory>${basedir}/../server/conf</confDirectory>

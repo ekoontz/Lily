@@ -1,0 +1,118 @@
+<assembly>
+  <id>dist</id>
+
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+
+  <files>
+    <!-- License -->
+    <file>
+      <source>${basedir}/../LICENSE.txt</source>
+      <outputDirectory>/</outputDirectory>
+    </file>
+
+    <!-- Readme -->
+    <file>
+      <source>target/classes/README.txt</source>
+      <outputDirectory>/</outputDirectory>
+    </file>
+
+    <!-- Lily server -->
+    <file>
+      <source>${basedir}/../process/server/target/dist-scripts/lily-server</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Import tool -->
+    <file>
+      <source>${basedir}/../tools/import/target/dist-scripts/lily-import</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- MBOX Import tool -->
+    <file>
+      <source>${basedir}/../tools/mbox-import/target/dist-scripts/lily-mbox-import</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Tester tool -->
+    <file>
+      <source>${basedir}/../tools/tester/target/dist-scripts/lily-tester</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Indexer admin CLI -->
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-add-index</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-update-index</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-list-indexes</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-indexerconf</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-shardingconf</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-touch-index</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Launch hadoop -->
+    <file>
+      <source>${basedir}/../testfw/target/dist-scripts/launch-hadoop</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+  </files>
+
+  <fileSets>
+    <!-- Lily server dependencies -->
+    <fileSet>
+      <directory>${basedir}/target/kauri-repository</directory>
+      <outputDirectory>/lib</outputDirectory>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+
+    <!-- Lily server configuration -->
+    <fileSet>
+      <directory>${basedir}/../process/server/conf</directory>
+      <outputDirectory>/conf</outputDirectory>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+
+  </fileSets>
+
+  <repositories>
+    <repository>
+      <includeMetadata>false</includeMetadata>
+      <scope>test</scope>
+      <outputDirectory>lib</outputDirectory>
+      <useStrictFiltering>true</useStrictFiltering>
+      <excludes>
+        <exclude>*lily-dist*</exclude>
+      </excludes>
+    </repository>
+  </repositories>
+
+</assembly>

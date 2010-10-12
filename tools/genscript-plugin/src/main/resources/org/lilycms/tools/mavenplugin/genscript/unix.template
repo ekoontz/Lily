@@ -1,0 +1,47 @@
+#! /bin/sh
+
+# You can use the following environment variables to customize the startup
+#
+# LILY_CLI_CLASSPATH
+#    additional entries to be added to the classpath
+#
+# LILY_JAVA_OPTIONS
+#    additional options to be passed to the java executable
+#
+
+if [ -z "$JAVA_HOME" ] ; then
+  echo "JAVA_HOME not set"
+  exit 1
+fi
+
+# This technique for detecting LILY_HOME has been adapted from ant's startup script
+if [ -z "$LILY_HOME" -o ! -d "$LILY_HOME" ] ; then
+  ## resolve links - $0 may be a link to Lily's home
+  PRG="$0"
+  progname=`basename "$0"`
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+    else
+    PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+
+  LILY_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  LILY_HOME=`cd "$LILY_HOME" && pwd`
+fi
+
+
+M2_REPO=$LILY_HOME/lib
+
+CLASSPATH="$$$CLASSPATH$$$"
+
+export CLASSPATH
+
+"$JAVA_HOME/bin/java" $LILY_JAVA_OPTIONS $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ $$$DEFAULT_CLI_ARGS$$$ $@

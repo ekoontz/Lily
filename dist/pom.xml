@@ -1,0 +1,92 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.lilycms</groupId>
+  <artifactId>lily-dist</artifactId>
+  <version>0.2-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.lilycms</groupId>
+    <artifactId>lily</artifactId>
+    <version>0.2-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <name>KAURI ::: DISTRIBUTION</name>
+
+  <dependencies>
+    <!--
+       Add dependencies here for everything which should be included in the binary distribution.
+       This is not necessary for the Kauri-based Lily server, whose dependencies are collected
+       by a Maven plugin.
+     -->
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-import</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-mbox-import</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-tester</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-indexer-admin-cli</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-testfw</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <plugins>      
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <finalName>lily-${project.version}</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
+          <tarLongFileMode>gnu</tarLongFileMode>
+          <descriptors>
+            <descriptor>dist-assembly.xml</descriptor>
+          </descriptors>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-kauri-plugin</artifactId>
+        <version>0.2-SNAPSHOT</version>
+        <configuration>
+          <confDirectory>${basedir}/../process/server/conf</confDirectory>
+          <kauriVersion>${version.kauri}</kauriVersion>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>assemble-project-repository</goal>
+              <goal>assemble-runtime-repository</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

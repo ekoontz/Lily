@@ -20,9 +20,9 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
-  <artifactId>kauri-dependency-resolver-plugin</artifactId>
+  <artifactId>lily-kauri-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>Lily: Maven plugin for resolving all the dependencies of a Kauri project</name>
+  <name>Lily: Kauri-related Maven plugins</name>
 
   <parent>
     <groupId>org.lilycms</groupId>

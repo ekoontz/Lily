@@ -78,7 +78,7 @@
     <module>tools/import</module>
     <module>tools/tester</module>
     <module>tools/mbox-import</module>
-    <module>tools/kauri-dependency-resolver-plugin</module>
+    <module>tools/lily-kauri-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
     <module>tools/genscript-plugin</module>
   </modules>
@@ -203,6 +203,11 @@
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
+        <artifactId>lily-indexer-admin-cli</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
         <artifactId>lily-indexer-fullbuild</artifactId>
         <classifier>mapreduce-job</classifier>
         <version>0.2-SNAPSHOT</version>
@@ -215,6 +220,16 @@
       <dependency>
         <groupId>org.lilycms</groupId>
         <artifactId>lily-cli-fw</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-tester</artifactId>
+        <version>0.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-mbox-import</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>

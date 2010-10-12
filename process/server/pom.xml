@@ -67,6 +67,44 @@
           <confDirectory>${basedir}/conf</confDirectory>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-genscript-plugin</artifactId>
+        <inherited>false</inherited>        
+        <configuration>
+          <scripts>
+            <script>
+              <basename>lily-server</basename>
+              <mainClass>org.kauriproject.launcher.RuntimeCliLauncher</mainClass>
+            </script>
+          </scripts>
+          <alternativeClasspath>
+            <dependency>
+              <groupId>org.kauriproject</groupId>
+              <artifactId>kauri-runtime-launcher</artifactId>
+              <version>${version.kauri}</version>
+            </dependency>
+          </alternativeClasspath>
+          <includeProjectInClasspath>false</includeProjectInClasspath>
+          <defaultCliArgs>
+            <unix>--repository $M2_REPO</unix>
+            <windows>--repository %M2_REPO%</windows>
+          </defaultCliArgs>
+          <defaultJvmArgs>
+            <unix>-Dkauri.launcher.repository=$M2_REPO</unix>
+            <windows>-Dkauri.launcher.repository=%M2_REPO%</windows>
+          </defaultJvmArgs>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>genscript</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
   </build>

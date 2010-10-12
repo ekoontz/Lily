@@ -4,10 +4,8 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.kauriproject.runtime.model.SourceLocations;
+import org.apache.maven.plugin.logging.Log;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -18,7 +16,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -26,117 +27,43 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- *
- * @goal resolve
- * @requiresDependencyResolution runtime
- * @description Resolve (download) all the dependencies of a Kauri project starting from wiring.xml.
- */
-public class KauriDependencyResolver extends AbstractMojo {
-    /**
-     * Location of the conf directory.
-     *
-     * @parameter expression="${basedir}/conf"
-     * @required
-     */
-    protected String confDirectory;
-
-    /**
-     * Kauri version.
-     *
-     * @parameter
-     * @required
-     */
-    protected String kauriVersion;
-
-    /**
-     * Location of the module-source-locations.properties file.
-     *
-     * @parameter
-     */
-    protected String moduleSourceLocations;
-
-    /**
-     * @parameter expression="${project.groupId}"
-     * @required
-     * @readonly
-     */
-    private String projectGroupId;
-
-    /**
-     * @parameter expression="${project.artifactId}"
-     * @required
-     * @readonly
-     */
-    private String projectArtifactId;
-
-    /**
-     * @parameter expression="${project.version}"
-     * @required
-     * @readonly
-     */
-    private String projectVersion;
-
-    /**
-     * Maven Artifact Factory component.
-     *
-     * @component
-     */
-    protected ArtifactFactory artifactFactory;
-
-    /**
-     * Remote repositories used for the project.
-     *
-     * @parameter expression="${project.remoteArtifactRepositories}"
-     * @required
-     * @readonly
-     */
-    protected List remoteRepositories;
-
-    /**
-     * Local Repository.
-     *
-     * @parameter expression="${localRepository}"
-     * @required
-     * @readonly
-     */
-    protected ArtifactRepository localRepository;
-
-    /**
-     * Artifact Resolver component.
-     *
-     * @component
-     */
-    protected ArtifactResolver resolver;
-
+public class KauriProjectClasspath {
     protected XPathFactory xpathFactory = XPathFactory.newInstance();
-    protected SourceLocations sourceLocations = new SourceLocations();
+    private String confDirectory;
+    private String kauriVersion;
+    private ArtifactFilter filter;
+    private ArtifactFactory artifactFactory;
+    protected ArtifactResolver resolver;
+    protected List remoteRepositories;
+    protected ArtifactRepository localRepository;
+    private Log log;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (moduleSourceLocations != null) {
-            File sourceLocationsFile = new File(moduleSourceLocations);
-            FileInputStream sourceLocationsStream = null;
-            try {
-                sourceLocationsStream = new FileInputStream(sourceLocationsFile);
-                sourceLocations = new SourceLocations(sourceLocationsStream, sourceLocationsFile.getParentFile().getAbsolutePath());
-            } catch (Exception e) {
-                throw new MojoExecutionException("Problem reading module source locations file from " +
-                        sourceLocationsFile.getAbsolutePath(), e);
-            } finally {
-                if (sourceLocationsStream != null) {
-                    try { sourceLocationsStream.close(); } catch (IOException e) { e.printStackTrace(); }
-                }
-            }
-        }
-
-        Set<Artifact> moduleArtifacts = getModuleArtifactsFromKauriConfig();
-
-        for (Artifact moduleArtifact : moduleArtifacts) {
-            getClassPathArtifacts(moduleArtifact);
-        }
+    public KauriProjectClasspath(String confDirectory, String kauriVersion, Log log, ArtifactFilter filter,
+            ArtifactFactory artifactFactory, ArtifactResolver resolver, List remoteRepositories,
+            ArtifactRepository localRepository) {
+        this.confDirectory = confDirectory;
+        this.kauriVersion = kauriVersion;
+        this.filter = filter;
+        this.artifactFactory = artifactFactory;
+        this.resolver = resolver;
+        this.remoteRepositories = remoteRepositories;
+        this.localRepository = localRepository;
     }
 
-    protected Set<Artifact> getModuleArtifactsFromKauriConfig() throws MojoExecutionException {
+    public Set<Artifact> getAllArtifacts() throws MojoExecutionException {
+        Set<Artifact> moduleArtifacts = getModuleArtifactsFromKauriConfig();
+
+        Set<Artifact> result = new HashSet<Artifact>();
+        result.addAll(moduleArtifacts);
+
+        for (Artifact moduleArtifact : moduleArtifacts) {
+            result.addAll(getClassPathArtifacts(moduleArtifact));
+        }
+
+        return result;
+    }
+
+    public Set<Artifact> getModuleArtifactsFromKauriConfig() throws MojoExecutionException {
         File configFile = new File(confDirectory, "kauri/wiring.xml");
         Document configDoc;
         try {
@@ -155,8 +82,11 @@ public class KauriDependencyResolver extends AbstractMojo {
         return getArtifacts(configDoc, "/*/modules/artifact", "wiring.xml");
     }
 
-    protected Set<Artifact> getClassPathArtifacts(Artifact moduleArtifact) throws MojoExecutionException {
-        String entryPath = "KAURI-INF/classloader.xml";
+    public Set<Artifact> getClassPathArtifacts(Artifact moduleArtifact) throws MojoExecutionException {
+        return getClassPathArtifacts(moduleArtifact, "KAURI-INF/classloader.xml");
+    }
+
+    public Set<Artifact> getClassPathArtifacts(Artifact moduleArtifact, String entryPath) throws MojoExecutionException {
         ZipFile zipFile = null;
         InputStream is = null;
         Document classLoaderDocument;
@@ -164,7 +94,7 @@ public class KauriDependencyResolver extends AbstractMojo {
             zipFile = new ZipFile(moduleArtifact.getFile());
             ZipEntry zipEntry = zipFile.getEntry(entryPath);
             if (zipEntry == null) {
-                getLog().debug("No " + entryPath + " found in " + moduleArtifact);
+                log.debug("No " + entryPath + " found in " + moduleArtifact);
                 return Collections.emptySet();
             } else {
                 is = zipFile.getInputStream(zipEntry);
@@ -203,19 +133,14 @@ public class KauriDependencyResolver extends AbstractMojo {
 
             Artifact artifact = artifactFactory.createArtifactWithClassifier(groupId, artifactId, version, "jar", classifier);
 
-            if (artifact.getGroupId().equals(projectGroupId) &&
-                    artifact.getArtifactId().equals(projectArtifactId) &&
-                    artifact.getVersion().equals(projectVersion)) {
-                // Current project's artifact is not yet deployed, therefore do not treat it
-            } else if (sourceLocations.getSourceLocation(artifact.getGroupId(), artifact.getArtifactId()) != null) {
-                // It is one of the artifacts of this project, hence the dependencies will have been
-                // downloaded by Maven. Skip it.
-            } else {
+            if (filter == null || filter.include(artifact)) {
                 if (!artifacts.contains(artifact)) {
-                    try {
-                        resolver.resolve(artifact, remoteRepositories, localRepository);
-                    } catch (Exception e) {
-                        throw new MojoExecutionException("Error resolving artifact listed in " + sourceDescr + ": " + artifact, e);
+                    if (resolver != null) {
+                        try {
+                            resolver.resolve(artifact, remoteRepositories, localRepository);
+                        } catch (Exception e) {
+                            throw new MojoExecutionException("Error resolving artifact listed in " + sourceDescr + ": " + artifact, e);
+                        }
                     }
                     artifacts.add(artifact);
                 }
@@ -231,4 +156,7 @@ public class KauriDependencyResolver extends AbstractMojo {
         return dbf.newDocumentBuilder().parse(is);
     }
 
+    public static interface ArtifactFilter {
+        boolean include(Artifact artifact);
+    }
 }
