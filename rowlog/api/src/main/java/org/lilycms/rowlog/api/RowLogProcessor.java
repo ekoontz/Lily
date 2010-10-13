@@ -27,8 +27,9 @@ import java.util.List;
 public interface RowLogProcessor {
     /**
      * Starts the RowLogProcessor. The execution should start in a separate thread, and the start call should return immediately. 
+     * @throws InterruptedException 
      */
-    void start();
+    void start() throws InterruptedException;
     
     /**
      * Indicate that the RowLogProcessor should stop executing as soon as possible.

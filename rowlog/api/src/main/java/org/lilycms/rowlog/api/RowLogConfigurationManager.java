@@ -48,9 +48,9 @@ public interface RowLogConfigurationManager {
 
     void removeListenersObserver(String rowLogId, String subscriptionId, ListenersObserver observer);
 
-    void publishProcessorHost(String hostName, int port, String rowLogId, String shardId);
+    void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) throws KeeperException, InterruptedException;
 
-    void unPublishProcessorHost(String rowLogId, String shardId);
+    void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException;
 
     String getProcessorHost(String rowLogId, String shardId);
 

@@ -169,23 +169,19 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     // Processor Host
-    public void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) {
+    public void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) throws KeeperException, InterruptedException {
         String path = processorPath(rowLogId, shardId);
-        try {
-            if (zooKeeper.exists(path, false) == null) {
-                    ZkUtil.createPath(zooKeeper, path);
-            }
-            zooKeeper.setData(path, Bytes.toBytes(hostName + ":" + port), -1);
-        } catch (Exception e) {
-            //TODO log? throw?
+        if (zooKeeper.exists(path, false) == null) {
+                ZkUtil.createPath(zooKeeper, path);
         }
+        zooKeeper.setData(path, Bytes.toBytes(hostName + ":" + port), -1);
     }
     
-    public void unPublishProcessorHost(String rowLogId, String shardId) {
+    public void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException {
         try {
             zooKeeper.delete(processorPath(rowLogId, shardId), -1);
-        } catch (Exception e) {
-            //TODO log? throw?
+        } catch (KeeperException.NoNodeException e) {
+            // Ignore
         }
     }
 

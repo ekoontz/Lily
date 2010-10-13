@@ -34,11 +34,11 @@ import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
+import org.apache.zookeeper.KeeperException;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -48,7 +48,15 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
-import org.lilycms.rowlog.api.*;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogMessage;
+import org.lilycms.rowlog.api.RowLogProcessor;
+import org.lilycms.rowlog.api.RowLogShard;
+import org.lilycms.rowlog.api.RowLogSubscription;
+import org.lilycms.rowlog.api.SubscriptionsObserver;
+import org.lilycms.util.io.Closer;
 
 public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver {
     private volatile boolean stop = true;
@@ -76,7 +84,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         super.finalize();
     }
     
-    public synchronized void start() {
+    public synchronized void start() throws InterruptedException {
         if (stop) {
             stop = false;
             rowLogConfigurationManager.addSubscriptionsObserver(rowLog.getId(), this);
@@ -153,7 +161,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         return subscriptionThreads.get(consumerId) != null;
     }
     
-    private void startConsumerNotifyListener() {
+    private void startConsumerNotifyListener() throws InterruptedException {
         if (channel == null) {
             if (channelFactory == null) { 
                 channelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
@@ -177,26 +185,28 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                 channel = bootstrap.bind(inetSocketAddress);
                 int port = ((InetSocketAddress)channel.getLocalAddress()).getPort();
                 rowLogConfigurationManager.publishProcessorHost(hostName, port, rowLog.getId(), shard.getId());
+            } catch (KeeperException e) {
+                // Don't listen to any wakeup events
+                // Fallback on the default timeout behaviour
+                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
             } catch (UnknownHostException e) {
                 // Don't listen to any wakeup events
                 // Fallback on the default timeout behaviour
-                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId());
+                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
             }
         }
     }
     
     private void stopConsumerNotifyListener() {
-        rowLogConfigurationManager.unPublishProcessorHost(rowLog.getId(), shard.getId());
-        if (channel != null) {
-            ChannelFuture channelFuture = channel.close();
-            try {
-                channelFuture.await();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            channel = null;
+        try {
+            rowLogConfigurationManager.unPublishProcessorHost(rowLog.getId(), shard.getId());
+        } catch (KeeperException e) {
+            log.warn("Exception while removing processor host from the row log configuration for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
+        } catch (InterruptedException e) {
+            // Put the interrupted flag again, but still try to close the channel.
+            Thread.currentThread().interrupt();
         }
+        Closer.close(channel);
         if (channelFactory != null) {
             channelFactory.releaseExternalResources();
             channelFactory = null;
