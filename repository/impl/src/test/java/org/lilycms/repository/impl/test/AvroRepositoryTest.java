@@ -46,6 +46,7 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        avro = true;
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();

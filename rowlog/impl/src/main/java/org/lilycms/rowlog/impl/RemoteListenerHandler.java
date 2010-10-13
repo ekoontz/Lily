@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,6 +16,7 @@ import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -25,7 +27,12 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
-import org.lilycms.rowlog.api.*;
+import org.lilycms.rowlog.api.RowLog;
+import org.lilycms.rowlog.api.RowLogConfigurationManager;
+import org.lilycms.rowlog.api.RowLogException;
+import org.lilycms.rowlog.api.RowLogMessage;
+import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.util.io.Closer;
 
 public class RemoteListenerHandler {
     private final Log log = LogFactory.getLog(getClass());
@@ -73,13 +80,14 @@ public class RemoteListenerHandler {
         rowLogConfMgr.addListener(rowLog.getId(), subscriptionId, listenerId);
     }
     
-    public void stop() {
+    public void stop() throws InterruptedException {
         if (channel != null) {
             ChannelFuture future = channel.close();
             try {
                 future.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                // Continue to try to release resources
             }
         }
 
@@ -88,8 +96,11 @@ public class RemoteListenerHandler {
         if (listenerId != null) {
             try {
                 rowLogConfMgr.removeListener(rowLog.getId(), subscriptionId, listenerId);
-            } catch (Exception e) {
-                log.error("Error removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
+            } catch (KeeperException e) {
+                log.warn("Exception while removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
+                        ", listener ID " + listenerId, e);
+            } catch (RowLogException e) {
+                log.warn("Exception while removing listener. Row log ID " + rowLog.getId() + ", subscription ID " + subscriptionId +
                         ", listener ID " + listenerId, e);
             }
         }
@@ -118,16 +129,25 @@ public class RemoteListenerHandler {
     }
     
     private class MessageHandler extends SimpleChannelUpstreamHandler {
+        private Semaphore semaphore = new Semaphore(0);
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             RowLogMessage message = (RowLogMessage)e.getMessage();
             boolean result = consumer.processMessage(message);
             writeResult(e.getChannel(), result);
+            semaphore.acquire();
         }
 
         private void writeResult(Channel channel, boolean result) throws InterruptedException {
-            ChannelFuture future = channel.write(new Boolean(result));
-            future.await();
+            if (channel.isOpen()) {
+                ChannelFuture future = channel.write(new Boolean(result));
+                future.addListener(new ChannelFutureListener() {
+                    
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        semaphore.release();
+                    }
+                });
+            }
         }
         
         @Override
@@ -142,9 +162,12 @@ public class RemoteListenerHandler {
         protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
             ChannelBuffer channelBuffer = ChannelBuffers.buffer(1);
             ChannelBufferOutputStream outputStream = new ChannelBufferOutputStream(channelBuffer);
-            outputStream.writeBoolean((Boolean)msg);
-            outputStream.close();
-            return channelBuffer;
+            try {
+                outputStream.writeBoolean((Boolean)msg);
+                return channelBuffer;
+            } finally {
+                Closer.close(outputStream);
+            }
         }
     }
 }

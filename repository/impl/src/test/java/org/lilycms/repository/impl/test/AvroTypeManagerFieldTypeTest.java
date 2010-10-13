@@ -70,6 +70,7 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
+        avro = true;
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();

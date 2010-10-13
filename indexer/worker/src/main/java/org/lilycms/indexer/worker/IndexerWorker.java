@@ -122,7 +122,11 @@ public class IndexerWorker {
         }
 
         for (IndexUpdaterHandle handle : indexUpdaters.values()) {
-            handle.stop();
+            try {
+                handle.stop();
+            } catch (InterruptedException e) {
+                // Continue the stop procedure
+            }
         }
 
         connectionManager.shutdown();
@@ -263,7 +267,7 @@ public class IndexerWorker {
             }
         }
 
-        public void stop() {
+        public void stop() throws InterruptedException {
             for (RemoteListenerHandler handler : listenerHandlers) {
                 handler.stop();
             }
