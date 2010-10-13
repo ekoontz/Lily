@@ -22,28 +22,6 @@ Download Solr
 
 Download Solr 1.4.1 from http://lucene.apache.org/solr/ and extract it somewhere.
 
-Configuring settings.xml
-------------------------
-
-Open or create ~/.m2/settings.xml and add the following profile to it:
-
-<settings>
-  <profiles>
-    <profile>
-      <id>org.lilycms.solr</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-
-      <properties>
-        <solr.war>/path/to/apache-solr-1.4.1/dist/apache-solr-1.4.1.war</solr.war>
-      </properties>
-    </profile>
-  </profiles>
-</settings>
-
-Adjust the solr.war property to match the path you extracted Solr to.
-
 Building Lily
 =============
 

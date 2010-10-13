@@ -36,7 +36,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <solr.war>${solr.war}</solr.war>
+            <solr.war>${settings.localRepository}/org/apache/solr/solr-webapp/${version.solr}/solr-webapp-${version.solr}.war</solr.war>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -77,13 +77,21 @@
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
-      <version>1.4.1</version>
+      <version>${version.solr}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-webapp</artifactId>
+      <version>${version.solr}</version>
+      <type>war</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>
-      <version>1.4.1</version>
+      <version>${version.solr}</version>
       <scope>test</scope>
       <exclusions>
         <!-- Woodstox is also a dependency of solr-solrj, but there it has the correct groupId

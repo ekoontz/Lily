@@ -47,7 +47,7 @@ public class SolrTestingUtility {
             System.out.println("------------------------------------------------------------------------");
             System.out.println("SOLR not found at");
             System.out.println(solrWar);
-            System.out.println("Verify setting of <solr.war> property in settings.xml");
+            System.out.println("Verify setting of solr.war system property");
             System.out.println("------------------------------------------------------------------------");
             System.out.println();
             throw new Exception("SOLR war not found at " + solrWar);

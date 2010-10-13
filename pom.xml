@@ -26,6 +26,7 @@
     <hadoop.version>0.20.2+737</hadoop.version>
     <zookeeper.version>3.3.1</zookeeper.version>
     <version.maven>2.0.9</version.maven>
+    <version.solr>1.4.1</version.solr>
 
     <!-- The following properties are all Kauri-related, and should be brought in sync with
          Kauri when moving to a new Kauri version. -->
