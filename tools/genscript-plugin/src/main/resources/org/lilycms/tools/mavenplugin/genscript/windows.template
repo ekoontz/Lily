@@ -1,0 +1,34 @@
+@echo off
+
+rem You can use the following environment variables to customize the startup
+rem
+rem LILY_CLI_CLASSPATH
+rem    additional entries to be added to the classpath
+rem
+rem LILY_JAVA_OPTIONS
+rem    additional options to be passed to the java executable
+rem
+
+:: ----- Verify and Set Required Environment Variables -------------------------
+
+if not "%JAVA_HOME%"=="" goto gotJavaHome
+echo JAVA_HOME not set!
+goto end
+:gotJavaHome
+
+:: ----- Find out home dir of this script --------------------------------------
+
+if not "%LILY_HOME%"=="" goto gotLilyHome
+rem %~dp0 is expanded pathname of the current script under NT
+set LILY_HOME=%~dp0
+:gotLilyHome
+
+:: ----- Run -------------------------------------------------------------------
+
+set CLASSPATH="$$$CLASSPATH$$$"
+
+"%JAVA_HOME%/bin/java" %LILY_JAVA_OPTIONS% $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ $$$DEFAULT_CLI_ARGS$$$ %*
+goto end
+
+:end
+if "%_EXIT_ERRORLEVEL%"=="true" exit %ERRORLEVEL%

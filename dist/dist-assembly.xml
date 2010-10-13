@@ -3,6 +3,7 @@
 
   <formats>
     <format>tar.gz</format>
+    <format>zip</format>
   </formats>
 
   <files>
@@ -14,13 +15,50 @@
 
     <!-- Readme -->
     <file>
-      <source>target/classes/README.txt</source>
+      <source>${basedir}/target/classes/README.txt</source>
+      <outputDirectory>/</outputDirectory>
+    </file>
+
+    <!-- Service wrapper -->
+    <file>
+      <source>${basedir}/target/classes/wrapper.conf</source>
+      <outputDirectory>/service</outputDirectory>
+    </file>
+    <file>
+      <source>${basedir}/src/main/resources/lily-service</source>
+      <outputDirectory>/service</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/src/main/resources/lily-service.bat</source>
+      <outputDirectory>/service</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/src/main/resources/install-lily-service.bat</source>
+      <outputDirectory>/service</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/src/main/resources/uninstall-lily-service.bat</source>
+      <outputDirectory>/service</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Log configuration -->
+    <file>
+      <source>${basedir}/src/main/resources/lily-log4j.properties</source>
       <outputDirectory>/</outputDirectory>
     </file>
 
     <!-- Lily server -->
     <file>
       <source>${basedir}/../process/server/target/dist-scripts/lily-server</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../process/server/target/dist-scripts/lily-server.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -31,6 +69,11 @@
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
+    <file>
+      <source>${basedir}/../tools/import/target/dist-scripts/lily-import.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
 
     <!-- MBOX Import tool -->
     <file>
@@ -38,10 +81,20 @@
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
+    <file>
+      <source>${basedir}/../tools/mbox-import/target/dist-scripts/lily-mbox-import.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
 
     <!-- Tester tool -->
     <file>
       <source>${basedir}/../tools/tester/target/dist-scripts/lily-tester</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../tools/tester/target/dist-scripts/lily-tester.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -53,7 +106,17 @@
       <fileMode>0755</fileMode>
     </file>
     <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-add-index.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
       <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-update-index</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-update-index.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -63,7 +126,17 @@
       <fileMode>0755</fileMode>
     </file>
     <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-list-indexes.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
       <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-indexerconf</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-indexerconf.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -73,7 +146,17 @@
       <fileMode>0755</fileMode>
     </file>
     <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-shardingconf.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
       <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-touch-index</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-touch-index.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -81,6 +164,11 @@
     <!-- Launch hadoop -->
     <file>
       <source>${basedir}/../testfw/target/dist-scripts/launch-hadoop</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../testfw/target/dist-scripts/launch-hadoop.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -98,6 +186,20 @@
     <fileSet>
       <directory>${basedir}/../process/server/conf</directory>
       <outputDirectory>/conf</outputDirectory>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+
+    <!-- Empty logs directory -->
+    <fileSet>
+      <directory>${basedir}/src/main/resources/logs</directory>
+      <outputDirectory>/logs</outputDirectory>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+
+    <!-- Java service wrapper -->
+    <fileSet>
+      <directory>${basedir}/src/main/resources/wrapper-3.5.4</directory>
+      <outputDirectory>/service/wrapper-3.5.4</outputDirectory>
       <useDefaultExcludes>true</useDefaultExcludes>
     </fileSet>
 
