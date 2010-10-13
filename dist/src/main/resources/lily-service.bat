@@ -29,9 +29,12 @@ goto :eof
 
 if not "%LILY_HOME%"=="" goto gotLilyHome
 rem %~dp0 is expanded pathname of the current script under NT
-set LILY_HOME=%~dp0
+set LILY_HOME=%~dp0..
 :gotLilyHome
 
+rem
+rem Also modified for Lily : _REALPATH further on in this file
+rem
 rem End of Lily-specific section
 rem -----------------------------------------------------------------------------
 
@@ -57,7 +60,7 @@ rem
 rem Find the application home.
 rem
 rem %~dp0 is location of current script under NT
-set _REALPATH=%~dp0
+set _REALPATH=%LILY_HOME%\service\wrapper-3.5.4\bin\
 
 rem
 rem Decide on the specific Wrapper binary to use (See delta-pack)

@@ -88,12 +88,12 @@
           </alternativeClasspath>
           <includeProjectInClasspath>false</includeProjectInClasspath>
           <defaultCliArgs>
-            <unix>--repository $M2_REPO</unix>
-            <windows>--repository %M2_REPO%</windows>
+            <unix>--repository $M2_REPO --confdir $LILY_HOME/conf --log-configuration $LILY_HOME/lily-log4j.properties</unix>
+            <windows>--repository "%M2_REPO%" --confdir "%LILY_HOME%\conf" --log-configuration "%LILY_HOME%\lily-log4j.properties"</windows>
           </defaultCliArgs>
           <defaultJvmArgs>
-            <unix>-Dkauri.launcher.repository=$M2_REPO</unix>
-            <windows>-Dkauri.launcher.repository=%M2_REPO%</windows>
+            <unix>-Dkauri.launcher.repository=$M2_REPO -Dlily.logdir=$LILY_HOME/logs</unix>
+            <windows>-Dkauri.launcher.repository="%M2_REPO%" -Dlily.logdir="%LILY_HOME%\logs"</windows>
           </defaultJvmArgs>
         </configuration>
         <executions>

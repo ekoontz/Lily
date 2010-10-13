@@ -20,14 +20,16 @@ goto end
 
 if not "%LILY_HOME%"=="" goto gotLilyHome
 rem %~dp0 is expanded pathname of the current script under NT
-set LILY_HOME=%~dp0
+set LILY_HOME=%~dp0..
 :gotLilyHome
 
 :: ----- Run -------------------------------------------------------------------
 
+set M2_REPO=%LILY_HOME%\lib
+
 set CLASSPATH="$$$CLASSPATH$$$"
 
-"%JAVA_HOME%/bin/java" %LILY_JAVA_OPTIONS% $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ $$$DEFAULT_CLI_ARGS$$$ %*
+"%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ $$$DEFAULT_CLI_ARGS$$$ %*
 goto end
 
 :end

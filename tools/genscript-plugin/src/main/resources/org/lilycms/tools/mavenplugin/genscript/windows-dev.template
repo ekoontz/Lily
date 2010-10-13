@@ -13,7 +13,7 @@ if "%JAVA_HOME%"=="" goto javaHomeNotSet
 
 set CLASSPATH=$$$CLASSPATH$$$
 
-"%JAVA_HOME%/bin/java" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
+"%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
 goto end
 
 :javaHomeNotSet

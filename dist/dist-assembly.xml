@@ -210,7 +210,6 @@
       <includeMetadata>false</includeMetadata>
       <scope>test</scope>
       <outputDirectory>lib</outputDirectory>
-      <useStrictFiltering>true</useStrictFiltering>
       <excludes>
         <exclude>*lily-dist*</exclude>
       </excludes>

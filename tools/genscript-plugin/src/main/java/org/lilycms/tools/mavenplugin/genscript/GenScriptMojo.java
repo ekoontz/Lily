@@ -210,7 +210,7 @@ public class GenScriptMojo extends AbstractMojo {
         String basePath = isDevelopment ? settings.getLocalRepository() : platform.envPrefix.concat("LILY_HOME").concat(platform.envSuffix).concat(platform.fileSeparator).concat("lib");
 
         for (Artifact artifact: getClassPath()) {
-            result.append(basePath).append(platform.fileSeparator).append(layout.pathOf(artifact));
+            result.append(basePath).append(platform.fileSeparator).append(artifactPath(artifact, platform));
             result.append(platform.pathSeparator);
         }
 
@@ -218,7 +218,7 @@ public class GenScriptMojo extends AbstractMojo {
             if (isDevelopment) {
                 result.append(project.getBuild().getOutputDirectory());
             } else {
-                result.append(basePath).append(platform.fileSeparator).append(layout.pathOf(project.getArtifact()));
+                result.append(basePath).append(platform.fileSeparator).append(artifactPath(project.getArtifact(), platform));
             }
             result.append(platform.pathSeparator);
         }
@@ -227,6 +227,13 @@ public class GenScriptMojo extends AbstractMojo {
 
 
         return result.toString();
+    }
+
+    private String artifactPath(Artifact artifact, Platform platform) {
+        // pathOf always creates a path with slashes, irrespective of the current platform
+        String artifactPath = m2layout.pathOf(artifact);
+        artifactPath = artifactPath.replaceAll("/", Matcher.quoteReplacement(platform.fileSeparator));
+        return artifactPath;
     }
 
     private List<Artifact> getClassPath() throws MojoExecutionException {
