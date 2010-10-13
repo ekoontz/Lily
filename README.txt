@@ -1,5 +1,6 @@
-                             Welcome to Lily CMS
-                           http://www.lilycms.org
+                     Welcome to the Lily Content Repository
+                     --------------------------------------
+                          http://www.lilyproject.org/
 
 
 Getting started
@@ -17,10 +18,13 @@ Install Maven 2.2.x
 
 From http://maven.apache.org
 
-Download Solr
+Windows users
 -------------
 
-Download Solr 1.4.1 from http://lucene.apache.org/solr/ and extract it somewhere.
+Install cygwin, and add its bin directory to the PATH.
+
+You do not need to run any commands via the cygwin shell (use the provided
+bat files instead), it is Hadoop which executes some unix commands like ls.
 
 Building Lily
 =============
@@ -44,8 +48,8 @@ mvn -Plog test
 
 This is mostly useful when working on individual subprojects/tests.
 
-Running tests (faster) against an existing HBase
-------------------------------------------------
+Running tests (faster) against a stand-alone HBase
+--------------------------------------------------
 
 Test run rather slow because HBase-based tests launch a mini
 Hadoop/ZooKeeper/HBase-cluster as part of the testcase. While this takes

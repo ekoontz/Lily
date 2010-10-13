@@ -21,28 +21,32 @@
 
     <!-- Service wrapper -->
     <file>
-      <source>${basedir}/target/classes/wrapper.conf</source>
+      <source>${basedir}/target/classes/service/wrapper.conf</source>
       <outputDirectory>/service</outputDirectory>
     </file>
     <file>
-      <source>${basedir}/src/main/resources/lily-service</source>
+      <source>${basedir}/src/main/resources/service/lily-service</source>
       <outputDirectory>/service</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/src/main/resources/lily-service.bat</source>
+      <source>${basedir}/src/main/resources/service/lily-service.bat</source>
       <outputDirectory>/service</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/src/main/resources/install-lily-service.bat</source>
+      <source>${basedir}/src/main/resources/service/install-lily-service.bat</source>
       <outputDirectory>/service</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/src/main/resources/uninstall-lily-service.bat</source>
+      <source>${basedir}/src/main/resources/service/uninstall-lily-service.bat</source>
       <outputDirectory>/service</outputDirectory>
       <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/src/main/resources/service/README.txt</source>
+      <outputDirectory>/service</outputDirectory>
     </file>
 
     <!-- Log configuration -->
@@ -198,7 +202,7 @@
 
     <!-- Java service wrapper -->
     <fileSet>
-      <directory>${basedir}/src/main/resources/wrapper-3.5.4</directory>
+      <directory>${basedir}/src/main/resources/service/wrapper-3.5.4</directory>
       <outputDirectory>/service/wrapper-3.5.4</outputDirectory>
       <useDefaultExcludes>true</useDefaultExcludes>
     </fileSet>

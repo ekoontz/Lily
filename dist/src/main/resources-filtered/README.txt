@@ -1,7 +1,7 @@
                      Welcome to the Lily Content Repository
                                Version: ${project.version}
                      --------------------------------------
-                            http://lilyproject.org/
+                          http://www.lilyproject.org/
 
 
 Lily is the first cloud-scalable NoSQL-based content store and search repository,
