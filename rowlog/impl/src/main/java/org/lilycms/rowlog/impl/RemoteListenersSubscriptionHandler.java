@@ -1,6 +1,5 @@
 package org.lilycms.rowlog.impl;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 

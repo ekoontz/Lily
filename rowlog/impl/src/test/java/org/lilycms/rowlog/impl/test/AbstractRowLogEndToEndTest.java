@@ -75,11 +75,11 @@ public abstract class AbstractRowLogEndToEndTest {
 
     @Test(timeout=150000)
     public void testSingleMessageProcessorStartsFirst() throws Exception {
+        validationListener.expectMessages(1);
         processor.start();
         System.out.println(">>RowLogEndToEndTest#"+name.getMethodName()+": processor started");
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         validationListener.expectMessage(message);
-        validationListener.expectMessages(1);
         System.out.println(">>RowLogEndToEndTest#"+name.getMethodName()+": waiting for message to be processed");
         validationListener.waitUntilMessagesConsumed(120000);
         System.out.println(">>RowLogEndToEndTest#"+name.getMethodName()+": message processed");
