@@ -105,6 +105,24 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.lilycms</groupId>
+        <artifactId>lily-kauri-plugin</artifactId>
+        <version>0.2-SNAPSHOT</version>
+        <inherited>false</inherited>
+        <configuration>
+          <kauriVersion>${version.kauri}</kauriVersion>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>resolve-runtime-dependencies</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
   </build>

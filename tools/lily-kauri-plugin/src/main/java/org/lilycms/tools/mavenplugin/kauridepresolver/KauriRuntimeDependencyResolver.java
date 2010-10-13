@@ -13,11 +13,11 @@ import java.util.Set;
 
 /**
  *
- * @goal assemble-runtime-repository
+ * @goal resolve-runtime-dependencies
  * @requiresDependencyResolution runtime
- * @description Creates a Maven-style repository for Kauri with all the dependencies needed to launch Kauri.
+ * @description Resolve (download) all the dependencies to run the Kauri Runtime.
  */
-public class KauriRuntimeRepository extends AbstractMojo {
+public class KauriRuntimeDependencyResolver extends AbstractMojo {
     /**
      * Kauri version.
      *
@@ -25,14 +25,6 @@ public class KauriRuntimeRepository extends AbstractMojo {
      * @required
      */
     protected String kauriVersion;
-
-    /**
-     * Location of the conf directory.
-     *
-     * @parameter expression="${basedir}/target/kauri-repository"
-     * @required
-     */
-    protected String targetDirectory;
 
     /**
      * Maven Artifact Factory component.
@@ -80,7 +72,5 @@ public class KauriRuntimeRepository extends AbstractMojo {
 
         Set<Artifact> artifacts = cp.getClassPathArtifacts(runtimeLauncherArtifact, "org/kauriproject/launcher/classloader.xml");
         artifacts.add(runtimeLauncherArtifact);
-
-        RepositoryWriter.write(artifacts, targetDirectory);
     }
 }

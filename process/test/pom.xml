@@ -102,7 +102,7 @@
           <execution>
             <phase>compile</phase>
             <goals>
-              <goal>resolve</goal>
+              <goal>resolve-project-dependencies</goal>
             </goals>
           </execution>
         </executions>

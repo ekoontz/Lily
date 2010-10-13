@@ -15,11 +15,11 @@ import java.util.List;
 
 /**
  *
- * @goal resolve
+ * @goal resolve-project-dependencies
  * @requiresDependencyResolution runtime
  * @description Resolve (download) all the dependencies of a Kauri project starting from wiring.xml.
  */
-public class KauriDependencyResolver extends AbstractMojo {
+public class KauriProjectDependencyResolver extends AbstractMojo {
     /**
      * Location of the conf directory.
      *
