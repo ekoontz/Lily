@@ -18,13 +18,6 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-  <properties>
-    <version.kauri>0.4-r1695</version.kauri>
-    <version.spring>2.5.6</version.spring>
-    <version.jaxrs>1.0</version.jaxrs>
-    <version.restlet>svn6565</version.restlet>
-  </properties>
-
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
   <artifactId>lily-server</artifactId>
