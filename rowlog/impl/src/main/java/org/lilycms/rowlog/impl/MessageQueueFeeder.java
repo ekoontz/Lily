@@ -29,7 +29,7 @@ public class MessageQueueFeeder implements RowLogMessageListener {
         this.messageQueue = messageQueueRowLog;
     }
     
-    public boolean processMessage(RowLogMessage message) {
+    public boolean processMessage(RowLogMessage message) throws InterruptedException {
         try {
             messageQueue.putMessage(message.getRowKey(), message.getData(), message.getPayload(), null);
             return true;

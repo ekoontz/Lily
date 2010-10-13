@@ -30,6 +30,7 @@ public interface RowLogMessageListener {
      * Request a consumer to process a {@link RowLogMessage}. 
      * @param message the {@link RowLogMessage} to process
      * @return true if the consumer could successfully process the {@link RowLogMessage}
+     * @throws InterruptedException 
      */
-    boolean processMessage(RowLogMessage message);
+    boolean processMessage(RowLogMessage message) throws InterruptedException;
 }

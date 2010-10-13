@@ -224,6 +224,10 @@ public class HBaseRepository implements Repository {
         } catch (RowLogException e) {
             throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
                     e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
+                    e);
         } finally {
             if (rowLock != null) {
                 try {
@@ -300,6 +304,10 @@ public class HBaseRepository implements Repository {
         } catch (IOException e) {
             throw new RecordException("Exception occurred while updating record <" + recordId + "> on HBase table",
                     e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RecordException("Exception occurred while updating record <" + recordId + "> on HBase table",
+                    e);
         } finally {
             unlockRow(rowLock);
         }
@@ -307,7 +315,7 @@ public class HBaseRepository implements Repository {
     }
 
     private void putMessageOnWalAndProcess(RecordId recordId, org.lilycms.repository.impl.lock.RowLock rowLock,
-            Put put, RecordEvent recordEvent) throws RowLogException, IOException, RecordException {
+            Put put, RecordEvent recordEvent) throws InterruptedException, RowLogException, IOException, RecordException {
         RowLogMessage walMessage;
         walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
         if (!rowLocker.put(put, rowLock)) {
@@ -545,10 +553,13 @@ public class HBaseRepository implements Repository {
                 putMessageOnWalAndProcess(recordId, rowLock, put, recordEvent);
             }
         } catch (RowLogException e) {
-            throw new RecordException("Exception occurred while putting updated record <" + record.getId()
-                    + "> on HBase table", e);
+            throw new RecordException("Exception occurred while updating record <" + recordId+ "> on HBase table", e);
         } catch (IOException e) {
-            throw new RecordException("Exception occurred while updating record <" + recordId + "> in HBase table",
+            throw new RecordException("Exception occurred while updating record <" + recordId + "> on HBase table",
+                    e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RecordException("Exception occurred while updating record <" + recordId + "> on HBase table",
                     e);
         } finally {
             unlockRow(rowLock);
@@ -965,6 +976,10 @@ public class HBaseRepository implements Repository {
                     + "> on HBase table", e);
 
         } catch (IOException e) {
+            throw new RecordException("Exception occurred while deleting record <" + recordId + "> on HBase table",
+                    e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RecordException("Exception occurred while deleting record <" + recordId + "> on HBase table",
                     e);
         } finally {

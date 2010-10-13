@@ -22,7 +22,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
         this.messagesWorkQueue = messagesWorkQueue;
     }
     
-    protected abstract boolean processMessage(String context, RowLogMessage message);
+    protected abstract boolean processMessage(String context, RowLogMessage message) throws InterruptedException;
     
     protected class Worker implements Callable<Object> {
         private final String context;
@@ -36,28 +36,28 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                 RowLogMessage message;
                 try {
                     message = messagesWorkQueue.take();
+                    if (message != null) {
+                        try {
+                            byte[] lock = rowLog.lockMessage(message, subscriptionId);
+                            if (lock != null) {
+                                if (!rowLog.isMessageAvailable(message, subscriptionId) || rowLog.isProblematic(message, subscriptionId)) {
+                                    rowLog.unlockMessage(message, subscriptionId, false, lock);
+                                } else {
+                                    if (processMessage(context, message)) {
+                                        rowLog.messageDone(message, subscriptionId, lock);
+                                    } else {
+                                        rowLog.unlockMessage(message, subscriptionId, true, lock);
+                                    }
+                                }
+                            } 
+                        } catch (RowLogException e) {
+                            log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
+                        } finally {
+                            messagesWorkQueue.done(message);
+                        }
+                    }
                 } catch (InterruptedException e) {
                     break;
-                }
-                if (message != null) {
-                    try {
-                        byte[] lock = rowLog.lockMessage(message, subscriptionId);
-                        if (lock != null) {
-                            if (!rowLog.isMessageAvailable(message, subscriptionId) || rowLog.isProblematic(message, subscriptionId)) {
-                                rowLog.unlockMessage(message, subscriptionId, false, lock);
-                            } else {
-                                if (processMessage(context, message)) {
-                                    rowLog.messageDone(message, subscriptionId, lock);
-                                } else {
-                                    rowLog.unlockMessage(message, subscriptionId, true, lock);
-                                }
-                            }
-                        } 
-                    } catch (RowLogException e) {
-                        log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
-                    } finally {
-                        messagesWorkQueue.done(message);
-                    }
                 }
             }
             return null;

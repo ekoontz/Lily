@@ -18,6 +18,7 @@ package org.lilycms.rowlog.impl.test;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogSubscription;
@@ -26,12 +27,14 @@ import org.lilycms.rowlog.impl.RemoteListenerHandler;
 public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
     private RemoteListenerHandler remoteListener;
+    private long t0;
     
     // Not in separate VM yet, but at least communication goes over channels.
     @Before
     public void setUp() throws Exception {
+        t0 = System.currentTimeMillis();
         System.out.println(">>RowLogRemoteEndToEndTest#"+name.getMethodName());
-        validationListener = new ValidationMessageListener("VML1");
+        validationListener = new ValidationMessageListener("VML1", subscriptionId, rowLog);
         subscriptionId = "Test";
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.Netty, 3, 1);
         waitForSubscription(subscriptionId);
@@ -41,16 +44,19 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @After
     public void tearDown() throws Exception {
-        remoteListener.stop();
+        if (remoteListener != null)
+            remoteListener.stop();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
+        System.out.println(">>RowLogRemoteEndToEndTest#"+name.getMethodName() + " teardown done " + (System.currentTimeMillis() - t0));
     }
 
     @Test(timeout=270000)
     public void testMultipleSubscriptions() throws Exception {
-        ValidationMessageListener validationListener2 = new ValidationMessageListener("VML2");
-        rowLogConfigurationManager.addSubscription(rowLog.getId(), "Test2", RowLogSubscription.Type.Netty, 3, 2);
+        String subscriptionId2 = "Test2";
+        ValidationMessageListener validationListener2 = new ValidationMessageListener("VML2", subscriptionId2, rowLog);
+        rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.Netty, 3, 2);
         waitForSubscription(subscriptionId);
-        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, "Test2", validationListener2, rowLogConfigurationManager);
+        RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, subscriptionId2, validationListener2, rowLogConfigurationManager);
         remoteListener2.start();
         validationListener.expectMessages(10);
         validationListener2.expectMessages(10);
@@ -70,7 +76,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         processor.stop();
         validationListener2.validate();
         remoteListener2.stop();
-        rowLogConfigurationManager.removeSubscription(rowLog.getId(), "Test2");
+        rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
         validationListener.validate();
     }
 }

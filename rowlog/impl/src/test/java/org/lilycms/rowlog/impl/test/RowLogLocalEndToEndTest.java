@@ -15,8 +15,6 @@
  */
 package org.lilycms.rowlog.impl.test;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -38,7 +36,7 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
     public void setUp() throws Exception {
         t0 = System.currentTimeMillis();
         System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName());
-        validationListener = new ValidationMessageListener("VML1");
+        validationListener = new ValidationMessageListener("VML1", subscriptionId, rowLog);
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.VM, 3, 1);
         waitForSubscription(subscriptionId);
@@ -54,8 +52,8 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @Test(timeout=270000)
     public void testMultipleSubscriptions() throws Exception {
-        validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
+        validationListener2 = new ValidationMessageListener("VML2", subscriptionId2, rowLog);
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 2);
         waitForSubscription(subscriptionId2); // Avoid putting messages on the rowlog before all subscriptions are setup
@@ -82,10 +80,10 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener.validate();
     }
 
-    @Test(timeout=150000)
+    @Test(timeout=270000)
     public void testMultipleSubscriptionsOrder() throws Exception {
-        validationListener2 = new ValidationMessageListener("VML2");
         String subscriptionId2 = "Subscription2";
+        validationListener2 = new ValidationMessageListener("VML2", subscriptionId2, rowLog);
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId2, validationListener2);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.VM, 3, 0);
         waitForSubscription(subscriptionId2);
@@ -101,12 +99,13 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener2.problematicMessages.add(message);
 
         processor.start();
+        validationListener.waitUntilMessagesConsumed(120000);
         validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
         validationListener2.validate();
      // Assert the message was not processed by subscription1 (last in order) and was marked problematic 
      // since subscription2 (first in order) became problematic
-        Assert.assertTrue(rowLog.isProblematic(message, subscriptionId)); 
+        Assert.assertTrue("Expected message <"+message+"> to be problematic for subscription <"+subscriptionId+">", rowLog.isProblematic(message, subscriptionId)); 
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId2, "Listener2");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
     } 

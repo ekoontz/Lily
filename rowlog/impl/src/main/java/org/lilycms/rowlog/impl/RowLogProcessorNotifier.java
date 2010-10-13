@@ -30,7 +30,7 @@ public class RowLogProcessorNotifier {
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
     
-    protected void notifyProcessor(String rowLogId, String shardId) {
+    protected void notifyProcessor(String rowLogId, String shardId) throws InterruptedException {
         Channel channel = getProcessorChannel(rowLogId, shardId);
         if ((channel != null) && (channel.isConnected())) { 
             ChannelBuffer channelBuffer = ChannelBuffers.buffer(1);
@@ -54,7 +54,7 @@ public class RowLogProcessorNotifier {
         super.finalize();
     }
     
-    private Channel getProcessorChannel(String rowLogId, String shardId) {
+    private Channel getProcessorChannel(String rowLogId, String shardId) throws InterruptedException {
         if (processorHostAndPort == null) {
             String processorHost = rowLogConfigurationManager.getProcessorHost(rowLogId, shardId);
             if (processorHost != null)
@@ -63,17 +63,14 @@ public class RowLogProcessorNotifier {
         if (processorHostAndPort != null) {
             initBootstrap();
             ChannelFuture connectFuture = bootstrap.connect(new InetSocketAddress(processorHostAndPort[0], Integer.valueOf(processorHostAndPort[1])));
-            try {
-                if (connectFuture.await(1000)) {
-                    if (connectFuture.isSuccess()) {
-                        return connectFuture.getChannel();
-                    } else {
-                        processorHostAndPort = null; // Re-read from Zookeeper next time
-                        return null;
-                    }
-                    
+            if (connectFuture.await(1000)) {
+                if (connectFuture.isSuccess()) {
+                    return connectFuture.getChannel();
+                } else {
+                    processorHostAndPort = null; // Re-read from Zookeeper next time
+                    return null;
                 }
-            } catch (InterruptedException e) {
+                
             }
             processorHostAndPort = null; // Re-read from Zookeeper next time
         }

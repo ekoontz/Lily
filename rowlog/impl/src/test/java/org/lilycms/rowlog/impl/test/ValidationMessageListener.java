@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogMessageListener;
+import org.lilycms.rowlog.api.RowLogShard;
 
 public class ValidationMessageListener implements RowLogMessageListener {
 
@@ -17,11 +19,15 @@ public class ValidationMessageListener implements RowLogMessageListener {
     private int count = 0;
     private int numberOfMessagesToBeExpected = 0;
     private final String name;
-    
-    public ValidationMessageListener(String name) {
+    private final RowLog rowLog;
+    private final String subscriptionId;
+
+    public ValidationMessageListener(String name, String subscriptionId, RowLog rowLog) {
         this.name = name;
+        this.subscriptionId = subscriptionId;
+        this.rowLog = rowLog;
     }
-    
+
     public synchronized void expectMessage(RowLogMessage message) throws Exception {
         expectMessage(message, 1);
     }
@@ -70,18 +76,21 @@ public class ValidationMessageListener implements RowLogMessageListener {
     }
 
     public void waitUntilMessagesConsumed(long timeout) throws Exception {
-//        long waitUntil = System.currentTimeMillis() + timeout;
-        while ((!expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected))
-//                && System.currentTimeMillis() < waitUntil
-                ) {
-            Thread.sleep(100);
+        long waitUntil = System.currentTimeMillis() + timeout;
+        RowLogShard shard = rowLog.getShards().get(0);
+        while ((!shard.next(subscriptionId).isEmpty() || !expectedMessages.isEmpty() || (count < numberOfMessagesToBeExpected))
+                && System.currentTimeMillis() < waitUntil) {
+            Thread.sleep(1000);
         }
     }
 
     public void validate() throws Exception {
-        Assert.assertFalse(name+" Received less messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count < numberOfMessagesToBeExpected));
-        Assert.assertFalse(name+" Received more messages <"+count+"> than expected <"+numberOfMessagesToBeExpected+">", (count > numberOfMessagesToBeExpected));
-        Assert.assertTrue(name+" EarlyMessages list is not empty <"+earlyMessages.keySet()+">", earlyMessages.isEmpty());
-        Assert.assertTrue(name+" Expected messages not processed within timeout", expectedMessages.isEmpty());
+        Assert.assertFalse(name + " Received less messages <" + count + "> than expected <"
+                + numberOfMessagesToBeExpected + ">", (count < numberOfMessagesToBeExpected));
+        Assert.assertFalse(name + " Received more messages <" + count + "> than expected <"
+                + numberOfMessagesToBeExpected + ">", (count > numberOfMessagesToBeExpected));
+        Assert.assertTrue(name + " EarlyMessages list is not empty <" + earlyMessages.keySet() + ">", earlyMessages
+                .isEmpty());
+        Assert.assertTrue(name + " Expected messages not processed within timeout", expectedMessages.isEmpty());
     }
 }

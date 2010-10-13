@@ -1,13 +1,12 @@
 package org.lilycms.rowlog.impl.test;
 
-import static org.junit.Assert.assertNotNull;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -59,7 +58,6 @@ public abstract class AbstractRowLogEndToEndTest {
     
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        processor.stop();
         Closer.close(rowLogConfigurationManager);
         Closer.close(zooKeeper);
         HBASE_PROXY.stop();
@@ -76,25 +74,18 @@ public abstract class AbstractRowLogEndToEndTest {
         validationListener.validate();
     }
 
-    @Test
-    public void testProcessorPublishesHost() throws Exception {
-        for (int i = 0; i < 10 ; i++) {
-            Assert.assertTrue(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
-            processor.start();
-            assertNotNull(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()));
-            processor.stop();
-            Assert.assertTrue(rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
-        }
-    }
-
     @Test(timeout=150000)
     public void testSingleMessageProcessorStartsFirst() throws Exception {
         processor.start();
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName()+": processor started");
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row2"), null, null, null);
         validationListener.expectMessage(message);
         validationListener.expectMessages(1);
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName()+": waiting for message to be processed");
         validationListener.waitUntilMessagesConsumed(120000);
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName()+": message processed");
         processor.stop();
+        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName()+": processor stopped");
         validationListener.validate();
     }
 

@@ -185,10 +185,11 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         }
     }
 
-    public String getProcessorHost(String rowLogId, String shardId) {
+    public String getProcessorHost(String rowLogId, String shardId) throws InterruptedException {
         try {
             return Bytes.toString(zooKeeper.getData(processorPath(rowLogId, shardId), false, new Stat()));
-        } catch (Exception e) {
+        } catch (KeeperException e) {
+            log.info("Exception while retrieving processor host from zooKeeper for rowLog " + rowLogId + " and shard " + shardId, e);
             return null;
         }
     }

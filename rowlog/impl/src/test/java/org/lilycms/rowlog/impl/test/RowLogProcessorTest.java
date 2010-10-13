@@ -15,165 +15,74 @@
  */
 package org.lilycms.rowlog.impl.test;
 
-import static org.easymock.EasyMock.createControl;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.isA;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import static org.junit.Assert.assertNotNull;
 
 import org.apache.hadoop.conf.Configuration;
-import org.easymock.IMocksControl;
-import org.junit.After;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.lilycms.rowlog.api.RowLog;
-import org.lilycms.rowlog.api.RowLogMessage;
-import org.lilycms.rowlog.api.RowLogMessageListener;
 import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
+import org.lilycms.rowlog.impl.RowLogImpl;
 import org.lilycms.rowlog.impl.RowLogProcessorImpl;
+import org.lilycms.rowlog.impl.RowLogShardImpl;
 import org.lilycms.testfw.HBaseProxy;
 import org.lilycms.testfw.TestHelper;
+import org.lilycms.util.io.Closer;
+import org.lilycms.util.zookeeper.ZkUtil;
+import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 
 public class RowLogProcessorTest {
-//    private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    protected final static HBaseProxy HBASE_PROXY = new HBaseProxy();
+    protected static RowLog rowLog;
+    protected static RowLogShard shard;
+    protected static RowLogProcessor processor;
+    protected static RowLogConfigurationManagerImpl rowLogConfigurationManager;
+    protected String subscriptionId = "Subscription1";
+    protected ValidationMessageListener validationListener;
     private static Configuration configuration;
-    private static String zkConnectString;
-    private static RowLogConfigurationManagerImpl rowLogConfigurationManager;
-    private IMocksControl control;
-    private RowLog rowLog;
-    private RowLogShard rowLogShard;
-    private int consumerId;
-    private RowLogMessageListener consumer;
+    protected static ZooKeeperItf zooKeeper;
 
-//    @BeforeClass
-//    public static void setUpBeforeClass() throws Exception {
-//        TestHelper.setupLogging();
-//        HBASE_PROXY.start();
-//        configuration = HBASE_PROXY.getConf();
-//        zkConnectString = HBASE_PROXY.getZkConnectString();
-//        rowLogConfigurationManager = RowLogConfigurationManager.instance(zkConnectString);
-//    }
-//
-//    @AfterClass
-//    public static void tearDownAfterClass() throws Exception {
-//        rowLogConfigurationManager.stop();
-//        HBASE_PROXY.stop();
-//    }
-//
-//    @Before
-//    public void setUp() throws Exception {
-//        control = createControl();
-//
-//        consumerId = 1;
-//        consumer = control.createMock(RowLogMessageConsumer.class);
-//        consumer.getId();
-//        expectLastCall().andReturn(consumerId).anyTimes();
-//
-//        rowLog = control.createMock(RowLog.class);
-//        rowLog.getId();
-//        expectLastCall().andReturn("TestRowLog").anyTimes();
-//        
-//        List<RowLogMessageConsumer> consumers = new ArrayList<RowLogMessageConsumer>();
-//        consumers.add(consumer);
-//        rowLog.getConsumers();
-//        expectLastCall().andReturn(consumers).anyTimes();
-//        
-//        rowLog.getConsumer(consumerId);
-//        expectLastCall().andReturn(consumer).anyTimes();
-//        
-//        rowLogShard = control.createMock(RowLogShard.class);
-//        rowLogShard.getId();
-//        expectLastCall().andReturn("TestShard").anyTimes();
-//        
-//        RowLogMessage message = control.createMock(RowLogMessage.class);
-//        List<RowLogMessage> messages = Arrays.asList(new RowLogMessage[] {message});
-//        rowLogShard.next(consumerId);
-//        expectLastCall().andReturn(messages).anyTimes();
-//        
-//        consumer.processMessage(message);
-//        expectLastCall().andReturn(Boolean.TRUE).anyTimes();
-//        rowLog.messageDone(eq(message), eq(consumerId), isA(byte[].class));
-//        expectLastCall().andReturn(Boolean.TRUE).anyTimes();
-//        
-//        rowLog.lockMessage(message, consumerId);
-//        byte[] someBytes = new byte[]{1,2,3};
-//        expectLastCall().andReturn(someBytes).anyTimes();
-//        
-//        
-//        
-//    }
-//
-//    @After
-//    public void tearDown() throws Exception {
-//    }
+    @Rule public TestName name = new TestName();
 
-//    @Test
-//    public void testProcessor() throws Exception {
-//        rowLog.setProcessor(isA(RowLogProcessor.class));
-//        rowLog.setProcessor(null);
-//
-//        control.replay();
-//        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, zkConnectString);
-//        rowLogConfigurationManager.addSubscription(consumer.getId(), rowLog);
-//        assertFalse(processor.isRunning(consumerId));
-//        processor.start();
-//        assertTrue(processor.isRunning(consumerId));
-//        processor.stop();
-//        assertFalse(processor.isRunning(consumerId));
-//        control.verify();
-//    }
-//    
-//    @Test
-//    public void testProcessorMultipleStartStop() throws Exception {
-//        rowLog.setProcessor(isA(RowLogProcessor.class));
-//        expectLastCall().times(2);
-//        rowLog.setProcessor(null);
-//        expectLastCall().anyTimes();
-//
-//        control.replay();
-//        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, zkConnectString);
-//        rowLogConfigurationManager.addSubscription(consumer.getId(), rowLog);
-//        assertFalse(processor.isRunning(consumerId));
-//        processor.start();
-//        assertTrue(processor.isRunning(consumerId));
-//        processor.stop();
-//        assertFalse(processor.isRunning(consumerId));
-//        processor.start();
-//        processor.start();
-//        assertTrue(processor.isRunning(consumerId));
-//        processor.stop();
-//        processor.stop();
-//        assertFalse(processor.isRunning(consumerId));
-//        control.verify();
-//    }
-//    
-//    @Test
-//    public void testProcessorStopWihtoutStart() throws Exception {
-//        rowLog.setProcessor(isA(RowLogProcessor.class));
-//        rowLog.setProcessor(null);
-//        expectLastCall().anyTimes();
-//        control.replay();
-//        RowLogProcessor processor = new RowLogProcessorImpl(rowLog, rowLogShard, zkConnectString);
-//        rowLogConfigurationManager.addSubscription(consumer.getId(), rowLog);
-//        processor.stop();
-//        assertFalse(processor.isRunning(consumerId));
-//        processor.start();
-//        assertTrue(processor.isRunning(consumerId));
-//        processor.stop();
-//    }
+    @BeforeClass
+    public static void setUpBeforeClass() throws Exception {
+        TestHelper.setupLogging();
+        HBASE_PROXY.start();
+        configuration = HBASE_PROXY.getConf();
+        HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
+        // Using a large ZooKeeper timeout, seems to help the build to succeed on Hudson (not sure if this is
+        // the problem or the sympton, but HBase's Sleeper thread also reports it slept to long, so it appears
+        // to be JVM-level).
+        zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 120000);
+        rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+        rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, rowLogConfigurationManager);
+        shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
+        rowLog.registerShard(shard);
+        processor = new RowLogProcessorImpl(rowLog, rowLogConfigurationManager);
+    }    
+    
+    @AfterClass
+    public static void tearDownAfterClass() throws Exception {
+        Closer.close(rowLogConfigurationManager);
+        Closer.close(zooKeeper);
+        HBASE_PROXY.stop();
+    }
     
     @Test
-    public void testDummy() {
-        
+    public void testProcessorPublishesHost() throws Exception {
+        Assert.assertTrue("Expected processorHost to be null", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
+        processor.start();
+        assertNotNull("Expected processorHost to exist", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()));
+        processor.stop();
+        Assert.assertTrue("Expected processorHost to be null", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
     }
 }

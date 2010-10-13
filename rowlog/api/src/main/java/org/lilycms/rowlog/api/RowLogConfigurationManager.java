@@ -52,7 +52,7 @@ public interface RowLogConfigurationManager {
 
     void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException;
 
-    String getProcessorHost(String rowLogId, String shardId);
+    String getProcessorHost(String rowLogId, String shardId) throws InterruptedException;
 
     /**
      *

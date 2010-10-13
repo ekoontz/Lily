@@ -9,7 +9,7 @@ public class LocalListenersSubscriptionHandler extends AbstractListenersSubscrip
         super(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
     }
     
-    protected boolean processMessage(String listenerId, RowLogMessage message) {
+    protected boolean processMessage(String listenerId, RowLogMessage message) throws InterruptedException {
         RowLogMessageListener listener = RowLogMessageListenerMapping.INSTANCE.get(subscriptionId);
         if (listener == null)
             return false;

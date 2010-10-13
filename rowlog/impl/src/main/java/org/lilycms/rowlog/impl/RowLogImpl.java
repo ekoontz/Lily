@@ -139,7 +139,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         return result.getValue(payloadColumnFamily, Bytes.toBytes(seqnr));
     }
 
-    public RowLogMessage putMessage(byte[] rowKey, byte[] data, byte[] payload, Put put) throws RowLogException {
+    public RowLogMessage putMessage(byte[] rowKey, byte[] data, byte[] payload, Put put) throws InterruptedException, RowLogException {
         RowLogShard shard = getShard(); // Fail fast if no shards are registered
         
         try {
@@ -337,18 +337,18 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         RowLogShard rowLogShard = getShard();
         if (executionState.getTryCount(subscription.getId()) >= maxTries) {
             if (respectOrder) {
-                List<RowLogSubscription> subscriptionContexts = getSubscriptions();
-                Collections.sort(subscriptionContexts);
-                for (RowLogSubscription subscriptionContext : subscriptionContexts) {
-                    if (subscriptionContext.getOrderNr() >= subscription.getOrderNr()) {
-                        rowLogShard.markProblematic(message, subscriptionContext.getId());
-                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscriptionContext.getId(), message.getId(), maxTries));
+                List<RowLogSubscription> subscriptions = getSubscriptions();
+                Collections.sort(subscriptions);
+                for (RowLogSubscription otherSubscription : subscriptions) {
+                    if (otherSubscription.getOrderNr() >= subscription.getOrderNr()) {
+                        rowLogShard.markProblematic(message, otherSubscription.getId());
+                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times. Respecting subscription order: subscription %4$s has been marked as problematic", subscription.getId(), message.getId(), maxTries, otherSubscription.getId()));
                     }
                 }
             } else {
-                getShard().markProblematic(message, subscription.getId());
+                rowLogShard.markProblematic(message, subscription.getId());
+                log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
             }
-            log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
         }
     }
     

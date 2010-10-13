@@ -94,8 +94,9 @@ public interface RowLog {
      * @return a new {@link RowLogMessage} with a unique id and a sequence number indicating its position in the list of
      * messages of the row.
      * @throws RowLogException
+     * @throws InterruptedException 
      */
-    RowLogMessage putMessage(byte[] rowKey, byte[] data, byte[] payload, Put put) throws RowLogException;
+    RowLogMessage putMessage(byte[] rowKey, byte[] data, byte[] payload, Put put) throws RowLogException, InterruptedException;
     
     /**
      * Request each registered {@link RowLogMessageListener} to process a {@link RowLogMessage} explicitly. 
