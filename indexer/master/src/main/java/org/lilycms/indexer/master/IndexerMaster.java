@@ -3,10 +3,7 @@ package org.lilycms.indexer.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobStatus;
-import org.apache.hadoop.mapred.JobTracker;
-import org.apache.hadoop.mapred.RunningJob;
+import org.apache.hadoop.mapred.*;
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
@@ -452,7 +449,7 @@ public class IndexerMaster {
                         if (jobClient == null) {
                             // We only create the JobClient the first time we need it, to avoid that the
                             // repository fails to start up when there is no JobTracker running.
-                            jobClient = new JobClient(JobTracker.getAddress(mapReduceConf), mapReduceConf);
+                            jobClient = new JobClient(new JobConf(mapReduceConf));
                         }
 
                         RunningJob job = jobClient.getJob(jobEntry.getValue());
