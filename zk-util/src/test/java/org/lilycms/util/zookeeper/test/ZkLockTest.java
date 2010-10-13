@@ -110,7 +110,7 @@ public class ZkLockTest {
 
         // It should only be after release of the first lock that the second lock can be obtained.
         log.debug("First lock released at " + releaseTime + ", second lock obtained at " + obtainTime.value);
-        assertTrue(releaseTime < obtainTime.value);
+        assertTrue(releaseTime <= obtainTime.value);
 
         // remove second lock
         log.debug("Will now release second lock.");
