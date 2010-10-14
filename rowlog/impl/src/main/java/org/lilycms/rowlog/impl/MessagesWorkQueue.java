@@ -5,24 +5,22 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.lilycms.rowlog.api.RowLogMessage;
 
 public class MessagesWorkQueue {
-    private BlockingQueue<RowLogMessage> messageQueue = new ArrayBlockingQueue<RowLogMessage>(1);
+    private BlockingQueue<RowLogMessage> messageQueue = new ArrayBlockingQueue<RowLogMessage>(100);
     private Set<RowLogMessage> messagesWorkingOn = Collections.synchronizedSet(new HashSet<RowLogMessage>());
     
-    public boolean offer(RowLogMessage message) throws InterruptedException {
-        if (!messageQueue.contains(message) && !messagesWorkingOn.contains(message)) {
-            return messageQueue.offer(message, 1, TimeUnit.SECONDS);
+    public void offer(RowLogMessage message) throws InterruptedException {
+        if (!messageQueue.contains(message)) {
+            messageQueue.put(message);
         }
-        return false;
     }
     
     public RowLogMessage take() throws InterruptedException {
         RowLogMessage message = messageQueue.take();
-        synchronized (messageQueue) {
+        synchronized (messagesWorkingOn) {
             if (messageQueue.contains(message)) {
              // Too late, the message has been put on the queue already again after the take() call.                
                 return null; 
@@ -33,6 +31,8 @@ public class MessagesWorkQueue {
     }
     
     public void done(RowLogMessage message) {
-        messagesWorkingOn.remove(message);
+        synchronized (messagesWorkingOn) {
+            messagesWorkingOn.remove(message);
+        }
     }
 }

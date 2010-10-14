@@ -43,6 +43,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @After
     public void tearDown() throws Exception {
+        System.out.println(">>RowLogRemoteEndToEndTest#"+name.getMethodName() + " teardown start ");
         if (remoteListener != null)
             remoteListener.stop();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
@@ -73,9 +74,9 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         validationListener.waitUntilMessagesConsumed(120000);
         validationListener2.waitUntilMessagesConsumed(120000);
         processor.stop();
+        validationListener.validate();
         validationListener2.validate();
         remoteListener2.stop();
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId2);
-        validationListener.validate();
     }
 }
