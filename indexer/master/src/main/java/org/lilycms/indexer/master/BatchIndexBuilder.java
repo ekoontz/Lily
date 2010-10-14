@@ -10,7 +10,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.lilycms.indexer.fullbuild.IndexingMapper;
+import org.lilycms.indexer.batchbuild.IndexingMapper;
 import org.lilycms.indexer.model.api.IndexDefinition;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.Map;
 
-public class FullIndexBuilder {
+public class BatchIndexBuilder {
     private static final byte[] DELETED_COLUMN_NAME = Bytes.toBytes("$Deleted");
     private static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("NVSCF");
 
@@ -49,18 +49,18 @@ public class FullIndexBuilder {
         // Pass information about the index to be built
         //
         String indexerConfString = Base64.encodeBytes(index.getConfiguration(), Base64.GZIP);
-        job.getConfiguration().set("org.lilycms.indexer.fullbuild.indexerconf", indexerConfString);
+        job.getConfiguration().set("org.lilycms.indexer.batchbuild.indexerconf", indexerConfString);
 
         if (index.getShardingConfiguration() != null) {
             String shardingConfString = Base64.encodeBytes(index.getShardingConfiguration(), Base64.GZIP);
-            job.getConfiguration().set("org.lilycms.indexer.fullbuild.shardingconf", shardingConfString);
+            job.getConfiguration().set("org.lilycms.indexer.batchbuild.shardingconf", shardingConfString);
         }
 
         int i = 0;
         for (Map.Entry<String, String> shard : index.getSolrShards().entrySet()) {
             i++;
-            job.getConfiguration().set("org.lilycms.indexer.fullbuild.solrshard.name." + i, shard.getKey());
-            job.getConfiguration().set("org.lilycms.indexer.fullbuild.solrshard.address." + i, shard.getValue());
+            job.getConfiguration().set("org.lilycms.indexer.batchbuild.solrshard.name." + i, shard.getKey());
+            job.getConfiguration().set("org.lilycms.indexer.batchbuild.solrshard.address." + i, shard.getValue());
         }
 
         job.setNumReduceTasks(0);
@@ -88,8 +88,8 @@ public class FullIndexBuilder {
         //
         // Provide Lily ZooKeeper props
         //
-        job.getConfiguration().set("org.lilycms.indexer.fullbuild.zooKeeperConnectString", zkConnectString);
-        job.getConfiguration().set("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout", String.valueOf(zkSessionTimeout));
+        job.getConfiguration().set("org.lilycms.indexer.batchbuild.zooKeeperConnectString", zkConnectString);
+        job.getConfiguration().set("org.lilycms.indexer.batchbuild.zooKeeperSessionTimeout", String.valueOf(zkSessionTimeout));
 
         job.submit();
 

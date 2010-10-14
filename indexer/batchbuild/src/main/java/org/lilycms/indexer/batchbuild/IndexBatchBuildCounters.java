@@ -1,4 +1,4 @@
-package org.lilycms.indexer.fullbuild;
+package org.lilycms.indexer.batchbuild;
 
 public enum IndexBatchBuildCounters {
     NUM_FAILED_RECORDS

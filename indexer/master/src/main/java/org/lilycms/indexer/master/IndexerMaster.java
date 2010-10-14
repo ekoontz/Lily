@@ -6,7 +6,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.zookeeper.KeeperException;
-import org.lilycms.indexer.fullbuild.IndexBatchBuildCounters;
+import org.lilycms.indexer.batchbuild.IndexBatchBuildCounters;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogSubscription;
@@ -128,7 +128,7 @@ public class IndexerMaster {
         return index.getUpdateState() == IndexUpdateState.DO_NOT_SUBSCRIBE && index.getQueueSubscriptionId() != null;
     }
 
-    private boolean needsFullBuildStart(IndexDefinition index) {
+    private boolean needsBatchBuildStart(IndexDefinition index) {
         return !index.getGeneralState().isDeleteState() &&
                 index.getBatchBuildState() == IndexBatchBuildState.BUILD_REQUESTED && index.getActiveBatchBuildInfo() == null;
     }
@@ -188,8 +188,8 @@ public class IndexerMaster {
             try {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
-                if (needsFullBuildStart(index)) {
-                    Job job = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf, hbaseConf,
+                if (needsBatchBuildStart(index)) {
+                    Job job = BatchIndexBuilder.startBatchBuildJob(index, mapReduceJobConf, hbaseConf,
                             zkConnectString, zkSessionTimeout);
 
                     ActiveBatchBuildInfo jobInfo = new ActiveBatchBuildInfo();
@@ -381,7 +381,7 @@ public class IndexerMaster {
                                 unassignSubscription(index.getName());
                             }
 
-                            if (needsFullBuildStart(index)) {
+                            if (needsBatchBuildStart(index)) {
                                 startFullIndexBuild(index.getName());
                             }
 

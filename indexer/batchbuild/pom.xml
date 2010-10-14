@@ -20,8 +20,8 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilycms</groupId>
-  <artifactId>lily-indexer-fullbuild</artifactId>
-  <name>Lily: Indexer: Full index (re)build</name>
+  <artifactId>lily-indexer-batchbuild</artifactId>
+  <name>Lily: Indexer: Batch index (re)build</name>
 
   <parent>
     <groupId>org.lilycms</groupId>

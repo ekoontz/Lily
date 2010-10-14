@@ -1,4 +1,4 @@
-package org.lilycms.indexer.fullbuild;
+package org.lilycms.indexer.batchbuild;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.lilycms.rowlog.api.*;

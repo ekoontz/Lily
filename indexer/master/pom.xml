@@ -45,7 +45,7 @@
 
     <dependency>
       <groupId>org.lilycms</groupId>
-      <artifactId>lily-indexer-fullbuild</artifactId>
+      <artifactId>lily-indexer-batchbuild</artifactId>
       <classifier>mapreduce-job</classifier>
     </dependency>
   </dependencies>

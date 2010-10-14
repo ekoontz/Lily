@@ -40,7 +40,7 @@
     <module>admin-cli</module>
     <module>worker</module>
     <module>master</module>
-    <module>fullbuild</module>
+    <module>batchbuild</module>
   </modules>
 
   <build>

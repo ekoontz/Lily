@@ -1,4 +1,4 @@
-package org.lilycms.indexer.fullbuild;
+package org.lilycms.indexer.batchbuild;
 
 import net.iharder.Base64;
 import org.apache.commons.httpclient.HttpClient;
@@ -54,8 +54,8 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             idGenerator = new IdGeneratorImpl();
 
-            String zkConnectString = jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperConnectString");
-            int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout"));
+            String zkConnectString = jobConf.get("org.lilycms.indexer.batchbuild.zooKeeperConnectString");
+            int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.batchbuild.zooKeeperSessionTimeout"));
             zk = ZkUtil.connect(zkConnectString, zkSessionTimeout);
 
             TypeManager typeManager = new HBaseTypeManager(idGenerator, conf, zk);
@@ -65,20 +65,20 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             RowLog wal = new DummyRowLog("The write ahead log should not be called from within MapReduce jobs.");
             repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf);
 
-            byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.fullbuild.indexerconf"));
+            byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.batchbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);
 
             Map<String, String> solrShards = new HashMap<String, String>();
             for (int i = 1; true; i++) {
-                String shardName = jobConf.get("org.lilycms.indexer.fullbuild.solrshard.name." + i);
-                String shardAddress = jobConf.get("org.lilycms.indexer.fullbuild.solrshard.address." + i);
+                String shardName = jobConf.get("org.lilycms.indexer.batchbuild.solrshard.name." + i);
+                String shardAddress = jobConf.get("org.lilycms.indexer.batchbuild.solrshard.address." + i);
                 if (shardName == null)
                     break;
                 solrShards.put(shardName, shardAddress);
             }
 
             ShardSelector shardSelector;
-            String shardingConf = jobConf.get("org.lilycms.indexer.fullbuild.shardingconf");
+            String shardingConf = jobConf.get("org.lilycms.indexer.batchbuild.shardingconf");
             if (shardingConf != null) {
                 byte[] shardingConfBytes = Base64.decode(shardingConf);
                 shardSelector = JsonShardSelectorBuilder.build(shardingConfBytes);

@@ -86,5 +86,5 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
     private static final String COUNTER_MAP_INPUT_RECORDS = "org.apache.hadoop.mapred.Task$Counter:MAP_INPUT_RECORDS";
     private static final String COUNTER_TOTAL_LAUNCHED_MAPS = "org.apache.hadoop.mapred.JobInProgress$Counter:TOTAL_LAUNCHED_MAPS";
     private static final String COUNTER_NUM_FAILED_MAPS = "org.apache.hadoop.mapred.JobInProgress$Counter:NUM_FAILED_MAPS";
-    private static final String COUNTER_NUM_FAILED_RECORDS = "org.lilycms.indexer.fullbuild.IndexBatchBuildCounters:NUM_FAILED_RECORDS";
+    private static final String COUNTER_NUM_FAILED_RECORDS = "org.lilycms.indexer.batchbuild.IndexBatchBuildCounters:NUM_FAILED_RECORDS";
 }

@@ -209,7 +209,7 @@
       </dependency>
       <dependency>
         <groupId>org.lilycms</groupId>
-        <artifactId>lily-indexer-fullbuild</artifactId>
+        <artifactId>lily-indexer-batchbuild</artifactId>
         <classifier>mapreduce-job</classifier>
         <version>0.2-SNAPSHOT</version>
       </dependency>
