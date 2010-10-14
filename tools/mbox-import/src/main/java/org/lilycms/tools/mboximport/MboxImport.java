@@ -76,6 +76,8 @@ public class MboxImport extends BaseZkCliTool {
 
         loadSchema();
 
+        long startTime = System.currentTimeMillis();
+
         if (cmd.hasOption(fileOption.getOpt())) {
             try {
                 String fileName = cmd.getOptionValue(fileOption.getOpt());
@@ -99,6 +101,8 @@ public class MboxImport extends BaseZkCliTool {
                 }
 
             } finally {
+                long stopTime = System.currentTimeMillis();
+
                 System.out.println();
                 System.out.println("Number of created messages: " + messageCount);
                 System.out.println("Number of created parts: " + partCount);
@@ -108,6 +112,18 @@ public class MboxImport extends BaseZkCliTool {
                 for (Map.Entry<String, Integer> entry : partsByMediaType.entrySet()) {
                     System.out.println("  " + entry.getKey() + " : " + entry.getValue());
                 }
+                System.out.println();
+
+                long millis = stopTime - startTime;
+                double seconds = millis / 1000;
+                double perSecond = (messageCount + partCount) / seconds;
+                double perSecondIncludingBlobs = (messageCount + (partCount * 2)) / seconds;
+                double perOperation = millis / (messageCount + partCount);
+
+                System.out.printf("Import took: %1$.2f seconds\n", seconds);
+                System.out.printf("Average number of records created per second: %1$.2f\n", perSecond);
+                System.out.printf("Average milliseconds to create a record: %1$.2f\n", perOperation);
+                System.out.printf("Taking blob creation into account, average number of operations per second: %1$.2f\n", perSecondIncludingBlobs);
             }
         }
 
