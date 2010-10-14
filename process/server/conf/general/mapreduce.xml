@@ -2,8 +2,10 @@
 <mapreduce xmlns:conf="http://kauriproject.org/configuration"
        conf:inherit="deep">
 
-  <!-- Base properties, used to connect to job tracker for status information and also
-       used for new MR jobs. -->
+  <!--
+     | Base properties, used to connect to job tracker for status information and also
+     |  used for new MR jobs.
+     -->
   <properties conf:inheritKey="string(name)">
     <property>
       <name>mapred.job.tracker</name>
@@ -16,15 +18,20 @@
     </property>
   </properties>
 
-  <!-- In addition to the general properties above, the properties here will be added
-       to each new started MR task. -->
+  <!--
+     | In addition to the general properties above, the properties here will be added
+     |  to each new started MR task.
+     -->
   <jobProperties conf:inheritKey="string(name)">
-    <!--
     <property>
-      <name>myprop</name>
-      <value>my property value</value>
+      <!--
+         | Number of concurrent indexing threads within one indexing map task.
+         | Since some time is spent in IO (retrieving data from HBase, sending data to SOLR)
+         | the indexing can be sped up by running multiple threads.
+         -->
+      <name>org.lilycms.indexer.batchbuild.threads</name>
+      <value>5</value>
     </property>
-    -->
   </jobProperties>
 
 </mapreduce>

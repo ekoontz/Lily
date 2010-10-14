@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.lilycms.client.LilyClient;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.Indexer;
@@ -26,7 +27,6 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -40,6 +40,10 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     private IndexLocker indexLocker;
     private ZooKeeperItf zk;
     private Repository repository;
+
+    private int workers;
+
+    private ThreadPoolExecutor executor;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -55,7 +59,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             idGenerator = new IdGeneratorImpl();
 
             String zkConnectString = jobConf.get("org.lilycms.indexer.batchbuild.zooKeeperConnectString");
-            int zkSessionTimeout = Integer.parseInt(jobConf.get("org.lilycms.indexer.batchbuild.zooKeeperSessionTimeout"));
+            int zkSessionTimeout = getIntProp("org.lilycms.indexer.batchbuild.zooKeeperSessionTimeout", null, jobConf);
             zk = ZkUtil.connect(zkConnectString, zkSessionTimeout);
 
             TypeManager typeManager = new HBaseTypeManager(idGenerator, conf, zk);
@@ -97,21 +101,35 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
-
+            workers = getIntProp("org.lilycms.indexer.batchbuild.threads", 5, jobConf);
             
             executor = new ThreadPoolExecutor(workers, workers, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
             executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-            System.out.println("========================= Starting at " + new Date());
         } catch (Exception e) {
             throw new IOException("Error in index build map task setup.", e);
         }
     }
 
+    private int getIntProp(String name, Integer defaultValue, Configuration conf) {
+        String value = conf.get(name);
+        if (value == null) {
+            if (defaultValue != null)
+                return defaultValue;
+            else
+                throw new RuntimeException("Missing property in jobconf: " + name);
+        }
+
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Invalid integer value in jobconf property. Property '" + name + "', value: " +
+                    value);
+        }
+    }
+
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        System.out.println("======================== Stopping at " + new Date());
-
         executor.shutdown();
 
         boolean successfulFinish = executor.awaitTermination(5, TimeUnit.MINUTES);
@@ -127,17 +145,11 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
         Closer.close(zk);
     }
 
-    // TODO shutdown & cleanup
-
     public void map(ImmutableBytesWritable key, Result value, Context context)
             throws IOException, InterruptedException {
 
         executor.submit(new MappingTask(context.getCurrentKey().get(), context));
     }
-
-    private int workers = 5;
-
-    private ThreadPoolExecutor executor;
 
     public class MappingTask implements Runnable {
         private byte[] key;
@@ -149,21 +161,30 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
         }
 
         public void run() {
-            RecordId recordId = idGenerator.fromBytes(key);
-
+            RecordId recordId = null;
             boolean locked = false;
             try {
+                recordId = idGenerator.fromBytes(key);
                 indexLocker.lock(recordId);
                 locked = true;
                 indexer.index(recordId);
             } catch (Exception e) {
                 context.getCounter(IndexBatchBuildCounters.NUM_FAILED_RECORDS).increment(1);
-                // TODO
-                e.printStackTrace();
-                // throw new IOException("Error indexing record " + recordId, e);
+
+                System.err.println("Failure indexing record " + recordId);
+
+                // Avoid printing a complete stack trace for common errors.
+                if (e instanceof SolrServerException && e.getMessage().equals("java.net.ConnectException: Connection refused")) {
+                    System.err.println("Reason: SOLR connection refused.");
+                } else {
+                    e.printStackTrace(System.err);
+                }
+
+                System.err.println("--- end ---");
             } finally {
-                if (locked)
+                if (locked) {
                     indexLocker.unlockLogFailure(recordId);
+                }
             }
         }
     }

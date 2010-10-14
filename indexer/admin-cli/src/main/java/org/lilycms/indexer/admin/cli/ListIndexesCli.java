@@ -61,26 +61,30 @@ public class ListIndexesCli extends BaseIndexerAdminCli {
                 System.out.println("  + Last batch build:");
                 System.out.println("    + Hadoop Job ID: " + lastBatchBuild.getJobId());
                 System.out.println("    + Submitted at: " + new DateTime(lastBatchBuild.getSubmitTime()).toString());
-                System.out.println("    + Success: " + lastBatchBuild.getSuccess());
+                System.out.println("    + Success: " + successMessage(lastBatchBuild));
                 System.out.println("    + Job state: " + lastBatchBuild.getJobState());
                 System.out.println("    + Tracking URL: " + lastBatchBuild.getTrackingUrl());
                 Map<String, Long> counters = lastBatchBuild.getCounters();
-                if (counters.containsKey(COUNTER_MAP_INPUT_RECORDS)) {
-                    System.out.println("    + Map input records: " + counters.get(COUNTER_MAP_INPUT_RECORDS));
-                }
-                if (counters.containsKey(COUNTER_TOTAL_LAUNCHED_MAPS)) {
-                    System.out.println("    + Launched map tasks: " + counters.get(COUNTER_TOTAL_LAUNCHED_MAPS));                    
-                }
-                if (counters.containsKey(COUNTER_NUM_FAILED_MAPS)) {
-                    System.out.println("    + Failed map tasks: " + counters.get(COUNTER_NUM_FAILED_MAPS));
-                }
-                if (counters.containsKey(COUNTER_NUM_FAILED_RECORDS)) {
-                    System.out.println("    + Records failed to index: " + counters.get(COUNTER_NUM_FAILED_RECORDS));
-                }
+                System.out.println("    + Map input records: " + counters.get(COUNTER_MAP_INPUT_RECORDS));
+                System.out.println("    + Launched map tasks: " + counters.get(COUNTER_TOTAL_LAUNCHED_MAPS));
+                System.out.println("    + Failed map tasks: " + counters.get(COUNTER_NUM_FAILED_MAPS));
+                System.out.println("    + Index failures: " + counters.get(COUNTER_NUM_FAILED_RECORDS));
             }
         }
 
         return 0;
+    }
+
+    private String successMessage(BatchBuildInfo buildInfo) {
+        StringBuilder result = new StringBuilder();
+        result.append(buildInfo.getSuccess());
+
+        Long failedRecords = buildInfo.getCounters().get(COUNTER_NUM_FAILED_RECORDS);
+        if (failedRecords != null && failedRecords > 0) {
+            result.append(", ").append(buildInfo.getSuccess() ? "but ": "").append(failedRecords).append(" index failures");
+        }
+
+        return result.toString();
     }
 
     private static final String COUNTER_MAP_INPUT_RECORDS = "org.apache.hadoop.mapred.Task$Counter:MAP_INPUT_RECORDS";
