@@ -214,16 +214,12 @@ public class HBaseRunner {
     }
 
     public void startMiniMapReduceCluster() throws IOException {
-        startMiniMapReduceCluster(2);
-    }
-
-    public void startMiniMapReduceCluster(final int servers) throws IOException {
         System.out.println("Starting mini mapreduce cluster...");
         // These are needed for the new and improved Map/Reduce framework
         System.setProperty("hadoop.log.dir", conf.get("hadoop.log.dir"));
         conf.set("mapred.output.dir", conf.get("hadoop.tmp.dir"));
-        mrCluster = new MiniMRCluster(9001, 0, servers,
-                FileSystem.get(conf).getUri().toString(), 1);
+        mrCluster = new MiniMRCluster(9001, 0, 1,
+                FileSystem.get(conf).getUri().toString(), 1, null, new String[] {"localhost"});
         System.out.println("Mini mapreduce cluster started");
         conf.set("mapred.job.tracker",
                 mrCluster.createJobConf().get("mapred.job.tracker"));
