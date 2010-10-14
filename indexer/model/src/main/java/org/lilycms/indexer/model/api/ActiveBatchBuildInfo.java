@@ -6,6 +6,7 @@ public class ActiveBatchBuildInfo {
     private String jobId;
     private long submitTime;
     private boolean immutable;
+    private String trackingUrl;
 
     public String getJobId() {
         return jobId;
@@ -23,6 +24,15 @@ public class ActiveBatchBuildInfo {
     public void setSubmitTime(long submitTime) {
         checkIfMutable();
         this.submitTime = submitTime;
+    }
+
+    public String getTrackingUrl() {
+        return trackingUrl;
+    }
+
+    public void setTrackingUrl(String trackingUrl) {
+        checkIfMutable();
+        this.trackingUrl = trackingUrl;
     }
 
     public void makeImmutable() {
@@ -48,6 +58,9 @@ public class ActiveBatchBuildInfo {
             return false;
 
         if (submitTime != other.submitTime)
+            return false;
+
+        if (!ObjectUtils.safeEquals(trackingUrl, other.trackingUrl))
             return false;
 
         return true;

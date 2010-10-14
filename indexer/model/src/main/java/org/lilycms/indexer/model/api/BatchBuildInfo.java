@@ -2,12 +2,18 @@ package org.lilycms.indexer.model.api;
 
 import org.lilycms.util.ObjectUtils;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 public class BatchBuildInfo {
     private String jobId;
     private long submitTime;
     private boolean success;
     private String jobState;
     private boolean immutable;
+    private String trackingUrl;
+    private Map<String, Long> counters = new HashMap<String, Long>();
 
     public String getJobId() {
         return jobId;
@@ -45,6 +51,24 @@ public class BatchBuildInfo {
         this.jobState = jobState;
     }
 
+    public String getTrackingUrl() {
+        return trackingUrl;
+    }
+
+    public void setTrackingUrl(String trackingUrl) {
+        checkIfMutable();
+        this.trackingUrl = trackingUrl;
+    }
+
+    public Map<String, Long> getCounters() {
+        return Collections.unmodifiableMap(counters);
+    }
+
+    public void addCounter(String key, long value) {
+        checkIfMutable();
+        counters.put(key, value);
+    }
+
     public void makeImmutable() {
         this.immutable = true;
     }
@@ -74,6 +98,12 @@ public class BatchBuildInfo {
             return false;
 
         if (!ObjectUtils.safeEquals(jobState, other.jobState))
+            return false;
+
+        if (!ObjectUtils.safeEquals(trackingUrl, other.trackingUrl))
+            return false;
+
+        if (!ObjectUtils.safeEquals(counters, other.counters))
             return false;
 
         return true;

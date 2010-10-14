@@ -132,7 +132,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     public void map(ImmutableBytesWritable key, Result value, Context context)
             throws IOException, InterruptedException {
 
-        executor.submit(new MappingTask(context.getCurrentKey().get()));
+        executor.submit(new MappingTask(context.getCurrentKey().get(), context));
     }
 
     private int workers = 5;
@@ -141,9 +141,11 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
     public class MappingTask implements Runnable {
         private byte[] key;
+        private Context context;
 
-        private MappingTask(byte[] key) {
+        private MappingTask(byte[] key, Context context) {
             this.key = key;
+            this.context = context;
         }
 
         public void run() {
@@ -155,6 +157,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
                 locked = true;
                 indexer.index(recordId);
             } catch (Exception e) {
+                context.getCounter(IndexBatchBuildCounters.NUM_FAILED_RECORDS).increment(1);
                 // TODO
                 e.printStackTrace();
                 // throw new IOException("Error indexing record " + recordId, e);

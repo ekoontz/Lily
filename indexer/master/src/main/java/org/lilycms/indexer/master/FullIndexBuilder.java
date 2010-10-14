@@ -27,7 +27,7 @@ public class FullIndexBuilder {
      *
      * @return the ID of the started job
      */
-    public static String startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf,
+    public static Job startBatchBuildJob(IndexDefinition index, Configuration mapReduceConf,
             Configuration hbaseConf, String zkConnectString, int zkSessionTimeout) throws Exception {
 
         Configuration conf = new Configuration(mapReduceConf);
@@ -92,7 +92,8 @@ public class FullIndexBuilder {
         job.getConfiguration().set("org.lilycms.indexer.fullbuild.zooKeeperSessionTimeout", String.valueOf(zkSessionTimeout));
 
         job.submit();
-        return job.getJobID().toString();
+
+        return job;
     }
 
     /**

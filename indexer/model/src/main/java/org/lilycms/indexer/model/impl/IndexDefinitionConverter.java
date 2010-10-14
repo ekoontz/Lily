@@ -1,7 +1,6 @@
 package org.lilycms.indexer.model.impl;
 
 import net.iharder.Base64;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
@@ -12,6 +11,7 @@ import org.lilycms.util.json.JsonUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class IndexDefinitionConverter {
@@ -67,6 +67,7 @@ public class IndexDefinitionConverter {
             activeBatchBuild = new ActiveBatchBuildInfo();
             activeBatchBuild.setJobId(JsonUtil.getString(buildNode, "jobId"));
             activeBatchBuild.setSubmitTime(JsonUtil.getLong(buildNode, "submitTime"));
+            activeBatchBuild.setTrackingUrl(JsonUtil.getString(buildNode, "trackingUrl", null));
         }
 
         BatchBuildInfo lastBatchBuild = null;
@@ -77,6 +78,14 @@ public class IndexDefinitionConverter {
             lastBatchBuild.setSubmitTime(JsonUtil.getLong(buildNode, "submitTime"));
             lastBatchBuild.setSuccess(JsonUtil.getBoolean(buildNode, "success"));
             lastBatchBuild.setJobState(JsonUtil.getString(buildNode, "jobState"));
+            lastBatchBuild.setTrackingUrl(JsonUtil.getString(buildNode, "trackingUrl", null));
+            ObjectNode countersNode = JsonUtil.getObject(buildNode, "counters");
+            Iterator<String> it = countersNode.getFieldNames();
+            while (it.hasNext()) {
+                String key = it.next();
+                long value = JsonUtil.getLong(countersNode, key);
+                lastBatchBuild.addCounter(key, value);
+            }
         }
 
         index.setGeneralState(state);
@@ -140,6 +149,7 @@ public class IndexDefinitionConverter {
             ObjectNode buildNode = node.putObject("activeBatchBuild");
             buildNode.put("jobId", buildInfo.getJobId());
             buildNode.put("submitTime", buildInfo.getSubmitTime());
+            buildNode.put("trackingUrl", buildInfo.getTrackingUrl());
         }
 
         if (index.getLastBatchBuildInfo() != null) {
@@ -149,6 +159,11 @@ public class IndexDefinitionConverter {
             buildNode.put("submitTime", buildInfo.getSubmitTime());
             buildNode.put("success", buildInfo.getSuccess());
             buildNode.put("jobState", buildInfo.getJobState());
+            buildNode.put("trackingUrl", buildInfo.getTrackingUrl());
+            ObjectNode countersNode = buildNode.putObject("counters");
+            for (Map.Entry<String, Long> counter : buildInfo.getCounters().entrySet()) {
+                countersNode.put(counter.getKey(), counter.getValue());
+            }
         }
 
         return node;

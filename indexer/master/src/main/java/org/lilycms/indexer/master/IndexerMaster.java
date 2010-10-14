@@ -4,7 +4,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.zookeeper.KeeperException;
+import org.lilycms.indexer.fullbuild.IndexBatchBuildCounters;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogSubscription;
@@ -187,19 +189,20 @@ public class IndexerMaster {
                 // Read current situation of record and assure it is still actual
                 IndexDefinition index = indexerModel.getMutableIndex(indexName);
                 if (needsFullBuildStart(index)) {
-                    String jobId = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf, hbaseConf,
+                    Job job = FullIndexBuilder.startBatchBuildJob(index, mapReduceJobConf, hbaseConf,
                             zkConnectString, zkSessionTimeout);
 
                     ActiveBatchBuildInfo jobInfo = new ActiveBatchBuildInfo();
                     jobInfo.setSubmitTime(System.currentTimeMillis());
-                    jobInfo.setJobId(jobId);
+                    jobInfo.setJobId(job.getJobID().toString());
+                    jobInfo.setTrackingUrl(job.getTrackingURL());
                     index.setActiveBatchBuildInfo(jobInfo);
 
                     index.setBatchBuildState(IndexBatchBuildState.BUILDING);
 
                     indexerModel.updateIndexInternal(index);
 
-                    log.info("Started index build job for index " + indexName + ", job ID =  " + jobId);
+                    log.info("Started index build job for index " + indexName + ", job ID =  " + jobInfo.getJobId());
                 }
             } finally {
                 indexerModel.unlockIndex(lock);
@@ -456,11 +459,11 @@ public class IndexerMaster {
                         RunningJob job = jobClient.getJob(jobEntry.getValue());
 
                         if (job == null) {
-                            markJobComplete(jobEntry.getKey(), jobEntry.getValue(), false, "job unknown");
+                            markJobComplete(jobEntry.getKey(), jobEntry.getValue(), false, "job unknown", null);
                         } else if (job.isComplete()) {
                             String jobState = jobStateToString(job.getJobState());
                             boolean success = job.isSuccessful();
-                            markJobComplete(jobEntry.getKey(), jobEntry.getValue(), success, jobState);
+                            markJobComplete(jobEntry.getKey(), jobEntry.getValue(), success, jobState, job.getCounters());
                         }
                     }
                 } catch (InterruptedException e) {
@@ -478,7 +481,7 @@ public class IndexerMaster {
             runningJobs.put(indexName, jobName);
         }
 
-        private void markJobComplete(String indexName, String jobId, boolean success, String jobState) {
+        private void markJobComplete(String indexName, String jobId, boolean success, String jobState, Counters counters) {
             try {
                 // Lock internal bypasses the index-in-delete-state check, which does not matter (and might cause
                 // failure) in our case.
@@ -509,8 +512,17 @@ public class IndexerMaster {
                     jobInfo.setSuccess(success);
                     jobInfo.setJobId(jobId);
 
-                    if (activeJobInfo != null)
+                    if (activeJobInfo != null) {
                         jobInfo.setSubmitTime(activeJobInfo.getSubmitTime());
+                        jobInfo.setTrackingUrl(activeJobInfo.getTrackingUrl());
+                    }
+
+                    if (counters != null) {
+                        jobInfo.addCounter(getCounterKey(Task.Counter.MAP_INPUT_RECORDS), counters.getCounter(Task.Counter.MAP_INPUT_RECORDS));
+                        jobInfo.addCounter(getCounterKey(JobInProgress.Counter.TOTAL_LAUNCHED_MAPS), counters.getCounter(JobInProgress.Counter.TOTAL_LAUNCHED_MAPS));
+                        jobInfo.addCounter(getCounterKey(JobInProgress.Counter.NUM_FAILED_MAPS), counters.getCounter(JobInProgress.Counter.NUM_FAILED_MAPS));
+                        jobInfo.addCounter(getCounterKey(IndexBatchBuildCounters.NUM_FAILED_RECORDS), counters.getCounter(IndexBatchBuildCounters.NUM_FAILED_RECORDS));
+                    }
 
                     index.setLastBatchBuildInfo(jobInfo);
                     index.setActiveBatchBuildInfo(null);
@@ -528,6 +540,10 @@ public class IndexerMaster {
             } catch (Throwable t) {
                 log.error("Error trying to mark index build job as finished for index " + indexName, t);
             }
+        }
+
+        private String getCounterKey(Enum key) {
+            return key.getClass().getName() + ":" + key.name();
         }
 
         private String jobStateToString(int jobState) {
