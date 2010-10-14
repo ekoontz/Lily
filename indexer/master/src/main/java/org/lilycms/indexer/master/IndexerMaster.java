@@ -226,7 +226,8 @@ public class IndexerMaster {
                 }
 
                 if (index.getActiveBatchBuildInfo() != null) {
-                    JobClient jobClient = new JobClient(JobTracker.getAddress(mapReduceConf), mapReduceConf);
+                    //TODO shouldn't we close the jobclient? can't we use the same one as the statuswatchingthread?
+                    JobClient jobClient = new JobClient(new JobConf(mapReduceConf));
                     String jobId = index.getActiveBatchBuildInfo().getJobId();
                     RunningJob job = jobClient.getJob(jobId);
                     if (job != null) {
@@ -439,7 +440,7 @@ public class IndexerMaster {
             JobClient jobClient = null;
             while (!stop && !Thread.interrupted()) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
 
                     for (Map.Entry<String, String> jobEntry : runningJobs.entrySet()) {
                         if (stop || Thread.interrupted()) {

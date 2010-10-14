@@ -26,8 +26,12 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> {
     private IdGenerator idGenerator;
@@ -35,6 +39,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     private MultiThreadedHttpConnectionManager connectionManager;
     private IndexLocker indexLocker;
     private ZooKeeperItf zk;
+    private Repository repository;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -58,7 +63,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 
             RowLog wal = new DummyRowLog("The write ahead log should not be called from within MapReduce jobs.");
-            Repository repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf);
+            repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf);
 
             byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilycms.indexer.fullbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);
@@ -92,6 +97,12 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
+
+            
+            executor = new ThreadPoolExecutor(workers, workers, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+            executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+            System.out.println("========================= Starting at " + new Date());
         } catch (Exception e) {
             throw new IOException("Error in index build map task setup.", e);
         }
@@ -99,6 +110,18 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
+        System.out.println("======================== Stopping at " + new Date());
+
+        executor.shutdown();
+
+        boolean successfulFinish = executor.awaitTermination(5, TimeUnit.MINUTES);
+
+        // TODO print warning if not successfulFinish
+
+        Closer.close(connectionManager);
+
+        Closer.close(repository);
+
         super.cleanup(context);
 
         Closer.close(zk);
@@ -109,18 +132,37 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     public void map(ImmutableBytesWritable key, Result value, Context context)
             throws IOException, InterruptedException {
 
-        RecordId recordId = idGenerator.fromBytes(key.get());
+        executor.submit(new MappingTask(context.getCurrentKey().get()));
+    }
 
-        boolean locked = false;
-        try {
-            indexLocker.lock(recordId);
-            locked = true;
-            indexer.index(recordId);
-        } catch (Exception e) {
-            throw new IOException("Error indexing record " + recordId, e);
-        } finally {
-            if (locked)
-                indexLocker.unlockLogFailure(recordId);
+    private int workers = 5;
+
+    private ThreadPoolExecutor executor;
+
+    public class MappingTask implements Runnable {
+        private byte[] key;
+
+        private MappingTask(byte[] key) {
+            this.key = key;
+        }
+
+        public void run() {
+            RecordId recordId = idGenerator.fromBytes(key);
+
+            boolean locked = false;
+            try {
+                indexLocker.lock(recordId);
+                locked = true;
+                indexer.index(recordId);
+            } catch (Exception e) {
+                // TODO
+                e.printStackTrace();
+                // throw new IOException("Error indexing record " + recordId, e);
+            } finally {
+                if (locked)
+                    indexLocker.unlockLogFailure(recordId);
+            }
         }
     }
+
 }
