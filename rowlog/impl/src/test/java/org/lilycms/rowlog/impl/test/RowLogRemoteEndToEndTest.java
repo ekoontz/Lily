@@ -54,7 +54,7 @@ public class RowLogRemoteEndToEndTest extends AbstractRowLogEndToEndTest {
         String subscriptionId2 = "Test2";
         ValidationMessageListener validationListener2 = new ValidationMessageListener("VML2", subscriptionId2, rowLog);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId2, RowLogSubscription.Type.Netty, 3, 2);
-        waitForSubscription(subscriptionId);
+        waitForSubscription(subscriptionId2);
         RemoteListenerHandler remoteListener2 = new RemoteListenerHandler(rowLog, subscriptionId2, validationListener2, rowLogConfigurationManager);
         remoteListener2.start();
         validationListener.expectMessages(10);
