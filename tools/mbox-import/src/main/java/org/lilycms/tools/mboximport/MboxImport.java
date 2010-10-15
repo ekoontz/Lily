@@ -124,6 +124,9 @@ public class MboxImport extends BaseZkCliTool {
                 System.out.printf("Average number of records created per second: %1$.2f\n", perSecond);
                 System.out.printf("Average milliseconds to create a record: %1$.2f\n", perOperation);
                 System.out.printf("Taking blob creation into account, average number of operations per second: %1$.2f\n", perSecondIncludingBlobs);
+                System.out.println();
+                System.out.println("These timings are not a performance measurement of Lily but of this import as");
+                System.out.println("a whole.");
             }
         }
 
