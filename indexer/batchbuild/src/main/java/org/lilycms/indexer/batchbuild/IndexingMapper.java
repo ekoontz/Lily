@@ -165,14 +165,14 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
                 indexLocker.lock(recordId);
                 locked = true;
                 indexer.index(recordId);
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 context.getCounter(IndexBatchBuildCounters.NUM_FAILED_RECORDS).increment(1);
 
                 // Avoid printing a complete stack trace for common errors.
-                if (e instanceof SolrServerException && e.getMessage().equals("java.net.ConnectException: Connection refused")) {
+                if (t instanceof SolrServerException && t.getMessage().equals("java.net.ConnectException: Connection refused")) {
                     log.error("Failure indexing record " + recordId + ": SOLR connection refused.");
                 } else {
-                    log.error("Failure indexing record " + recordId, e);
+                    log.error("Failure indexing record " + recordId, t);
                 }
 
             } finally {
