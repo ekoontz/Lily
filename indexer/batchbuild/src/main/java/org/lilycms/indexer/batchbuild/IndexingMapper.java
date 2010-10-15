@@ -3,6 +3,8 @@ package org.lilycms.indexer.batchbuild;
 import net.iharder.Base64;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
@@ -40,10 +42,8 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     private IndexLocker indexLocker;
     private ZooKeeperItf zk;
     private Repository repository;
-
-    private int workers;
-
     private ThreadPoolExecutor executor;
+    private Log log = LogFactory.getLog(getClass());
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -101,7 +101,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
 
-            workers = getIntProp("org.lilycms.indexer.batchbuild.threads", 5, jobConf);
+            int workers = getIntProp("org.lilycms.indexer.batchbuild.threads", 5, jobConf);
             
             executor = new ThreadPoolExecutor(workers, workers, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
             executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -131,17 +131,14 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         executor.shutdown();
-
         boolean successfulFinish = executor.awaitTermination(5, TimeUnit.MINUTES);
-
-        // TODO print warning if not successfulFinish
+        if (!successfulFinish) {
+            log.error("Executor did not finish outstanding work within the foreseen timeout.");
+        }
 
         Closer.close(connectionManager);
-
         Closer.close(repository);
-
         super.cleanup(context);
-
         Closer.close(zk);
     }
 
@@ -171,16 +168,13 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             } catch (Exception e) {
                 context.getCounter(IndexBatchBuildCounters.NUM_FAILED_RECORDS).increment(1);
 
-                System.err.println("Failure indexing record " + recordId);
-
                 // Avoid printing a complete stack trace for common errors.
                 if (e instanceof SolrServerException && e.getMessage().equals("java.net.ConnectException: Connection refused")) {
-                    System.err.println("Reason: SOLR connection refused.");
+                    log.error("Failure indexing record " + recordId + ": SOLR connection refused.");
                 } else {
-                    e.printStackTrace(System.err);
+                    log.error("Failure indexing record " + recordId, e);
                 }
 
-                System.err.println("--- end ---");
             } finally {
                 if (locked) {
                     indexLocker.unlockLogFailure(recordId);
