@@ -124,7 +124,7 @@ public abstract class AbstractRowLogEndToEndTest {
     @Test(timeout=150000)
     public void testProblematicMessage() throws Exception {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
-        validationListener.problematicMessages.add(message);
+        validationListener.messagesToBehaveAsProblematic.add(message);
         validationListener.expectMessage(message, 3);
         validationListener.expectMessages(3);
         processor.start();

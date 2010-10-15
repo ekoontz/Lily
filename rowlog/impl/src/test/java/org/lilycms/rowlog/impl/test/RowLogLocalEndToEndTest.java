@@ -94,9 +94,9 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row" + rownr), data, null, null);
         validationListener.expectMessages(1);
         validationListener.expectMessage(message);
+        validationListener2.messagesToBehaveAsProblematic.add(message);
         validationListener2.expectMessage(message, 3);
         validationListener2.expectMessages(3);
-        validationListener2.problematicMessages.add(message);
 
         processor.start();
         validationListener.waitUntilMessagesConsumed(120000);
