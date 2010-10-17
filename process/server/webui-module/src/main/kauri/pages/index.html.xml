@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<html>
+  <head>
+    <title>Lily - the Scalable NoSQL Content Repository</title>
+  </head>
+  <body>
+    <p>
+      <img src="${publicUri('service:/main/static/images/lily-long-logo.png')}" alt="Lily logo"/>
+    </p>    
+
+    <p>See the <a href="http://docs.outerthought.org/lily-docs-current/">Lily documentation</a> for information
+      on how to use the REST-interface.</p>
+
+    <p>Some resources which can be accessed as is:</p>
+    <ul>
+      <li><a href="${publicUri('service:/repository/schema/fieldType')}">List of field types (as JSON) -
+        ${publicUri('service:/repository/schema/fieldType')}</a></li>
+      <li><a href="${publicUri('service:/repository/schema/recordType')}">List of record types (as JSON) -
+        ${publicUri('service:/repository/schema/recordType')}</a></li>
+    </ul>
+
+
+  </body>
+</html>

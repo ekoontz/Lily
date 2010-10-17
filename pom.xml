@@ -30,7 +30,7 @@
 
     <!-- The following properties are all Kauri-related, and should be brought in sync with
          Kauri when moving to a new Kauri version. -->
-    <version.kauri>0.4-r1745</version.kauri>
+    <version.kauri>0.4-r1747</version.kauri>
     <version.spring>2.5.6</version.spring>
     <version.jaxrs>1.0</version.jaxrs>
     <version.restlet>svn6950</version.restlet>

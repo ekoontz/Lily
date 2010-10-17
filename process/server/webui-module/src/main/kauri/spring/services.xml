@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<beans              xmlns = "http://www.springframework.org/schema/beans"
+                xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:kauri = "http://kauriproject.org/runtime/1.0#springext"
+            xmlns:context = "http://www.springframework.org/schema/context"
+       xsi:schemaLocation = "http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+                             http://www.springframework.org/schema/context
+                             http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                             http://kauriproject.org/runtime/1.0#springext
+                             http://www.kauriproject.org/schemas/runtime/springext.xsd">
+
+  <context:annotation-config/>
+
+  <kauri:module restletContext="restletContext" classLoader="moduleClassLoader" handle="module"/>
+
+  <kauri:import-service id="representationBuilder" service="org.kauriproject.representation.build.RepresentationBuilder"/>
+  <bean factory-bean="representationBuilder" factory-method="install">
+    <constructor-arg ref="module"/>
+  </bean>
+
+  <kauri:import-service id="routingService" service="org.kauriproject.routing.RoutingService"/>
+
+  <kauri:import-service id="templateService" service="org.kauriproject.template.service.TemplateService"/>
+
+  <kauri:import-restservice name="repository"/>
+
+  <kauri:export-restservice ref="main"/>
+
+  <bean id="main" factory-bean="routingService" factory-method="createRouter">
+    <constructor-arg ref="restletContext"/>
+    <constructor-arg ref="module"/>
+    <constructor-arg>
+      <bean class="org.kauriproject.routing.RoutingConfig">
+        <property name="templateService" ref="templateService"/>
+      </bean>
+    </constructor-arg>
+  </bean>
+
+</beans>

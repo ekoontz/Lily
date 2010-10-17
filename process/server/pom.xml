@@ -37,6 +37,7 @@
     <module>repository-module</module>
     <module>indexer-module</module>
     <module>rest-module</module>
+    <module>webui-module</module>
   </modules>
 
   <build>
