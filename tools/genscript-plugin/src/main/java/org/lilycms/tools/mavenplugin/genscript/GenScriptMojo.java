@@ -248,9 +248,6 @@ public class GenScriptMojo extends AbstractMojo {
             result.append(platform.pathSeparator);
         }
 
-        result.append(platform.envPrefix).append("LILY_CLI_CLASSPATH").append(platform.envSuffix);
-
-
         return result.toString();
     }
 

@@ -13,6 +13,12 @@ if "%JAVA_HOME%"=="" goto javaHomeNotSet
 
 set CLASSPATH=$$$CLASSPATH_PREFIX$$$$$$CLASSPATH$$$
 
+rem Only add LILY_CLI_CLASSPATH when it is not empty, to avoid adding the working dir to
+rem the classpath by accident.
+if "%LILY_CLI_CLASSPATH%"=="" goto noExtraClassPath
+set CLASSPATH=%CLASSPATH%;%LILY_CLI_CLASSPATH%
+:noExtraClassPath
+
 $$$BEFORE_JAVA_HOOK$$$
 
 "%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
