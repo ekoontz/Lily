@@ -11,7 +11,9 @@ rem
 
 if "%JAVA_HOME%"=="" goto javaHomeNotSet
 
-set CLASSPATH=$$$CLASSPATH$$$
+set CLASSPATH=$$$CLASSPATH_PREFIX$$$$$$CLASSPATH$$$
+
+$$$BEFORE_JAVA_HOOK$$$
 
 "%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
 goto end

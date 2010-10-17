@@ -61,6 +61,8 @@ public class HBaseRunner {
         conf = HBaseConfiguration.create();
 
         HBaseProxy.addHBaseTestProps(conf);
+        conf.set("hbase.master.info.port", "60010");
+        conf.set("hbase.regionserver.info.port", "60030");
 
         startMiniCluster(1);
 
@@ -82,6 +84,10 @@ public class HBaseRunner {
         System.out.println("Configuration conf = new Configuration();");
         System.out.println("conf.set(\"mapred.job.tracker\", \"localhost:" + mrCluster.getJobTrackerPort() + "\");");
         System.out.println("Job job = new Job(conf);");
+        System.out.println();
+        System.out.println("JobTracker web ui:   http://localhost:" + mrCluster.getJobTrackerRunner().getJobTrackerInfoPort());
+        System.out.println("HDFS web ui:         http://" + conf.get("dfs.http.address"));
+        System.out.println("HBase master web ui: http://localhost:" + hbaseCluster.getMaster().getInfoServer().getPort());
         System.out.println("-------------------------");
 
         // Seems like Hadoop registers its own shutdown hooks which interfere with ours, so disabled

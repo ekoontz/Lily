@@ -27,7 +27,9 @@ set LILY_HOME=%~dp0..
 
 set M2_REPO=%LILY_HOME%\lib
 
-set CLASSPATH="$$$CLASSPATH$$$"
+set CLASSPATH="$$$CLASSPATH_PREFIX$$$$$$CLASSPATH$$$"
+
+$$$BEFORE_JAVA_HOOK$$$
 
 "%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ $$$DEFAULT_CLI_ARGS$$$ %*
 goto end

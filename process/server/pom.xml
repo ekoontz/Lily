@@ -81,12 +81,28 @@
           </alternativeClasspath>
           <includeProjectInClasspath>false</includeProjectInClasspath>
           <defaultCliArgs>
-            <unix>--repository $M2_REPO --confdir $LILY_HOME/conf --log-configuration $LILY_HOME/lily-log4j.properties</unix>
-            <windows>--repository "%M2_REPO%" --confdir "%LILY_HOME%\conf" --log-configuration "%LILY_HOME%\lily-log4j.properties"</windows>
+            <parameter>
+              <platform>unix</platform>
+              <mode>dist</mode>
+              <value>--repository $M2_REPO --confdir $LILY_HOME/conf --log-configuration $LILY_HOME/lily-log4j.properties</value>
+            </parameter>
+            <parameter>
+              <platform>windows</platform>
+              <mode>dist</mode>
+              <value>--repository "%M2_REPO%" --confdir "%LILY_HOME%\conf" --log-configuration "%LILY_HOME%\lily-log4j.properties"</value>
+            </parameter>
           </defaultCliArgs>
           <defaultJvmArgs>
-            <unix>-Dkauri.launcher.repository=$M2_REPO -Dlily.logdir=$LILY_HOME/logs</unix>
-            <windows>-Dkauri.launcher.repository="%M2_REPO%" -Dlily.logdir="%LILY_HOME%\logs"</windows>
+            <parameter>
+              <platform>unix</platform>
+              <mode>dist</mode>
+              <value>-Dkauri.launcher.repository=$M2_REPO -Dlily.logdir=$LILY_HOME/logs</value>
+            </parameter>
+            <parameter>
+              <platform>windows</platform>
+              <mode>dist</mode>
+              <value>-Dkauri.launcher.repository="%M2_REPO%" -Dlily.logdir="%LILY_HOME%\logs"</value>
+            </parameter>
           </defaultJvmArgs>
         </configuration>
         <executions>

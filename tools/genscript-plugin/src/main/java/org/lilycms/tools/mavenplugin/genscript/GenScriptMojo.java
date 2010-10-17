@@ -50,12 +50,22 @@ public class GenScriptMojo extends AbstractMojo {
     /**
      * @parameter
      */
-    private Map<String, String> defaultCliArgs = new HashMap<String, String>();
+    private List<Parameter> defaultCliArgs;
 
     /**
      * @parameter
      */
-    private Map<String, String> defaultJvmArgs = new HashMap<String, String>();
+    private List<Parameter> defaultJvmArgs;
+
+    /**
+     * @parameter
+     */
+    private List<Parameter> classPathPrefix;
+
+    /**
+     * @parameter
+     */
+    private List<Parameter> beforeJavaHook;
 
     /**
      * @parameter default-value="${project.build.directory}"
@@ -66,6 +76,8 @@ public class GenScriptMojo extends AbstractMojo {
      * @parameter default-value="${project.build.directory}/dist-scripts"
      */
     private File distOutputDirectory;
+
+    private Map<Mode, File> outputDirectories = new HashMap<Mode, File>();
 
     /**
      * @parameter default-value="${settings}"
@@ -132,8 +144,22 @@ public class GenScriptMojo extends AbstractMojo {
         private String envSuffix;
         private String extension;
     }
+    
+    enum Mode {
+        DEV("-dev"),
+        DIST("");
+
+        Mode(String templateSuffix) {
+            this.templateSuffix = templateSuffix;
+        }
+
+        private String templateSuffix;
+    }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+        outputDirectories.put(Mode.DEV, devOutputDirectory);
+        outputDirectories.put(Mode.DIST, distOutputDirectory);
+
         try {
             for (Script script: scripts) {
                 generateScripts(script);
@@ -147,48 +173,47 @@ public class GenScriptMojo extends AbstractMojo {
         devOutputDirectory.mkdirs();
         distOutputDirectory.mkdirs();
 
-        File win = new File(distOutputDirectory, script.getBasename().concat(".bat"));
-        File winDev = new File(devOutputDirectory, script.getBasename().concat(".bat"));
-        File unix = new File(distOutputDirectory, script.getBasename());
-        File unixDev = new File(devOutputDirectory, script.getBasename());
+        for (Mode mode : Mode.values()) {
+            for (Platform platform : Platform.values()) {
+                String cp = generateClassPath(mode == Mode.DEV, platform);
 
-        for (Platform platform : Platform.values()) {
-            String cp = generateClassPath(false, platform);
-            String dev_cp = generateClassPath(true, platform);
+                File scriptDir = outputDirectories.get(mode);
+                scriptDir.mkdirs();
 
-            File dist = new File(distOutputDirectory, script.getBasename().concat(platform.extension));
-            File dev = new File(devOutputDirectory, script.getBasename().concat(platform.extension));
+                File scriptFile = new File(scriptDir, script.getBasename().concat(platform.extension));
 
-            generateScript(dist, platform.name().toLowerCase() + ".template", script.getMainClass(), cp, platform);
-            generateScript(dev, platform.name().toLowerCase() + "-dev.template", script.getMainClass(), dev_cp, platform);
-        }
+                generateScript(scriptFile, platform.name().toLowerCase() + mode.templateSuffix + ".template",
+                        script.getMainClass(), cp, platform, mode);
 
-        if (new File("/bin/chmod").exists()) {
-            Runtime.getRuntime().exec("/bin/chmod a+x " + unix.getAbsolutePath());
-            Runtime.getRuntime().exec("/bin/chmod a+x " + unixDev.getAbsolutePath());
+                if (new File("/bin/chmod").exists()) {
+                    Runtime.getRuntime().exec("/bin/chmod a+x " + scriptFile.getAbsolutePath());
+                }
+            }
         }
     }
 
     private void generateScript(File outputFile, String template, String mainClass,
-            String classPath, Platform platform) throws IOException {
+            String classPath, Platform platform, Mode mode) throws IOException {
 
         InputStream is = getClass().getResourceAsStream("/org/lilycms/tools/mavenplugin/genscript/".concat(template));
         String result = streamToString(is);
 
 
-        String defaultCliArgs = this.defaultCliArgs.get(platform.toString().toLowerCase());
-        if (defaultCliArgs == null)
-            defaultCliArgs = "";
+        String defaultCliArgs = getParameter(this.defaultCliArgs, platform, mode, "");
 
-        String defaultJvmArgs = this.defaultJvmArgs.get(platform.toString().toLowerCase());
-        if (defaultJvmArgs == null)
-            defaultJvmArgs = "";
+        String defaultJvmArgs = getParameter(this.defaultJvmArgs, platform, mode, "");
+
+        String beforeJavaHook = getParameter(this.beforeJavaHook, platform, mode, "");
+
+        String classPathPrefix = getParameter(this.classPathPrefix, platform, mode, "");
 
         String separator = "$$$";
         result = result.replaceAll(Pattern.quote(separator.concat("CLASSPATH").concat(separator)), Matcher.quoteReplacement(classPath)).
+            replaceAll(Pattern.quote(separator.concat("CLASSPATH_PREFIX").concat(separator)), Matcher.quoteReplacement(classPathPrefix)).
             replaceAll(Pattern.quote(separator.concat("MAINCLASS").concat(separator)), Matcher.quoteReplacement(mainClass)).
             replaceAll(Pattern.quote(separator.concat("DEFAULT_CLI_ARGS").concat(separator)), Matcher.quoteReplacement(defaultCliArgs)).
-            replaceAll(Pattern.quote(separator.concat("DEFAULT_JVM_ARGS").concat(separator)), Matcher.quoteReplacement(defaultJvmArgs));
+            replaceAll(Pattern.quote(separator.concat("DEFAULT_JVM_ARGS").concat(separator)), Matcher.quoteReplacement(defaultJvmArgs)).
+            replaceAll(Pattern.quote(separator.concat("BEFORE_JAVA_HOOK").concat(separator)), Matcher.quoteReplacement(beforeJavaHook));
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
         writer.write(result);
@@ -257,6 +282,18 @@ public class GenScriptMojo extends AbstractMojo {
             result.add(artifact);
         }
         return result;
+    }
+
+    private String getParameter(List<Parameter> parameters, Platform platform, Mode mode, String defaultValue) {
+        if (parameters == null)
+            return defaultValue;
+
+        for (Parameter parameter : parameters) {
+            if (parameter.platform.toUpperCase().equals(platform.name()) && parameter.mode.toUpperCase().equals(mode.name())) {
+                return parameter.value;
+            }
+        }
+        return defaultValue;
     }
 
 }
