@@ -48,6 +48,7 @@ public class KauriProjectClasspath {
         this.resolver = resolver;
         this.remoteRepositories = remoteRepositories;
         this.localRepository = localRepository;
+        this.log = log;
     }
 
     public Set<Artifact> getAllArtifacts() throws MojoExecutionException {
