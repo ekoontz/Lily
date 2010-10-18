@@ -10,7 +10,7 @@ import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
 
-@Path("/schema/fieldType/{name}")
+@Path("schema/fieldType/{name}")
 public class FieldTypeResource extends RepositoryEnabled {
 
     @GET

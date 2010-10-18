@@ -10,7 +10,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
-@Path("/schema/recordType")
+@Path("schema/recordType")
 public class RecordTypeCollectionResource extends BaseRecordTypeCollectionResource {
 
     @POST

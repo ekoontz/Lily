@@ -8,7 +8,7 @@ import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
 
-@Path("/schema/fieldTypeById")
+@Path("schema/fieldTypeById")
 public class FieldTypeByIdCollectionResource extends BaseFieldTypeCollectionResource {
 
     @POST

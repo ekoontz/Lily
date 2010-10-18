@@ -29,7 +29,7 @@
     </artifact>
 
     <artifact id="rest" groupId="org.lilycms" artifactId="lily-rest-module" version="0.2-SNAPSHOT">
-      <mount name="main" path="/repository" canonical="/repository"/>      
+      <mount name="main" path="/repository/" canonical="/repository/"/>      
     </artifact>
 
     <artifact id="webui" groupId="org.lilycms" artifactId="lily-webui-module" version="0.2-SNAPSHOT">

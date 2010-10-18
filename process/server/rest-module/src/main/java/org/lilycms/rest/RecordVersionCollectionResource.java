@@ -11,7 +11,7 @@ import java.util.List;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-@Path("/record/{id}/version")
+@Path("record/{id}/version")
 public class RecordVersionCollectionResource extends RepositoryEnabled {
 
     @GET

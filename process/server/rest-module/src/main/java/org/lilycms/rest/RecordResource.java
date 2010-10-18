@@ -17,7 +17,7 @@ import java.util.List;
 
 import static javax.ws.rs.core.Response.Status.*;
 
-@Path("/record/{id}")
+@Path("record/{id}")
 public class RecordResource extends RepositoryEnabled {
 
     @GET

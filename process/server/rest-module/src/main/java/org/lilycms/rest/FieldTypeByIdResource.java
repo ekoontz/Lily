@@ -11,7 +11,7 @@ import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
 
-@Path("/schema/fieldTypeById/{id}")
+@Path("schema/fieldTypeById/{id}")
 public class FieldTypeByIdResource extends RepositoryEnabled {
 
     @GET

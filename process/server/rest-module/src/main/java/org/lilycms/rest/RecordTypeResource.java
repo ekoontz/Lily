@@ -14,7 +14,7 @@ import java.net.URI;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-@Path("/schema/recordType/{name}")
+@Path("schema/recordType/{name}")
 public class RecordTypeResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")

@@ -15,7 +15,7 @@ import javax.ws.rs.core.UriInfo;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-@Path("/schema/recordType/{name}/version/{version:\\d+}")
+@Path("schema/recordType/{name}/version/{version:\\d+}")
 public class RecordTypeByVersionResource extends RepositoryEnabled {
     @GET
     @Produces("application/json")

@@ -16,7 +16,7 @@ import java.util.Set;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-@Path("/record/{id}/variant")
+@Path("record/{id}/variant")
 public class RecordVariantCollectionResource extends RepositoryEnabled {
 
     @GET

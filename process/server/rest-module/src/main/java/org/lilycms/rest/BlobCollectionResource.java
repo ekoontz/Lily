@@ -21,7 +21,7 @@ import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
 
-@Path("/blob")
+@Path("blob")
 public class BlobCollectionResource extends RepositoryEnabled {
 
     @POST

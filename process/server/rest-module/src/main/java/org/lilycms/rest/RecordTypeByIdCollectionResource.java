@@ -11,7 +11,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
-@Path("/schema/recordTypeById")
+@Path("schema/recordTypeById")
 public class RecordTypeByIdCollectionResource extends BaseRecordTypeCollectionResource {
 
     @POST

@@ -12,7 +12,7 @@ import java.net.URI;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
-@Path("/record")
+@Path("record")
 public class RecordCollectionResource extends RepositoryEnabled {
 
     @POST
