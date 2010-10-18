@@ -48,7 +48,7 @@ public class RestTest {
 
         CLIENT = KAURI_TEST_UTIL.getClient();
 
-        BASE_URI = "http://localhost:" + KAURI_TEST_UTIL.getPort();
+        BASE_URI = "http://localhost:" + KAURI_TEST_UTIL.getPort() + "/repository";
     }
 
     @AfterClass
