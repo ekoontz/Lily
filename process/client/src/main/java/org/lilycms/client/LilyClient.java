@@ -43,6 +43,7 @@ import org.lilycms.repository.impl.InlineBlobStoreAccess;
 import org.lilycms.repository.impl.RemoteRepository;
 import org.lilycms.repository.impl.RemoteTypeManager;
 import org.lilycms.repository.impl.SizeBasedBlobStoreAccessFactory;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.repo.DfsUri;
 import org.lilycms.util.zookeeper.ZkConnectException;
 import org.lilycms.util.zookeeper.ZkUtil;
@@ -97,6 +98,10 @@ public class LilyClient implements Closeable {
     }
 
     public void close() throws IOException {
+        for (ServerNode node : servers) {
+            Closer.close(node.repository);
+        }
+
         if (managedZk && zk != null) {
             zk.close();
         }

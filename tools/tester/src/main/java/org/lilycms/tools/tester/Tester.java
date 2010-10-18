@@ -39,7 +39,8 @@ import java.util.EnumMap;
 import java.util.List;
 
 public class Tester {
-    private Repository repository;
+    private LilyClient client;
+    private Repository someRepository;
 
     private int createCount;
     private int readCount;
@@ -88,8 +89,8 @@ public class Tester {
 
         readConfig(configNode);
 
-        LilyClient client = new LilyClient(zookeeperConnectString, 10000);
-        repository = client.getRepository();
+        client = new LilyClient(zookeeperConnectString, 10000);
+        someRepository = client.getRepository();
 
         createSchema(configNode);
 
@@ -110,6 +111,8 @@ public class Tester {
 
         System.out.println("Total records created during test: " + records.size());
         System.out.println("Total failures: " + failureCount);
+
+        Closer.close(client);
     }
 
     private void openStreams() throws FileNotFoundException {
@@ -168,9 +171,9 @@ public class Tester {
     }
 
     public void createSchema(JsonNode configNode) throws IOException, RepositoryException, ImportConflictException,
-            ImportException, JsonFormatException {
+            ImportException, JsonFormatException, ServerUnavailableException, InterruptedException, KeeperException {
 
-        JsonImport jsonImport = new JsonImport(repository, new DefaultImportListener());
+        JsonImport jsonImport = new JsonImport(client.getRepository(), new DefaultImportListener());
 
         // Namespaces
         ObjectNode namespacesNode = JsonUtil.getObject(configNode, "namespaces", null);
@@ -191,7 +194,7 @@ public class Tester {
         // Record type
         String recordTypeName = JsonUtil.getString(configNode, "recordTypeName");
         QName recordTypeQName = QNameConverter.fromJson(recordTypeName, jsonImport.getNamespaces());
-        recordType = repository.getTypeManager().newRecordType(recordTypeQName);
+        recordType = someRepository.getTypeManager().newRecordType(recordTypeQName);
         for (Field field : fields) {
             recordType.addFieldTypeEntry(field.fieldType.getId(), false);
         }
@@ -204,7 +207,7 @@ public class Tester {
         
         while (true) {
             for (int i = 0; i < createCount; i++) {
-                Record record = repository.newRecord();
+                Record record = someRepository.newRecord();
                 record.setRecordType(recordType.getName());
                 for (Field field : fields) {
                     record.setField(field.fieldType.getName(), field.generateValue());
@@ -212,7 +215,7 @@ public class Tester {
 
                 long before = System.currentTimeMillis();
                 try {
-                    record = repository.create(record);
+                    record = client.getRepository().create(record);
                     long after = System.currentTimeMillis();
                     report(Action.CREATE, true, (int)(after - before));
                     records.add(new TestRecord(record));
@@ -233,7 +236,7 @@ public class Tester {
 
                 long before = System.currentTimeMillis();
                 try {
-                    Record readRecord = repository.read(testRecord.record.getId());
+                    Record readRecord = client.getRepository().read(testRecord.record.getId());
                     long after = System.currentTimeMillis();
                     report(Action.READ, true, (int)(after - before));
 
@@ -263,7 +266,7 @@ public class Tester {
 
                 long before = System.currentTimeMillis();
                 try {
-                    updatedRecord = repository.update(updatedRecord);
+                    updatedRecord = client.getRepository().update(updatedRecord);
                     long after = System.currentTimeMillis();
                     report(Action.UPDATE, true, (int)(after - before));
 
@@ -285,7 +288,7 @@ public class Tester {
 
                 long before = System.currentTimeMillis();
                 try {
-                    repository.delete(testRecord.record.getId());
+                    client.getRepository().delete(testRecord.record.getId());
                     long after = System.currentTimeMillis();
                     testRecord.deleted = true;
                     report(Action.DELETE, true, (int)(after - before));
@@ -459,7 +462,7 @@ public class Tester {
             } else if (primitive.equals("DATETIME")) {
                 return generateDateTime();
             } else if (primitive.equals("LINK")) {
-                return new Link(repository.getIdGenerator().newRecordId());
+                return new Link(someRepository.getIdGenerator().newRecordId());
             } else {
                 throw new RuntimeException("Unsupported primitive value type: " + primitive);
             }
