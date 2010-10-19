@@ -17,7 +17,7 @@ public class MboxInputStream extends InputStream {
     private boolean eof;
 
     public MboxInputStream(InputStream delegate, int maxLineLength) throws IOException {
-        this.delegate = new BufferedInputStream(delegate, maxLineLength);
+        this.delegate = delegate;
         buffer = new byte[maxLineLength];
         readLine();
         currentLinePos = -1;
@@ -28,7 +28,15 @@ public class MboxInputStream extends InputStream {
             return false;
 
         if (!atFromLine) {
-            return false;
+            while (currentLineLength == 0) {
+                readLine();
+            }
+            if (!atFromLine) {
+                System.err.println("nextMessage is called, but we are not at a 'From ' line, current line is (length = " +
+                        currentLineLength);
+                System.err.println(new String(buffer, 0, currentLineLength));
+                return false;
+            }
         }
 
         readLine();
