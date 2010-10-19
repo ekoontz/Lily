@@ -4,12 +4,12 @@
     <!-- The 'localhost' in the servers settings is what Ganglia will show,
          so change it to the real hostname if you are running multiple servers. -->
     <!--
-    <attribute name="lily.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext"/>
-    <attribute name="lily.period" value="10"/>
+    <attribute name="lily.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="lily.period" value="15"/>
     <attribute name="lily.servers" value="localhost:8649"/>
 
-    <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext"/>
-    <attribute name="jvm.period" value="10"/>
+    <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="jvm.period" value="15"/>
     <attribute name="jvm.servers" value="localhost:8649"/>
     -->
   </hadoopMetricsAttributes>

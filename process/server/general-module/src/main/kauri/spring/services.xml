@@ -50,7 +50,7 @@
   <bean id="mbeanExporter" class="org.springframework.jmx.export.MBeanExporter">
     <property name="beans">
       <map>
-        <entry key="lily:name=zooKeeper" value-ref="zooKeeperMXBean"/>
+        <entry key="Lily:name=ZooKeeper" value-ref="zooKeeperMXBean"/>
       </map>
     </property>
     <property name="server">

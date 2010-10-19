@@ -30,10 +30,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.metrics.MetricsContext;
-import org.apache.hadoop.metrics.MetricsRecord;
-import org.apache.hadoop.metrics.MetricsUtil;
-import org.apache.hadoop.metrics.Updater;
 import org.apache.zookeeper.KeeperException;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -260,7 +256,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
 
         public SubscriptionThread(RowLogSubscription subscription) {
             this.subscriptionId = subscription.getId();
-            this.metrics = new ProcessorMetrics();
+            this.metrics = new ProcessorMetrics(subscriptionId);
             switch (subscription.getType()) {
             case VM:
                 subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
@@ -275,7 +271,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         }
         
         public synchronized void wakeup() {
-            metrics.incWakeupCount();
+            metrics.wakeups.inc();
             lastWakeup = System.currentTimeMillis();
             this.notify();
         }
@@ -295,97 +291,46 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         }
                 
         public void run() {
-            while (!isInterrupted() && !stopRequested) {
-                try {
-                    List<RowLogMessage> messages = shard.next(subscriptionId);
-                    metrics.setScannedMessages(messages != null ? messages.size() : 0);
-                    if (messages != null && !messages.isEmpty()) {
-                        for (RowLogMessage message : messages) {
-                            if (isInterrupted())
-                                return;
+            try {
+                while (!isInterrupted() && !stopRequested) {
+                    try {
+                        metrics.scans.inc();
+                        List<RowLogMessage> messages = shard.next(subscriptionId);
+                        metrics.messagesPerScan.inc(messages != null ? messages.size() : 0);
+                        if (messages != null && !messages.isEmpty()) {
+                            for (RowLogMessage message : messages) {
+                                if (isInterrupted())
+                                    return;
 
-                            try {
-                                if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
-                                    messagesWorkQueue.offer(message);
-                                } 
-                            } catch (InterruptedException e) {
-                                return;
-                            }
-                        }
-                    } else {
-                        try {
-                            long timeout = 5000;
-                            long now = System.currentTimeMillis();
-                            if (lastWakeup + timeout < now) {
-                                synchronized (this) {
-                                    wait(timeout);
+                                try {
+                                    if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
+                                        messagesWorkQueue.offer(message);
+                                    }
+                                } catch (InterruptedException e) {
+                                    return;
                                 }
                             }
-                        } catch (InterruptedException e) {
-                            // if we are interrupted, we stop working
-                            return;
+                        } else {
+                            try {
+                                long timeout = 5000;
+                                long now = System.currentTimeMillis();
+                                if (lastWakeup + timeout < now) {
+                                    synchronized (this) {
+                                        wait(timeout);
+                                    }
+                                }
+                            } catch (InterruptedException e) {
+                                // if we are interrupted, we stop working
+                                return;
+                            }
                         }
+                    } catch (RowLogException e) {
+                        // The message will be retried later
                     }
-                } catch (RowLogException e) {
-                    // The message will be retried later
                 }
-            }
-        }
-
-        private class ProcessorMetrics implements Updater {
-            private int scanCount = 0;
-            private long scannedMessageCount = 0;
-            private int messageCount = 0;
-            private int successCount = 0;
-            private int failureCount = 0;
-            private int wakeupCount = 0;
-            private MetricsRecord record;
-
-            public ProcessorMetrics() {
-                MetricsContext lilyContext = MetricsUtil.getContext("lily");
-                record = lilyContext.createRecord("rowLogProcessor." + subscriptionId);
-                lilyContext.registerUpdater(this);
-            }
-
-            public synchronized void doUpdates(MetricsContext unused) {
-                record.setMetric("scanCount", scanCount);
-                record.setMetric("messagesPerScan", scanCount > 0 ? scannedMessageCount / scanCount : 0f);
-                record.setMetric("messageCount", messageCount);
-                record.setMetric("successCount", successCount);
-                record.setMetric("failureCount", failureCount);
-                record.setMetric("wakeupCount", wakeupCount);
-                record.update();
-
-                scanCount = 0;
-                scannedMessageCount = 0;
-                messageCount = 0;
-                successCount = 0;
-                failureCount = 0;
-                wakeupCount = 0;
-            }
-
-            synchronized void setScannedMessages(int read) {
-                scanCount++;
-                scannedMessageCount += read;
-            }
-
-            synchronized void incMessageCount() {
-                messageCount++;
-            }
-
-            synchronized void incSuccessCount() {
-                successCount++;
-            }
-
-            synchronized void incFailureCount() {
-                failureCount++;
-            }
-
-            synchronized void incWakeupCount() {
-                wakeupCount++;
+            } finally {
+                metrics.shutdown();
             }
         }
     }
-
-    
 }

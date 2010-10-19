@@ -17,10 +17,6 @@ package org.lilycms.indexer.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.metrics.MetricsContext;
-import org.apache.hadoop.metrics.MetricsRecord;
-import org.apache.hadoop.metrics.MetricsUtil;
-import org.apache.hadoop.metrics.Updater;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,8 +42,8 @@ public class Indexer {
     private TypeManager typeManager;
     private SolrServers solrServers;
     private IndexLocker indexLocker;
-    private IndexerMetrics metrics;
     private ValueEvaluator valueEvaluator;
+    private IndexerMetrics metrics;
 
     private Log log = LogFactory.getLog(getClass());
 
@@ -60,6 +56,10 @@ public class Indexer {
         this.valueEvaluator = new ValueEvaluator(conf);
 
         this.metrics = new IndexerMetrics();
+    }
+
+    public void shutdown() {
+        metrics.shutdown();
     }
 
     public IndexerConf getConf() {
@@ -135,7 +135,7 @@ public class Indexer {
                 for (String vtag : entry.getValue()) {
                     verifyLock(recordId);
                     solrServers.getSolrServer(recordId).deleteById(getIndexId(recordId, vtag));
-                    metrics.incDeleteByIdCount();
+                    metrics.deletesById.inc();
                 }
 
                 if (log.isDebugEnabled()) {
@@ -190,7 +190,7 @@ public class Indexer {
 
                 // There can be a previous entry in the index which we should try to delete
                 solrServers.getSolrServer(record.getId()).deleteById(getIndexId(record.getId(), vtag));
-                metrics.incDeleteByIdCount();
+                metrics.deletesById.inc();
                 
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Record %1$s, vtag %2$s: no index fields produced output, " +
@@ -210,7 +210,7 @@ public class Indexer {
             }
 
             solrServers.getSolrServer(record.getId()).add(solrDoc);
-            metrics.incAddCount();
+            metrics.adds.inc();
 
             if (log.isDebugEnabled()) {
                 log.debug(String.format("Record %1$s, vtag %2$s: indexed", record.getId(), safeLoadTagName(vtag)));
@@ -226,7 +226,7 @@ public class Indexer {
     public void delete(RecordId recordId) throws IOException, SolrServerException, ShardSelectorException {
         verifyLock(recordId);
         solrServers.getSolrServer(recordId).deleteByQuery("@@id:" + ClientUtils.escapeQueryChars(recordId.toString()));
-        metrics.incDeleteByQueryCount();
+        metrics.deletesByQuery.inc();
     }
 
     /**
@@ -236,7 +236,7 @@ public class Indexer {
     public void delete(RecordId recordId, String vtag) throws IOException, SolrServerException, ShardSelectorException {
         verifyLock(recordId);
         solrServers.getSolrServer(recordId).deleteById(getIndexId(recordId, vtag));
-        metrics.incDeleteByQueryCount();
+        metrics.deletesByQuery.inc();
     }
 
     private Map<Long, Set<String>> getVtagsByVersion(Set<String> vtagsToIndex, Map<String, Long> vtags) {
@@ -307,42 +307,4 @@ public class Indexer {
             throw new RuntimeException("Error checking if we own index lock for record " + recordId);
         }
     }
-
-    private class IndexerMetrics implements Updater {
-        private long addCount = 0;
-        private long deleteByIdCount = 0;
-        private long deleteByQueryCount = 0;
-
-        private MetricsRecord record;
-
-        public IndexerMetrics() {
-            MetricsContext lilyContext = MetricsUtil.getContext("lily");
-            record = lilyContext.createRecord("indexer");
-            lilyContext.registerUpdater(this);
-        }
-
-        public synchronized void doUpdates(MetricsContext unused) {
-            record.setMetric("add", addCount);
-            record.setMetric("deleteById", deleteByIdCount);
-            record.setMetric("deleteByQuery", deleteByQueryCount);
-            record.update();
-
-            addCount = 0;
-            deleteByIdCount = 0;
-            deleteByQueryCount = 0;
-        }
-
-        synchronized void incAddCount() {
-            addCount++;
-        }
-
-        synchronized void incDeleteByIdCount() {
-            deleteByIdCount++;
-        }
-
-        synchronized void incDeleteByQueryCount() {
-            deleteByQueryCount++;
-        }
-    }
-
 }

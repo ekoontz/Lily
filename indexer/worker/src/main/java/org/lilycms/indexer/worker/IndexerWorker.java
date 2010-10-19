@@ -26,6 +26,7 @@ import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
 import org.lilycms.util.ObjectUtils;
+import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
@@ -161,7 +162,7 @@ public class IndexerWorker {
                 listenerHandlers.add(handler);
             }
 
-            handle = new IndexUpdaterHandle(index, indexUpdater, listenerHandlers);
+            handle = new IndexUpdaterHandle(index, indexUpdater, indexer, listenerHandlers);
             handle.start();
 
             indexUpdaters.put(index.getName(), handle);
@@ -254,11 +255,14 @@ public class IndexerWorker {
     private class IndexUpdaterHandle {
         private IndexDefinition indexDef;
         private IndexUpdater updater;
+        private Indexer indexer;
         private List<RemoteListenerHandler> listenerHandlers;
 
-        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, List<RemoteListenerHandler> listenerHandlers) {
+        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, Indexer indexer,
+                List<RemoteListenerHandler> listenerHandlers) {
             this.indexDef = indexDef;
             this.updater = updater;
+            this.indexer = indexer;
             this.listenerHandlers = listenerHandlers;
         }
 
@@ -269,6 +273,8 @@ public class IndexerWorker {
         }
 
         public void stop() throws InterruptedException {
+            Closer.close(updater);
+            Closer.close(indexer);
             for (RemoteListenerHandler handler : listenerHandlers) {
                 handler.stop();
             }

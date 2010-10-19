@@ -17,7 +17,6 @@ package org.lilycms.indexer.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.metrics.*;
 import org.lilycms.indexer.model.indexerconf.DerefValue;
 import org.lilycms.indexer.model.indexerconf.IndexCase;
 import org.lilycms.indexer.model.indexerconf.IndexField;
@@ -61,6 +60,10 @@ public class IndexUpdater implements RowLogMessageListener {
         this.myContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         this.metrics = new IndexUpdaterMetrics();
+    }
+
+    public void shutdown() {
+        metrics.shutdown();
     }
 
     public boolean processMessage(RowLogMessage msg) {
@@ -137,7 +140,7 @@ public class IndexUpdater implements RowLogMessageListener {
             log.error("Error processing event in indexer.", e);
         } finally {
             long after = System.currentTimeMillis();
-            metrics.messageProcessed(after - before);
+            metrics.updates.inc(after - before);
             Thread.currentThread().setContextClassLoader(currentCL);
         }
         return true;
@@ -592,31 +595,4 @@ public class IndexUpdater implements RowLogMessageListener {
 
         return result;
     }
-
-    private class IndexUpdaterMetrics implements Updater {
-        private long msgProcessingTime = 0;
-        private int msgCount = 0;
-        private MetricsRecord record;
-
-        public IndexUpdaterMetrics() {
-            MetricsContext lilyContext = MetricsUtil.getContext("lily");
-            record = lilyContext.createRecord("indexUpdater");
-            lilyContext.registerUpdater(this);
-        }
-
-        public synchronized void doUpdates(MetricsContext unused) {
-            record.setMetric("averageTime", msgCount == 0 ? 0 : (msgProcessingTime / msgCount));
-            record.incrMetric("processedMsgCount", msgCount);
-            record.update();
-
-            msgProcessingTime = 0;
-            msgCount = 0;
-        }
-
-        synchronized void messageProcessed(long time) {
-            msgProcessingTime += time;
-            msgCount++;
-        }
-    }
-
 }
