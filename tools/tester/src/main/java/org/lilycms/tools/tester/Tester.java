@@ -16,12 +16,17 @@
 package org.lilycms.tools.tester;
 
 import de.svenjacobs.loremipsum.LoremIpsum;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.metrics.*;
 import org.apache.zookeeper.KeeperException;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.lilycms.cli.BaseCliTool;
 import org.lilycms.client.LilyClient;
 import org.lilycms.client.ServerUnavailableException;
 import org.lilycms.repository.api.*;
@@ -31,14 +36,12 @@ import org.lilycms.util.json.JsonFormat;
 import org.lilycms.util.json.JsonUtil;
 import org.lilycms.util.exception.StackTracePrinter;
 import org.lilycms.util.io.Closer;
-import org.lilycms.util.zookeeper.ZkConnectException;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 
-public class Tester {
+public class Tester extends BaseCliTool {
     private LilyClient client;
     private Repository someRepository;
 
@@ -67,22 +70,93 @@ public class Tester {
     private PrintStream errorStream;
 
     private String metricsRecordName;
-    private Metrics metrics;
+    private TesterMetrics metrics;
 
-    private enum Action { CREATE, READ, UPDATE, DELETE }
+    private Option configFileOption;
+    private Option dumpSampleConfigOption;
 
-    public static void main(String[] args) throws Exception {
-        if (args.length != 1) {
-            System.out.println("Specify one argument: config location");
-            System.exit(1);
-        }
-        new Tester().run(args[0]);
+    @Override
+    protected String getCmdName() {
+        return "lily-tester";
     }
 
-    public void run(String configFileName) throws IOException, InterruptedException, KeeperException,
-            ServerUnavailableException, RepositoryException, ImportConflictException, ImportException,
-            JsonFormatException, ZkConnectException {
+    public static void main(String[] args) throws Exception {
+        new Tester().start(args);
+    }
 
+    @Override
+    public List<Option> getOptions() {
+        List<Option> options = super.getOptions();
+
+        configFileOption = OptionBuilder
+                .withArgName("config.json")
+                .hasArg()
+                .withDescription("Test tool configuration file")
+                .withLongOpt("config")
+                .create("c");
+        options.add(configFileOption);
+
+        dumpSampleConfigOption = OptionBuilder
+                .withDescription("Dumps a sample configuration to standard out.")
+                .withLongOpt("dump-sample-config")
+                .create("d");
+        options.add(dumpSampleConfigOption);
+
+        return options;
+    }
+
+    @Override
+    protected void printHelpHeader() {
+        System.out.println("A simple testing tool that performs CRUD operations in a loop.");
+        System.out.println();
+    }
+
+    @Override
+    protected void printHelpFooter() {
+        System.out.println();
+        System.out.println("To use this tool:");
+        System.out.println(" 1. Dump sample configuration to a file:");
+        System.out.println("    " + getCmdName() + " > config.json");
+        System.out.println(" 2. Customize config.json");
+        System.out.println(" 3. Run the test:");
+        System.out.println("    " + getCmdName() + " -" + configFileOption.getOpt() + " config.json");
+        System.out.println();
+        System.out.println("Tester keeps all created records in memory, in order to be able to later check");
+        System.out.println("the result of read operations, or to be able to update existing records.");
+        System.out.println();
+        System.out.println("Tester runs only one thread. To do multi-threaded testing, run multiple instances.");
+        System.out.println("");
+        System.out.println("Logging is performed to two files: one containing a line per CRUD operation,");
+        System.out.println("with its duration and success tate. Another file contains the stacktraces of");
+        System.out.println("errors that occurred.");
+        System.out.println();
+        System.out.println("Besides the produced log files, you can also monitor the execution through");
+        System.out.println("JMX and optionally Ganglia");
+        System.out.println();
+    }
+
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
+
+        if (cmd.hasOption(dumpSampleConfigOption.getOpt())) {
+            InputStream is = getClass().getClassLoader().getResourceAsStream("org/lilycms/tools/tester/config.json");
+            try {
+                IOUtils.copy(is, System.out);
+            } finally {
+                Closer.close(is);
+            }
+            return 0;
+        }
+
+        if (!cmd.hasOption(configFileOption.getOpt())) {
+            printHelp();
+            return 1;
+        }
+
+        String configFileName = cmd.getOptionValue(configFileOption.getOpt());
         InputStream is = new FileInputStream(configFileName);
         JsonNode configNode = JsonFormat.deserializeNonStd(is);
         is.close();
@@ -96,7 +170,7 @@ public class Tester {
 
         if (metricsRecordName != null) {
             System.out.println("Enabling metrics.");
-            metrics = new Metrics();
+            metrics = new TesterMetrics(metricsRecordName);
         }
 
         openStreams();
@@ -113,6 +187,8 @@ public class Tester {
         System.out.println("Total failures: " + failureCount);
 
         Closer.close(client);
+
+        return 0;
     }
 
     private void openStreams() throws FileNotFoundException {
@@ -158,15 +234,15 @@ public class Tester {
 
             String className = JsonUtil.getString(metricsNode, "class", null);
             if (className != null)
-                contextFactory.setAttribute("lily.class", className);
+                contextFactory.setAttribute("tester.class", className);
 
             String period = JsonUtil.getString(metricsNode, "period", null);
             if (period != null)
-                contextFactory.setAttribute("lily.period", period);
+                contextFactory.setAttribute("tester.period", period);
 
             String servers = JsonUtil.getString(metricsNode, "servers", null);
             if (servers != null)
-                contextFactory.setAttribute("lily.servers", servers);
+                contextFactory.setAttribute("tester.servers", servers);
         }
     }
 
@@ -355,51 +431,6 @@ public class Tester {
         errorStream.println("[" + new DateTime() + "] " + message);
         StackTracePrinter.printStackTrace(throwable, errorStream);
         errorStream.println("---------------------------------------------------------------------------");        
-    }
-
-    private class Metrics implements Updater {
-        private int successCount;
-        private int failureCount;
-        private EnumMap<Action, Long> duration = new EnumMap<Action, Long>(Action.class);
-        private EnumMap<Action, Long> count = new EnumMap<Action, Long>(Action.class);
-        private MetricsRecord record;
-
-        public Metrics() {
-            for (Action action : Action.values()) {
-                duration.put(action, 0L);
-                count.put(action, 0L);
-            }
-
-            MetricsContext lilyContext = MetricsUtil.getContext("lily");
-            record = lilyContext.createRecord(metricsRecordName);
-            lilyContext.registerUpdater(this);
-        }
-
-        public synchronized void doUpdates(MetricsContext unused) {
-            record.setMetric("successCount", successCount);
-            record.setMetric("failureCount", failureCount);
-
-            for (Action action : Action.values()) {
-                long duration = this.duration.get(action);
-                long count = this.count.get(action);
-
-                this.duration.put(action, 0L);
-                this.count.put(action, 0L);
-
-                record.setMetric("duration." + action, count > 0 ? duration / count : 0);
-            }
-            record.update();
-        }
-
-        synchronized void report(Action action, boolean success, int duration) {
-            if (success)
-                successCount ++;
-            else
-                failureCount++;
-
-            this.duration.put(action, this.duration.get(action) + duration);
-            this.count.put(action, this.count.get(action) + 1);
-        }
     }
 
     private class Field {

@@ -136,9 +136,19 @@ public abstract class BaseCliTool {
 
     }
 
-    private void printHelp() {
+    protected void printHelp() {
+        printHelpHeader();
         HelpFormatter help = new HelpFormatter();
         help.printHelp(getCmdName(), cliOptions, true);
+        printHelpFooter();
+    }
+
+    protected void printHelpHeader() {
+
+    }
+
+    protected void printHelpFooter() {
+
     }
 
 }

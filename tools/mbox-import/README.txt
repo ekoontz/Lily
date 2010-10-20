@@ -28,10 +28,10 @@ Other mbox sources:
 Create the schema
 -----------------
 
-If you run the import tool without any options, it will just create the schema.
+If you run the import tool with the -s option, it will just create the schema.
 
 cd tools/mbox-import
-./target/lily-mbox-import
+./target/lily-mbox-import -s
 
 If you need to connect to a ZooKeeper different from 'localhost:2181', use the
 -z option to specify the connection string.

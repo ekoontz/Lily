@@ -66,6 +66,11 @@
     </dependency>
 
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>de.sven-jacobs</groupId>
       <artifactId>loremipsum</artifactId>
       <version>1.0</version>

@@ -1,0 +1,126 @@
+/* This file is in relaxed JSON format, this is JSON without property quoting
+   requirement and with support for comments. */
+{
+  zookeeper: "localhost:2181",
+
+  reportFile: "testreport.csv",
+
+  failuresFile: "failures.log",
+
+  metrics: {
+    recordName: "tester1",
+    class: "org.apache.hadoop.metrics.spi.NullContextWithUpdateThread",
+    period: "15"
+    /* Enable the following to report to Ganglia */
+    /*
+    class: "org.apache.hadoop.metrics.ganglia.GangliaContext31",
+    servers: "localhost:8649"
+    */
+  },
+
+  namespaces: {
+    "org.lilycms.tools.tester": "tester"
+  },
+
+  /*
+    Field types:
+
+      * Each created test record will have a value for each of these fields
+
+      * These field types are automatically created if necessary.
+
+      * If the field type would already exist but not correspond to the description here, an
+        error will be generated.
+
+  */
+  fieldTypes: [
+    {
+      name: "tester$field1",
+      valueType: { "primitive": "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "tester$field2",
+      valueType: { "primitive": "STRING", "multiValue": true },
+      scope: "non_versioned"
+    },
+    {
+      name: "tester$field3",
+      valueType: { "primitive": "STRING", "hierarchical": true },
+      scope: "versioned"
+    },
+    {
+      name: "tester$field4",
+      valueType: { "primitive": "STRING", "multiValue": true, "hierarchical": true },
+      scope: "non_versioned"
+    },
+    {
+      name: "tester$field5",
+      valueType: { "primitive": "INTEGER" },
+      scope: "versioned"
+    },
+    {
+      name: "tester$field6",
+      valueType: { "primitive": "LONG" },
+      scope: "non_versioned"
+    },
+    {
+      name: "tester$field7",
+      valueType: { "primitive": "DATE" },
+      scope: "versioned"
+    },
+    {
+      name: "tester$field8",
+      valueType: { "primitive": "DATETIME" },
+      scope: "non_versioned"
+    },
+    {
+      name: "tester$field9",
+      valueType: { "primitive": "LINK" },
+      scope: "versioned"
+    },
+    {
+      name: "tester$field10",
+      valueType: { "primitive": "BOOLEAN" },
+      scope: "versioned"
+    }
+
+  ],
+
+  /*
+     Record type:
+
+        This is the record type used for creating all test records.
+
+        This record type will be automatically created or updated as necessary,
+        containing all the above fields (as not mandatory).
+  */
+  recordTypeName: "tester$TesterRecordType",
+
+  scenario: {
+    /* The number of record creations to be done upon each iteration. Should be > 0 */
+    creates: 5,
+
+    /* The number or record reads to be done upon each iteration. */
+    reads: 5,
+
+    /* The number of record updates to be done upon each iteration. */
+    updates: 1,
+
+    /* The number of record delete operations to be done upon each iteration. Should be
+    less than the number of creates. */
+    deletes: 1
+  },
+
+
+  /*
+     Stop conditions control when the test ends. It ends from the moment one of the
+     maximums is reached.
+  */
+  stopConditions: {
+    /* The time is in minutes */
+    maximumRunTime: 10,
+    maximumRecordsCreated: 1000000,
+    maximumFailures: 1000
+  }
+}
