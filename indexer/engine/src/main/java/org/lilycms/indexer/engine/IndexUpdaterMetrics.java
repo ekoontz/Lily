@@ -13,6 +13,7 @@ import org.lilycms.util.hbase.metrics.MetricsDynamicMBeanBase;
 import javax.management.ObjectName;
 
 public class IndexUpdaterMetrics implements Updater {
+    private final String indexName;
     private final MetricsRegistry registry = new MetricsRegistry();
     private final MetricsRecord metricsRecord;
     private final MetricsContext context;
@@ -20,9 +21,10 @@ public class IndexUpdaterMetrics implements Updater {
 
     public MetricsTimeVaryingRate updates = new MetricsTimeVaryingRate("updates", registry);
 
-    public IndexUpdaterMetrics() {
-        context = MetricsUtil.getContext("lily");
-        metricsRecord = MetricsUtil.createRecord(context, "indexUpdater");
+    public IndexUpdaterMetrics(String indexName) {
+        this.indexName = indexName;
+        context = MetricsUtil.getContext("indexUpdater");
+        metricsRecord = MetricsUtil.createRecord(context, indexName);
         context.registerUpdater(this);
         mbean = new IndexerMetricsMBean(this.registry);
     }
@@ -47,7 +49,7 @@ public class IndexUpdaterMetrics implements Updater {
         public IndexerMetricsMBean(MetricsRegistry registry) {
             super(registry, "Lily Index Updater");
 
-            mbeanName = MBeanUtil.registerMBean("Index Updater", "Metrics", this);
+            mbeanName = MBeanUtil.registerMBean("Index Updater", indexName, this);
         }
 
         public void shutdown() {

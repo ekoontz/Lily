@@ -3,11 +3,32 @@
   <hadoopMetricsAttributes>
     <!-- The 'localhost' in the servers settings is what Ganglia will show,
          so change it to the real hostname if you are running multiple servers. -->
-    <!--
-    <attribute name="lily.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
-    <attribute name="lily.period" value="15"/>
-    <attribute name="lily.servers" value="localhost:8649"/>
 
+    <!-- The NullContextWithUpdateThread makes sure the metrics are reported to JMX when
+         no other metrics output is enabled. -->
+
+    <attribute name="rowlog.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="rowlog.period" value="15"/>
+    <!--
+    <attribute name="rowlog.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="rowlog.servers" value="localhost:8649"/>
+    -->
+
+    <attribute name="indexer.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="indexer.period" value="15"/>
+    <!--
+    <attribute name="indexer.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="indexer.servers" value="localhost:8649"/>
+    -->
+
+    <attribute name="indexUpdater.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="indexUpdater.period" value="15"/>
+    <!--
+    <attribute name="indexer.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="indexer.servers" value="localhost:8649"/>
+    -->
+
+    <!--
     <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
     <attribute name="jvm.period" value="15"/>
     <attribute name="jvm.servers" value="localhost:8649"/>

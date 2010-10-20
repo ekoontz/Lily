@@ -49,7 +49,7 @@ public class IndexUpdater implements RowLogMessageListener {
     private Log log = LogFactory.getLog(getClass());
 
     public IndexUpdater(Indexer indexer, Repository repository,
-            LinkIndex linkIndex, IndexLocker indexLocker) throws RowLogException {
+            LinkIndex linkIndex, IndexLocker indexLocker, IndexUpdaterMetrics metrics) throws RowLogException {
         this.indexer = indexer;
         this.repository = repository;
         this.typeManager = repository.getTypeManager();
@@ -59,11 +59,7 @@ public class IndexUpdater implements RowLogMessageListener {
 
         this.myContextClassLoader = Thread.currentThread().getContextClassLoader();
 
-        this.metrics = new IndexUpdaterMetrics();
-    }
-
-    public void shutdown() {
-        metrics.shutdown();
+        this.metrics = metrics;
     }
 
     public boolean processMessage(RowLogMessage msg) {

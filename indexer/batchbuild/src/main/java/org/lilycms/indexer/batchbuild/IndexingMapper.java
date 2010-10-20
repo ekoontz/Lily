@@ -14,6 +14,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.lilycms.client.LilyClient;
 import org.lilycms.indexer.engine.IndexLocker;
 import org.lilycms.indexer.engine.Indexer;
+import org.lilycms.indexer.engine.IndexerMetrics;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.indexer.engine.SolrServers;
@@ -99,7 +100,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
 
             indexLocker = new IndexLocker(zk);
 
-            indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
+            indexer = new Indexer(indexerConf, repository, solrServers, indexLocker, new IndexerMetrics("dummy"));
 
             int workers = getIntProp("org.lilycms.indexer.batchbuild.threads", 5, jobConf);
             

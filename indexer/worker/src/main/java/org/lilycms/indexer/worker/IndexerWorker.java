@@ -7,14 +7,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.KeeperException;
 import org.lilycms.hbaseindex.*;
-import org.lilycms.indexer.engine.IndexLocker;
-import org.lilycms.indexer.engine.IndexUpdater;
-import org.lilycms.indexer.engine.Indexer;
+import org.lilycms.indexer.engine.*;
 import org.lilycms.indexer.model.api.IndexDefinition;
 import org.lilycms.indexer.model.api.IndexNotFoundException;
 import org.lilycms.indexer.model.indexerconf.IndexerConf;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
-import org.lilycms.indexer.engine.SolrServers;
 import org.lilycms.indexer.model.sharding.DefaultShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.ShardSelector;
@@ -150,9 +147,11 @@ public class IndexerWorker {
 
             SolrServers solrServers = new SolrServers(index.getSolrShards(), shardSelector, httpClient);
             IndexLocker indexLocker = new IndexLocker(zk);
-            Indexer indexer = new Indexer(indexerConf, repository, solrServers, indexLocker);
+            IndexerMetrics indexerMetrics = new IndexerMetrics(index.getName());
+            Indexer indexer = new Indexer(indexerConf, repository, solrServers, indexLocker, indexerMetrics);
 
-            IndexUpdater indexUpdater = new IndexUpdater(indexer, repository, linkIndex, indexLocker);
+            IndexUpdaterMetrics updaterMetrics = new IndexUpdaterMetrics(index.getName());
+            IndexUpdater indexUpdater = new IndexUpdater(indexer, repository, linkIndex, indexLocker, updaterMetrics);
 
             List<RemoteListenerHandler> listenerHandlers = new ArrayList<RemoteListenerHandler>();
 
@@ -162,7 +161,7 @@ public class IndexerWorker {
                 listenerHandlers.add(handler);
             }
 
-            handle = new IndexUpdaterHandle(index, indexUpdater, indexer, listenerHandlers);
+            handle = new IndexUpdaterHandle(index, listenerHandlers, indexerMetrics, updaterMetrics);
             handle.start();
 
             indexUpdaters.put(index.getName(), handle);
@@ -254,16 +253,16 @@ public class IndexerWorker {
 
     private class IndexUpdaterHandle {
         private IndexDefinition indexDef;
-        private IndexUpdater updater;
-        private Indexer indexer;
         private List<RemoteListenerHandler> listenerHandlers;
+        private IndexerMetrics indexerMetrics;
+        private IndexUpdaterMetrics updaterMetrics;
 
-        public IndexUpdaterHandle(IndexDefinition indexDef, IndexUpdater updater, Indexer indexer,
-                List<RemoteListenerHandler> listenerHandlers) {
+        public IndexUpdaterHandle(IndexDefinition indexDef, List<RemoteListenerHandler> listenerHandlers,
+                IndexerMetrics indexerMetrics, IndexUpdaterMetrics updaterMetrics) {
             this.indexDef = indexDef;
-            this.updater = updater;
-            this.indexer = indexer;
             this.listenerHandlers = listenerHandlers;
+            this.indexerMetrics = indexerMetrics;
+            this.updaterMetrics = updaterMetrics;
         }
 
         public void start() throws RowLogException, InterruptedException, KeeperException {
@@ -273,11 +272,11 @@ public class IndexerWorker {
         }
 
         public void stop() throws InterruptedException {
-            Closer.close(updater);
-            Closer.close(indexer);
             for (RemoteListenerHandler handler : listenerHandlers) {
                 handler.stop();
             }
+            Closer.close(indexerMetrics);
+            Closer.close(updaterMetrics);
         }
     }
 

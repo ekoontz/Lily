@@ -18,10 +18,7 @@ package org.lilycms.indexer.engine.test;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.fs.Path;
-import org.lilycms.indexer.engine.IndexLocker;
-import org.lilycms.indexer.engine.IndexUpdater;
-import org.lilycms.indexer.engine.Indexer;
-import org.lilycms.indexer.engine.SolrServers;
+import org.lilycms.indexer.engine.*;
 import org.lilycms.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilycms.linkindex.LinkIndexUpdater;
 import org.lilycms.rowlog.api.*;
@@ -145,10 +142,11 @@ public class IndexerTest {
         solrServers = SolrServers.createForOneShard(SOLR_TEST_UTIL.getUri());
         INDEXER_CONF = IndexerConfBuilder.build(IndexerTest.class.getClassLoader().getResourceAsStream("org/lilycms/indexer/engine/test/indexerconf1.xml"), repository);
         IndexLocker indexLocker = new IndexLocker(zk);
-        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers, indexLocker);
+        Indexer indexer = new Indexer(INDEXER_CONF, repository, solrServers, indexLocker, new IndexerMetrics("test"));
 
         RowLogMessageListenerMapping.INSTANCE.put("LinkIndexUpdater", new LinkIndexUpdater(repository, linkIndex));
-        RowLogMessageListenerMapping.INSTANCE.put("IndexUpdater", new IndexUpdater(indexer, repository, linkIndex, indexLocker));
+        RowLogMessageListenerMapping.INSTANCE.put("IndexUpdater", new IndexUpdater(indexer, repository, linkIndex,
+                indexLocker, new IndexUpdaterMetrics("test")));
         RowLogMessageListenerMapping.INSTANCE.put("MessageVerifier", messageVerifier);
     }
 

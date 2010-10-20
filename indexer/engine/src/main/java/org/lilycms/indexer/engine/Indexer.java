@@ -47,19 +47,15 @@ public class Indexer {
 
     private Log log = LogFactory.getLog(getClass());
 
-    public Indexer(IndexerConf conf, Repository repository, SolrServers solrServers, IndexLocker indexLocker) {
+    public Indexer(IndexerConf conf, Repository repository, SolrServers solrServers, IndexLocker indexLocker,
+            IndexerMetrics metrics) {
         this.conf = conf;
         this.repository = repository;
         this.solrServers = solrServers;
         this.indexLocker = indexLocker;
         this.typeManager = repository.getTypeManager();
         this.valueEvaluator = new ValueEvaluator(conf);
-
-        this.metrics = new IndexerMetrics();
-    }
-
-    public void shutdown() {
-        metrics.shutdown();
+        this.metrics = metrics;
     }
 
     public IndexerConf getConf() {

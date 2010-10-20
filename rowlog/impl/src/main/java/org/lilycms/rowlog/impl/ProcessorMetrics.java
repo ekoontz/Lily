@@ -14,20 +14,22 @@ import org.lilycms.util.hbase.metrics.MetricsNonTimeRate;
 import javax.management.ObjectName;
 
 public class ProcessorMetrics implements Updater {
+    private final String subscriptionId;
     private final MetricsRegistry registry = new MetricsRegistry();
     private final MetricsRecord metricsRecord;
     private final ProcessorMetricsMXBean mbean;
     private final MetricsContext context;
 
-    public MetricsRate scans = new MetricsRate("scans", registry);
+    public MetricsRate scans = new MetricsRate("scans_rate", registry);
 
     public MetricsNonTimeRate messagesPerScan = new MetricsNonTimeRate("messagesPerScan", registry);
 
-    public MetricsRate wakeups = new MetricsRate("wakeups", registry);
+    public MetricsRate wakeups = new MetricsRate("wakeups_rate", registry);
 
     public ProcessorMetrics(String subscriptionId) {
-        context = MetricsUtil.getContext("lily");
-        metricsRecord = MetricsUtil.createRecord(context, "rowLogProcessor." + subscriptionId);
+        this.subscriptionId = subscriptionId;
+        context = MetricsUtil.getContext("rowlog");
+        metricsRecord = MetricsUtil.createRecord(context, subscriptionId);
         context.registerUpdater(this);
         mbean = new ProcessorMetricsMXBean(this.registry);
     }
@@ -52,7 +54,7 @@ public class ProcessorMetrics implements Updater {
         public ProcessorMetricsMXBean(MetricsRegistry registry) {
             super(registry, "Lily Row Log Processor");
 
-            mbeanName = MBeanUtil.registerMBean("Row Log Processor", "Metrics", this);
+            mbeanName = MBeanUtil.registerMBean("Row Log Processor", subscriptionId, this);
         }
 
         public void shutdown() {
