@@ -28,7 +28,7 @@ public interface RowLogConfigurationManager {
      *
      * <p>If the subscription would not exist, this method silently returns.
      */
-    void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;
+    void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException, RowLogException;
 
     boolean subscriptionExists(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException;
 

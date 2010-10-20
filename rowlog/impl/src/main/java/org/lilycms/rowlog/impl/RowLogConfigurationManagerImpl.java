@@ -103,25 +103,61 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         // subscriptionIds which do not collide.
     }
     
-    public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException {
+    public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException, RowLogException {
         final String path = subscriptionPath(rowLogId, subscriptionId);
 
-        try {
-            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
-                public Object execute() throws KeeperException, InterruptedException {
-                    zooKeeper.delete(path, -1);
-                    return null;
-                }
-            });
-        } catch (KeeperException.NoNodeException ignore) {
-            // Silently ignore, might fail because of retryOperation
-        } catch (KeeperException.NotEmptyException e) {
-            // TODO Think what should happen here
-            // Remove listeners first? Yes, I think this is best, otherwise if some listener does not want
-            // to go away, we could be unable to remove a subscription. Nothing bad can happen: if listeners
-            // are still running, they will simply not receive messages anymore.
-            log.error("Removal of subscription failed because there are still listeners. Row log " + rowLogId +
-                    ", subscription " + subscriptionId);
+        boolean success = false;
+        int tryCount = 0;
+
+        while (!success) {
+            boolean removeChildren = false;
+            try {
+                zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                    public Object execute() throws KeeperException, InterruptedException {
+                        zooKeeper.delete(path, -1);
+                        return null;
+                    }
+                });
+                success = true;
+            } catch (KeeperException.NoNodeException ignore) {
+                // Silently ignore, might fail because of retryOperation
+                success = true;
+            } catch (KeeperException.NotEmptyException e) {
+                removeChildren = true;
+            }
+
+            // The children of the subscription are ephemeral listener nodes. These listeners should shut
+            // down when the subscription is removed. Usually it is the task of the application to shut
+            // down the listeners before removing the subscription. If there would still be listeners running,
+            // delete their ephemeral nodes now. A running listener will not do anything anymore, since it
+            // will not be offered any message anymore.
+            if (removeChildren) {
+                zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                    public Object execute() throws KeeperException, InterruptedException {
+                        List<String> children;
+                        try {
+                            children = zooKeeper.getChildren(path, false);
+                        } catch (NoNodeException e) {
+                            // you never know
+                            return null;
+                        }
+                        for (String child : children) {
+                            try {
+                                zooKeeper.delete(path + "/" + child, -1);
+                            } catch (NoNodeException e) {
+                                // listener was removed in the meantime
+                            }
+                        }
+                        return null;
+                    }
+                });
+            }
+
+            tryCount++;
+            if (tryCount > 3) {
+                throw new RowLogException("Failed to remove subscription " + subscriptionId +
+                        " because it was impossible to remove the subscriptions.");
+            }
         }
     }
     

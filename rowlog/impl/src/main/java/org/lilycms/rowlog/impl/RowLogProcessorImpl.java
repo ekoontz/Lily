@@ -120,7 +120,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     
     private void stopSubscriptionThread(String subscriptionId) {
         SubscriptionThread subscriptionThread = subscriptionThreads.get(subscriptionId);
-        subscriptionThread.interrupt();
+        subscriptionThread.shutdown();
         try {
             subscriptionThread.join();
         } catch (InterruptedException e) {
@@ -136,9 +136,9 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
             threadsToStop = new ArrayList<SubscriptionThread>(subscriptionThreads.values());
             subscriptionThreads.clear();
         }
-        for (Thread thread : threadsToStop) {
+        for (SubscriptionThread thread : threadsToStop) {
             if (thread != null) {
-                thread.interrupt();
+                thread.shutdown();
             }
         }
         for (Thread thread : threadsToStop) {
@@ -283,11 +283,10 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
             super.start();
         }
         
-        @Override
-        public void interrupt() {
+        public void shutdown() {
             stopRequested = true;
-            subscriptionHandler.interrupt();
-            super.interrupt();
+            subscriptionHandler.shutdown();
+            interrupt();
         }
                 
         public void run() {

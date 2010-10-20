@@ -27,7 +27,7 @@ public abstract class AbstractListenersSubscriptionHandler extends AbstractSubsc
         rowLogConfigurationManager.addListenersObserver(rowLogId, subscriptionId, this);
     }
 
-    public void interrupt() {
+    public void shutdown() {
         stop = true;
         rowLogConfigurationManager.removeListenersObserver(rowLogId, subscriptionId, this);
         for (String listenerId : listeners.keySet())
