@@ -156,7 +156,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             tryCount++;
             if (tryCount > 3) {
                 throw new RowLogException("Failed to remove subscription " + subscriptionId +
-                        " because it was impossible to remove the subscriptions.");
+                        " because it was impossible to remove the listeners.");
             }
         }
     }
@@ -265,7 +265,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
 
         private Thread thread;
 
-        private boolean stop;
+        private boolean stop; // do not rely only on Thread.interrupt since some libraries eat interruptions
 
         public void start() {
             stop = false;
@@ -319,7 +319,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     }
 
                     synchronized (changesLock) {
-                        while (this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty()) {
+                        while (this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty() && !stop) {
                             changesLock.wait();
                         }
                     }
@@ -470,21 +470,19 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             }
 
             public void notifyObservers() {
-                synchronized (observers) {
-                    for (SubscriptionsObserver observer : observers) {
-                        try {
-                            // Note that if you enable this debug logging (or noticed this in some other way) you
-                            // might see multiple times the same set of subscriptions being reported to observers.
-                            // This is because each time a new observer is added, everyone observer is again called
-                            // with the current set of subscriptions. See addSubscriptionObserver fo why this is.
-                            // Since often a new observer is registered in response to the creation of a subscriptions,
-                            // you will often see double events.
-                            log.debug("Row log " + rowLogId + ": notifying to the observers " + observers +
-                                    " that the current subscriptions are " + subscriptions);
-                            observer.subscriptionsChanged(subscriptions);
-                        } catch (Throwable t) {
-                            log.error("Error notifying subscriptions observer " + observer.getClass().getName(), t);
-                        }
+                for (SubscriptionsObserver observer : new ArrayList<SubscriptionsObserver>(observers)) {
+                    try {
+                        // Note that if you enable this debug logging (or noticed this in some other way) you
+                        // might see multiple times the same set of subscriptions being reported to observers.
+                        // This is because each time a new observer is added, everyone observer is again called
+                        // with the current set of subscriptions. See addSubscriptionObserver fo why this is.
+                        // Since often a new observer is registered in response to the creation of a subscriptions,
+                        // you will often see double events.
+                        log.debug("Row log " + rowLogId + ": notifying to the observers " + observers +
+                                " that the current subscriptions are " + subscriptions);
+                        observer.subscriptionsChanged(subscriptions);
+                    } catch (Throwable t) {
+                        log.error("Error notifying subscriptions observer " + observer.getClass().getName(), t);
                     }
                 }
             }

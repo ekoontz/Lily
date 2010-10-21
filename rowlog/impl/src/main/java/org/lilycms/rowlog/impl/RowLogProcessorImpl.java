@@ -249,7 +249,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     private class SubscriptionThread extends Thread {
         private long lastWakeup;
         private ProcessorMetrics metrics;
-        private volatile boolean stopRequested = false;
+        private volatile boolean stopRequested = false; // do not rely only on Thread.interrupt since some libraries eat interruptions
         private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
         private String subscriptionId;
@@ -295,15 +295,29 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                     try {
                         metrics.scans.inc();
                         List<RowLogMessage> messages = shard.next(subscriptionId);
+
+                        if (stopRequested) {
+                            // Check if not stopped because HBase hides thread interruptions
+                            return;
+                        }
+
                         metrics.messagesPerScan.inc(messages != null ? messages.size() : 0);
                         if (messages != null && !messages.isEmpty()) {
                             for (RowLogMessage message : messages) {
-                                if (isInterrupted())
+                                if (stopRequested)
                                     return;
 
                                 try {
                                     if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
-                                        messagesWorkQueue.offer(message);
+                                        // The above calls to isMessageDone and isProblematic pass into HBase client code,
+                                        // which, if interrupted, continue what it is doing and does not re-assert
+                                        // the thread's interrupted status. By checking here that stopRequested is false,
+                                        // we are sure that any interruption which comes after is is not ignored.
+                                        // (The above about eating interruption status was true for HBase 0.89 beta
+                                        // of October 2010).
+                                        if (!stopRequested) {
+                                            messagesWorkQueue.offer(message);
+                                        }
                                     }
                                 } catch (InterruptedException e) {
                                     return;
