@@ -58,7 +58,7 @@ import org.lilycms.util.zookeeper.ZooKeeperItf;
 public abstract class AbstractTypeManager implements TypeManager {
     protected Log log;
 
-    protected boolean stop = false;
+    protected CacheRefresher cacheRefresher = new CacheRefresher();
     
     protected Map<String, PrimitiveValueType> primitiveValueTypes = new HashMap<String, PrimitiveValueType>();
     protected IdGenerator idGenerator;
@@ -79,40 +79,80 @@ public abstract class AbstractTypeManager implements TypeManager {
     }
     
     public void close() throws IOException {
-        this.stop = true;
+        try {
+            cacheRefresher.stop();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.debug("Interrupted", e);
+        }
     }
     
     private class CacheWatcher implements Watcher {
         public void process(WatchedEvent event) {
-            if (!stop) {
-                new Thread() {
-                    public void run() {
-                        try {
-                            if (!stop) 
-                                refreshCaches();
-                        } catch (InterruptedException e) {
-                            // End thread
-                        }
-                    };
-                }.start();
-            }
+            cacheRefresher.needsRefresh();
         }
     }
 
     protected class ConnectionWatcher implements Watcher {
         public void process(WatchedEvent event) {
             if (EventType.None.equals(event.getType()) && KeeperState.SyncConnected.equals(event.getState())) {
-                if (!stop) {
-                    new Thread() {
-                        public void run() {
-                            try {
-                                if (!stop)
-                                    cacheInvalidationReconnected();
-                            } catch (InterruptedException e) {
-                                // End thread
-                            }
+                try {
+                    cacheInvalidationReconnected();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.debug("Interrupted", e);
+                }
+            }
+        }
+    }
+
+    private class CacheRefresher implements Runnable {
+        private volatile boolean needsRefresh;
+        private volatile boolean stop;
+        private final Object needsRefreshLock = new Object();
+        private Thread thread;
+
+        public void start() {
+            thread = new Thread(this, "TypeManager cache refresher");
+            thread.setDaemon(true); // Since this might be used in clients 
+            thread.start();
+        }
+
+        public void stop() throws InterruptedException {
+            stop = true;
+            if (thread != null) {
+                thread.interrupt();
+                thread.join();
+                thread = null;
+            }
+        }
+
+        public void needsRefresh() {
+            synchronized (needsRefreshLock) {
+                needsRefresh = true;
+                needsRefreshLock.notifyAll();
+            }
+        }
+
+        public void run() {
+            while (!stop && !Thread.interrupted()) {
+                try {
+                    if (needsRefresh) {
+                        synchronized (needsRefreshLock) {
+                            needsRefresh = false;
                         }
-                    }.start();
+                        cacheInvalidationReconnected();
+                    }
+
+                    synchronized (needsRefreshLock) {
+                        if (!needsRefresh && !stop) {
+                            needsRefreshLock.wait();
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                } catch (Throwable t) {
+                    log.error("Error refreshing type manager cache.", t);
                 }
             }
         }
