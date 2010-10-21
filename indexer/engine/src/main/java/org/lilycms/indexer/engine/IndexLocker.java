@@ -127,19 +127,35 @@ public class IndexLocker {
 
         final String lockPath = getPath(recordId);
 
-        boolean tokenOk = zk.retryOperation(new ZooKeeperOperation<Boolean>() {
-            public Boolean execute() throws KeeperException, InterruptedException {
-                Stat stat = new Stat();
-                byte[] data = zk.getData(lockPath, false, stat);
+        // The below loop is because, even if our thread is interrupted, we still want to remove the lock.
+        // The interruption might be because just one IndexUpdater is being shut down, rather than the
+        // complete application, and hence session expiration will then not remove the lock.
+        boolean tokenOk;
+        boolean interrupted = false;
+        while (true) {
+            try {
+                tokenOk = zk.retryOperation(new ZooKeeperOperation<Boolean>() {
+                    public Boolean execute() throws KeeperException, InterruptedException {
+                        Stat stat = new Stat();
+                        byte[] data = zk.getData(lockPath, false, stat);
 
-                if (stat.getEphemeralOwner() == zk.getSessionId() && Bytes.toLong(data) == Thread.currentThread().getId()) {
-                    zk.delete(lockPath, -1);
-                    return true;
-                } else {
-                    return false;
-                }
+                        if (stat.getEphemeralOwner() == zk.getSessionId() && Bytes.toLong(data) == Thread.currentThread().getId()) {
+                            zk.delete(lockPath, -1);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+                break;
+            } catch (InterruptedException e) {
+                interrupted = true;
             }
-        });
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
 
         if (!tokenOk) {
             throw new IndexLockException("You cannot remove the index lock for record " + recordId +
