@@ -1,7 +1,5 @@
 package org.lilycms.rowlog.impl;
 
-import java.util.concurrent.Callable;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.lilycms.rowlog.api.RowLog;
@@ -24,15 +22,30 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
     
     protected abstract boolean processMessage(String context, RowLogMessage message) throws InterruptedException;
     
-    protected class Worker implements Callable<Object> {
+    protected class Worker implements Runnable {
+        private final String subscriptionId;
         private final String context;
+        private Thread thread;
+        private volatile boolean stop; // do not rely only on Thread.interrupt since some libraries eat interruptions
 
-        public Worker(String context) {
+        public Worker(String subscriptionId, String context) {
+            this.subscriptionId = subscriptionId;
             this.context = context;
         }
-        
-        public Object call() {
-            while(!Thread.interrupted()) {
+
+        public void start() {
+            thread = new Thread(this, "Handler: subscription " + subscriptionId + ", listener " + context);
+            thread.start();
+        }
+
+        public void stop() throws InterruptedException {
+            stop = true;
+            thread.interrupt();
+            thread.join();
+        }
+
+        public void run() {
+            while(!stop && !Thread.interrupted()) {
                 RowLogMessage message;
                 try {
                     message = messagesWorkQueue.take();
@@ -51,7 +64,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                                 }
                             } 
                         } catch (RowLogException e) {
-                            log.warn(String.format("RowLogException occured while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
+                            log.warn(String.format("RowLogException occurred while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
                         } finally {
                             messagesWorkQueue.done(message);
                         }
@@ -60,7 +73,6 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                     break;
                 }
             }
-            return null;
         }
     }
 }

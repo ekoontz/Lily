@@ -3,19 +3,18 @@ package org.lilycms.rowlog.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.lilycms.rowlog.api.ListenersObserver;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 
 public abstract class AbstractListenersSubscriptionHandler extends AbstractSubscriptionHandler implements ListenersObserver {
-    protected ExecutorService executorService = Executors.newCachedThreadPool();
     protected RowLogConfigurationManager rowLogConfigurationManager;
-    private Map<String, Future<?>> listeners = new ConcurrentHashMap<String, Future<?>>();
+    private Map<String, Worker> listeners = new ConcurrentHashMap<String, Worker>();
     protected volatile boolean stop = false;
+    private Log log = LogFactory.getLog(getClass());
 
     public AbstractListenersSubscriptionHandler(String subscriptionId, MessagesWorkQueue messagesWorkQueue,
             RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
@@ -52,14 +51,20 @@ public abstract class AbstractListenersSubscriptionHandler extends AbstractSubsc
     }
 
     protected void submitWorker(String listener) {
-        Future<?> future = executorService.submit(new Worker(listener));
-        listeners.put(listener, future);
+        Worker worker = new Worker(subscriptionId, listener);
+        worker.start();
+        listeners.put(listener, worker);
     }
 
     private void listenerUnregistered(String listenerId) {
-        Future<?> future = listeners.get(listenerId);
-        if (future != null)
-            future.cancel(true);
-        listeners.remove(listenerId);
+        Worker worker = listeners.get(listenerId);
+        if (worker != null) {
+            try {
+                worker.stop();
+            } catch (InterruptedException e) {
+                log.info("Interrupted while stopping subscription handler worker.", e);
+            }
+            listeners.remove(listenerId);
+        }
     }
 }
