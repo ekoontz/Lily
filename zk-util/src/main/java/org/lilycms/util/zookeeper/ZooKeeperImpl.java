@@ -24,6 +24,8 @@ public class ZooKeeperImpl implements ZooKeeperItf {
 
     protected boolean connected = false;
 
+    protected volatile boolean stop = false;
+
     protected final Object connectedMonitor = new Object();
 
     protected Thread zkEventThread;
@@ -50,15 +52,26 @@ public class ZooKeeperImpl implements ZooKeeperItf {
         additionalDefaultWatchers.remove(watcher);
     }
 
+    public void shutdown() {
+        this.stop = true;
+        synchronized (connectedMonitor) {
+            connectedMonitor.notifyAll();
+        }
+    }
+
     public void waitForConnection() throws InterruptedException {
         if (isCurrentThreadEventThread()) {
             throw new RuntimeException("waitForConnection should not be called from within the ZooKeeper event thread.");
         }
 
         synchronized (connectedMonitor) {
-            while (!connected) {
+            while (!connected && !stop) {
                 connectedMonitor.wait();
             }
+        }
+
+        if (stop) {
+            throw new InterruptedException("This ZooKeeper handle is shutting down.");
         }
     }
 

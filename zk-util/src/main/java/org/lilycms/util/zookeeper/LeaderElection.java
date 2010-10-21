@@ -195,26 +195,29 @@ public class LeaderElection {
     private class LeaderProvisioner implements Runnable {
         private volatile LeaderState currentState = LeaderState.I_AM_NOT_LEADER;
         private volatile LeaderState requiredState = LeaderState.I_AM_NOT_LEADER;
-        private final Object stateMonitor = new Object();
+        private final Object stateLock = new Object();
         private Thread thread;
+        private volatile boolean stop; // do not rely only on Thread.interrupt since some libraries eat interruptions
 
         public synchronized void shutdown() throws InterruptedException {
             if (thread == null || !thread.isAlive()) {
                 return;
             }
 
+            stop = true;
             thread.interrupt();
             thread.join();
             thread = null;
         }
 
         public synchronized void start() {
+            stop = false;
             thread = new Thread(this, "LeaderProvisioner for " + position);
             thread.start();
         }
 
         public void run() {
-            while (!Thread.interrupted()) {
+            while (!Thread.interrupted() && !stop) {
                 try {
                     if (currentState != requiredState) {
                         if (requiredState == LeaderState.I_AM_LEADER) {
@@ -226,9 +229,9 @@ public class LeaderElection {
                         }
                     }
 
-                    synchronized (stateMonitor) {
-                        if (currentState == requiredState) {
-                            stateMonitor.wait();
+                    synchronized (stateLock) {
+                        if (currentState == requiredState && !stop) {
+                            stateLock.wait();
                         }
                     }
                 } catch (InterruptedException e) {
@@ -242,9 +245,9 @@ public class LeaderElection {
         }
 
         public void setRequiredState(LeaderState state) {
-            synchronized (stateMonitor) {
+            synchronized (stateLock) {
                 this.requiredState = state;
-                stateMonitor.notifyAll();
+                stateLock.notifyAll();
             }
         }
     }

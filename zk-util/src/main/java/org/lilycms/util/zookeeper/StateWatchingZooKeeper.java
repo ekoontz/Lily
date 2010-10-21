@@ -49,6 +49,8 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
 
     private Thread stateWatcherThread;
 
+    private Runnable endProcessHook;
+
     public StateWatchingZooKeeper(String connectString, int sessionTimeout) throws IOException {
         this.requestedSessionTimeout = sessionTimeout;
         this.sessionTimeout = sessionTimeout;
@@ -83,7 +85,8 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
     }
 
     @PreDestroy
-    public void stop() {
+    public void shutdown() {
+        super.shutdown();
         stopping = true;
         if (stateWatcherThread != null) {
             stateWatcherThread.interrupt();
@@ -91,9 +94,19 @@ public class StateWatchingZooKeeper extends ZooKeeperImpl {
         close();
     }
 
+    public void setEndProcessHook(Runnable endProcessHook) {
+        this.endProcessHook = endProcessHook;
+    }
+
     private void endProcess(String message) {
         if (stopping)
             return;
+
+        if (endProcessHook != null) {
+            endProcessHook.run();
+        }
+
+        super.shutdown();
 
         log.error(message);
         System.err.println(message);

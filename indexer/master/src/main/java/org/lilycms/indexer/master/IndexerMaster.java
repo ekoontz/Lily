@@ -406,7 +406,7 @@ public class IndexerMaster {
          */
         private Map<String, String> runningJobs = new ConcurrentHashMap<String, String>(10, 0.75f, 2);
 
-        private boolean stop;
+        private boolean stop; // do not rely only on Thread.interrupt since some libraries eat interruptions
 
         private Thread thread;
 
