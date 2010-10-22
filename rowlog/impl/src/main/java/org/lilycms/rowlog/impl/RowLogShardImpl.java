@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -34,7 +36,6 @@ import org.apache.hadoop.hbase.client.RowLock;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.*;
-import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.util.hbase.LocalHTable;
 import org.lilycms.util.io.Closer;
 
@@ -47,6 +48,7 @@ public class RowLogShardImpl implements RowLogShard {
     private final RowLog rowLog;
     private final String id;
     private final int batchSize;
+    private Log log = LogFactory.getLog(getClass());
 
     public RowLogShardImpl(String id, Configuration configuration, RowLog rowLog, int batchSize) throws IOException {
         this.id = id;
@@ -111,6 +113,7 @@ public class RowLogShardImpl implements RowLogShard {
                 try {
                     table.unlockRow(rowLock);
                 } catch (IOException e) {
+                    log.warn("Exception while unlocking row <" + rowKey + ">", e);
                     // Ignore, the lock will timeout eventually
                 }
             }

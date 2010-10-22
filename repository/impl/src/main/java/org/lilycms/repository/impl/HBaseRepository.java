@@ -28,6 +28,8 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -111,6 +113,8 @@ public class HBaseRepository implements Repository {
     private BlobStoreAccessRegistry blobStoreAccessRegistry;
     private RowLog wal;
     private RowLocker rowLocker;
+    
+    private Log log = LogFactory.getLog(getClass());
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
             BlobStoreAccessFactory blobStoreAccessFactory, RowLog wal, Configuration configuration) throws IOException {
@@ -241,10 +245,14 @@ public class HBaseRepository implements Repository {
         if (customRowLock != null) {
             try {
                 wal.processMessage(walMessage);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Processing message <"+walMessage+"> by the WAL got interrupted. It will be retried later.", e);
             } catch (RowLogException e) {
-                // Processing the message failed, it will be retried later
+                log.warn("Exception while processing message <"+walMessage+"> by the WAL. It will be retried later.", e);
+            } finally {
+                unlockRow(customRowLock);
             }
-            unlockRow(customRowLock);
         }
         return newRecord;
     }
@@ -263,8 +271,14 @@ public class HBaseRepository implements Repository {
         if (record.getId() == null) {
             throw new InvalidRecordException(record, "The recordId cannot be null for a record to be updated.");
         }
-        if (!checkAndProcessOpenMessages(record.getId())) {
-            throw new RecordException("Record <"+ record.getId()+"> update could not be performed due to remaining messages on the WAL");
+        try {
+            if (!checkAndProcessOpenMessages(record.getId())) {
+                throw new RecordException("Record <"+ record.getId()+"> update could not be performed due to remaining messages on the WAL");
+            }
+        }  catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RecordException("Exception occurred while updating record <" + record.getId() + ">",
+                    e);
         }
         
         if (updateVersion) {
@@ -1056,7 +1070,7 @@ public class HBaseRepository implements Repository {
         return recordIds;
     }
     
-    private boolean checkAndProcessOpenMessages(RecordId recordId) throws RecordException {
+    private boolean checkAndProcessOpenMessages(RecordId recordId) throws RecordException, InterruptedException {
         byte[] rowKey = recordId.toBytes();
         try {
             List<RowLogMessage> messages = wal.getMessages(rowKey);

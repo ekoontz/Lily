@@ -34,6 +34,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilycms.rowlog.api.*;
+import org.lilycms.util.io.Closer;
 
 /**
  * See {@link RowLog}
@@ -66,7 +67,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
      * @throws RowLogException
      */
     public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily,
-            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
+            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
@@ -80,9 +81,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
 
     public void stop() {
         rowLogConfigurationManager.removeSubscriptionsObserver(id, this);
-        if (processorNotifier != null) {
-            processorNotifier.close();
-        }
+        Closer.close(processorNotifier);
     }
     
     @Override
@@ -134,7 +133,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         try {
             result = rowTable.get(get);
         } catch (IOException e) {
-            throw new RowLogException("Failed to get payload from the rowTable", e);
+            throw new RowLogException("Exception while getting payload from the rowTable", e);
         }
         return result.getValue(payloadColumnFamily, Bytes.toBytes(seqnr));
     }
@@ -181,7 +180,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         }
     }
 
-    public boolean processMessage(RowLogMessage message) throws RowLogException {
+    public boolean processMessage(RowLogMessage message) throws RowLogException, InterruptedException {
         byte[] rowKey = message.getRowKey();
         long seqnr = message.getSeqNr();
         byte[] qualifier = Bytes.toBytes(seqnr);
@@ -205,7 +204,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             }
     }
 
-    private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException {
+    private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException, InterruptedException {
         boolean allDone = true;
         List<RowLogSubscription> subscriptionsSnapshot = getSubscriptions();
         if (respectOrder) {
@@ -216,14 +215,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             if (!executionState.getState(subscriptionId)) {
                 boolean done = false;
                 executionState.incTryCount(subscriptionId);
-                try {
-                    RowLogMessageListener listener = RowLogMessageListenerMapping.INSTANCE.get(subscriptionId);
-                    if (listener != null) 
-                        done = listener.processMessage(message);
-                } catch (Throwable t) {
-                    executionState.setState(subscriptionId, false);
-                    return false;
-                }
+                RowLogMessageListener listener = RowLogMessageListenerMapping.INSTANCE.get(subscriptionId);
+                if (listener != null) 
+                    done = listener.processMessage(message);
                 executionState.setState(subscriptionId, done);
                 if (!done) {
                     allDone = false;

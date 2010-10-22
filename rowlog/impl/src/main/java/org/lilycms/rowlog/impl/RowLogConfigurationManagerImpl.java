@@ -101,11 +101,11 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         // the setData call, the subscription could have been removed again by the time this method returns.
         // We assume the processes that are adding subscriptions, as far as they run concurrently, to use
         // subscriptionIds which do not collide.
+        // (cfr. #122)
     }
     
     public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException, RowLogException {
         final String path = subscriptionPath(rowLogId, subscriptionId);
-
         boolean success = false;
         int tryCount = 0;
 
@@ -213,11 +213,16 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         zooKeeper.setData(path, Bytes.toBytes(hostName + ":" + port), -1);
     }
     
-    public void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException {
+    public void unPublishProcessorHost(final String rowLogId, final String shardId) throws InterruptedException, KeeperException {
         try {
-            zooKeeper.delete(processorPath(rowLogId, shardId), -1);
-        } catch (KeeperException.NoNodeException e) {
-            // Ignore
+            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                public Object execute() throws KeeperException, InterruptedException {
+                    zooKeeper.delete(processorPath(rowLogId, shardId), -1);
+                    return null;
+                }
+            });
+        } catch (KeeperException.NoNodeException ignore) {
+            // Silently ignore. Might occur because we use retryOperation.
         }
     }
 
@@ -475,7 +480,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                         // Note that if you enable this debug logging (or noticed this in some other way) you
                         // might see multiple times the same set of subscriptions being reported to observers.
                         // This is because each time a new observer is added, everyone observer is again called
-                        // with the current set of subscriptions. See addSubscriptionObserver fo why this is.
+                        // with the current set of subscriptions. See addSubscriptionObserver for why this is.
                         // Since often a new observer is registered in response to the creation of a subscriptions,
                         // you will often see double events.
                         log.debug("Row log " + rowLogId + ": notifying to the observers " + observers +

@@ -64,7 +64,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     private RowLogConfigurationManager rowLogConfigurationManager;
     private Log log = LogFactory.getLog(getClass());
     
-    public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
+    public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLog = rowLog;
         this.rowLogConfigurationManager = rowLogConfigurationManager;
         this.shard = rowLog.getShards().get(0); // TODO: For now we only work with one shard

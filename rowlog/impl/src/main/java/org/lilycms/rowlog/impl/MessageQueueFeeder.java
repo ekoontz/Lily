@@ -15,8 +15,6 @@
  */
 package org.lilycms.rowlog.impl;
 
-import java.io.IOException;
-
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
@@ -25,7 +23,7 @@ import org.lilycms.rowlog.api.RowLogMessageListener;
 public class MessageQueueFeeder implements RowLogMessageListener {
     private RowLog messageQueue = null;
     
-    public MessageQueueFeeder(RowLog messageQueueRowLog) throws RowLogException, IOException {
+    public MessageQueueFeeder(RowLog messageQueueRowLog) {
         this.messageQueue = messageQueueRowLog;
     }
     

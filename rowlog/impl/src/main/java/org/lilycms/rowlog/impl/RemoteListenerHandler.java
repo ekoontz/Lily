@@ -138,7 +138,7 @@ public class RemoteListenerHandler {
             semaphore.acquire();
         }
 
-        private void writeResult(Channel channel, boolean result) throws InterruptedException {
+        private void writeResult(Channel channel, boolean result) {
             if (channel.isOpen()) {
                 ChannelFuture future = channel.write(new Boolean(result));
                 future.addListener(new ChannelFutureListener() {
@@ -152,7 +152,7 @@ public class RemoteListenerHandler {
         
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            log.info("Failed to process message, "+ e.getCause());
+            log.warn("Exception in MessageHandler while processing message, "+ e.getCause());
             writeResult(e.getChannel(), false);
         }
     }

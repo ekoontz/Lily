@@ -53,8 +53,7 @@ public class RemoteListenersSubscriptionHandler extends AbstractListenersSubscri
                 closeFuture.await();
             } catch (InterruptedException e) {
                 Closer.close(channel);
-                Thread.currentThread().interrupt();
-                return false;
+                throw e;
             }
         }
         return messageProcessSuccess;

@@ -110,7 +110,7 @@ public interface RowLog {
      * @return true if all consumers have processed the {@link RowLogMessage} successfully
      * @throws RowLogException
      */
-    boolean processMessage(RowLogMessage message) throws RowLogException;
+    boolean processMessage(RowLogMessage message) throws RowLogException, InterruptedException;
     
     /**
      * Locks a {@link RowLogMessage} for a certain subscription. This lock can be used if a subscription wants

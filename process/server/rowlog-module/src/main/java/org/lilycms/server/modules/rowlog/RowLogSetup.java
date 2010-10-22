@@ -27,7 +27,7 @@ public class RowLogSetup {
     }
 
     @PostConstruct
-    public void start() throws InterruptedException, KeeperException, IOException, RowLogException, LeaderElectionSetupException {
+    public void start() throws InterruptedException, KeeperException, IOException, LeaderElectionSetupException {
         // If the subscription already exists, this method will silently return
         if (!confMgr.subscriptionExists("WAL", "LinkIndexUpdater")) {
             confMgr.addSubscription("WAL", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);

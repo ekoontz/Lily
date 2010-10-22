@@ -17,7 +17,6 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
-import org.lilycms.rowlog.api.RowLogException;
 
 public class RowLogProcessorNotifier {
     
@@ -26,7 +25,7 @@ public class RowLogProcessorNotifier {
     private String[] processorHostAndPort;
     private RowLogConfigurationManager rowLogConfigurationManager;
 
-    public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager) throws RowLogException {
+    public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
     
