@@ -57,122 +57,122 @@
 
     <!-- Lily server -->
     <file>
-      <source>${basedir}/../process/server/target/dist-scripts/lily-server</source>
+      <source>${basedir}/../cr/process/server/target/dist-scripts/lily-server</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../process/server/target/dist-scripts/lily-server.bat</source>
+      <source>${basedir}/../cr/process/server/target/dist-scripts/lily-server.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
 
     <!-- Import tool -->
     <file>
-      <source>${basedir}/../tools/import/target/dist-scripts/lily-import</source>
+      <source>${basedir}/../apps/import/target/dist-scripts/lily-import</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../tools/import/target/dist-scripts/lily-import.bat</source>
+      <source>${basedir}/../apps/import/target/dist-scripts/lily-import.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
 
     <!-- MBOX Import tool -->
     <file>
-      <source>${basedir}/../tools/mbox-import/target/dist-scripts/lily-mbox-import</source>
+      <source>${basedir}/../apps/mbox-import/target/dist-scripts/lily-mbox-import</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../tools/mbox-import/target/dist-scripts/lily-mbox-import.bat</source>
+      <source>${basedir}/../apps/mbox-import/target/dist-scripts/lily-mbox-import.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
 
     <!-- Tester tool -->
     <file>
-      <source>${basedir}/../tools/tester/target/dist-scripts/lily-tester</source>
+      <source>${basedir}/../apps/tester/target/dist-scripts/lily-tester</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../tools/tester/target/dist-scripts/lily-tester.bat</source>
+      <source>${basedir}/../apps/tester/target/dist-scripts/lily-tester.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
 
     <!-- Indexer admin CLI -->
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-add-index</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-add-index</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-add-index.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-add-index.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-update-index</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-update-index</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-update-index.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-update-index.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-list-indexes</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-list-indexes</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-list-indexes.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-list-indexes.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-indexerconf</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-get-indexerconf</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-indexerconf.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-get-indexerconf.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-shardingconf</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-get-shardingconf</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-get-shardingconf.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-get-shardingconf.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-touch-index</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-touch-index</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../indexer/admin-cli/target/dist-scripts/lily-touch-index.bat</source>
+      <source>${basedir}/../cr/indexer/admin-cli/target/dist-scripts/lily-touch-index.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
 
     <!-- Launch hadoop -->
     <file>
-      <source>${basedir}/../testfw/target/dist-scripts/launch-hadoop</source>
+      <source>${basedir}/../global/test-fw/target/dist-scripts/launch-hadoop</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>${basedir}/../testfw/target/dist-scripts/launch-hadoop.bat</source>
+      <source>${basedir}/../global/test-fw/target/dist-scripts/launch-hadoop.bat</source>
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
@@ -188,7 +188,7 @@
 
     <!-- Lily server configuration -->
     <fileSet>
-      <directory>${basedir}/../process/server/conf</directory>
+      <directory>${basedir}/../cr/process/server/conf</directory>
       <outputDirectory>/conf</outputDirectory>
       <useDefaultExcludes>true</useDefaultExcludes>
     </fileSet>

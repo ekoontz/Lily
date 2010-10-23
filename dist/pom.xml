@@ -77,7 +77,7 @@
         <artifactId>lily-kauri-plugin</artifactId>
         <version>0.2-SNAPSHOT</version>
         <configuration>
-          <confDirectory>${basedir}/../process/server/conf</confDirectory>
+          <confDirectory>${basedir}/../cr/process/server/conf</confDirectory>
           <kauriVersion>${version.kauri}</kauriVersion>
         </configuration>
         <executions>

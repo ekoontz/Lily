@@ -71,7 +71,7 @@
     <module>global/hbaseindex</module>
     <module>global/rowlog</module>
     <module>global/util</module>
-    <module>global/testfw</module>
+    <module>global/test-fw</module>
     <module>global/hbase-util</module>
     <module>global/zk-util</module>
     <module>global/json-util</module>
