@@ -41,7 +41,7 @@ public abstract class AbstractBlobStoreTest {
     protected static ZooKeeperItf zooKeeper;
     protected static RowLogConfigurationManager rowLogConfMgr;
     
-    protected static void setupWal() throws IOException, RowLogException {
+    protected static void setupWal() throws IOException, RowLogException, InterruptedException {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
         wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);

@@ -77,6 +77,12 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
+    public void putMessage(RowLogMessage message, List<RowLogSubscription> subscriptions) throws RowLogException {
+        for (RowLogSubscription subscription : subscriptions) {
+            putMessage(message, subscription.getId());
+        }
+    }
+
     private void putMessage(RowLogMessage message, String subscriptionId) throws RowLogException {
         byte[] rowKey = createRowKey(message.getId(), subscriptionId, false);
         Put put = new Put(rowKey);

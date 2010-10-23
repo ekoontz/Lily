@@ -6,6 +6,7 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
+import org.lilycms.util.Logs;
 
 import java.util.Collections;
 import java.util.List;
@@ -206,6 +207,7 @@ public class LeaderElection {
 
             stop = true;
             thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
             thread = null;
         }

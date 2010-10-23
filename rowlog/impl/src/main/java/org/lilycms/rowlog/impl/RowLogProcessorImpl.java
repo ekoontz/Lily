@@ -52,6 +52,7 @@ import org.lilycms.rowlog.api.RowLogProcessor;
 import org.lilycms.rowlog.api.RowLogShard;
 import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.rowlog.api.SubscriptionsObserver;
+import org.lilycms.util.Logs;
 import org.lilycms.util.io.Closer;
 
 public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver {
@@ -122,6 +123,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         SubscriptionThread subscriptionThread = subscriptionThreads.get(subscriptionId);
         subscriptionThread.shutdown();
         try {
+            Logs.logThreadJoin(subscriptionThread);
             subscriptionThread.join();
         } catch (InterruptedException e) {
         }
@@ -145,6 +147,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
             if (thread != null) {
                 try {
                     if (thread.isAlive()) {
+                        Logs.logThreadJoin(thread);
                         thread.join();
                     }
                 } catch (InterruptedException e) {
@@ -255,6 +258,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private String subscriptionId;
 
         public SubscriptionThread(RowLogSubscription subscription) {
+            super("Row log SubscriptionThread for " + subscription.getId());
             this.subscriptionId = subscription.getId();
             this.metrics = new ProcessorMetrics(subscriptionId);
             switch (subscription.getType()) {
@@ -339,6 +343,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                         }
                     } catch (RowLogException e) {
                         // The message will be retried later
+                        log.info("Error processing message for subscription " + subscriptionId + " (message will be retried later).", e);
+                    } catch (Throwable t) {
+                        if (Thread.currentThread().isInterrupted())
+                            return;
+                        log.error("Error in subscription thread for " + subscriptionId, t);
                     }
                 }
             } finally {

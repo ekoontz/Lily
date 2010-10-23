@@ -10,6 +10,7 @@ import org.lilycms.indexer.batchbuild.IndexBatchBuildCounters;
 import org.lilycms.indexer.model.api.*;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogSubscription;
+import org.lilycms.util.Logs;
 import org.lilycms.util.zookeeper.*;
 
 import static org.lilycms.indexer.model.api.IndexerModelEventType.*;
@@ -311,6 +312,7 @@ public class IndexerMaster {
 
             if (interrupt)
                 thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
             thread = null;
         }
@@ -319,6 +321,7 @@ public class IndexerMaster {
             if (thread != null) {
                 log.warn("EventWorker start was requested, but old thread was still there. Stopping it now.");
                 thread.interrupt();
+                Logs.logThreadJoin(thread);
                 thread.join();
             }
             eventQueue.clear();
@@ -423,6 +426,7 @@ public class IndexerMaster {
 
             if (interrupt)
                 thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
             thread = null;
         }
@@ -431,6 +435,7 @@ public class IndexerMaster {
             if (thread != null) {
                 log.warn("JobStatusWatcher start was requested, but old thread was still there. Stopping it now.");
                 thread.interrupt();
+                Logs.logThreadJoin(thread);
                 thread.join();
             }
             runningJobs.clear();

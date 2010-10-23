@@ -39,7 +39,7 @@ public class RowLogProcessorNotifier {
         }
     }
     
-    protected void close() {
+    public void close() {
         processorHostAndPort = null;
         if (channelFactory != null) {
             channelFactory.releaseExternalResources();

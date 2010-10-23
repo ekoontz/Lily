@@ -19,6 +19,7 @@ import org.apache.avro.ipc.HttpServer;
 import org.apache.avro.ipc.Responder;
 import org.lilycms.repository.api.Repository;
 import org.lilycms.repository.avro.*;
+import org.lilycms.util.Logs;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -50,12 +51,16 @@ public class AvroServer {
     
     @PreDestroy
     public void stop() {
+        // It would be nice to wait for client threads to end, but since these client threads pass into
+        // HBase client code which is notoriously difficult to interrupt, we skip this step
+        /*
         server.close();
         try {
             server.join();
         } catch (InterruptedException e) {
             Thread.interrupted();
         }
+        */
     }
 
     public int getPort() {

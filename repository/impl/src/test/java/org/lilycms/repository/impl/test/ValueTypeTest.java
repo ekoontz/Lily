@@ -95,7 +95,7 @@ public class ValueTypeTest {
         HBASE_PROXY.stop();
     }
 
-    private static RowLog initializeWal(Configuration configuration) throws IOException, RowLogException {
+    private static RowLog initializeWal(Configuration configuration) throws IOException, RowLogException, InterruptedException {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
         // Work with only one shard for now

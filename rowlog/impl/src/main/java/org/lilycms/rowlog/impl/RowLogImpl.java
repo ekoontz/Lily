@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -54,7 +55,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     private Log log = LogFactory.getLog(getClass());
     private final boolean respectOrder;
     private RowLogConfigurationManager rowLogConfigurationManager;
-    
+
+    private final AtomicBoolean initialSubscriptionsLoaded = new AtomicBoolean(false);
+
     /**
      * The RowLog should be instantiated with information about the table that contains the rows the messages are 
      * related to, and the column families it can use within this table to put the payload and execution state of the
@@ -67,7 +70,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
      * @throws RowLogException
      */
     public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily,
-            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) {
+            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) throws InterruptedException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
@@ -77,6 +80,11 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         this.processorNotifier = new RowLogProcessorNotifier(rowLogConfigurationManager);
         this.rowLogConfigurationManager = rowLogConfigurationManager;
         rowLogConfigurationManager.addSubscriptionsObserver(id, this);
+        synchronized (initialSubscriptionsLoaded) {
+            while (!initialSubscriptionsLoaded.get()) {
+                initialSubscriptionsLoaded.wait();
+            }
+        }
     }
 
     public void stop() {
@@ -149,11 +157,13 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             messageId = Bytes.add(messageId, rowKey);
             
             RowLogMessage message = new RowLogMessageImpl(messageId, rowKey, seqnr, data, this);
-        
-            synchronized(subscriptions) {
-                shard.putMessage(message);
-                initializeSubscriptions(message, put);
-            }
+
+            // Take current snapshot of the subscriptions so that shard.putMessage and initializeSubscriptions
+            // use the exact same set of subscriptions.
+            List<RowLogSubscription> subscriptions = getSubscriptions();
+            shard.putMessage(message, subscriptions);
+            initializeSubscriptions(message, put, subscriptions);
+
             if (processorNotifier != null) {
                 processorNotifier.notifyProcessor(id, shard.getId());
             }
@@ -164,12 +174,11 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     }
 
     
-    private void initializeSubscriptions(RowLogMessage message, Put put) throws IOException {
+    private void initializeSubscriptions(RowLogMessage message, Put put, List<RowLogSubscription> subscriptions)
+            throws IOException {
         SubscriptionExecutionState executionState = new SubscriptionExecutionState(message.getId());
-        synchronized (subscriptions) {
-            for (RowLogSubscription subscription : subscriptions.values()) {
-                executionState.setState(subscription.getId(), false);
-            }
+        for (RowLogSubscription subscription : subscriptions) {
+            executionState.setState(subscription.getId(), false);
         }
         if (put != null) {
             put.add(executionStateColumnFamily, Bytes.toBytes(message.getSeqNr()), executionState.toBytes());
@@ -519,6 +528,10 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                 if (!newSubscriptions.contains(subscription))
                     iterator.remove();
             }
+        }
+        synchronized (initialSubscriptionsLoaded) {
+            initialSubscriptionsLoaded.set(true);
+            initialSubscriptionsLoaded.notifyAll();
         }
     }
 

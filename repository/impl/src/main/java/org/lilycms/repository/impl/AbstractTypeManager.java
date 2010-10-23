@@ -52,6 +52,7 @@ import org.lilycms.repository.impl.primitivevaluetype.LongValueType;
 import org.lilycms.repository.impl.primitivevaluetype.StringValueType;
 import org.lilycms.repository.impl.primitivevaluetype.UriValueType;
 import org.lilycms.util.ArgumentValidator;
+import org.lilycms.util.Logs;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 
@@ -100,8 +101,8 @@ public abstract class AbstractTypeManager implements TypeManager {
                     cacheInvalidationReconnected();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    log.debug("Interrupted", e);
                 }
+                cacheRefresher.needsRefresh();
             }
         }
     }
@@ -122,6 +123,7 @@ public abstract class AbstractTypeManager implements TypeManager {
             stop = true;
             if (thread != null) {
                 thread.interrupt();
+                Logs.logThreadJoin(thread);
                 thread.join();
                 thread = null;
             }
@@ -141,7 +143,7 @@ public abstract class AbstractTypeManager implements TypeManager {
                         synchronized (needsRefreshLock) {
                             needsRefresh = false;
                         }
-                        cacheInvalidationReconnected();
+                        refreshCaches();
                     }
 
                     synchronized (needsRefreshLock) {
@@ -159,7 +161,6 @@ public abstract class AbstractTypeManager implements TypeManager {
     }
 
     protected void cacheInvalidationReconnected() throws InterruptedException {
-        refreshCaches();
     }
 
     protected void setupCaches() throws InterruptedException, KeeperException {

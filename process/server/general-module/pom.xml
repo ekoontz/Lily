@@ -34,6 +34,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.lilycms</groupId>
+      <artifactId>lily-zk-util</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>

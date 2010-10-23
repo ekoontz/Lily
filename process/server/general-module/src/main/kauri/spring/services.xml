@@ -41,6 +41,15 @@
     <constructor-arg value="${zookeeper:sessionTimeout}"/>
   </bean>
 
+  <bean id="endProcessHook"
+        class="org.lilycms.server.modules.general.EndProcessHookSetup">
+    <constructor-arg ref="zooKeeper"/>
+  </bean>
+
+  <bean id="connectionDisposer"
+        class="org.lilycms.server.modules.general.HBaseConnectionDisposer">
+  </bean>
+
   <bean id="zooKeeperMXBean" class="org.lilycms.util.zookeeper.ZooKeeperMXBean">
     <constructor-arg value="${zookeeper:connectString}"/>
     <constructor-arg value="${zookeeper:sessionTimeout}"/>

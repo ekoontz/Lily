@@ -22,6 +22,7 @@ import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.impl.RemoteListenerHandler;
+import org.lilycms.util.Logs;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.io.Closer;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
@@ -115,6 +116,7 @@ public class IndexerWorker {
     public void stop() {
         eventWorkerThread.interrupt();
         try {
+            Logs.logThreadJoin(eventWorkerThread);
             eventWorkerThread.join();
         } catch (InterruptedException e) {
             log.info("Interrupted while joining eventWorkerThread.");

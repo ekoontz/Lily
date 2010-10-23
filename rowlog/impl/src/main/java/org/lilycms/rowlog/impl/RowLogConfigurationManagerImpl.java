@@ -27,6 +27,7 @@ import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.rowlog.api.SubscriptionsObserver;
 import org.lilycms.util.ArgumentValidator;
+import org.lilycms.util.Logs;
 import org.lilycms.util.zookeeper.ZkUtil;
 import org.lilycms.util.zookeeper.ZooKeeperItf;
 import org.lilycms.util.zookeeper.ZooKeeperOperation;
@@ -288,6 +289,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             }
 
             thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
             thread = null;
         }

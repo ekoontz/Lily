@@ -11,6 +11,7 @@ import org.lilycms.indexer.model.indexerconf.IndexerConfException;
 import org.lilycms.indexer.model.sharding.JsonShardSelectorBuilder;
 import org.lilycms.indexer.model.sharding.ShardSelector;
 import org.lilycms.indexer.model.sharding.ShardingConfigException;
+import org.lilycms.util.Logs;
 import org.lilycms.util.ObjectUtils;
 import org.lilycms.util.zookeeper.*;
 
@@ -521,6 +522,7 @@ public class IndexerModelImpl implements WriteableIndexerModel {
             }
 
             thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
             thread = null;
         }

@@ -33,7 +33,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.easymock.classextension.IMocksControl;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +41,6 @@ import org.lilycms.rowlog.api.RowLogConfigurationManager;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
 import org.lilycms.rowlog.api.RowLogShard;
-import org.lilycms.rowlog.api.RowLogSubscription;
 import org.lilycms.rowlog.api.RowLogSubscription.Type;
 import org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilycms.rowlog.impl.RowLogImpl;
@@ -76,21 +74,6 @@ public class RowLogTest {
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
     }
-    
-    protected void waitForSubscription(String subscriptionId) throws InterruptedException {
-        boolean subscriptionKnown = false;
-        long waitUntil = System.currentTimeMillis() + 10000;
-        while (!subscriptionKnown && System.currentTimeMillis() < waitUntil) {
-            for (RowLogSubscription subscription : rowLog.getSubscriptions()) {
-                if (subscriptionId.equals(subscription.getId())) {
-                    subscriptionKnown = true;
-                    break;
-                }
-            }
-            Thread.sleep(10);
-        }
-        Assert.assertTrue("Subscription <" + subscriptionId +"> not known to rowlog within reasonable time <10s>", subscriptionKnown);
-    }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
@@ -102,7 +85,6 @@ public class RowLogTest {
     @Before
     public void setUp() throws Exception {
         rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, configurationManager);
-        waitForSubscription(subscriptionId1);
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -115,7 +97,7 @@ public class RowLogTest {
     
     @Test
     public void testPutMessage() throws Exception {
-        shard.putMessage(isA(RowLogMessage.class));
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         control.replay();
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row1");
@@ -128,7 +110,7 @@ public class RowLogTest {
     
     @Test
     public void testMultipleMessages() throws Exception {
-        shard.putMessage(isA(RowLogMessage.class));
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         expectLastCall().times(3);
         shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
         
@@ -171,7 +153,7 @@ public class RowLogTest {
     @Test
     public void testMessageConsumed() throws Exception {
 
-        shard.putMessage(isA(RowLogMessage.class));
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
         
         control.replay();
@@ -186,7 +168,7 @@ public class RowLogTest {
     
     @Test
     public void testLockMessage() throws Exception {
-        shard.putMessage(isA(RowLogMessage.class));
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         
         control.replay();
         rowLog.registerShard(shard);
@@ -200,7 +182,7 @@ public class RowLogTest {
     
     @Test
     public void testUnlockMessage() throws Exception {
-        shard.putMessage(isA(RowLogMessage.class));
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         
         control.replay();
         rowLog.registerShard(shard);
@@ -219,9 +201,9 @@ public class RowLogTest {
     
     @Test
     public void testLockTimeout() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, configurationManager);
-        
-        shard.putMessage(isA(RowLogMessage.class));
+        RowLog rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, configurationManager);
+
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         
         control.replay();
         rowLog.registerShard(shard);
@@ -243,19 +225,20 @@ public class RowLogTest {
     @Test
     public void testLockingMultipleConsumers() throws Exception {
         String subscriptionId2 = "subscriptionId2";
-        
-        shard.putMessage(isA(RowLogMessage.class));
-        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId2));
-        
-        control.replay();
+                
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3, 2);
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
-            if (rowLog.getSubscriptions().size() > 1)
+            if (rowLog.getSubscriptions().size() == 2)
                 break;
         }
+        assertEquals(2L, rowLog.getSubscriptions().size());
         
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId2));
+        control.replay();
+
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row2");
         RowLogMessage message = rowLog.putMessage(rowKey, null, null, null);
@@ -275,18 +258,19 @@ public class RowLogTest {
         //Cleanup 
         rowLog.unlockMessage(message, subscriptionId2, true, lock2);
         configurationManager.removeSubscription(RowLogId, subscriptionId2);
+
+        waitUntil = System.currentTimeMillis() + 10000;
+        while (waitUntil > System.currentTimeMillis()) {
+            if (rowLog.getSubscriptions().size() == 1)
+                break;
+        }
+        assertEquals(1L, rowLog.getSubscriptions().size());
     }
     
     @Test
     public void testgetMessages() throws Exception {
         String subscriptionId3 = "subscriptionId2";
         
-        shard.putMessage(isA(RowLogMessage.class));
-        expectLastCall().times(2);
-        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
-        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId3));
-        
-        control.replay();
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
         configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5, 3);
         
@@ -298,6 +282,13 @@ public class RowLogTest {
         
         assertEquals(2, rowLog.getSubscriptions().size());
         
+        shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
+        expectLastCall().times(2);
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId1));
+        shard.removeMessage(isA(RowLogMessage.class), eq(subscriptionId3));
+
+        control.replay();
+
         rowLog.registerShard(shard);
         byte[] rowKey = Bytes.toBytes("row3");
         RowLogMessage message1 = rowLog.putMessage(rowKey, null, null, null);

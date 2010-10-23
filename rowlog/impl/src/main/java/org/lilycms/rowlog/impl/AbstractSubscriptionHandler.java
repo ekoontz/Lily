@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.lilycms.rowlog.api.RowLog;
 import org.lilycms.rowlog.api.RowLogException;
 import org.lilycms.rowlog.api.RowLogMessage;
+import org.lilycms.util.Logs;
 
 public abstract class AbstractSubscriptionHandler implements SubscriptionHandler {
     protected final RowLog rowLog;
@@ -41,6 +42,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
         public void stop() throws InterruptedException {
             stop = true;
             thread.interrupt();
+            Logs.logThreadJoin(thread);
             thread.join();
         }
 
@@ -62,8 +64,10 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                                         rowLog.unlockMessage(message, subscriptionId, true, lock);
                                     }
                                 }
-                            } 
-                        } catch (RowLogException e) {
+                            }
+                        } catch (InterruptedException e) {
+                            break;                            
+                        } catch (Throwable e) {
                             log.warn(String.format("RowLogException occurred while processing message %1$s by subscription %2$s of rowLog %3$s", message, subscriptionId, rowLogId), e);
                         } finally {
                             messagesWorkQueue.done(message);
