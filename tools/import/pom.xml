@@ -19,23 +19,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-import</artifactId>
   <name>Lily: import tool</name>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-cli-fw</artifactId>
     </dependency>
     <dependency>
@@ -47,13 +47,13 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-genscript-plugin</artifactId>
         <configuration>
           <scripts>
             <script>
               <basename>lily-import</basename>
-              <mainClass>org.lilycms.tools.import_.cli.JsonImportTool</mainClass>
+              <mainClass>org.lilyproject.tools.import_.cli.JsonImportTool</mainClass>
             </script>
           </scripts>
         </configuration>

@@ -20,37 +20,37 @@
 
   <kauri:import-service
       id="hadoopConfFactory"
-      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
+      service="org.lilyproject.server.modules.general.HadoopConfigurationFactory"/>
 
   <kauri:import-service
       id="repository"
-      service="org.lilycms.repository.api.Repository"/>
+      service="org.lilyproject.repository.api.Repository"/>
 
   <kauri:import-service
       id="messageQueue"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <kauri:import-service
       id="writeAheadLog"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <kauri:import-service
       id="zooKeeper"
-      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+      service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
 
   <kauri:import-service
       id="rowLogConfigurationMgr"
-      service="org.lilycms.rowlog.api.RowLogConfigurationManager"/>
+      service="org.lilyproject.rowlog.api.RowLogConfigurationManager"/>
 
   <bean id="hbaseConf"
       factory-bean="hadoopConfFactory"
       factory-method="getHBaseConf"/>
 
-  <bean id="indexerModel" class="org.lilycms.indexer.model.impl.IndexerModelImpl">
+  <bean id="indexerModel" class="org.lilyproject.indexer.model.impl.IndexerModelImpl">
     <constructor-arg ref="zooKeeper"/>
   </bean>
 
-  <bean id="indexerMaster" class="org.lilycms.indexer.master.IndexerMaster">
+  <bean id="indexerMaster" class="org.lilyproject.indexer.master.IndexerMaster">
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="indexerModel"/>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getMapReduceConf"/></constructor-arg>
@@ -61,7 +61,7 @@
     <constructor-arg ref="rowLogConfigurationMgr"/>
   </bean>
   
-  <bean id="indexerWorker" class="org.lilycms.indexer.worker.IndexerWorker">
+  <bean id="indexerWorker" class="org.lilyproject.indexer.worker.IndexerWorker">
     <constructor-arg ref="indexerModel"/>
     <constructor-arg ref="repository"/>
     <constructor-arg ref="messageQueue"/>

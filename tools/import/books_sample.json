@@ -1,7 +1,7 @@
 {
   namespaces: {
-    "org.lilycms.bookssample": "b",
-    "org.lilycms.vtag": "vtag"
+    "org.lilyproject.bookssample": "b",
+    "org.lilyproject.vtag": "vtag"
   },
   fieldTypes: [
     {

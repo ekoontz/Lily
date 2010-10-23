@@ -20,31 +20,31 @@
 
   <kauri:import-service
       id="hadoopConfFactory"
-      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
+      service="org.lilyproject.server.modules.general.HadoopConfigurationFactory"/>
 
   <kauri:import-service
       id="zooKeeper"
-      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+      service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
 
   <kauri:import-service
       id="messageQueue"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <kauri:import-service
       id="writeAheadLog"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <kauri:export-service
       ref="repository"
-      service="org.lilycms.repository.api.Repository"/>
+      service="org.lilyproject.repository.api.Repository"/>
 
   <bean id="hbaseConf"
       factory-bean="hadoopConfFactory"
       factory-method="getHBaseConf"/>
 
-  <bean id="idGenerator" class="org.lilycms.repository.impl.IdGeneratorImpl"/>
+  <bean id="idGenerator" class="org.lilyproject.repository.impl.IdGeneratorImpl"/>
 
-  <bean id="typeManager" class="org.lilycms.repository.impl.HBaseTypeManager">
+  <bean id="typeManager" class="org.lilyproject.repository.impl.HBaseTypeManager">
     <constructor-arg ref="idGenerator"/>
     <constructor-arg ref="hbaseConf"/>
     <constructor-arg ref="zooKeeper"/>
@@ -52,7 +52,7 @@
 
   <bean
     id="blobStoreAccessFactory"
-    class="org.lilycms.server.modules.repository.BlobStoreConfig"
+    class="org.lilyproject.server.modules.repository.BlobStoreConfig"
     factory-method="get">
     <constructor-arg>
       <bean class="java.net.URI">
@@ -62,7 +62,7 @@
     <constructor-arg ref="hbaseConf"/>
   </bean>
 
-  <bean id="repository" class="org.lilycms.repository.impl.HBaseRepository">
+  <bean id="repository" class="org.lilyproject.repository.impl.HBaseRepository">
     <constructor-arg ref="typeManager"/>
     <constructor-arg ref="idGenerator"/>
     <constructor-arg ref="blobStoreAccessFactory"/>
@@ -70,17 +70,17 @@
     <constructor-arg ref="hbaseConf"/>
   </bean>
 
-  <bean class="org.lilycms.server.modules.repository.LinkIndexUpdaterSetup">
+  <bean class="org.lilyproject.server.modules.repository.LinkIndexUpdaterSetup">
     <constructor-arg ref="repository"/>
     <constructor-arg ref="hbaseConf"/>
   </bean>
 
-  <bean id="address" class="org.lilycms.server.modules.repository.AddressResolver">
+  <bean id="address" class="org.lilyproject.server.modules.repository.AddressResolver">
     <constructor-arg value="${repository:interface}"/>
     <constructor-arg value="${repository:nameserver}"/>
   </bean>
 
-  <bean id="avroServer" class="org.lilycms.server.modules.repository.AvroServer">
+  <bean id="avroServer" class="org.lilyproject.server.modules.repository.AvroServer">
     <constructor-arg>
       <bean factory-bean="address" factory-method="getHostAddress"/>
     </constructor-arg>
@@ -88,7 +88,7 @@
     <constructor-arg value="${repository:port}"/>
   </bean>
 
-  <bean class="org.lilycms.server.modules.repository.ZKPublisher">
+  <bean class="org.lilyproject.server.modules.repository.ZKPublisher">
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg>
       <bean factory-bean="address" factory-method="getHostAddress"/>

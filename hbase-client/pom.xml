@@ -19,7 +19,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-hbase-client</artifactId>
   <name>Lily: HBase limited to client dependencies</name>
 
@@ -39,7 +39,7 @@
   -->
   
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
@@ -200,7 +200,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-hbase-exclusions-plugin</artifactId>
         <executions>
           <execution>

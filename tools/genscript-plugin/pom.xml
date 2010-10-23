@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-genscript-plugin</artifactId>
   <version>0.2-SNAPSHOT</version>
   <name>Lily: Maven plugin to generate shell scripts</name>
   <packaging>maven-plugin</packaging>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
     <relativePath>../..</relativePath>

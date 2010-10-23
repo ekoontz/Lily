@@ -19,12 +19,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-rest-module</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily-server</artifactId>
     <version>0.2-SNAPSHOT</version>
     <relativePath>../</relativePath>
@@ -34,17 +34,17 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-repository-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-repo-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-import</artifactId>
     </dependency>
 

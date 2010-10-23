@@ -1,5 +1,5 @@
 {
-  "namespace": "org.lilycms.repository.avro",
+  "namespace": "org.lilyproject.repository.avro",
   "protocol": "AvroLily",
 
   "types": [
@@ -196,7 +196,7 @@
         {"name": "id",   "type": ["string", "null"]},
         {"name": "name", "type": "AvroQName"},
         {"name": "valueType", "type": "AvroValueType"},
-        {"name": "scope", "type": {"namespace": "org.lilycms.repository.api", "name": "Scope", "type": "enum", "symbols": ["NON_VERSIONED", "VERSIONED", "VERSIONED_MUTABLE"]}}
+        {"name": "scope", "type": {"namespace": "org.lilyproject.repository.api", "name": "Scope", "type": "enum", "symbols": ["NON_VERSIONED", "VERSIONED", "VERSIONED_MUTABLE"]}}
       ]
     },
 

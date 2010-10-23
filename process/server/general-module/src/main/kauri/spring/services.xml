@@ -18,12 +18,12 @@
     <constructor-arg ref="confRegistry"/>
   </bean>
 
-  <kauri:export-service ref="hbaseConfiguration" service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
+  <kauri:export-service ref="hbaseConfiguration" service="org.lilyproject.server.modules.general.HadoopConfigurationFactory"/>
 
-  <kauri:export-service ref="zooKeeper" service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+  <kauri:export-service ref="zooKeeper" service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
 
   <bean id="hbaseConfiguration"
-      class="org.lilycms.server.modules.general.HadoopConfigurationFactoryImpl">
+      class="org.lilyproject.server.modules.general.HadoopConfigurationFactoryImpl">
     <constructor-arg><kauri:conf path="hbase"/></constructor-arg>
     <constructor-arg><kauri:conf path="mapreduce"/></constructor-arg>
     <constructor-arg value="${zookeeper:connectString}"/>
@@ -31,26 +31,26 @@
   </bean>
 
   <bean id="metrics"
-      class="org.lilycms.server.modules.general.Metrics">
+      class="org.lilyproject.server.modules.general.Metrics">
     <constructor-arg><kauri:conf path="metrics"/></constructor-arg>
   </bean>
 
   <bean id="zooKeeper"
-        class="org.lilycms.util.zookeeper.StateWatchingZooKeeper">
+        class="org.lilyproject.util.zookeeper.StateWatchingZooKeeper">
     <constructor-arg value="${zookeeper:connectString}"/>
     <constructor-arg value="${zookeeper:sessionTimeout}"/>
   </bean>
 
   <bean id="endProcessHook"
-        class="org.lilycms.server.modules.general.EndProcessHookSetup">
+        class="org.lilyproject.server.modules.general.EndProcessHookSetup">
     <constructor-arg ref="zooKeeper"/>
   </bean>
 
   <bean id="connectionDisposer"
-        class="org.lilycms.server.modules.general.HBaseConnectionDisposer">
+        class="org.lilyproject.server.modules.general.HBaseConnectionDisposer">
   </bean>
 
-  <bean id="zooKeeperMXBean" class="org.lilycms.util.zookeeper.ZooKeeperMXBean">
+  <bean id="zooKeeperMXBean" class="org.lilyproject.util.zookeeper.ZooKeeperMXBean">
     <constructor-arg value="${zookeeper:connectString}"/>
     <constructor-arg value="${zookeeper:sessionTimeout}"/>
     <constructor-arg ref="zooKeeper"/>

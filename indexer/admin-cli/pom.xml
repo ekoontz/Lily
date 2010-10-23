@@ -19,23 +19,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-indexer-admin-cli</artifactId>
   <name>Lily: Indexer: Admin</name>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily-indexer</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-cli-fw</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-indexer-model</artifactId>
     </dependency>
     <dependency>
@@ -47,7 +47,7 @@
       <artifactId>joda-time</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-client</artifactId>
     </dependency>
   </dependencies>
@@ -55,33 +55,33 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-genscript-plugin</artifactId>
         <configuration>
           <scripts>
             <script>
               <basename>lily-add-index</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.AddIndexCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.AddIndexCli</mainClass>
             </script>
             <script>
               <basename>lily-update-index</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.UpdateIndexCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.UpdateIndexCli</mainClass>
             </script>
             <script>
               <basename>lily-list-indexes</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.ListIndexesCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.ListIndexesCli</mainClass>
             </script>
             <script>
               <basename>lily-touch-index</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.TouchIndexCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.TouchIndexCli</mainClass>
             </script>
             <script>
               <basename>lily-get-indexerconf</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.GetIndexerConfCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.GetIndexerConfCli</mainClass>
             </script>
             <script>
               <basename>lily-get-shardingconf</basename>
-              <mainClass>org.lilycms.indexer.admin.cli.GetShardingConfCli</mainClass>
+              <mainClass>org.lilyproject.indexer.admin.cli.GetShardingConfCli</mainClass>
             </script>
           </scripts>
         </configuration>

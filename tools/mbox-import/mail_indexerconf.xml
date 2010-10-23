@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<indexer xmlns:m="org.lilycms.mail">
+<indexer xmlns:m="org.lilyproject.mail">
   <cases>
     <case recordType="m:Part" variant="*" vtags="last"/>
   </cases>

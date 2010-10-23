@@ -22,14 +22,14 @@
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-indexer</artifactId>
   <packaging>pom</packaging>
 
   <name>Lily: Indexer (Lucene/SOLR index management)</name>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>

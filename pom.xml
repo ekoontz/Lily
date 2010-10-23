@@ -37,13 +37,13 @@
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily</artifactId>
   <packaging>pom</packaging>
   <version>0.2-SNAPSHOT</version>
   <name>Lily</name>
 
-  <url>http://lilycms.org/</url>
+  <url>http://www.lilyproject.org/</url>
 
   <licenses>
     <license>
@@ -87,149 +87,149 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-util</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-repo-util</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-hbase-util</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-zk-util</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-json-util</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-repository-api</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-repository-impl</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-linkindex</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-testfw</artifactId>
         <version>0.2-SNAPSHOT</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-hbaseindex</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-rowlog-api</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-rowlog-impl</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-client</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-import</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-rest-module</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-module</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-general-module</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-repository-module</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-model</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-master</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-worker</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-engine</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-admin-cli</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-indexer-batchbuild</artifactId>
         <classifier>mapreduce-job</classifier>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-hbase-client</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-cli-fw</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-tester</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.lilycms</groupId>
+        <groupId>org.lilyproject</groupId>
         <artifactId>lily-mbox-import</artifactId>
         <version>0.2-SNAPSHOT</version>
       </dependency>
@@ -384,9 +384,9 @@
     </repository>
 
     <repository>
-      <id>lilycms</id>
+      <id>lilyproject</id>
       <name>Lily Maven repository</name>
-      <url>http://lilycms.org/maven/maven2/deploy/</url>
+      <url>http://lilyproject.org/maven/maven2/deploy/</url>
     </repository>
 
     <!-- At the time of this writing, the JBoss repository served for junit -->
@@ -439,28 +439,28 @@
     </pluginRepository>
 
     <pluginRepository>
-      <id>lilycms-plugins</id>
-      <name>Lilycms snapshot plugin repository</name>
-      <url>http://lilycms.org/maven/maven2/deploy/</url>
+      <id>lilyproject-plugins</id>
+      <name>Lily snapshot plugin repository</name>
+      <url>http://lilyproject.org/maven/maven2/deploy/</url>
     </pluginRepository>
   </pluginRepositories>
 
 
   <distributionManagement>
     <repository>
-      <id>org.lilycms.maven-deploy</id>
-      <name>Lily CMS deploy repository</name>
-      <url>scp://lilycms.org/var/www/lilycms.org/maven/maven2/deploy</url>
+      <id>org.lilyproject.maven-deploy</id>
+      <name>Lily deploy repository</name>
+      <url>scp://lilyproject.org/var/www/lilyproject.org/maven/maven2/deploy</url>
     </repository>
     <snapshotRepository>
-      <id>org.lilycms.maven-snapshot</id>
-      <name>Lily CMS dev repository</name>
-      <url>scp://lilycms.org/var/www/lilycms.org/maven/maven2/dev</url>
+      <id>org.lilyproject.maven-snapshot</id>
+      <name>Lily dev repository</name>
+      <url>scp://lilyproject.org/var/www/lilyproject.org/maven/maven2/dev</url>
     </snapshotRepository>
     <site>
-      <id>org.lilycms.website</id>
-      <name>Lily CMS maven website</name>
-      <url>scp://lilycms.org/var/www/lilycms.org/maven-site/${project.version}/</url>
+      <id>org.lilyproject.website</id>
+      <name>Lily maven website</name>
+      <url>scp://lilyproject.org/var/www/lilyproject.org/maven-site/${project.version}/</url>
     </site>
   </distributionManagement>  
 
@@ -507,7 +507,7 @@
 
   <profiles>
     <profile>
-      <id>org.lilycms.default</id>
+      <id>org.lilyproject.default</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>

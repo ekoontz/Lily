@@ -6,7 +6,7 @@
 */
 {
   namespaces: {
-    "org.lilycms.tools.import_.sample": "sample"
+    "org.lilyproject.tools.import_.sample": "sample"
   },
   fieldTypes: [
     {

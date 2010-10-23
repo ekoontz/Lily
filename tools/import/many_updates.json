@@ -7,7 +7,7 @@
 */
 {
   namespaces: {
-    "org.lilycms.tools.import_.sample.many_updates": "s"
+    "org.lilyproject.tools.import_.sample.many_updates": "s"
   },
   fieldTypes: [
     {

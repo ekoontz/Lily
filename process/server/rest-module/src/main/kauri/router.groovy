@@ -1,6 +1,6 @@
 builder.router {
     jaxRs(uri: "") {
-        jaxRsResource(scanPackages: ["org.lilycms.rest"])
-        jaxRsProvider(scanPackages: ["org.lilycms.rest.providers.json"])
+        jaxRsResource(scanPackages: ["org.lilyproject.rest"])
+        jaxRsProvider(scanPackages: ["org.lilyproject.rest.providers.json"])
     }
 }

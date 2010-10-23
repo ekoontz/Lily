@@ -28,7 +28,7 @@
 
   <kauri:import-service
       id="repository"
-      service="org.lilycms.repository.api.Repository"/>
+      service="org.lilyproject.repository.api.Repository"/>
 
   <kauri:export-restservice ref="main"/>
 

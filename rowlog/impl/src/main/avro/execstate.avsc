@@ -1,5 +1,5 @@
 {
-  "namespace":"org.lilycms.rowlog.avro",
+  "namespace":"org.lilyproject.rowlog.avro",
   "name": "AvroExecState",
   "type": "record",
   "fields": [
@@ -10,7 +10,7 @@
         "values": {
           "type": "record",
           "name": "AvroExecStateEntry",
-          "namespace":"org.lilycms.rowlog.avro",
+          "namespace":"org.lilyproject.rowlog.avro",
           "fields": [
             {"name": "done", "type": "boolean"},
             {"name": "tryCount", "type": "int"},

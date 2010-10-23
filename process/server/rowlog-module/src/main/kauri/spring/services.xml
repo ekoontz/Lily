@@ -20,33 +20,33 @@
 
   <kauri:import-service
       id="hadoopConfFactory"
-      service="org.lilycms.server.modules.general.HadoopConfigurationFactory"/>
+      service="org.lilyproject.server.modules.general.HadoopConfigurationFactory"/>
 
   <kauri:import-service
       id="zooKeeper"
-      service="org.lilycms.util.zookeeper.ZooKeeperItf"/>
+      service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
 
   <kauri:export-service
       ref="rowLogConfigurationMgr"
-      service="org.lilycms.rowlog.api.RowLogConfigurationManager"/>
+      service="org.lilyproject.rowlog.api.RowLogConfigurationManager"/>
 
   <kauri:export-service
       ref="messageQueue"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <kauri:export-service
       ref="writeAheadLog"
-      service="org.lilycms.rowlog.api.RowLog"/>
+      service="org.lilyproject.rowlog.api.RowLog"/>
 
   <bean id="hbaseConf"
       factory-bean="hadoopConfFactory"
       factory-method="getHBaseConf"/>
 
-  <bean id="rowLogConfigurationMgr" class="org.lilycms.rowlog.impl.RowLogConfigurationManagerImpl">
+  <bean id="rowLogConfigurationMgr" class="org.lilyproject.rowlog.impl.RowLogConfigurationManagerImpl">
     <constructor-arg ref="zooKeeper"/>
   </bean>
 
-  <bean id="rowLogSetup" class="org.lilycms.server.modules.rowlog.RowLogSetup">
+  <bean id="rowLogSetup" class="org.lilyproject.server.modules.rowlog.RowLogSetup">
     <constructor-arg ref="rowLogConfigurationMgr"/>
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="hbaseConf"/>

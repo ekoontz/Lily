@@ -19,12 +19,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lilycms</groupId>
+  <groupId>org.lilyproject</groupId>
   <artifactId>lily-repository-api-tutorial</artifactId>
   <name>Lily: Repository API Tutorial</name>
 
   <parent>
-    <groupId>org.lilycms</groupId>
+    <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
   </parent>
@@ -34,39 +34,39 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-repository-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-repo-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-testfw</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-repository-impl</artifactId>
       <scope>test</scope>
     </dependency>
     
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-rowlog-api</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.lilycms</groupId>
+      <groupId>org.lilyproject</groupId>
       <artifactId>lily-rowlog-impl</artifactId>
       <scope>test</scope>
     </dependency>

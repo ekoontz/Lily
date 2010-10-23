@@ -29,7 +29,7 @@
          | Since some time is spent in IO (retrieving data from HBase, sending data to SOLR)
          | the indexing can be sped up by running multiple threads.
          -->
-      <name>org.lilycms.indexer.batchbuild.threads</name>
+      <name>org.lilyproject.indexer.batchbuild.threads</name>
       <value>5</value>
     </property>
   </jobProperties>
