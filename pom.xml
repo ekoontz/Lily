@@ -61,27 +61,30 @@
   </scm>
 
   <modules>
-    <module>repository</module>
-    <module>hbaseindex</module>
-    <module>util</module>
-    <module>testfw</module>
-    <module>indexer</module>
-    <module>linkindex</module>
-    <module>repo-util</module>
-    <module>hbase-util</module>
-    <module>zk-util</module>
-    <module>json-util</module>
-    <module>hbase-client</module>
-    <module>repository-api-tutorial</module>
-    <module>rowlog</module>
-    <module>process</module>
-    <module>cli-fw</module>
-    <module>tools/import</module>
-    <module>tools/tester</module>
-    <module>tools/mbox-import</module>
+    <module>cr/repository</module>
+    <module>cr/indexer</module>
+    <module>cr/linkindex</module>
+    <module>cr/repo-util</module>
+    <module>cr/process</module>
+    <module>cr/repository-api-tutorial</module>
+
+    <module>global/hbaseindex</module>
+    <module>global/rowlog</module>
+    <module>global/util</module>
+    <module>global/testfw</module>
+    <module>global/hbase-util</module>
+    <module>global/zk-util</module>
+    <module>global/json-util</module>
+    <module>global/hbase-client</module>
+    <module>global/cli-fw</module>
+
     <module>tools/lily-kauri-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
     <module>tools/genscript-plugin</module>
+
+    <module>apps/import</module>
+    <module>apps/tester</module>
+    <module>apps/mbox-import</module>
   </modules>
 
   <dependencyManagement>
