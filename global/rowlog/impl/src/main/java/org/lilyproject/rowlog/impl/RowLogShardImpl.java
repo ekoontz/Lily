@@ -131,7 +131,7 @@ public class RowLogShardImpl implements RowLogShard {
     }
     
     public List<RowLogMessage> next(String subscription, boolean problematic) throws RowLogException {
-        byte[] rowPrefix = null;
+        byte[] rowPrefix;
         byte[] subscriptionBytes = Bytes.toBytes(subscription);
         if (problematic) {
             rowPrefix = PROBLEMATIC_MARKER;
@@ -141,10 +141,9 @@ public class RowLogShardImpl implements RowLogShard {
         }
         Scan scan = new Scan(rowPrefix);
         scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
-        ResultScanner scanner = null;
         List<RowLogMessage> rowLogMessages = new ArrayList<RowLogMessage>();
         try {
-            scanner = table.getScanner(scan);
+            ResultScanner scanner = table.getScanner(scan);
             boolean keepScanning = problematic;
             do {
                 Result[] results = scanner.next(batchSize);
@@ -165,11 +164,15 @@ public class RowLogShardImpl implements RowLogShard {
                     rowLogMessages.add(decodeMessage(messageId, value));
                 }
             } while(keepScanning);
+
+            // The scanner is not closed in a finally block, since when we get an IOException from
+            // HBase, it is likely that closing the scanner will give problems too. Not closing
+            // the scanner is not fatal since HBase will expire it after a while.
+            Closer.close(scanner);
+
             return rowLogMessages;
         } catch (IOException e) {
             throw new RowLogException("Failed to fetch next message from RowLogShard", e);
-        } finally {
-            Closer.close(scanner);
         }
     }
 

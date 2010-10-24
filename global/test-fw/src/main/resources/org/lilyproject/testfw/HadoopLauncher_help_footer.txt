@@ -1,0 +1,11 @@
+ +-----------------------------------------------------------------------+
+ | IMPORTANT WARNING: when you stop launch-hadoop, all data stored in it |
+ |                    will be lost. This includes everything stored in   |
+ |                    HDFS, HBase and ZooKeeper.                         |
+ +-----------------------------------------------------------------------+
+
+launch-hadoop is intended for running small-scale tests or doing small demos.
+
+The available services are: HDFS, MapReduce, HBase and ZooKeeper.
+
+For any other purpose, please install a normal HBase, which is not much work.

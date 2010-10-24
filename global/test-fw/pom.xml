@@ -27,6 +27,7 @@
     <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
     <version>0.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <build>
@@ -38,7 +39,7 @@
           <scripts>
             <script>
               <basename>launch-hadoop</basename>
-              <mainClass>org.lilyproject.testfw.HBaseRunner</mainClass>
+              <mainClass>org.lilyproject.testfw.HadoopLauncher</mainClass>
             </script>
           </scripts>
           <beforeJavaHook>
@@ -132,19 +133,8 @@ chdir /d %CWD%
 
   <dependencies>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-cli-fw</artifactId>
     </dependency>
 
     <dependency>

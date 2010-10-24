@@ -123,8 +123,8 @@
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty</artifactId>
-      <version>6.1.22</version>
       <scope>test</scope>
+      <version>${version.jetty}</version>
     </dependency>
 
     <dependency>
@@ -148,6 +148,10 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-solr-test-fw</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

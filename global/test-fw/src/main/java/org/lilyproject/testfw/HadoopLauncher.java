@@ -15,6 +15,7 @@
  */
 package org.lilyproject.testfw;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -26,6 +27,7 @@ import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.MiniZooKeeperCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.MiniMRCluster;
+import org.lilyproject.cli.BaseCliTool;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +40,7 @@ import java.util.UUID;
  * <p>Disclaimer: much of the code was copied from HBase's HBaseTestingUtility, and slightly adjusted to be able
  * to fix ZK and HDFS port numbers.
  */
-public class HBaseRunner {
+public class HadoopLauncher extends BaseCliTool {
     private MiniZooKeeperCluster zkCluster = null;
     private MiniDFSCluster dfsCluster = null;
     private MiniHBaseCluster hbaseCluster = null;
@@ -50,17 +52,27 @@ public class HBaseRunner {
     public static final String TEST_DIRECTORY_KEY = "test.build.data";
     public static final String DEFAULT_TEST_DIRECTORY = "target/build/data";
 
-    public static void main(String[] args) throws Exception {
-        new HBaseRunner().run();
+    @Override
+    protected String getCmdName() {
+        return "launch-hadoop";
     }
 
-    public void run() throws Exception {
+    public static void main(String[] args) throws Exception {
+        new HadoopLauncher().start(args);
+    }
+
+
+    @Override
+    public int run(CommandLine cmd) throws Exception {
+        int result = super.run(cmd);
+        if (result != 0)
+            return result;
+        
         TestHelper.setupConsoleLogging("INFO");
         TestHelper.setupOtherDefaults();
 
         conf = HBaseConfiguration.create();
 
-        HBaseProxy.addHBaseTestProps(conf);
         conf.set("hbase.master.info.port", "60010");
         conf.set("hbase.regionserver.info.port", "60030");
 
@@ -106,6 +118,8 @@ public class HBaseRunner {
 //                }
 //            }
 //        }));
+
+        return 0;
     }
 
     public MiniHBaseCluster startMiniCluster(final int servers)

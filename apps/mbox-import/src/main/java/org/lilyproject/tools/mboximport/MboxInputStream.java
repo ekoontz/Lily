@@ -28,14 +28,9 @@ public class MboxInputStream extends InputStream {
             return false;
 
         if (!atFromLine) {
-            while (currentLineLength == 0) {
+            while (!atFromLine) {
+                System.err.println("Not yet at next message, skipping line: " + new String(buffer, 0, currentLineLength));
                 readLine();
-            }
-            if (!atFromLine) {
-                System.err.println("nextMessage is called, but we are not at a 'From ' line, current line is (length = " +
-                        currentLineLength);
-                System.err.println(new String(buffer, 0, currentLineLength));
-                return false;
             }
         }
 

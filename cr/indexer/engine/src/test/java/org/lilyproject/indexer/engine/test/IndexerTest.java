@@ -23,6 +23,7 @@ import org.lilyproject.indexer.model.indexerconf.IndexerConfBuilder;
 import org.lilyproject.linkindex.LinkIndexUpdater;
 import org.lilyproject.rowlog.api.*;
 import org.lilyproject.rowlog.impl.*;
+import org.lilyproject.solrtestfw.SolrTestingUtility;
 import org.lilyproject.util.hbase.HBaseTableUtil;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.repo.RecordEvent;

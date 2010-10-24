@@ -34,6 +34,8 @@
     <version.spring>2.5.6</version.spring>
     <version.jaxrs>1.0</version.jaxrs>
     <version.restlet>svn6950</version.restlet>
+    <version.jetty>6.1.24</version.jetty>
+    <version.jetty.jspapi>6.1.14</version.jetty.jspapi>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -77,6 +79,7 @@
     <module>global/json-util</module>
     <module>global/hbase-client</module>
     <module>global/cli-fw</module>
+    <module>global/solr-test-fw</module>
 
     <module>tools/lily-kauri-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
@@ -132,6 +135,12 @@
       <dependency>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-testfw</artifactId>
+        <version>0.2-SNAPSHOT</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.lilyproject</groupId>
+        <artifactId>lily-solr-test-fw</artifactId>
         <version>0.2-SNAPSHOT</version>
         <scope>test</scope>
       </dependency>
@@ -361,7 +370,7 @@
      <dependency>
        <groupId>commons-io</groupId>
        <artifactId>commons-io</artifactId>
-       <version>1.4</version>
+       <version>2.0</version>
      </dependency>
       <dependency>
         <groupId>commons-cli</groupId>

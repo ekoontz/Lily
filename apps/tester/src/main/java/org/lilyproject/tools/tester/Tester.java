@@ -106,36 +106,6 @@ public class Tester extends BaseCliTool {
     }
 
     @Override
-    protected void printHelpHeader() {
-        System.out.println("A simple testing tool that performs CRUD operations in a loop.");
-        System.out.println();
-    }
-
-    @Override
-    protected void printHelpFooter() {
-        System.out.println();
-        System.out.println("To use this tool:");
-        System.out.println(" 1. Dump sample configuration to a file:");
-        System.out.println("    " + getCmdName() + " > config.json");
-        System.out.println(" 2. Customize config.json");
-        System.out.println(" 3. Run the test:");
-        System.out.println("    " + getCmdName() + " -" + configFileOption.getOpt() + " config.json");
-        System.out.println();
-        System.out.println("Tester keeps all created records in memory, in order to be able to later check");
-        System.out.println("the result of read operations, or to be able to update existing records.");
-        System.out.println();
-        System.out.println("Tester runs only one thread. To do multi-threaded testing, run multiple instances.");
-        System.out.println("");
-        System.out.println("Logging is performed to two files: one containing a line per CRUD operation,");
-        System.out.println("with its duration and success tate. Another file contains the stacktraces of");
-        System.out.println("errors that occurred.");
-        System.out.println();
-        System.out.println("Besides the produced log files, you can also monitor the execution through");
-        System.out.println("JMX and optionally Ganglia");
-        System.out.println();
-    }
-
-    @Override
     public int run(CommandLine cmd) throws Exception {
         int result = super.run(cmd);
         if (result != 0)

@@ -1,0 +1,26 @@
+mbox files
+----------
+mbox files are both accepted in plain format or gzip format (.gz).
+When specifying a directory, all files in the directory will be
+imported.
+
+mbox files of public mailing lists can be found on the Internet, for example
+those of Hadoop: http://hadoop.apache.org/mail/
+
+About schema creation
+---------------------
+The schema is always created or updated when importing some mbox archives.
+Using the --schema option, you can also create the schema without importing
+anything, which is useful if your first want to set up an index.
+
+About metrics
+-------------
+By default you can consult metrics via JMX.
+
+Metrics can also be sent to Ganglia by creating a property file and passing it
+via the --metrics option. Here is an example file:
+
+recordName=mbox1
+mbox.class=org.apache.hadoop.metrics.ganglia.GangliaContext31
+mbox.period=15
+mbox.servers=localhost:8649

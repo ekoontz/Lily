@@ -21,7 +21,7 @@ set CLASSPATH=%CLASSPATH%;%LILY_CLI_CLASSPATH%
 
 $$$BEFORE_JAVA_HOOK$$$
 
-"%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$MAINCLASS$$$ %*
+"%JAVA_HOME%/bin/java" -classpath "%CLASSPATH%" %LILY_JAVA_OPTIONS% $$$DEFAULT_JVM_ARGS$$$ $$$MAINCLASS$$$ %*
 goto end
 
 :javaHomeNotSet

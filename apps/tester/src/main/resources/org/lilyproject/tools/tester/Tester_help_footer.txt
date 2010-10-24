@@ -1,0 +1,18 @@
+To use this tool:
+ 1. Dump a sample configuration to a file:
+    lily-tester -d > config.json
+ 2. Customize config.json
+ 3. Run the test:
+    lily-tester -c config.json
+
+Tester keeps all created records in memory, in order to be able to later check
+the result of read operations, or to be able to update existing records.
+
+Tester runs only one thread. To do multi-threaded testing, run multiple instances.
+
+Logging is performed to two files: one containing a line per CRUD operation,
+with its duration and success state. Another file contains the stacktraces of
+errors that occurred.
+
+Besides the produced log files, you can also monitor the execution through
+JMX and optionally Ganglia.

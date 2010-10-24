@@ -1,15 +1,15 @@
-Import
-======
+Import tool
+===========
 
 This is a tool that allows importing field types, record types and records
-into a Lily repository.
+described in a JSON file into a Lily repository.
 
-For field types and record types, it checks if they already exist, if so
-compares if they are the same, if not updates them if possible or otherwise
-gives an error.
+For example input files, see:
+  * the json files in this directory
+  * the directory {source tree root}/samples/books
 
-TODO: describe the json format
+In a source setting, you can run this tool as follows:
 
-In a source setting, you can run this tool with maven:
+./target/lily-import
 
-./target/lily-import -z localhost:2181 sample.json
+Specify the -h option for more help.

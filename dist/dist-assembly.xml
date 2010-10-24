@@ -176,6 +176,18 @@
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
+
+    <!-- Launch SOLR -->
+    <file>
+      <source>${basedir}/../global/solr-test-fw/target/dist-scripts/launch-solr</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../global/solr-test-fw/target/dist-scripts/launch-solr.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
   </files>
 
   <fileSets>
@@ -207,6 +219,12 @@
       <useDefaultExcludes>true</useDefaultExcludes>
     </fileSet>
 
+    <!-- Samples -->
+    <fileSet>
+      <directory>${basedir}/../samples</directory>
+      <outputDirectory>/samples</outputDirectory>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
   </fileSets>
 
   <repositories>

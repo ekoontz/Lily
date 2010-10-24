@@ -88,43 +88,6 @@ public class MboxImport extends BaseZkCliTool {
     }
 
     @Override
-    protected void printHelpHeader() {
-        System.out.println("Tool to import mail archives in mbox format into Lily.");
-        System.out.println();
-    }
-
-    @Override
-    protected void printHelpFooter() {
-        System.out.println();
-        System.out.println("mbox files");
-        System.out.println("----------");
-        System.out.println("mbox files are both accepted in plain format or gzip format (.gz).");
-        System.out.println("When specifying a directory, all files in the directory will be");
-        System.out.println("imported.");
-        System.out.println();
-        System.out.println("mbox files of public mailing lists can be found on the Internet, for example");
-        System.out.println("those of Hadoop: http://hadoop.apache.org/mail/");
-        System.out.println();
-        System.out.println("About schema creation");
-        System.out.println("---------------------");
-        System.out.println("The schema is always created or updated when importing some mbox archives.");
-        System.out.printf("Using the --%1$s option, you can also create the schema without importing\n", schemaOption.getLongOpt());
-        System.out.println("anything, which is useful if your first want to set up an index.");
-        System.out.println();
-        System.out.println("About metrics");
-        System.out.println("-------------");
-        System.out.println("By default you can consult metrics via JMX.");
-        System.out.println();
-        System.out.println("Metrics can also be sent to Ganglia by creating a property file and passing it");
-        System.out.printf("via the --%1$s option. Here is an example file:\n", metricsOption.getLongOpt());
-        System.out.println();
-        System.out.println("recordName=mbox1");
-        System.out.println("mbox.class=org.apache.hadoop.metrics.ganglia.GangliaContext31");
-        System.out.println("mbox.period=15");
-        System.out.println("mbox.servers=localhost:8649");
-    }
-
-    @Override
     public int run(CommandLine cmd) throws Exception {
         int result = super.run(cmd);
         if (result != 0)

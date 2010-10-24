@@ -45,6 +45,11 @@
       <artifactId>lily-testfw</artifactId>
       <scope>runtime</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-solr-test-fw</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

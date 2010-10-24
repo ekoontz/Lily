@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!--
+/*
+ * Copyright 2010 Outerthought bvba
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.lilyproject</groupId>
+  <artifactId>lily-solr-test-fw</artifactId>
+  <name>Lily: SOLR test framework and test launcher</name>
+
+  <parent>
+    <groupId>org.lilyproject</groupId>
+    <artifactId>lily</artifactId>
+    <version>0.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.lilyproject</groupId>
+        <artifactId>lily-genscript-plugin</artifactId>
+        <configuration>
+          <scripts>
+            <script>
+              <basename>launch-solr</basename>
+              <mainClass>org.lilyproject.solrtestfw.SolrLauncher</mainClass>
+            </script>
+          </scripts>
+          <defaultJvmArgs>
+            <parameter>
+              <platform>unix</platform>
+              <mode>dist</mode>
+              <value>-Dlily.solrlauncher.war=$M2_REPO/org/apache/solr/solr-webapp/${version.solr}/solr-webapp-${version.solr}.war</value>
+            </parameter>
+            <parameter>
+              <platform>unix</platform>
+              <mode>dev</mode>
+              <value>-Dlily.solrlauncher.war=${settings.localRepository}/org/apache/solr/solr-webapp/${version.solr}/solr-webapp-${version.solr}.war</value>
+            </parameter>
+            <parameter>
+              <platform>windows</platform>
+              <mode>dist</mode>
+              <value>-Dlily.solrlauncher.war=%M2_REPO%\org\apache\solr\solr-webapp\${version.solr}\solr-webapp-${version.solr}.war</value>
+            </parameter>
+            <parameter>
+              <platform>windows</platform>
+              <mode>dev</mode>
+              <value>-Dlily.solrlauncher.war=${settings.localRepository}\org\apache\solr\solr-webapp\${version.solr}\solr-webapp-${version.solr}.war</value>
+            </parameter>
+          </defaultJvmArgs>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>genscript</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>${version.jetty}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jsp-2.1</artifactId>
+      <version>${version.jetty.jspapi}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jsp-api-2.1</artifactId>
+      <version>${version.jetty.jspapi}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-webapp</artifactId>
+      <version>${version.solr}</version>
+      <type>war</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-cli-fw</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+    </dependency>
+  </dependencies>
+
+</project>

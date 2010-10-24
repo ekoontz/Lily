@@ -1,12 +1,16 @@
 package org.lilyproject.cli;
 
 import org.apache.commons.cli.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Base framework for Lily CLI tools. Purpose is to have some uniformity in the CLI tools and to avoid
@@ -136,19 +140,33 @@ public abstract class BaseCliTool {
 
     }
 
-    protected void printHelp() {
+    protected void printHelp() throws IOException {
         printHelpHeader();
         HelpFormatter help = new HelpFormatter();
         help.printHelp(getCmdName(), cliOptions, true);
         printHelpFooter();
     }
 
-    protected void printHelpHeader() {
-
+    protected void printHelpHeader() throws IOException {
+        String className = getClass().getName();
+        String helpHeaderPath = className.replaceAll(Pattern.quote("."), "/") + "_help_header.txt";
+        InputStream is = getClass().getClassLoader().getResourceAsStream(helpHeaderPath);
+        if (is != null) {
+            IOUtils.copy(is, System.out);
+            System.out.println();
+            System.out.println();
+        }
     }
 
-    protected void printHelpFooter() {
-
+    protected void printHelpFooter() throws IOException {
+        String className = getClass().getName();
+        String helpHeaderPath = className.replaceAll(Pattern.quote("."), "/") + "_help_footer.txt";
+        InputStream is = getClass().getClassLoader().getResourceAsStream(helpHeaderPath);
+        if (is != null) {
+            System.out.println();
+            IOUtils.copy(is, System.out);
+            System.out.println();
+        }
     }
 
 }

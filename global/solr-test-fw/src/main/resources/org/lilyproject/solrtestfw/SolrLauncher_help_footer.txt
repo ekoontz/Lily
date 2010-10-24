@@ -1,0 +1,9 @@
+ +-----------------------------------------------------------------------+
+ | IMPORTANT WARNING: when you stop launch-solr, all the created indexes |
+ |                    will be lost.                                      |
+ +-----------------------------------------------------------------------+
+
+launch-solr is intended for running small-scale tests or doing small demos.
+
+For any other purpose, please set up SOLR yourself, this is not much work
+either.

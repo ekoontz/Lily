@@ -1,0 +1,1 @@
+Launch a test SOLR server given a specified SOLR schema configuration.
