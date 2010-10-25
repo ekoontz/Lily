@@ -124,16 +124,21 @@ public class KauriProjectDependencyResolver extends AbstractMojo {
 
     public class MyArtifactFilter implements KauriProjectClasspath.ArtifactFilter {
         public boolean include(Artifact artifact) {
-            if (artifact.getGroupId().equals(projectGroupId) &&
-                    artifact.getArtifactId().equals(projectArtifactId) &&
-                    artifact.getVersion().equals(projectVersion)) {
-                // Current project's artifact is not yet deployed, therefore do not treat it
+            if (artifact.getGroupId().equals(projectGroupId)) {
+                // Do not try to download artifacts from current project
                 return false;
             } else if (sourceLocations.getSourceLocation(artifact.getGroupId(), artifact.getArtifactId()) != null) {
                 // It is one of the artifacts of this project, hence the dependencies will have been
                 // downloaded by Maven. Skip it.
                 return false;
             }
+            // This case is handled by the more generic case above
+            //if (artifact.getGroupId().equals(projectGroupId) &&
+            //        artifact.getArtifactId().equals(projectArtifactId) &&
+            //        artifact.getVersion().equals(projectVersion)) {
+            //    // Current project's artifact is not yet deployed, therefore do not treat it
+            //    return false;
+            //}
             return true;
         }
     }
