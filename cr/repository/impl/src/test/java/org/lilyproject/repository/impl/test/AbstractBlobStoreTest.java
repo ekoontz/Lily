@@ -51,7 +51,7 @@ public abstract class AbstractBlobStoreTest {
     @Test
     public void testCreate() throws Exception {
         byte[] bytes = Bytes.toBytes("someBytes");
-        Blob blob = new Blob("aMimetype", (long)bytes.length, "testCreate");
+        Blob blob = new Blob("aMediaType", (long)bytes.length, "testCreate");
         OutputStream outputStream = repository.getOutputStream(blob);
         outputStream.write(bytes);
         outputStream.close();
@@ -115,7 +115,7 @@ public abstract class AbstractBlobStoreTest {
         record.setRecordType(recordType.getName(), null);
 
         byte[] bytes = Bytes.toBytes("someBytes");
-        Blob blob = new Blob("aMimetype", (long)bytes.length, "testCreate");
+        Blob blob = new Blob("aMediaType", (long)bytes.length, "testCreate");
         OutputStream outputStream = repository.getOutputStream(blob);
         outputStream.write(bytes);
         outputStream.close();
@@ -133,7 +133,7 @@ public abstract class AbstractBlobStoreTest {
     
     @Test
     public void testReadBlobWithoutName() throws Exception {
-        Blob blob = new Blob("aMimetype", (long)10, "aName");
+        Blob blob = new Blob("aMediaType", (long)10, "aName");
         try {
             repository.getInputStream(blob);
             fail();
@@ -143,7 +143,7 @@ public abstract class AbstractBlobStoreTest {
     
     @Test
     public void testBadEncoding() throws Exception {
-        Blob blob = new Blob("aMimetype", (long)10, "aName");
+        Blob blob = new Blob("aMediaType", (long)10, "aName");
         blob.setValue(new byte[0]);
         try {
             repository.getInputStream(blob);

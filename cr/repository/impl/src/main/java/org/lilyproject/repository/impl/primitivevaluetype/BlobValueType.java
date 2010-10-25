@@ -37,10 +37,10 @@ public class BlobValueType implements PrimitiveValueType {
             key = Arrays.copyOfRange(bytes, offset, offset + keyLength);
             offset = offset + keyLength;
         }
-        int mimetypeLength = Bytes.toInt(bytes, offset);
+        int mediaTypeLength = Bytes.toInt(bytes, offset);
         offset = offset + Bytes.SIZEOF_INT;
-        String mimetype = Bytes.toString(bytes, offset, mimetypeLength);
-        offset = offset + mimetypeLength;
+        String mediaType = Bytes.toString(bytes, offset, mediaTypeLength);
+        offset = offset + mediaTypeLength;
         Long size = Bytes.toLong(bytes, offset);
         offset = offset + Bytes.SIZEOF_LONG;
         if (size == -1) {
@@ -52,7 +52,7 @@ public class BlobValueType implements PrimitiveValueType {
         if (filenameLength > 0) {
             filename = Bytes.toString(bytes, offset, filenameLength);
         }
-        return new Blob(key, mimetype, size, filename);
+        return new Blob(key, mediaType, size, filename);
     }
 
     public byte[] toBytes(Object value) {
@@ -65,8 +65,8 @@ public class BlobValueType implements PrimitiveValueType {
             bytes = Bytes.add(bytes, Bytes.toBytes(key.length));
             bytes = Bytes.add(bytes, key);
         }
-        bytes = Bytes.add(bytes, Bytes.toBytes(blob.getMimetype().length()));
-        bytes = Bytes.add(bytes, Bytes.toBytes(blob.getMimetype()));
+        bytes = Bytes.add(bytes, Bytes.toBytes(blob.getMediaType().length()));
+        bytes = Bytes.add(bytes, Bytes.toBytes(blob.getMediaType()));
         Long size = blob.getSize();
         if (size == null) {
             size = Long.valueOf(-1);

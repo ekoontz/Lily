@@ -81,7 +81,7 @@ public class ValueEvaluator {
                 BodyContentHandler ch = new BodyContentHandler();
 
                 Metadata metadata = new Metadata();
-                metadata.add(Metadata.CONTENT_TYPE, blob.getMimetype());
+                metadata.add(Metadata.CONTENT_TYPE, blob.getMediaType());
                 if (blob.getName() != null)
                     metadata.add(Metadata.RESOURCE_NAME_KEY, blob.getName());
 

@@ -33,11 +33,11 @@ public class BlobCollectionResource extends RepositoryEnabled {
             throw new ResourceException("Content-Length header is required for uploading blobs.", BAD_REQUEST.getStatusCode());
         }
 
-        // TODO do we want the mimetype to include the parameters?
-        String mimeType = headers.getMediaType().getType() + "/" + headers.getMediaType().getSubtype();
+        // TODO do we want the mediatype to include the parameters?
+        String mediaType = headers.getMediaType().getType() + "/" + headers.getMediaType().getSubtype();
 
         long length = Long.parseLong(lengthHeader);
-        Blob blob = new Blob(mimeType, length, null);
+        Blob blob = new Blob(mediaType, length, null);
 
         OutputStream os = null;
         try {

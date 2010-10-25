@@ -21,7 +21,7 @@ import org.lilyproject.util.ArgumentValidator;
 
 /**
  * A Blob is a {@link PrimitiveValueType primitive type} that can be used to store arbitrarily large binary data.
- * Besides the binary data itself, a blob holds some metadata such as the mime-type and size.
+ * Besides the binary data itself, a blob holds some metadata such as the media-type and size.
  *
  * <p>Storing and retrieving data to and from the blob happens through {@link java.io.OutputStream} and
  * {@link java.io.InputStream}.
@@ -38,7 +38,7 @@ import org.lilyproject.util.ArgumentValidator;
  */
 public class Blob {
 
-    private final String mimetype;
+    private final String mediaType;
     private final Long size;
     private final String name;
     private byte[] value;
@@ -46,13 +46,13 @@ public class Blob {
     /**
      * This is the default constructor to create a Blob.
      *
-     * @param mimetype the media type of the data represented by the blob.
+     * @param mediaType the media type of the data represented by the blob.
      * @param size the size in number of bytes of the data that will be written. The size is a mandatory parameter.
      * @param name a name with no extra semantic meaning. Typically used to store a filename, e.g. for when a user
      *             downloads this blob to her desktop. Optional, can be null.
      */
-    public Blob(String mimetype, Long size, String name) {
-        this(null, mimetype, size, name);
+    public Blob(String mediaType, Long size, String name) {
+        this(null, mediaType, size, name);
     }
 
     /**
@@ -61,10 +61,10 @@ public class Blob {
      * @param value the value will be generated after data has been written to the OutputStream and the stream
      *              has been closed.
      */
-    public Blob(byte[] value, String mimetype, Long size, String name) {
+    public Blob(byte[] value, String mediaType, Long size, String name) {
         ArgumentValidator.notNull(size, "size");
         this.value = value;
-        this.mimetype = mimetype;
+        this.mediaType = mediaType;
         this.size = size;
         this.name = name;
     }
@@ -78,8 +78,8 @@ public class Blob {
         this.value = value;
     }
     
-    public String getMimetype() {
-        return mimetype;
+    public String getMediaType() {
+        return mediaType;
     }
     
     public Long getSize() {
@@ -96,7 +96,7 @@ public class Blob {
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + Arrays.hashCode(value);
-        result = prime * result + ((mimetype == null) ? 0 : mimetype.hashCode());
+        result = prime * result + ((mediaType == null) ? 0 : mediaType.hashCode());
         result = prime * result + ((size == null) ? 0 : size.hashCode());
         return result;
     }
@@ -117,10 +117,10 @@ public class Blob {
             return false;
         if (!Arrays.equals(value, other.value))
             return false;
-        if (mimetype == null) {
-            if (other.mimetype != null)
+        if (mediaType == null) {
+            if (other.mediaType != null)
                 return false;
-        } else if (!mimetype.equals(other.mimetype))
+        } else if (!mediaType.equals(other.mediaType))
             return false;
         if (size == null) {
             if (other.size != null)
@@ -132,7 +132,7 @@ public class Blob {
 
     @Override
     public String toString() {
-        return "Blob [name=" + name + ", mimetype=" + mimetype + ", size=" + size + ", value="
+        return "Blob [name=" + name + ", mediatype=" + mediaType + ", size=" + size + ", value="
                         + Arrays.toString(value) + "]";
     }
 }

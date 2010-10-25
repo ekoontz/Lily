@@ -12,7 +12,7 @@ public class BlobConverter {
     public static ObjectNode toJson(Blob blob) {
         ObjectNode jsonBlob = JsonNodeFactory.instance.objectNode();
         jsonBlob.put("value", valueToString(blob.getValue()));
-        jsonBlob.put("mimeType", blob.getMimetype());
+        jsonBlob.put("mediaType", blob.getMediaType());
         if (blob.getName() != null)
             jsonBlob.put("name", blob.getName());
         jsonBlob.put("size", blob.getSize());
@@ -20,12 +20,12 @@ public class BlobConverter {
     }
 
     public static Blob fromJson(ObjectNode node) {
-        String mimeType = JsonUtil.getString(node, "mimeType", null);
+        String mediaType = JsonUtil.getString(node, "mediaType", null);
         long size = JsonUtil.getLong(node, "size");
         String name = JsonUtil.getString(node, "name", null);
         byte[] value = valueFromString(JsonUtil.getString(node, "value"));
 
-        Blob blob = new Blob(mimeType, size, name);
+        Blob blob = new Blob(mediaType, size, name);
         blob.setValue(value);
 
         return blob;

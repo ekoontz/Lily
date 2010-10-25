@@ -369,7 +369,7 @@ public class MboxImport extends BaseZkCliTool {
             Part part = message.parts.get(i);
             Record partRecord = repository.newRecord(partRecordIds.get(i));
             partRecord.setRecordType(new QName(NS, "Part"));
-            partRecord.setField(new QName(NS, "mediaType"), part.blob.getMimetype());
+            partRecord.setField(new QName(NS, "mediaType"), part.blob.getMediaType());
             partRecord.setField(new QName(NS, "content"), part.blob);
             partRecord.setField(new QName(NS, "message"), new Link(messageRecord.getId()));
             startTime = System.currentTimeMillis();

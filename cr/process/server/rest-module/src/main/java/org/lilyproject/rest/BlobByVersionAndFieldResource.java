@@ -69,7 +69,7 @@ public class BlobByVersionAndFieldResource extends RepositoryEnabled {
                 }
             };
 
-            return Response.ok(output, MediaType.valueOf(blob.getMimetype())).build();
+            return Response.ok(output, MediaType.valueOf(blob.getMediaType())).build();
 
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());

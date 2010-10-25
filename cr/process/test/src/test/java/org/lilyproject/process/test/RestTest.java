@@ -620,7 +620,7 @@ public class RestTest {
         assertStatus(Status.SUCCESS_CREATED, response);
         JsonNode jsonNode = readJson(response.getEntity());
         String blobValue = jsonNode.get("value").getTextValue();
-        assertEquals("text/plain", jsonNode.get("mimeType").getTextValue());
+        assertEquals("text/plain", jsonNode.get("mediaType").getTextValue());
         assertEquals((long)data.length(), jsonNode.get("size").getLongValue());
 
         // Create a record with this blob
@@ -629,7 +629,7 @@ public class RestTest {
         ObjectNode fieldsNode = recordNode.putObject("fields");
         ObjectNode blobNode = fieldsNode.putObject("b$blob1");
         blobNode.put("size", data.length());
-        blobNode.put("mimeType", "text/plain");
+        blobNode.put("mediaType", "text/plain");
         blobNode.put("value", blobValue);
         blobNode.put("name", "helloworld.txt");
         ObjectNode nsNode = recordNode.putObject("namespaces");
@@ -645,7 +645,7 @@ public class RestTest {
         jsonNode = readJson(response.getEntity());
         String prefix = jsonNode.get("namespaces").get("org.lilyproject.resttest").getValueAsText();
         blobNode = (ObjectNode)jsonNode.get("fields").get(prefix + "$blob1");
-        assertEquals("text/plain", blobNode.get("mimeType").getValueAsText());
+        assertEquals("text/plain", blobNode.get("mediaType").getValueAsText());
         assertEquals(data.length(), blobNode.get("size").getLongValue());
         assertEquals(blobValue, blobNode.get("value").getTextValue());
         assertEquals("helloworld.txt", blobNode.get("name").getValueAsText());

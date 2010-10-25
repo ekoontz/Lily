@@ -53,7 +53,7 @@
       "name": "AvroBlob",
       "type": "record",
       "fields": [
-        {"name": "mimetype", "type": ["string", "null"]},
+        {"name": "mediaType", "type": ["string", "null"]},
         {"name": "size", "type": "long"},
         {"name": "name", "type": ["string", "null"]},
         {"name": "value", "type": ["bytes", "null"]}
