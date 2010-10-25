@@ -1,0 +1,2 @@
+Tool to load a JSON file describing field types, record types and records
+into Lily.

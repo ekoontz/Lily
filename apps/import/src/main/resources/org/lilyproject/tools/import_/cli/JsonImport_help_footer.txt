@@ -1,0 +1,6 @@
+List one or more JSON files to be imported, for example:
+
+lily-import -z server1:2181,server2:2181 file1.json file2.json
+
+The input JSON format is described in the Lily documentation:
+http://docs.outerthought.org/lily-docs-current/435-lily.html

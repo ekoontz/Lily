@@ -30,8 +30,12 @@
 
       * These field types are automatically created if necessary.
 
-      * If the field type would already exist but not correspond to the description here, an
-        error will be generated.
+      * If the field type would already exist but not correspond to the
+        description here, an error will be generated.
+
+      The format to describe the field types is the same as for the lily-import
+      tool or the REST interface, please refer to their documentation for more
+      details.
 
   */
   fieldTypes: [
