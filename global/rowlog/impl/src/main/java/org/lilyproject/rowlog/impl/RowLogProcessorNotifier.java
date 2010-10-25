@@ -1,6 +1,9 @@
 package org.lilyproject.rowlog.impl;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -24,18 +27,26 @@ public class RowLogProcessorNotifier {
     private NioClientSocketChannelFactory channelFactory;
     private String[] processorHostAndPort;
     private RowLogConfigurationManager rowLogConfigurationManager;
+    private Map<String, Long> wakeupDelays = Collections.synchronizedMap(new HashMap<String, Long>());
+    private long delay = 100;
 
     public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLogConfigurationManager = rowLogConfigurationManager;
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) throws InterruptedException {
-        Channel channel = getProcessorChannel(rowLogId, shardId);
-        if ((channel != null) && (channel.isConnected())) { 
-            ChannelBuffer channelBuffer = ChannelBuffers.buffer(1);
-            channelBuffer.writeByte(1);
-            ChannelFuture writeFuture = channel.write(channelBuffer);
-            writeFuture.addListener(ChannelFutureListener.CLOSE);
+        long now = System.currentTimeMillis();
+        Long delayUntil = wakeupDelays.get(rowLogId+shardId);
+        if (delayUntil == null || now >= delayUntil) {
+            Channel channel = getProcessorChannel(rowLogId, shardId);
+            if ((channel != null) && (channel.isConnected())) { 
+                ChannelBuffer channelBuffer = ChannelBuffers.buffer(1);
+                channelBuffer.writeByte(1);
+                ChannelFuture writeFuture = channel.write(channelBuffer);
+                writeFuture.addListener(ChannelFutureListener.CLOSE);
+            }
+            // Wait at least 100ms before sending another notification 
+            wakeupDelays.put(rowLogId+shardId, now + delay);
         }
     }
     
