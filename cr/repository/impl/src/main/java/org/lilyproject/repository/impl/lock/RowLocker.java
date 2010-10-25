@@ -17,8 +17,12 @@ package org.lilyproject.repository.impl.lock;
 
 import java.io.IOException;
 
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.mortbay.log.Log;
 
 public class RowLocker {
 
@@ -52,45 +56,46 @@ public class RowLocker {
             if (actualHBaseRowLock == null) return null;
             try {
                 Put put = new Put(rowKey, actualHBaseRowLock);
-                byte[] lock = Bytes.toBytes(now);
-                put.add(family, qualifier, lock);
+                RowLock rowLock = RowLock.createRowLock(rowKey);
+                put.add(family, qualifier, rowLock.getPermit());
                 table.put(put);
-                return new RowLock(rowKey, now);
+                return rowLock;
             } finally {
                 if (hbaseRowLock == null)
                 try {
                     table.unlockRow(actualHBaseRowLock);
                 } catch (IOException e) {
-                    // ignore
+                    Log.warn("Exception while unlocking HBaseRowLock <"+actualHBaseRowLock+"> while putting a RowLock ", e);
                 }
             }
         } else {
             Result result = table.get(get);
-            byte[] previousLock = null;
+            byte[] previousPermit = null;
             long previousTimestamp = -1L;
             if (!result.isEmpty()) {
-                previousLock = result.getValue(family, qualifier);
-                if (previousLock != null) {
-                    previousTimestamp = Bytes.toLong(previousLock);
+                previousPermit = result.getValue(family, qualifier);
+                if (previousPermit != null) {
+                    RowLock previousRowLock = new RowLock(rowKey, previousPermit);
+                    previousTimestamp = previousRowLock.getTimestamp();
                 }
             }
             if ((previousTimestamp == -1) || (previousTimestamp + timeout  < now)) {
                 Put put = new Put(rowKey, hbaseRowLock);
-                byte[] lock = Bytes.toBytes(now);
-                put.add(family, qualifier, lock);
-                if (table.checkAndPut(rowKey, family, qualifier, previousLock, put)) {
-                    return new RowLock(rowKey, now);
+                RowLock rowLock = RowLock.createRowLock(rowKey);
+                put.add(family, qualifier, rowLock.getPermit());
+                if (table.checkAndPut(rowKey, family, qualifier, previousPermit, put)) {
+                    return rowLock;
                 }
             }
             return null;
         }
     }
-    
+
     public void unlockRow(RowLock lock) throws IOException {
         byte[] rowKey = lock.getRowKey();
         Put put = new Put(rowKey);
         put.add(family, qualifier, Bytes.toBytes(-1L));
-        table.checkAndPut(rowKey, family, qualifier, Bytes.toBytes(lock.getTimestamp()), put); // If it fails, we already lost the lock
+        table.checkAndPut(rowKey, family, qualifier, lock.getPermit(), put); // If it fails, we already lost the lock
     }
     
     public boolean isLocked(byte[] rowKey) throws IOException {
@@ -101,11 +106,11 @@ public class RowLocker {
 
         if (result.isEmpty()) return false;
         
-        byte[] lock = result.getValue(family, qualifier);
-        if (lock == null) return false;
+        byte[] previousPermit = result.getValue(family, qualifier);
+        if (previousPermit == null) return false;
         
-        long previousTimestamp = Bytes.toLong(lock);
-        if (previousTimestamp == -1) return false;
+        RowLock previousRowLock = new RowLock(rowKey, previousPermit);
+        long previousTimestamp = previousRowLock.getTimestamp();
         if (previousTimestamp + timeout < now) return false;
         
         return true;
@@ -114,6 +119,6 @@ public class RowLocker {
     public boolean put(Put put, RowLock lock) throws IOException {
         if (!Bytes.equals(put.getRow(), lock.getRowKey()))
                 return false;
-        return table.checkAndPut(lock.getRowKey(), family, qualifier, Bytes.toBytes(lock.getTimestamp()), put);
+        return table.checkAndPut(lock.getRowKey(), family, qualifier, lock.getPermit(), put);
     }
 }

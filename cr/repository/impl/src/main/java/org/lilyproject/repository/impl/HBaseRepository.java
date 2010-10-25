@@ -1006,7 +1006,7 @@ public class HBaseRepository implements Repository {
             try {
                 rowLocker.unlockRow(rowLock);
             } catch (IOException e) {
-                // Ignore for now
+                log.warn("Exception while unlocking row <" + rowLock.getRowKey()+ ">", e);
             }
         }
     }
