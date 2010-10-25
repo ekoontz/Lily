@@ -13,6 +13,7 @@
     period: "15"
     /* Enable the following to report to Ganglia */
     /*
+    ,
     class: "org.apache.hadoop.metrics.ganglia.GangliaContext31",
     servers: "localhost:8649"
     */

@@ -24,8 +24,8 @@
     <attribute name="indexUpdater.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
     <attribute name="indexUpdater.period" value="15"/>
     <!--
-    <attribute name="indexer.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
-    <attribute name="indexer.servers" value="localhost:8649"/>
+    <attribute name="indexUpdater.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="indexUpdater.servers" value="localhost:8649"/>
     -->
 
     <!--

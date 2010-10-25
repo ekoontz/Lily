@@ -1,5 +1,6 @@
 package org.lilyproject.tools.tester;
 
+import org.apache.hadoop.hbase.metrics.MetricsRate;
 import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
@@ -19,14 +20,16 @@ public class TesterMetrics implements Updater {
     private final MetricsRecord metricsRecord;
     private final MetricsContext context;
     private final EnumMap<Action, MetricsTimeVaryingRate> rates = new EnumMap<Action, MetricsTimeVaryingRate>(Action.class);
+    private final EnumMap<Action, MetricsRate> opcount = new EnumMap<Action, MetricsRate>(Action.class);
     private final MetricsLongValue failures = new MetricsLongValue("failures", registry);
     private final TesterMetricsMBean mbean;
 
     public TesterMetrics(String recordName) {
         for (Action action : Action.values()) {
             rates.put(action, new MetricsTimeVaryingRate(action.name().toLowerCase(), registry));
+            opcount.put(action, new MetricsRate("avg_ops_"+action.name().toLowerCase(), registry));
         }
-
+        
         context = MetricsUtil.getContext("tester");
         metricsRecord = MetricsUtil.createRecord(context, recordName);
         context.registerUpdater(this);
@@ -53,6 +56,7 @@ public class TesterMetrics implements Updater {
         }
 
         rates.get(action).inc(duration);
+        opcount.get(action).inc();
     }
 
     public class TesterMetricsMBean extends MetricsDynamicMBeanBase {
