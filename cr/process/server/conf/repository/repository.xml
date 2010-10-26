@@ -2,6 +2,7 @@
 <repository xmlns:conf="http://kauriproject.org/configuration"
             conf:inherit="shallow">
 
-  <!-- Filesystem to use to store blobs -->
+  <!-- Filesystem to use to store blobs. The directory will be created if it
+       does not yet exist. -->
   <blobFileSystem>hdfs://localhost:9000/lily/blobs</blobFileSystem>
 </repository>

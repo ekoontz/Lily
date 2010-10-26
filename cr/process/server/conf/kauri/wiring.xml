@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <wiring>
-
   <modules>
-
     <artifact id="general" groupId="org.lilyproject" artifactId="lily-general-module" version="0.2-SNAPSHOT">
     </artifact>
 

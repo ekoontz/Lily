@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <connectors>
   <!--
+     | Configuration of the HTTP connector that serves the REST interface.
+     -->
+  <!--
     About port numbers: the below will try to use port 8888, if it is not available, it will use
     the next port available.
     This configuration is useful during development to be able to start multiple Lily nodes

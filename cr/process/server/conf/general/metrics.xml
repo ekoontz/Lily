@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <metrics>
   <hadoopMetricsAttributes>
-    <!-- The 'localhost' in the servers settings is what Ganglia will show,
-         so change it to the real hostname if you are running multiple servers. -->
 
     <!-- The NullContextWithUpdateThread makes sure the metrics are reported to JMX when
          no other metrics output is enabled. -->
