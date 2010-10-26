@@ -24,6 +24,8 @@ import org.apache.avro.io.Decoder;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.ipc.Responder;
 import org.apache.avro.specific.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -36,6 +38,7 @@ public class LilySpecificResponder extends Responder {
   private Object impl;
   private SpecificData data;
     private AvroConverter converter;
+    private Log log = LogFactory.getLog(getClass());
 
   public LilySpecificResponder(Class iface, Object impl, AvroConverter converter) {
     this(SpecificData.get().getProtocol(iface), impl);
@@ -80,15 +83,15 @@ public class LilySpecificResponder extends Responder {
   public void writeError(Schema schema, Object error,
                          Encoder out) throws IOException {
       if (!(error instanceof SpecificRecord)) {
-          System.out.println("-----------------------------------------------");
-          System.out.println("Avro responder is being asked to write an exception which is not a specific Avro type.");
-          System.out.println("ClassName: " + error.getClass().getName());
-          System.out.println("toString: " + error.toString());
-
+          String message = "Avro responder is being asked to write an exception which is not a specific Avro type. " +
+                  "A likely cause of this message is that there is a method in lily.avpr which is missing a " +
+                  "declaration of AvroGenericException. " +
+                  "ClassName: " + error.getClass().getName() + ", toString: " + error.toString();
           if (error instanceof Throwable) {
-              ((Throwable)error).printStackTrace();
+              log.error(message, (Throwable)error);
+          } else {
+              log.error(message);
           }
-          System.out.println("-----------------------------------------------");
       }
 
     getDatumWriter(schema).write(error, out);
