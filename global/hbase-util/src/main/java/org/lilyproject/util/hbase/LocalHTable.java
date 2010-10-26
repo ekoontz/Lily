@@ -112,7 +112,14 @@ public class LocalHTable extends ThreadLocal<HTable> implements HTableInterface 
     }
 
     public void put(Put put) throws IOException {
-        get().put(put);
+        HTable table = get();
+        try {
+            table.put(put);
+        } finally {
+            // if an exception occurs, we do not expect our put to be left
+            // behind in the write buffer
+            table.clearWriteBuffer();
+        }
     }
 
     public void put(List<Put> puts) throws IOException {
