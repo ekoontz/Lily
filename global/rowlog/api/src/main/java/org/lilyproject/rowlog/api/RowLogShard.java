@@ -80,5 +80,8 @@ public interface RowLogShard {
      */
     List<RowLogMessage> getProblematic(String subscription) throws RowLogException;
 
+    /**
+     * Checks if a message has been marked as problematic on this shard for a certain subscription.
+     */
     boolean isProblematic(RowLogMessage message, String subscription) throws RowLogException;
 }

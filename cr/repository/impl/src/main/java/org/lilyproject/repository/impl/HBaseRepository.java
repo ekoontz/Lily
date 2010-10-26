@@ -70,6 +70,8 @@ import org.lilyproject.repository.api.TypeException;
 import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.api.ValueType;
 import org.lilyproject.repository.api.VersionNotFoundException;
+import org.lilyproject.repository.impl.RepositoryMetrics.Action;
+import org.lilyproject.repository.impl.RepositoryMetrics.HBaseAction;
 import org.lilyproject.repository.impl.lock.RowLocker;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogException;
@@ -115,6 +117,7 @@ public class HBaseRepository implements Repository {
     private RowLocker rowLocker;
     
     private Log log = LogFactory.getLog(getClass());
+    private RepositoryMetrics metrics;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
             BlobStoreAccessFactory blobStoreAccessFactory, RowLog wal, Configuration configuration) throws IOException {
@@ -140,6 +143,7 @@ public class HBaseRepository implements Repository {
 
         rowLocker = new RowLocker(recordTable, HBaseTableUtil.NON_VERSIONED_SYSTEM_COLUMN_FAMILY, LOCK_COLUMN_NAME,
                 10000);
+        metrics = new RepositoryMetrics("hbaserepository");
     }
 
     public void close() throws IOException {
@@ -164,97 +168,104 @@ public class HBaseRepository implements Repository {
 
     public Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
-
-        checkCreatePreconditions(record);
-        
-        Record newRecord = record.clone();
-
-        RecordId recordId = newRecord.getId();
-        if (recordId == null) {
-            recordId = idGenerator.newRecordId();
-            newRecord.setId(recordId);
-        }
-
-        byte[] rowId = recordId.toBytes();
-        RowLock rowLock = null;
-        org.lilyproject.repository.impl.lock.RowLock customRowLock = null;
-        RowLogMessage walMessage;
-
+        long before = System.currentTimeMillis();
         try {
-
-            // Take HBase RowLock
-            rowLock = recordTable.lockRow(rowId);
-            if (rowLock == null)
-                throw new RecordException("Failed to lock row while creating record <" + recordId
-                        + "> in HBase table", null);
-
-            long version = 1L;
-            Get get = new Get(rowId, rowLock);
-            // If the record existed it would have been deleted.
-            // The version numbering continues from where it has been deleted.
-            if (recordTable.exists(get)) {
-                get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
-                Result result = recordTable.get(get);
-                byte[] oldVersion = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
-                if (oldVersion != null) {
-                    version = Bytes.toLong(oldVersion);
-                }
+            checkCreatePreconditions(record);
+            
+            Record newRecord = record.clone();
+    
+            RecordId recordId = newRecord.getId();
+            if (recordId == null) {
+                recordId = idGenerator.newRecordId();
+                newRecord.setId(recordId);
             }
-            
-            Record dummyOriginalRecord = newRecord();
-            Put put = new Put(newRecord.getId().toBytes(), rowLock);
-            put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, 1L, Bytes.toBytes(false));
-            RecordEvent recordEvent = new RecordEvent();
-            recordEvent.setType(Type.CREATE);
-            calculateRecordChanges(newRecord, dummyOriginalRecord, version, put, recordEvent, false);
-            // Make sure the record type changed flag stays false for a newly
-            // created record
-            recordEvent.setRecordTypeChanged(false);
-            if (newRecord.getVersion() != null)
-                recordEvent.setVersionCreated(newRecord.getVersion());
-
-            walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
-            recordTable.put(put);
-            
-            // Take Custom RowLock before releasing the HBase RowLock
+    
+            byte[] rowId = recordId.toBytes();
+            RowLock rowLock = null;
+            org.lilyproject.repository.impl.lock.RowLock customRowLock = null;
+            RowLogMessage walMessage;
+    
             try {
-                customRowLock = lockRow(recordId, rowLock);
-            } catch (IOException ignore) {
-                // The create succeeded, but processing the WAL message didn't. It will be retried later.
-            }
-        } catch (IOException e) {
-            throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
-                    e);
-        } catch (RowLogException e) {
-            throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
-                    e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
-                    e);
-        } finally {
-            if (rowLock != null) {
+    
+                // Take HBase RowLock
+                rowLock = recordTable.lockRow(rowId);
+                if (rowLock == null)
+                    throw new RecordException("Failed to lock row while creating record <" + recordId
+                            + "> in HBase table", null);
+    
+                long version = 1L;
+                Get get = new Get(rowId, rowLock);
+                // If the record existed it would have been deleted.
+                // The version numbering continues from where it has been deleted.
+                if (recordTable.exists(get)) {
+                    get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
+                    Result result = recordTable.get(get);
+                    byte[] oldVersion = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), CURRENT_VERSION_COLUMN_NAME);
+                    if (oldVersion != null) {
+                        version = Bytes.toLong(oldVersion);
+                    }
+                }
+                
+                Record dummyOriginalRecord = newRecord();
+                Put put = new Put(newRecord.getId().toBytes(), rowLock);
+                put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), DELETED_COLUMN_NAME, 1L, Bytes.toBytes(false));
+                RecordEvent recordEvent = new RecordEvent();
+                recordEvent.setType(Type.CREATE);
+                calculateRecordChanges(newRecord, dummyOriginalRecord, version, put, recordEvent, false);
+                // Make sure the record type changed flag stays false for a newly
+                // created record
+                recordEvent.setRecordTypeChanged(false);
+                if (newRecord.getVersion() != null)
+                    recordEvent.setVersionCreated(newRecord.getVersion());
+    
+                walMessage = wal.putMessage(recordId.toBytes(), null, recordEvent.toJsonBytes(), put);
+                long beforeHbase = System.currentTimeMillis();
+                recordTable.put(put);
+                metrics.reportHBase(HBaseAction.PUT, System.currentTimeMillis()-beforeHbase);
+                
+                // Take Custom RowLock before releasing the HBase RowLock
                 try {
-                    recordTable.unlockRow(rowLock);
-                } catch (IOException e) {
-                    // Ignore for now
+                    customRowLock = lockRow(recordId, rowLock);
+                } catch (IOException ignore) {
+                    log.info("Exception while taking a custom rowLock. Processing the wal message will be retried later.", ignore);
                 }
-            }
-        }
-
-        if (customRowLock != null) {
-            try {
-                wal.processMessage(walMessage);
+            } catch (IOException e) {
+                throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
+                        e);
+            } catch (RowLogException e) {
+                throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
+                        e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.warn("Processing message <"+walMessage+"> by the WAL got interrupted. It will be retried later.", e);
-            } catch (RowLogException e) {
-                log.warn("Exception while processing message <"+walMessage+"> by the WAL. It will be retried later.", e);
+                throw new RecordException("Exception occurred while creating record <" + recordId + "> in HBase table",
+                        e);
             } finally {
-                unlockRow(customRowLock);
+                if (rowLock != null) {
+                    try {
+                        recordTable.unlockRow(rowLock);
+                    } catch (IOException e) {
+                        log.info("Exception while unlocking HBase lock <"+rowLock+">", e);
+                    }
+                }
             }
+    
+            if (customRowLock != null) {
+                try {
+                    wal.processMessage(walMessage);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Processing message <"+walMessage+"> by the WAL got interrupted. It will be retried later.", e);
+                } catch (RowLogException e) {
+                    log.warn("Exception while processing message <"+walMessage+"> by the WAL. It will be retried later.", e);
+                } finally {
+                    unlockRow(customRowLock);
+    
+                }
+            }
+            return newRecord;
+        } finally {
+            metrics.report(Action.CREATE, System.currentTimeMillis() - before);
         }
-        return newRecord;
     }
 
     private void checkCreatePreconditions(Record record) throws InvalidRecordException {
@@ -268,23 +279,28 @@ public class HBaseRepository implements Repository {
     }
 
     public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
-        if (record.getId() == null) {
-            throw new InvalidRecordException(record, "The recordId cannot be null for a record to be updated.");
-        }
+        long before = System.currentTimeMillis();
         try {
-            if (!checkAndProcessOpenMessages(record.getId())) {
-                throw new RecordException("Record <"+ record.getId()+"> update could not be performed due to remaining messages on the WAL");
+            if (record.getId() == null) {
+                throw new InvalidRecordException(record, "The recordId cannot be null for a record to be updated.");
             }
-        }  catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RecordException("Exception occurred while updating record <" + record.getId() + ">",
-                    e);
-        }
-        
-        if (updateVersion) {
-            return updateMutableFields(record, useLatestRecordType);
-        } else {
-            return updateRecord(record, useLatestRecordType);
+            try {
+                if (!checkAndProcessOpenMessages(record.getId())) {
+                    throw new RecordException("Record <"+ record.getId()+"> update could not be performed due to remaining messages on the WAL");
+                }
+            }  catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RecordException("Exception occurred while updating record <" + record.getId() + ">",
+                        e);
+            }
+            
+            if (updateVersion) {
+                return updateMutableFields(record, useLatestRecordType);
+            } else {
+                return updateRecord(record, useLatestRecordType);
+            }
+        } finally {
+            metrics.report(Action.UPDATE, System.currentTimeMillis() - before);
         }
     }
     
@@ -718,21 +734,26 @@ public class HBaseRepository implements Repository {
     private Record read(RecordId recordId, Long requestedVersion, List<FieldType> fields, ReadContext readContext)
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException,
             RecordException, VersionNotFoundException, TypeException {
-        ArgumentValidator.notNull(recordId, "recordId");
-
-        Result result = getRow(recordId, requestedVersion, false, fields);
-
-        Long latestVersion = getLatestVersion(result);
-        if (requestedVersion == null) {
-            requestedVersion = getLatestVersion(result);
-        } else {
-            if (latestVersion == null || latestVersion < requestedVersion ) {
-                Record record = newRecord(recordId);
-                record.setVersion(requestedVersion);
-                throw new VersionNotFoundException(record);
+        long before = System.currentTimeMillis();
+        try {
+            ArgumentValidator.notNull(recordId, "recordId");
+    
+            Result result = getRow(recordId, requestedVersion, false, fields);
+    
+            Long latestVersion = getLatestVersion(result);
+            if (requestedVersion == null) {
+                requestedVersion = getLatestVersion(result);
+            } else {
+                if (latestVersion == null || latestVersion < requestedVersion ) {
+                    Record record = newRecord(recordId);
+                    record.setVersion(requestedVersion);
+                    throw new VersionNotFoundException(record);
+                }
             }
+            return getRecordFromRowResult(recordId, requestedVersion, readContext, result);
+        } finally {
+            metrics.report(Action.READ, System.currentTimeMillis() - before);
         }
-        return getRecordFromRowResult(recordId, requestedVersion, readContext, result);
     }
 
     private Record getRecordFromRowResult(RecordId recordId, Long requestedVersion, ReadContext readContext,
@@ -957,7 +978,7 @@ public class HBaseRepository implements Repository {
 
     public void delete(RecordId recordId) throws RecordException, RecordNotFoundException {
         ArgumentValidator.notNull(recordId, "recordId");
-        
+        long before = System.currentTimeMillis();
         org.lilyproject.repository.impl.lock.RowLock rowLock = null;
         byte[] rowId = recordId.toBytes();
         try {
@@ -998,6 +1019,8 @@ public class HBaseRepository implements Repository {
                     e);
         } finally {
             unlockRow(rowLock);
+            long after = System.currentTimeMillis();
+            metrics.report(Action.DELETE, (after-before));
         }
     }
 

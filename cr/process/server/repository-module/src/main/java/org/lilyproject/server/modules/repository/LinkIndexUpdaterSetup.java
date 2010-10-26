@@ -38,13 +38,11 @@ public class LinkIndexUpdaterSetup {
 
         LinkIndexUpdater linkIndexUpdater = new LinkIndexUpdater(repository, linkIndex);
 
-        RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
-        listenerClassMapping.put("LinkIndexUpdater", linkIndexUpdater);
+        RowLogMessageListenerMapping.INSTANCE.put("LinkIndexUpdater", linkIndexUpdater);
     }
 
     @PreDestroy
     public void stop() {
-        RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
-        listenerClassMapping.remove("LinkIndexUpdater");
+        RowLogMessageListenerMapping.INSTANCE.remove("LinkIndexUpdater");
     }
 }

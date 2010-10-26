@@ -444,9 +444,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         if (executionState == null)
             return false;
         if (respectOrder) {
-            List<RowLogSubscription> subscriptionsContexts = getSubscriptions();
-            Collections.sort(subscriptionsContexts);
-            for (RowLogSubscription subscriptionContext : subscriptionsContexts) {
+            List<RowLogSubscription> subscriptions = getSubscriptions();
+            Collections.sort(subscriptions);
+            for (RowLogSubscription subscriptionContext : subscriptions) {
                 if (subscriptionId.equals(subscriptionContext.getId()))
                     break;
                 if (!executionState.getState(subscriptionContext.getId())) {

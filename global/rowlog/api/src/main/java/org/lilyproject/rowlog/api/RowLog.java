@@ -165,6 +165,13 @@ public interface RowLog {
      */
     boolean messageDone(RowLogMessage message, String subscriptionId, byte[] lock) throws RowLogException;
     
+    /**
+     * Checks if the message is done for a certain subscription.
+     * @param message the message to check
+     * @param subscriptionId for which subscription to check the message
+     * @return true of the message is done
+     * @throws RowLogException
+     */
     boolean isMessageDone(RowLogMessage message, String subscriptionId) throws RowLogException;
     
     /**
@@ -191,11 +198,36 @@ public interface RowLog {
      */
     List<RowLogMessage> getProblematic(String subscriptionId) throws RowLogException;
     
+    /**
+     * Checks if a message has been marked as problematic for a certain subscription.
+     * <p>A message is marked as problematic when its processing has failed the number of times defined in the maxtries of the subscription.
+     * By marking it as problematic it won't be picked up again by the RowLog processor. 
+     * This avoids that a problematic message blocks other messages from being processed. 
+     * @param message the message to check
+     * @param subscriptionId for which subscription to check the message
+     * @return true if the message has been marked as problematic
+     * @throws RowLogException
+     */
     boolean isProblematic(RowLogMessage message, String subscriptionId) throws RowLogException;
     
+    /**
+     * @return the list of subscriptions on the rowlog
+     */
     List<RowLogSubscription> getSubscriptions();
 
+    /**
+     * @return the list of registered shards on the rowlog
+     */
     List<RowLogShard> getShards();
 
+    /**
+     * Checks if a message is available for processing for a certain subscription.
+     * <p>A message will not be available if it is either already done, marked as problematic, 
+     * or the message needs to be processed by another subscription first in case of order-preserving subscriptions.
+     * @param message the message to check
+     * @param subscriptionId for which subscription to check the message
+     * @return true if the message is available
+     * @throws RowLogException
+     */
     boolean isMessageAvailable(RowLogMessage message, String subscriptionId) throws RowLogException;
 }

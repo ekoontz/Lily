@@ -4,6 +4,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Maps subscription id's onto {@link RowLogMessageListener} instances.
+ * The RowLog and RowLogProcessor retrieves these instances to process messages.
+ */
 public class RowLogMessageListenerMapping {
 
     public static RowLogMessageListenerMapping INSTANCE = new RowLogMessageListenerMapping();

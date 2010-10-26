@@ -2,7 +2,9 @@ package org.lilyproject.rowlog.api;
 
 import org.lilyproject.util.ObjectUtils;
 
-
+/**
+ * A value object describing a subscription.
+ */
 public class RowLogSubscription implements Comparable<RowLogSubscription> {
     private final String rowLogId;
     private final String id;
@@ -10,8 +12,19 @@ public class RowLogSubscription implements Comparable<RowLogSubscription> {
     private final int maxTries;
     private final int orderNr;
 
+    /**
+     * The type of a subscription defines if the listeners of a subscription run locally (VM) or remote (Netty) 
+     */
     public enum Type {VM, Netty}
     
+    /**
+     * Constructor
+     * @param rowLogId id of the rowlog to which the subscription belongs
+     * @param id of the subscription
+     * @param type 
+     * @param maxTries the number of tries that are allowed to process a message for this subscription before it is marked as problematic
+     * @param orderNr a number defining the subscription's position between the other subscriptions of the rowlog
+     */
     public RowLogSubscription(String rowLogId, String id, Type type, int maxTries, int orderNr) {
         this.rowLogId = rowLogId;
         this.id = id;

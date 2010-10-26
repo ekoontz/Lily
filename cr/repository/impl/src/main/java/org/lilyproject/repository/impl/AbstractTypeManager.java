@@ -364,7 +364,6 @@ public abstract class AbstractTypeManager implements TypeManager {
     public ValueType getValueType(String primitiveValueTypeName, boolean multivalue, boolean hierarchy) {
         PrimitiveValueType type = primitiveValueTypes.get(primitiveValueTypeName);
         if (type == null) {
-            // TODO should probably be another kind of exception, this was just a quick fix to avoid NPE
             throw new IllegalArgumentException("Primitive value type does not exist: " + primitiveValueTypeName);
         }
         return new ValueTypeImpl(type, multivalue, hierarchy);

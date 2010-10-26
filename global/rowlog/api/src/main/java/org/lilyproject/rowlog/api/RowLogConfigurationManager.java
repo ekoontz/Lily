@@ -48,6 +48,15 @@ public interface RowLogConfigurationManager {
 
     void removeListenersObserver(String rowLogId, String subscriptionId, ListenersObserver observer);
 
+    /**
+     * Publish the hostName and port number of where the rowlog processor is running.
+     * @param hostName
+     * @param port
+     * @param rowLogId the rowlog for which the processor is running
+     * @param shardId the shard for which the processor is running
+     * @throws KeeperException
+     * @throws InterruptedException
+     */
     void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) throws KeeperException, InterruptedException;
 
     void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException;
