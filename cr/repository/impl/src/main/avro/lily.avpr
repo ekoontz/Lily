@@ -403,14 +403,14 @@
     "getFieldTypes": {
       "request": [],
       "response": {"type": "array", "items": "AvroFieldType"},
-      "errors": ["AvroTypeException"]
+      "errors": ["AvroTypeException", "AvroGenericException"]
       
     }, 
     
     "getRecordTypes": {
       "request": [],
       "response": {"type": "array", "items": "AvroRecordType"},
-      "errors": ["AvroTypeException"]
+      "errors": ["AvroTypeException", "AvroGenericException"]
     }
  }
 }
