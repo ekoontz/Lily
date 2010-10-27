@@ -13,9 +13,9 @@
    height="744.09448"
    id="svg4011"
    version="1.1"
-   inkscape:version="0.47 r22583"
-   sodipodi:docname="lily data model.svg"
-   inkscape:export-filename="/home/bruno/werk/daisy3/lily repository model.png"
+   inkscape:version="0.48.0 r9654"
+   sodipodi:docname="lily_repository_model.svg"
+   inkscape:export-filename="/home/bruno/tmp/lily repository model.png"
    inkscape:export-xdpi="64.300003"
    inkscape:export-ydpi="64.300003">
   <defs
@@ -48,14 +48,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="490.25416"
-     inkscape:cy="385.56405"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="443.33048"
+     inkscape:cy="246.96111"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1680"
-     inkscape:window-height="998"
+     inkscape:window-height="996"
      inkscape:window-x="0"
      inkscape:window-y="1"
      inkscape:window-maximized="1" />
@@ -231,10 +231,10 @@
          y="581.86218"
          id="tspan4051">* Optional variant props</tspan></text>
     <rect
-       style="fill:#ffffff;stroke:#000000;stroke-width:0.98403531000000000;stroke-opacity:1"
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.98403525;stroke-opacity:1"
        id="rect4087"
        width="243.01596"
-       height="115.01597"
+       height="140.01596"
        x="115.99202"
        y="680.35419" />
     <text
@@ -315,22 +315,31 @@
          sodipodi:role="line"
          x="133"
          y="776.86218"
-         id="tspan4085">   as &quot;mixins&quot;</tspan></text>
+         id="tspan4085">   as &quot;mixins&quot;</tspan><tspan
+         sodipodi:role="line"
+         x="133"
+         y="794.36218"
+         id="tspan3569">* System assigned ID</tspan><tspan
+         sodipodi:role="line"
+         x="133"
+         y="811.86218"
+         id="tspan3571">* Namespaced name</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#EmptyDiamondL)"
-       d="m 248,800.36218 1,56 151,0 0,-89 -43,0"
+       d="m 249,826.86218 0,29.5 151,0 0,-89 -43,0"
        id="path4622"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:connector-curvature="0" />
     <text
        xml:space="preserve"
        style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
        x="256"
-       y="809.36218"
+       y="837.36218"
        id="text5072"><tspan
          sodipodi:role="line"
          id="tspan5074"
          x="256"
-         y="809.36218">1</tspan></text>
+         y="837.36218">1</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:14px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
@@ -373,9 +382,10 @@
          y="958.36218">* mandatory: boolean</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#EmptyDiamondL)"
-       d="m 179,802.36218 0,138 106,0"
+       d="m 179,826.36218 0,114 106,0"
        id="path5096"
-       sodipodi:nodetypes="ccc" />
+       sodipodi:nodetypes="ccc"
+       inkscape:connector-curvature="0" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 487,936.36218 88,0 0,-92"
