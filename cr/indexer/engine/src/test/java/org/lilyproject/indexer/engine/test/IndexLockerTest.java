@@ -108,7 +108,6 @@ public class IndexLockerTest {
         thread.join();
 
         assertTrue(after.value - before.value > maxWaitTime);
-        assertTrue(after.value - before.value < maxWaitTime + 200);
     }
 
     @Test
@@ -149,7 +148,7 @@ public class IndexLockerTest {
 
         // Check that no 2 threads had the lock at the same time
         for (int i = 1; i < infos.size(); i++) {
-            assertTrue(infos.get(i).lockObtainTime > infos.get(i - 1).lockReleaseTime);
+            assertTrue(infos.get(i).lockObtainTime >= infos.get(i - 1).lockReleaseTime);
         }        
     }
 
