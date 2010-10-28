@@ -89,6 +89,7 @@ public class LilyClient implements Closeable {
     }
 
     private void init() throws InterruptedException, KeeperException, ServerUnavailableException {
+        zk.addDefaultWatcher(watcher);
         refreshServers();
         Stat stat = zk.exists(nodesPath, false);
         if (stat == null) {
@@ -97,6 +98,8 @@ public class LilyClient implements Closeable {
     }
 
     public void close() throws IOException {
+        zk.removeDefaultWatcher(watcher);
+
         for (ServerNode node : servers) {
             Closer.close(node.repository);
         }
@@ -129,7 +132,7 @@ public class LilyClient implements Closeable {
         BlobStoreAccessFactory blobStoreAccessFactory = getBlobStoreAccess(zk);
         
         Repository repository = new RemoteRepository(parseAddressAndPort(server.lilyAddressAndPort),
-                remoteConverter, (RemoteTypeManager)typeManager, idGenerator, blobStoreAccessFactory);
+                remoteConverter, typeManager, idGenerator, blobStoreAccessFactory);
         
         remoteConverter.setRepository(repository);
         typeManager.start();
@@ -202,7 +205,7 @@ public class LilyClient implements Closeable {
 
     private synchronized void refreshServers() throws InterruptedException, KeeperException {
         Set<String> currentServers = new HashSet<String>();
-        currentServers.addAll(zk.getChildren(nodesPath, watcher));
+        currentServers.addAll(zk.getChildren(nodesPath, true));
 
         Set<String> removedServers = new HashSet<String>();
         removedServers.addAll(serverAddresses);
