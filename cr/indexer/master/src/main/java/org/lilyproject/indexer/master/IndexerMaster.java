@@ -26,6 +26,7 @@ import org.lilyproject.indexer.model.api.*;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.util.Logs;
+import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.*;
 
 import static org.lilyproject.indexer.model.api.IndexerModelEventType.*;
@@ -69,6 +70,8 @@ public class IndexerMaster {
 
     private EventWorker eventWorker = new EventWorker();
 
+    private JobClient jobClient;
+
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
@@ -97,6 +100,15 @@ public class IndexerMaster {
         } catch (InterruptedException e) {
             log.info("Interrupted while shutting down leader election.");
         }
+
+        Closer.close(jobClient);
+    }
+
+    private synchronized JobClient getJobClient() throws IOException {
+        if (jobClient == null) {
+            jobClient = new JobClient(new JobConf(mapReduceConf));
+        }
+        return jobClient;
     }
 
     private class MyLeaderElectionCallback implements LeaderElectionCallback {
@@ -245,8 +257,7 @@ public class IndexerMaster {
                 }
 
                 if (index.getActiveBatchBuildInfo() != null) {
-                    //TODO shouldn't we close the jobclient? can't we use the same one as the statuswatchingthread?
-                    JobClient jobClient = new JobClient(new JobConf(mapReduceConf));
+                    JobClient jobClient = getJobClient();
                     String jobId = index.getActiveBatchBuildInfo().getJobId();
                     RunningJob job = jobClient.getJob(jobId);
                     if (job != null) {
@@ -473,7 +484,7 @@ public class IndexerMaster {
                         if (jobClient == null) {
                             // We only create the JobClient the first time we need it, to avoid that the
                             // repository fails to start up when there is no JobTracker running.
-                            jobClient = new JobClient(new JobConf(mapReduceConf));
+                            jobClient = getJobClient();
                         }
 
                         RunningJob job = jobClient.getJob(jobEntry.getValue());
