@@ -22,7 +22,7 @@ import java.util.Map;
  * A record type describes the schema to be followed by a {@link Record}.
  *
  * <p>Record types are managed via the {@link TypeManager}. To instantiate a RecordType use
- * {@link TypeManager#newRecordType(String) TypeManager.newRecordType}. As all entities within this API,
+ * {@link TypeManager#newRecordType(QName)}  TypeManager.newRecordType}. As all entities within this API,
  * record types are dumb data objects.
  *
  * <p>A record type consists of:
@@ -37,6 +37,14 @@ import java.util.Map;
  * <p>Record types are versioned: upon each update, a new version of the record type is created. Record store a
  * pointer to the particular version of a record type that was used when creating/updating a record type. The references
  * to the mixin record types are also to specific versions.
+ *
+ * <p>A record type has two unique identifiers:
+ * <ul>
+ * <li>a system-generated id, immutable after creation of the record type
+ * <li>a name in the form of a {@link QName qualified (namespaced) name}, which is mutable after creation of the record
+ * type. Changing the name of a record type affects all versions of the record type (the name is a non-versioned
+ * property of the record type).
+ * </ul>
  */
 public interface RecordType {
     /**
