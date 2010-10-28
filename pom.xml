@@ -84,6 +84,7 @@
     <module>tools/lily-kauri-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
     <module>tools/genscript-plugin</module>
+    <module>tools/doc-tools</module>
 
     <module>apps/import</module>
     <module>apps/tester</module>
