@@ -14,8 +14,8 @@ You can either:
 
  * or use a HBase installation you set up yourself.
    See Lily's root pom.xml for the version we build against, properties:
-     - hbase.version
-     - hadoop.version
+     - version.hbase
+     - version.hadoop
 
 Configure
 =========

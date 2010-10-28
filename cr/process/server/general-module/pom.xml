@@ -49,7 +49,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
-      <version>${hadoop.version}</version>
+      <version>${version.hadoop}</version>
       <exclusions>
         <exclusion>
           <!-- Excluding Avro here so that it would only be in the classpath of the repository module.

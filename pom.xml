@@ -19,12 +19,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <properties>
-    <hbase.version>0.89.20100924+28-lily-r7</hbase.version>
+    <version.hbase>0.89.20100924+28-lily-r7</version.hbase>
     <!-- When changing the hbase version, also change the hadoop and zookeeper version below to match
          what is in HBase's pom.xml -->
 
-    <hadoop.version>0.20.2+737</hadoop.version>
-    <zookeeper.version>3.3.1</zookeeper.version>
+    <version.hadoop>0.20.2+737</version.hadoop>
+    <version.zookeeper>3.3.1</version.zookeeper>
     <version.maven>2.0.9</version.maven>
     <version.solr>1.4.1</version.solr>
 
@@ -250,12 +250,12 @@
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>zookeeper</artifactId>
-        <version>${zookeeper.version}</version>
+        <version>${version.zookeeper}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
-        <version>${hbase.version}</version>
+        <version>${version.hbase}</version>
         <exclusions>
           <!-- We use the log4j binding for slf4j instead of the simple one -->
           <exclusion>
@@ -273,7 +273,7 @@
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
         <classifier>tests</classifier>
-        <version>${hbase.version}</version>
+        <version>${version.hbase}</version>
         <scope>test</scope>
         <exclusions>
           <!-- We use a more recent Avro in Lily (which has a different groupId). -->

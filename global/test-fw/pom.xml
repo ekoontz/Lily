@@ -51,8 +51,8 @@ WEBAPPSDIR=${basedir}/target/hadoopwebapps
 mkdir -p $WEBAPPSDIR
 CWD=`pwd`
 cd $WEBAPPSDIR                
-$JAVA_HOME/bin/jar xf ${settings.localRepository}/org/apache/hadoop/hadoop-core/${hadoop.version}/hadoop-core-${hadoop.version}.jar webapps
-$JAVA_HOME/bin/jar xf ${settings.localRepository}/org/apache/hbase/hbase/${hbase.version}/hbase-${hbase.version}.jar hbase-webapps
+$JAVA_HOME/bin/jar xf ${settings.localRepository}/org/apache/hadoop/hadoop-core/${version.hadoop}/hadoop-core-${version.hadoop}.jar webapps
+$JAVA_HOME/bin/jar xf ${settings.localRepository}/org/apache/hbase/hbase/${version.hbase}/hbase-${version.hbase}.jar hbase-webapps
 cd $CWD
               </value>
             </parameter>
@@ -64,8 +64,8 @@ WEBAPPSDIR=$LILY_HOME/tmp/hadoopwebapps
 mkdir -p $WEBAPPSDIR
 CWD=`pwd`
 cd $WEBAPPSDIR
-$JAVA_HOME/bin/jar xf $M2_REPO/org/apache/hadoop/hadoop-core/${hadoop.version}/hadoop-core-${hadoop.version}.jar webapps
-$JAVA_HOME/bin/jar xf $M2_REPO/org/apache/hbase/hbase/${hbase.version}/hbase-${hbase.version}.jar hbase-webapps
+$JAVA_HOME/bin/jar xf $M2_REPO/org/apache/hadoop/hadoop-core/${version.hadoop}/hadoop-core-${version.hadoop}.jar webapps
+$JAVA_HOME/bin/jar xf $M2_REPO/org/apache/hbase/hbase/${version.hbase}/hbase-${version.hbase}.jar hbase-webapps
 cd $CWD
               </value>
             </parameter>
@@ -77,8 +77,8 @@ set WEBAPPSDIR=${basedir}\target\hadoopwebapps
 mkdir %WEBAPPSDIR%
 set CWD=%CD%
 cd %WEBAPPSDIR%
-"%JAVA_HOME%\bin\jar" xf ${settings.localRepository}\org\apache\hadoop\hadoop-core\${hadoop.version}\hadoop-core-${hadoop.version}.jar webapps
-"%JAVA_HOME%\bin\jar" xf ${settings.localRepository}\org\apache\hbase\hbase\${hbase.version}\hbase-${hbase.version}.jar hbase-webapps
+"%JAVA_HOME%\bin\jar" xf ${settings.localRepository}\org\apache\hadoop\hadoop-core\${version.hadoop}\hadoop-core-${version.hadoop}.jar webapps
+"%JAVA_HOME%\bin\jar" xf ${settings.localRepository}\org\apache\hbase\hbase\${version.hbase}\hbase-${version.hbase}.jar hbase-webapps
 chdir /d %CWD%
               </value>
             </parameter>
@@ -90,8 +90,8 @@ set WEBAPPSDIR=%LILY_HOME%\tmp\hadoopwebapps
 mkdir %WEBAPPSDIR%
 set CWD=%CD%
 cd %WEBAPPSDIR%
-"%JAVA_HOME%\bin\jar" xf %M2_REPO%\org\apache\hadoop\hadoop-core\${hadoop.version}\hadoop-core-${hadoop.version}.jar webapps
-"%JAVA_HOME%\bin\jar" xf %M2_REPO%\org\apache\hbase\hbase\${hbase.version}\hbase-${hbase.version}.jar hbase-webapps
+"%JAVA_HOME%\bin\jar" xf %M2_REPO%\org\apache\hadoop\hadoop-core\${version.hadoop}\hadoop-core-${version.hadoop}.jar webapps
+"%JAVA_HOME%\bin\jar" xf %M2_REPO%\org\apache\hbase\hbase\${version.hbase}\hbase-${version.hbase}.jar hbase-webapps
 chdir /d %CWD%
               </value>
             </parameter>
@@ -159,7 +159,7 @@ chdir /d %CWD%
     <dependency>
        <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-test</artifactId>
-      <version>${hadoop.version}</version>
+      <version>${version.hadoop}</version>
       <scope>compile</scope>
     </dependency>
 
