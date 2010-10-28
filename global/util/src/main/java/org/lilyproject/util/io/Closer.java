@@ -46,9 +46,9 @@ public class Closer {
                         if (method.getName().equals("close")) {
                             closeMethod = method;
                             break;
-                        } else if (method.getName().equals("stop")) {
-                            closeMethod = method;
                         } else if (method.getName().equals("shutdown")) {
+                            closeMethod = method;
+                        } else if (method.getName().equals("stop")) {
                             closeMethod = method;
                         }
                     }
