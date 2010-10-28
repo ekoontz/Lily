@@ -1055,18 +1055,16 @@ public class HBaseRepository implements Repository {
 
         Set<RecordId> recordIds = new HashSet<RecordId>();
 
-        ResultScanner scanner = null;
         try {
-            scanner = recordTable.getScanner(scan);
+            ResultScanner scanner = recordTable.getScanner(scan);
             Result result;
             while ((result = scanner.next()) != null) {
                 RecordId id = idGenerator.fromBytes(result.getRow());
                 recordIds.add(id);
             }
+            Closer.close(scanner); // Not closed in finally block: avoid HBase contact when there could be connection problems.
         } catch (IOException e) {
             throw new RepositoryException("Error getting list of variants of record " + recordId.getMaster(), e);
-        } finally {
-            Closer.close(scanner);
         }
 
         return recordIds;
