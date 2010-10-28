@@ -26,6 +26,13 @@
     <attribute name="indexUpdater.servers" value="localhost:8649"/>
     -->
 
+    <attribute name="repository.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="repository.period" value="15"/>
+    <!--
+    <attribute name="repository.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="repository.servers" value="localhost:8649"/>
+    -->
+
     <!--
     <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
     <attribute name="jvm.period" value="15"/>
