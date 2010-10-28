@@ -1,0 +1,1 @@
+Retrieve the sharding configuration of an index.

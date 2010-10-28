@@ -1,0 +1,8 @@
+The lily-update-index tool is not only used to update the configuration of
+an index.
+By updating the state attributes of an index you can activate or deactivate
+incremental indexing, you can trigger batch indexing, or you can trigger
+deletion of the index.
+
+See the documentation about managing indexes:
+http://docs.outerthought.org/lily-docs-current/440-lily.html

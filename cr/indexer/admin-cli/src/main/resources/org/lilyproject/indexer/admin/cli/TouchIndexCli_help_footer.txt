@@ -1,0 +1,8 @@
+Touching an index will trigger any components that listen to changes in the
+index configurations.
+
+This can be useful if in the original trigger, a component failed for some
+reason, and that reason is meanwhile resolved. For example, an indexer
+worker failed to start the index updaters because some field types referred
+in the indexer configuration did not exist. If they have meanwhile been
+created, you can touch the index.

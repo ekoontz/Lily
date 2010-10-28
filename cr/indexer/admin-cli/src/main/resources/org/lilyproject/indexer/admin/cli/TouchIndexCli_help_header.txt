@@ -1,0 +1,1 @@
+Touches an index: pretends it is modified but without modifying it.

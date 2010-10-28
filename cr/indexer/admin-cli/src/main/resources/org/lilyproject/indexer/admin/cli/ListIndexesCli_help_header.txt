@@ -1,0 +1,1 @@
+List all indexes, including detailed information about each one.

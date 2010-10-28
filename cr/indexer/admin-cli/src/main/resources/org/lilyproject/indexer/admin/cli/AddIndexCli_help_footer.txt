@@ -1,0 +1,2 @@
+For more information see the documentation about managing indexes:
+http://docs.outerthought.org/lily-docs-current/440-lily.html
