@@ -1,3 +1,4 @@
+// Do not apply Lily license header
 // This file was copied from the Apache Cocoon 2.1.x source tree.
 // Please keep the original license on this file.
 /*

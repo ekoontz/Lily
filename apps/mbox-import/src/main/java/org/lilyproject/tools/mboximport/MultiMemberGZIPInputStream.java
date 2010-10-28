@@ -1,3 +1,4 @@
+// Do not apply Lily license
 package org.lilyproject.tools.mboximport;
 
 import java.io.InputStream;

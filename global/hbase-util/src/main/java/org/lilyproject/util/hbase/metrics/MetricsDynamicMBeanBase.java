@@ -1,3 +1,4 @@
+// Do not apply Lily license
 package org.lilyproject.util.hbase.metrics;
 
 import java.util.ArrayList;

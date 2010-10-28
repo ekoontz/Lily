@@ -1,3 +1,4 @@
+// Do not apply Lily license header
 package org.lilyproject.hbaseindex;
 
 // This class is copied from Lucene with small adaptations to make it
