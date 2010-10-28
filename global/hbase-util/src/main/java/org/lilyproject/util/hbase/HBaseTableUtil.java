@@ -28,18 +28,18 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 public class HBaseTableUtil {
     
-    private static final byte[] RECORD_TABLE = Bytes.toBytes("recordTable");
+    private static final byte[] RECORD_TABLE = Bytes.toBytes("record");
     
-    public static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("NVSCF");
-    public static final byte[] VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("VSCF");
-    public static final byte[] NON_VERSIONED_COLUMN_FAMILY = Bytes.toBytes("NVCF");
-    public static final byte[] VERSIONED_COLUMN_FAMILY = Bytes.toBytes("VCF");
-    public static final byte[] VERSIONED_MUTABLE_COLUMN_FAMILY = Bytes.toBytes("VMCF");
+    public static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("system-nonversioned");
+    public static final byte[] VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("system-versioned");
+    public static final byte[] NON_VERSIONED_COLUMN_FAMILY = Bytes.toBytes("nonversioned");
+    public static final byte[] VERSIONED_COLUMN_FAMILY = Bytes.toBytes("versioned");
+    public static final byte[] VERSIONED_MUTABLE_COLUMN_FAMILY = Bytes.toBytes("versioned-mutable");
 
-    public static final byte[] WAL_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("WPLCF");
-    public static final byte[] WAL_COLUMN_FAMILY = Bytes.toBytes("WALCF");
-    public static final byte[] MQ_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("MQPLCF");
-    public static final byte[] MQ_COLUMN_FAMILY = Bytes.toBytes("MQCF");
+    public static final byte[] WAL_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("wal-payload");
+    public static final byte[] WAL_COLUMN_FAMILY = Bytes.toBytes("wal-state");
+    public static final byte[] MQ_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("mq-payload");
+    public static final byte[] MQ_COLUMN_FAMILY = Bytes.toBytes("mq-state");
 
     public static HTableInterface getRecordTable(Configuration configuration) throws IOException {
         HBaseAdmin admin = new HBaseAdmin(configuration);

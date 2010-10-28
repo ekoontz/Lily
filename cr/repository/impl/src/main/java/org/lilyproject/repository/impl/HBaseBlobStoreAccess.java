@@ -35,11 +35,11 @@ import org.lilyproject.util.hbase.LocalHTable;
 
 public class HBaseBlobStoreAccess implements BlobStoreAccess {
 
-    private static final byte[] BLOB_TABLE = Bytes.toBytes("blobTable");
+    private static final byte[] BLOB_TABLE = Bytes.toBytes("blob");
     private static final String ID = "HBASE";
-    private static final String BLOBS_COLUMN_FAMILY = "BFC";
+    private static final String BLOBS_COLUMN_FAMILY = "data";
     private static final byte[] BLOBS_COLUMN_FAMILY_BYTES = Bytes.toBytes(BLOBS_COLUMN_FAMILY);
-    private static final byte[] BLOB_COLUMN = Bytes.toBytes("$blob");
+    private static final byte[] BLOB_COLUMN = Bytes.toBytes("b");
     private HTableInterface table;
     
 

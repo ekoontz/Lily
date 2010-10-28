@@ -36,8 +36,8 @@ import org.lilyproject.util.zookeeper.ZooKeeperItf;
 public class TypeManagerReliableCreateTest {
 
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
-    private static final byte[] NON_VERSIONED_COLUMN_FAMILY = Bytes.toBytes("NVCF");
-    private static final byte[] CONCURRENT_COUNTER_COLUMN_NAME = Bytes.toBytes("$cc");
+    private static final byte[] DATA_COLUMN_FAMILY = Bytes.toBytes("data");
+    private static final byte[] CONCURRENT_COUNTER_COLUMN_NAME = Bytes.toBytes("cc");
     private static ValueType valueType;
     private static TypeManager basicTypeManager;
     private static ZooKeeperItf zooKeeper;
@@ -70,7 +70,7 @@ public class TypeManagerReliableCreateTest {
 
     @Test
     public void testConcurrentRecordCreate() throws Exception {
-        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable")) {
+        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type")) {
             @Override
             public long incrementColumnValue(byte[] row, byte[] family, byte[] qualifier, long amount)
                     throws IOException {
@@ -104,7 +104,7 @@ public class TypeManagerReliableCreateTest {
     
     @Test
     public void testConcurrentRecordUpdate() throws Exception {
-        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable")) {
+        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type")) {
             @Override
             public long incrementColumnValue(byte[] row, byte[] family, byte[] qualifier, long amount)
                     throws IOException {
@@ -141,7 +141,7 @@ public class TypeManagerReliableCreateTest {
 
     @Test
     public void testConcurrentFieldCreate() throws Exception {
-        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable")) {
+        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type")) {
             @Override
             public long incrementColumnValue(byte[] row, byte[] family, byte[] qualifier, long amount)
                     throws IOException {
@@ -175,7 +175,7 @@ public class TypeManagerReliableCreateTest {
     
     @Test
     public void testConcurrentFieldUpdate() throws Exception {
-        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable")) {
+        final HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type")) {
             @Override
             public long incrementColumnValue(byte[] row, byte[] family, byte[] qualifier, long amount)
                     throws IOException {
@@ -212,14 +212,14 @@ public class TypeManagerReliableCreateTest {
     
     @Test
     public void testGetTypeIgnoresConcurrentCounterRows() throws Exception {
-        HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("typeTable"));
+        HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type"));
         TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
         UUID id = UUID.randomUUID();
         byte[] rowId;
         rowId = new byte[16];
         Bytes.putLong(rowId, 0, id.getMostSignificantBits());
         Bytes.putLong(rowId, 8, id.getLeastSignificantBits());
-        typeTable.incrementColumnValue(rowId, NON_VERSIONED_COLUMN_FAMILY, CONCURRENT_COUNTER_COLUMN_NAME, 1);
+        typeTable.incrementColumnValue(rowId, DATA_COLUMN_FAMILY, CONCURRENT_COUNTER_COLUMN_NAME, 1);
         try {
             typeManager.getFieldTypeById(id.toString());
             fail();

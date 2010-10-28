@@ -41,9 +41,9 @@ import org.lilyproject.util.io.Closer;
 
 public class RowLogShardImpl implements RowLogShard {
 
-    private static final byte[] PROBLEMATIC_MARKER = Bytes.toBytes("P");
-    private static final byte[] MESSAGES_CF = Bytes.toBytes("MESSAGES");
-    private static final byte[] MESSAGE_COLUMN = Bytes.toBytes("MESSAGE");
+    private static final byte[] PROBLEMATIC_MARKER = Bytes.toBytes("p");
+    private static final byte[] MESSAGES_CF = Bytes.toBytes("messages");
+    private static final byte[] MESSAGE_COLUMN = Bytes.toBytes("msg");
     private HTableInterface table;
     private final RowLog rowLog;
     private final String id;
@@ -55,16 +55,17 @@ public class RowLogShardImpl implements RowLogShard {
         this.rowLog = rowLog;
         this.batchSize = batchSize;
 
+        String tableName = rowLog.getId()+"-"+id;
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
             admin.getTableDescriptor(Bytes.toBytes(id));
         } catch (TableNotFoundException e) {
-            HTableDescriptor tableDescriptor = new HTableDescriptor(id);
+            HTableDescriptor tableDescriptor = new HTableDescriptor(tableName);
             tableDescriptor.addFamily(new HColumnDescriptor(MESSAGES_CF));
             admin.createTable(tableDescriptor);
         }
 
-        table = new LocalHTable(configuration, id);
+        table = new LocalHTable(configuration, tableName);
     }
 
     public String getId() {

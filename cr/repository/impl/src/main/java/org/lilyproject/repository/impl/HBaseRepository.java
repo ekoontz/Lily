@@ -259,7 +259,6 @@ public class HBaseRepository implements Repository {
                     log.warn("Exception while processing message <"+walMessage+"> by the WAL. It will be retried later.", e);
                 } finally {
                     unlockRow(customRowLock);
-    
                 }
             }
             return newRecord;
