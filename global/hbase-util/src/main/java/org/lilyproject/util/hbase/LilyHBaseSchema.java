@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 public class LilyHBaseSchema {
     public static final byte EXISTS_FLAG = (byte) 0;
     public static final byte DELETE_FLAG = (byte) 1;
+    public static final byte[] DELETE_MARKER = new byte[] { DELETE_FLAG };
 
     public static enum Table {
         RECORD("record"),
@@ -16,16 +17,6 @@ public class LilyHBaseSchema {
         Table(String name) {
             this.name = name;
             this.bytes = Bytes.toBytes(name);
-        }
-    }
-
-    public static enum RecordValue {
-        DELETE_MARKER(new byte[]{ DELETE_FLAG });
-
-        public final byte[] bytes;
-
-        RecordValue(byte[] bytes) {
-            this.bytes = bytes;
         }
     }
 

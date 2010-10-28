@@ -276,7 +276,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         // Remove remaining FieldTypeEntries
         for (FieldTypeEntry fieldTypeEntry : latestFieldTypeEntries) {
             put.add(TypeCf.FIELDTYPE_ENTRY.bytes, idToBytes(fieldTypeEntry.getFieldTypeId()), newRecordTypeVersion,
-                    new byte[] { LilyHBaseSchema.DELETE_FLAG });
+                    DELETE_MARKER);
             changed = true;
         }
         return changed;
@@ -312,8 +312,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         }
         // Remove remaining mixins
         for (Entry<String, Long> entry : latestMixins.entrySet()) {
-            put.add(TypeCf.MIXIN.bytes, Bytes.toBytes(entry.getKey()), newRecordTypeVersion,
-                    new byte[] { LilyHBaseSchema.DELETE_FLAG });
+            put.add(TypeCf.MIXIN.bytes, Bytes.toBytes(entry.getKey()), newRecordTypeVersion, DELETE_MARKER);
             changed = true;
         }
         return changed;
@@ -383,7 +382,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
     private byte[] encodeFieldTypeEntry(FieldTypeEntry fieldTypeEntry) {
         byte[] bytes = new byte[0];
         bytes = Bytes.add(bytes, Bytes.toBytes(fieldTypeEntry.isMandatory()));
-        return EncodingUtil.prefixValue(bytes, LilyHBaseSchema.EXISTS_FLAG);
+        return EncodingUtil.prefixValue(bytes, EXISTS_FLAG);
     }
 
     private FieldTypeEntry decodeFieldTypeEntry(byte[] bytes, String fieldTypeId) {

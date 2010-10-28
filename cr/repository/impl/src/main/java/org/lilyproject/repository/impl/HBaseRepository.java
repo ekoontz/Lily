@@ -462,7 +462,7 @@ public class HBaseRepository implements Repository {
         Map<QName, Object> fields = new HashMap<QName, Object>();
         fields.putAll(record.getFields());
         for (QName qName : record.getFieldsToDelete()) {
-            fields.put(qName, RecordValue.DELETE_MARKER.bytes);
+            fields.put(qName, DELETE_MARKER);
         }
         return fields;
     }
@@ -501,13 +501,13 @@ public class HBaseRepository implements Repository {
 
     private byte[] encodeFieldValue(FieldType fieldType, Object fieldValue) throws FieldTypeNotFoundException,
             RecordTypeNotFoundException, RecordException {
-        if ((fieldValue instanceof byte[]) && Arrays.equals(RecordValue.DELETE_MARKER.bytes, (byte[])fieldValue))
-            return RecordValue.DELETE_MARKER.bytes;
+        if ((fieldValue instanceof byte[]) && Arrays.equals(DELETE_MARKER, (byte[])fieldValue))
+            return DELETE_MARKER;
         ValueType valueType = fieldType.getValueType();
 
         // TODO validate with Class#isAssignableFrom()
         byte[] encodedFieldValue = valueType.toBytes(fieldValue);
-        encodedFieldValue = EncodingUtil.prefixValue(encodedFieldValue, LilyHBaseSchema.EXISTS_FLAG);
+        encodedFieldValue = EncodingUtil.prefixValue(encodedFieldValue, EXISTS_FLAG);
         return encodedFieldValue;
     }
 
