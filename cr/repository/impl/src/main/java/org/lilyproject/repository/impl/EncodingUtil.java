@@ -18,14 +18,12 @@ package org.lilyproject.repository.impl;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.util.Bytes;
+import org.lilyproject.util.hbase.LilyHBaseSchema;
 
 public class EncodingUtil {
     
-    public static final byte EXISTS_FLAG = (byte) 0;
-    public static final byte DELETE_FLAG = (byte) 1;
-
     public static boolean isDeletedField(byte[] value) {
-        return value[0] == DELETE_FLAG;
+        return value[0] == LilyHBaseSchema.DELETE_FLAG;
     }
 
     public static byte[] prefixValue(byte[] fieldValue, byte prefix) {

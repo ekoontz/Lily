@@ -53,6 +53,7 @@ import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 
 import static org.lilyproject.util.repo.RecordEvent.Type.*;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -121,7 +122,7 @@ public class IndexerTest {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
 
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
-                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
+                RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 

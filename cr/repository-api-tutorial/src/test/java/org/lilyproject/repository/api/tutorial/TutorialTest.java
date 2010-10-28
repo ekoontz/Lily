@@ -52,6 +52,7 @@ import org.lilyproject.util.zookeeper.StateWatchingZooKeeper;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 import org.lilyproject.testfw.HBaseProxy;
 import org.lilyproject.testfw.TestHelper;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 /**
  * The code in this class is used in the repository API tutorial (390-OTC). If this
@@ -91,7 +92,7 @@ public class TutorialTest {
     
     protected static void setupWal() throws IOException, RowLogException, InterruptedException {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

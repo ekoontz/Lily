@@ -27,6 +27,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.lilyproject.indexer.batchbuild.IndexingMapper;
 import org.lilyproject.indexer.model.api.IndexDefinition;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 import java.io.IOException;
 import java.net.URL;
@@ -35,9 +36,6 @@ import java.util.Enumeration;
 import java.util.Map;
 
 public class BatchIndexBuilder {
-    private static final byte[] DELETED_COLUMN_NAME = Bytes.toBytes("$Deleted");
-    private static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("NVSCF");
-
     /**
      *
      * @return the ID of the started job
@@ -85,13 +83,13 @@ public class BatchIndexBuilder {
         // Define the HBase scanner
         //
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        filterList.addFilter(new SingleColumnValueFilter(NON_VERSIONED_SYSTEM_COLUMN_FAMILY,
-                DELETED_COLUMN_NAME, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
+        filterList.addFilter(new SingleColumnValueFilter(RecordCf.NON_VERSIONED_SYSTEM.bytes,
+                RecordColumn.DELETED.bytes, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
         Scan scan = new Scan();
         scan.setFilter(filterList);
-        scan.addColumn(NON_VERSIONED_SYSTEM_COLUMN_FAMILY, DELETED_COLUMN_NAME);
+        scan.addColumn(RecordCf.NON_VERSIONED_SYSTEM.bytes, RecordColumn.DELETED.bytes);
 
-        TableMapReduceUtil.initTableMapperJob("recordTable", scan,
+        TableMapReduceUtil.initTableMapperJob(Table.RECORD.name, scan,
             IndexingMapper.class, null, null, job);
 
         //

@@ -22,6 +22,7 @@ import org.lilyproject.rowlog.impl.*;
 import org.lilyproject.util.hbase.HBaseTableUtil;
 import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -51,12 +52,12 @@ public class RowLogSetup {
             confMgr.addSubscription("WAL", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
         }
 
-        messageQueue = new RowLogImpl("mq", HBaseTableUtil.getRecordTable(hbaseConf), HBaseTableUtil.MQ_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.MQ_COLUMN_FAMILY, 10000L, true, confMgr);
+        messageQueue = new RowLogImpl("mq", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.MQ_PAYLOAD.bytes,
+                RecordCf.MQ_STATE.bytes, 10000L, true, confMgr);
         messageQueue.registerShard(new RowLogShardImpl("shard1", hbaseConf, messageQueue, 100));
 
-        writeAheadLog = new RowLogImpl("wal", HBaseTableUtil.getRecordTable(hbaseConf), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY,
-                HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, confMgr);
+        writeAheadLog = new RowLogImpl("wal", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.WAL_PAYLOAD.bytes,
+                RecordCf.WAL_STATE.bytes, 10000L, true, confMgr);
         RowLogShard walShard = new RowLogShardImpl("shard1", hbaseConf, writeAheadLog, 100);
         writeAheadLog.registerShard(walShard);
 

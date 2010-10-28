@@ -58,7 +58,7 @@ public class RowLogShardImpl implements RowLogShard {
         String tableName = rowLog.getId()+"-"+id;
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
-            admin.getTableDescriptor(Bytes.toBytes(id));
+            admin.getTableDescriptor(Bytes.toBytes(tableName));
         } catch (TableNotFoundException e) {
             HTableDescriptor tableDescriptor = new HTableDescriptor(tableName);
             tableDescriptor.addFamily(new HColumnDescriptor(MESSAGES_CF));

@@ -61,6 +61,7 @@ import org.lilyproject.util.hbase.HBaseTableUtil;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 public class ValueTypeTest {
 
@@ -97,7 +98,7 @@ public class ValueTypeTest {
 
     private static RowLog initializeWal(Configuration configuration) throws IOException, RowLogException, InterruptedException {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
-        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
+        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
         // Work with only one shard for now
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);

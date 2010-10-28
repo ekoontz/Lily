@@ -43,6 +43,7 @@ import org.lilyproject.testfw.HBaseProxy;
 import org.lilyproject.testfw.TestHelper;
 import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 public class LinkIndexTest {
     private final static HBaseProxy HBASE_PROXY = new HBaseProxy();
@@ -71,7 +72,7 @@ public class LinkIndexTest {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
 
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
-                HBaseTableUtil.WAL_PAYLOAD_COLUMN_FAMILY, HBaseTableUtil.WAL_COLUMN_FAMILY, 10000L, true, rowLogConfMgr);
+                RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 

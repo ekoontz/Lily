@@ -18,47 +18,57 @@ package org.lilyproject.util.hbase;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTableInterface;
-import org.apache.hadoop.hbase.util.Bytes;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
-public class HBaseTableUtil {
-    
-    private static final byte[] RECORD_TABLE = Bytes.toBytes("record");
-    
-    public static final byte[] NON_VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("system-nonversioned");
-    public static final byte[] VERSIONED_SYSTEM_COLUMN_FAMILY = Bytes.toBytes("system-versioned");
-    public static final byte[] NON_VERSIONED_COLUMN_FAMILY = Bytes.toBytes("nonversioned");
-    public static final byte[] VERSIONED_COLUMN_FAMILY = Bytes.toBytes("versioned");
-    public static final byte[] VERSIONED_MUTABLE_COLUMN_FAMILY = Bytes.toBytes("versioned-mutable");
-
-    public static final byte[] WAL_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("wal-payload");
-    public static final byte[] WAL_COLUMN_FAMILY = Bytes.toBytes("wal-state");
-    public static final byte[] MQ_PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("mq-payload");
-    public static final byte[] MQ_COLUMN_FAMILY = Bytes.toBytes("mq-state");
+public class HBaseTableUtil {    
 
     public static HTableInterface getRecordTable(Configuration configuration) throws IOException {
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
-            admin.getTableDescriptor(RECORD_TABLE);
+            admin.getTableDescriptor(Table.RECORD.bytes);
         } catch (TableNotFoundException e) {
-            HTableDescriptor tableDescriptor = new HTableDescriptor(RECORD_TABLE);
-            tableDescriptor.addFamily(new HColumnDescriptor(NON_VERSIONED_SYSTEM_COLUMN_FAMILY));
-            tableDescriptor.addFamily(new HColumnDescriptor(VERSIONED_SYSTEM_COLUMN_FAMILY, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
-            tableDescriptor.addFamily(new HColumnDescriptor(NON_VERSIONED_COLUMN_FAMILY));
-            tableDescriptor.addFamily(new HColumnDescriptor(VERSIONED_COLUMN_FAMILY, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
-            tableDescriptor.addFamily(new HColumnDescriptor(VERSIONED_MUTABLE_COLUMN_FAMILY, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
-            tableDescriptor.addFamily(new HColumnDescriptor(WAL_PAYLOAD_COLUMN_FAMILY));
-            tableDescriptor.addFamily(new HColumnDescriptor(WAL_COLUMN_FAMILY));
-            tableDescriptor.addFamily(new HColumnDescriptor(MQ_PAYLOAD_COLUMN_FAMILY));
-            tableDescriptor.addFamily(new HColumnDescriptor(MQ_COLUMN_FAMILY));
-            admin.createTable(tableDescriptor);
+            try {
+                HTableDescriptor tableDescriptor = new HTableDescriptor(Table.RECORD.bytes);
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.NON_VERSIONED_SYSTEM.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED_SYSTEM.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.NON_VERSIONED.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED_MUTABLE.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.WAL_PAYLOAD.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.WAL_STATE.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.MQ_PAYLOAD.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.MQ_STATE.bytes));
+                admin.createTable(tableDescriptor);
+            } catch (TableExistsException e2) {
+                // Likely table is created by another process
+            }
         }
 
-        return new LocalHTable(configuration, RECORD_TABLE);
+        return new LocalHTable(configuration, Table.RECORD.bytes);
+    }
+
+    public static HTableInterface getTypeTable(Configuration configuration) throws IOException {
+        HBaseAdmin admin = new HBaseAdmin(configuration);
+
+        try {
+            admin.getTableDescriptor(Table.TYPE.bytes);
+        } catch (TableNotFoundException e) {
+            try {
+                HTableDescriptor tableDescriptor = new HTableDescriptor(Table.TYPE.bytes);
+                tableDescriptor.addFamily(new HColumnDescriptor(TypeCf.DATA.bytes));
+                tableDescriptor.addFamily(new HColumnDescriptor(TypeCf.FIELDTYPE_ENTRY.bytes, HConstants.ALL_VERSIONS,
+                        "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(TypeCf.MIXIN.bytes, HConstants.ALL_VERSIONS, "none",
+                        false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                admin.createTable(tableDescriptor);
+            } catch (TableExistsException e2) {
+                // Likely table is created by another process
+            }
+        }
+
+        return new LocalHTable(configuration, Table.TYPE.bytes);
     }
 }
