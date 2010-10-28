@@ -83,6 +83,9 @@ public interface RowLogConfigurationManager {
      * <p>This method blocks if the ZK connection is down.
      *
      * <p>If the listener would already exist, this method silently returns.
+     * @param listenerId an id that serves to identify the listener by a {@link ListenerSubscriptionHandler}. 
+     * The {@link RemoteListenerSubscriptionHandler} for instance identifies the listener by host and port of where
+     * the remote listener is running.
      */
     void addListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException, InterruptedException, KeeperException;
 

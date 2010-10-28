@@ -39,17 +39,17 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
     
     protected class Worker implements Runnable {
         private final String subscriptionId;
-        private final String context;
+        private final String listener;
         private Thread thread;
         private volatile boolean stop; // do not rely only on Thread.interrupt since some libraries eat interruptions
 
-        public Worker(String subscriptionId, String context) {
+        public Worker(String subscriptionId, String listener) {
             this.subscriptionId = subscriptionId;
-            this.context = context;
+            this.listener = listener;
         }
 
         public void start() {
-            thread = new Thread(this, "Handler: subscription " + subscriptionId + ", listener " + context);
+            thread = new Thread(this, "Handler: subscription " + subscriptionId + ", listener " + listener);
             thread.start();
         }
 
@@ -72,7 +72,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                                 if (!rowLog.isMessageAvailable(message, subscriptionId) || rowLog.isProblematic(message, subscriptionId)) {
                                     rowLog.unlockMessage(message, subscriptionId, false, lock);
                                 } else {
-                                    if (processMessage(context, message)) {
+                                    if (processMessage(listener, message)) {
                                         rowLog.messageDone(message, subscriptionId, lock);
                                     } else {
                                         rowLog.unlockMessage(message, subscriptionId, true, lock);
