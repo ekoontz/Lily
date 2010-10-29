@@ -15,7 +15,7 @@ How to build a binary distribution
     (or 'mvn -Pfast install' to skip the tests)
 
  3. Then the dist can be build: in the 'dist' subdirectory execute:
-      mvn assembly:assembly
+      ./build-lily-dist.sh
 
 The resulting distributions can be found in the target directory.
 

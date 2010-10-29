@@ -90,6 +90,8 @@
     <module>apps/import</module>
     <module>apps/tester</module>
     <module>apps/mbox-import</module>
+
+    <module>dist</module>
   </modules>
 
   <dependencyManagement>

@@ -29,7 +29,7 @@
     <relativePath>../</relativePath>
   </parent>
 
-  <name>KAURI ::: DISTRIBUTION</name>
+  <name>Lily: binary distribution</name>
 
   <dependencies>
     <!--
@@ -71,10 +71,12 @@
 
   <build>
     <resources>
+      <!--
       <resource>
         <directory>src/main/resources</directory>
         <filtering>false</filtering>
       </resource>
+      -->
       <resource>
         <directory>src/main/resources-filtered</directory>
         <filtering>true</filtering>
@@ -102,15 +104,6 @@
           <confDirectory>${basedir}/../cr/process/server/conf</confDirectory>
           <kauriVersion>${version.kauri}</kauriVersion>
         </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>assemble-project-repository</goal>
-              <goal>assemble-runtime-repository</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
