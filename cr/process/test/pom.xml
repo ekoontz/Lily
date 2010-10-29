@@ -26,7 +26,7 @@
   <parent>
     <groupId>org.lilyproject</groupId>
     <artifactId>lily-process</artifactId>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
   </parent>
 
   <name>Lily: tests for the server process</name>
@@ -92,7 +92,7 @@
       <plugin>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-kauri-plugin</artifactId>
-        <version>0.2</version>
+        <version>0.3-SNAPSHOT</version>
         <configuration>
           <confDirectory>${basedir}/../server/conf</confDirectory>
           <kauriVersion>${version.kauri}</kauriVersion>

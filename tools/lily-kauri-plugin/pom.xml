@@ -27,7 +27,7 @@
   <parent>
     <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 

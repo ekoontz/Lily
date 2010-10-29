@@ -20,12 +20,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.lilyproject</groupId>
   <artifactId>lily-dist</artifactId>
-  <version>0.2</version>
+  <version>0.3-SNAPSHOT</version>
 
   <parent>
     <groupId>org.lilyproject</groupId>
     <artifactId>lily</artifactId>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
@@ -99,7 +99,7 @@
       <plugin>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-kauri-plugin</artifactId>
-        <version>0.2</version>
+        <version>0.3-SNAPSHOT</version>
         <configuration>
           <confDirectory>${basedir}/../cr/process/server/conf</confDirectory>
           <kauriVersion>${version.kauri}</kauriVersion>
