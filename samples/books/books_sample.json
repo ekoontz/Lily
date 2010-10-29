@@ -1,10 +1,13 @@
 {
   namespaces: {
+    /* Declaration of namespace prefixes. */
     "org.lilyproject.bookssample": "b",
     "org.lilyproject.vtag": "vtag"
   },
   fieldTypes: [
     {
+      /* The 'b' refers to the namespace declared above, the dollar sign
+         separates the namespace prefix from the name. */
       name: "b$title",
       valueType: { primitive: "STRING" },
       scope: "versioned"
