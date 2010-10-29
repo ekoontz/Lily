@@ -82,7 +82,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
             // To be sure we try to send a notify again
             notifyCacheInvalidate();
         } catch (KeeperException e) {
-            log.info("Exception occured while sending a cache invalidation notification after reconnecting to zookeeper");
+            log.info("Exception occurred while sending a cache invalidation notification after reconnecting to zookeeper");
         }
     }
     

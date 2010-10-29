@@ -64,7 +64,7 @@ public class RemoteListenersSubscriptionHandler extends AbstractListenersSubscri
             try {
                 // When the channel is closed, this means the messages has been
                 // processed by the remote listener and a result has been
-                // received or an error condition occured.
+                // received or an error condition occurred.
                 closeFuture.await();
             } catch (InterruptedException e) {
                 Closer.close(channel);
