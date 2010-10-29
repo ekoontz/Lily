@@ -28,7 +28,7 @@
   <parent>
     <groupId>org.lilyproject</groupId>
     <artifactId>lily-process</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
   </parent>
 
   <modules>
@@ -119,7 +119,7 @@
       <plugin>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-kauri-plugin</artifactId>
-        <version>0.2-SNAPSHOT</version>
+        <version>0.2</version>
         <inherited>false</inherited>
         <configuration>
           <kauriVersion>${version.kauri}</kauriVersion>
