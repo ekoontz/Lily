@@ -45,11 +45,11 @@ public class RowLogSetup {
     @PostConstruct
     public void start() throws InterruptedException, KeeperException, IOException, LeaderElectionSetupException {
         // If the subscription already exists, this method will silently return
-        if (!confMgr.subscriptionExists("WAL", "LinkIndexUpdater")) {
-            confMgr.addSubscription("WAL", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
+        if (!confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
+            confMgr.addSubscription("wal", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
         }
-        if (!confMgr.subscriptionExists("WAL", "MQFeeder")) {
-            confMgr.addSubscription("WAL", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
+        if (!confMgr.subscriptionExists("wal", "MQFeeder")) {
+            confMgr.addSubscription("wal", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
         }
 
         messageQueue = new RowLogImpl("mq", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.MQ_PAYLOAD.bytes,
