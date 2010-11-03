@@ -86,6 +86,7 @@
     <module>tools/genscript-plugin</module>
     <module>tools/doc-tools</module>
     <module>tools/licensecheck</module>
+    <module>tools/record-row-visualizer</module>
 
     <module>apps/import</module>
     <module>apps/tester</module>

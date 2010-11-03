@@ -1,0 +1,13 @@
+This tool is intended for debugging and learning purposes.
+
+It shows the data which is stored in the HBase row of a record. It is not
+a generic HBase tool but displays the data in a way that make sense for Lily,
+and shows the various cell values in a decoded way.
+
+Nonetheless, the tool shows all versions for each column, even if we know
+Lily only store one, to be able to detect unexpected situations or version
+numbers. It also shows the names of unexpected columns and column families.
+
+Tip: to render the HTML on the command line, you can use something like this:
+
+lily-record-row | w3m -T text/html -dump -cols 120

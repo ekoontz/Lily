@@ -1,0 +1,72 @@
+/* Sample/test data to try the lily-record-row tool. */
+{
+  namespaces: {
+    "org.lilyproject.rr": "r",
+    "org.lilyproject.vtag": "vtag"
+  },
+  fieldTypes: [
+    {
+      name: "r$field1",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
+      name: "r$field2",
+      valueType: { primitive: "INTEGER" },
+      scope: "versioned"
+    },
+    {
+      name: "r$field3",
+      valueType: { primitive: "STRING", multiValue: true },
+      scope: "non_versioned"
+    },
+    {
+      name: "vtag$last",
+      valueType: { primitive: "LONG" },
+      scope: "non_versioned"
+    }
+  ],
+  recordTypes: [
+    {
+      name: "r$TestType",
+      fields: [
+        {name: "r$field1" },
+        {name: "r$field2" },
+        {name: "r$field3" },
+        {name: "vtag$last", mandatory: false }
+      ]
+    }
+  ],
+  records: [
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fields: {
+        "r$field1": "field 1 v1",
+        "r$field3": ["val1", "val2", "val3"]
+      }
+    },
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fields: {
+        "r$field2": 1
+      },
+      fieldsToDelete: ["r$field1"]
+    },
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fields: {
+        "r$field2": 2
+      }
+    },
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fields: {
+        "r$field1": "field 1 v2"
+      }
+    }
+  ]
+}

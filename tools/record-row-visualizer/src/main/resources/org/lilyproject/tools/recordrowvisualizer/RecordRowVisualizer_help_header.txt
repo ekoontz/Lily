@@ -1,0 +1,1 @@
+Creates an HTML representation of what is stored in the HBase row of a record.

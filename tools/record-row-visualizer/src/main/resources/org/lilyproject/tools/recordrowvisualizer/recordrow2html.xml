@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns:t="http://kauriproject.org/template">
+  <body>
+    <h1>Non-versioned system fields</h1>
+
+    <h3>Non-versioned record type</h3>
+
+    <t:callMacro name="typeTable">
+      <t:parameter name="versionedValue" value="${row.nvRecordType}"/>
+    </t:callMacro>
+
+    <h3>Deleted</h3>
+
+    <t:callMacro name="versionedValueTable">
+      <t:parameter name="versionedValue" value="${row.deleted}"/>
+    </t:callMacro>
+        
+    <h3>Version</h3>
+
+    <t:callMacro name="versionedValueTable">
+      <t:parameter name="versionedValue" value="${row.version}"/>
+    </t:callMacro>
+
+    <h3>Lock</h3>
+
+    <t:callMacro name="versionedValueTable">
+      <t:parameter name="versionedValue" value="${row.lock}"/>
+    </t:callMacro>
+
+    <h3>Unknown columns</h3>
+    <ul>
+      <t:forEach var="item" in="${row.unknownNvColumns}">
+        <li>${item}</li>
+      </t:forEach>
+    </ul>
+
+    <h1>Non-versioned fields</h1>
+
+    <t:choose>
+      <t:when test="${row.nvFields == null}">
+        No non-versioned fields.
+      </t:when>
+      <t:otherwise>
+        <t:callMacro name="fieldsTable">
+          <t:parameter name="fields" value="${row.nvFields}"/>
+        </t:callMacro>
+      </t:otherwise>
+    </t:choose>
+
+    <h1>Versioned fields</h1>
+
+    <t:choose>
+      <t:when test="${row.vFields == null}">
+        No versioned fields.
+      </t:when>
+      <t:otherwise>
+        <t:callMacro name="fieldsTable">
+          <t:parameter name="fields" value="${row.vFields}"/>
+        </t:callMacro>
+      </t:otherwise>
+    </t:choose>
+
+    <h1>Versioned system fields</h1>
+
+    <h3>Versioned record type</h3>
+
+    <t:callMacro name="typeTable">
+      <t:parameter name="versionedValue" value="${row.vRecordType}"/>
+    </t:callMacro>
+
+    <h3>Unknown columns</h3>
+    <ul>
+      <t:forEach var="item" in="${row.unknownVColumns}">
+        <li>${item}</li>
+      </t:forEach>
+    </ul>
+
+    <h1>RowLog: Message Queue Execution State</h1>
+    <t:callMacro name="executionStateList">
+      <t:parameter name="state" value="${row.mqState}"/>
+    </t:callMacro>
+
+    <h1>RowLog: Message Queue Payload</h1>
+    <t:callMacro name="payloadList">
+      <t:parameter name="state" value="${row.mqPayload}"/>
+    </t:callMacro>
+
+    <h1>RowLog: WAL Execution State</h1>
+    <t:callMacro name="executionStateList">
+      <t:parameter name="state" value="${row.walState}"/>
+    </t:callMacro>
+
+    <h1>RowLog: WAL Payload</h1>
+    <t:callMacro name="payloadList">
+      <t:parameter name="state" value="${row.walPayload}"/>
+    </t:callMacro>
+
+    <h1>Unknown or untreated column families</h1>
+    <ul>
+      <t:forEach var="item" in="${row.unknownColumnFamilies}">
+        <li>${item}</li>
+      </t:forEach>
+    </ul>
+
+  </body>
+
+  <t:macro name="versionedValueTable">
+    <t:parameter name="versionedValue"/>
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>HBase version</th> <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <t:forEach var="item" in="${versionedValue.values.entrySet()}">
+          <tr>
+            <td>${item.key}</td>
+            <td>${item.value}</td>
+          </tr>
+        </t:forEach>
+      </tbody>
+    </table>
+
+  </t:macro>
+
+  <t:macro name="typeTable">
+    <t:parameter name="versionedValue"/>
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>HBase version</th> <th>ID</th> <th>Version</th> <th>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <t:forEach var="item" in="${versionedValue.values.entrySet()}">
+          <tr>
+            <td>${item.key}</td>
+            <td>${item.value.id}</td>
+            <td>${item.value.version}</td>
+            <td>${item.value.object.name}</td>            
+          </tr>
+        </t:forEach>
+      </tbody>
+    </table>
+
+  </t:macro>
+
+  <t:macro name="fieldsTable">
+    <t:parameter name="fields"/>
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>HBase version</th>
+
+          <t:forEach var="fieldType" in="${fields.fieldTypes}">
+            <td>
+              ${fieldType.id}<br/>
+              ${fieldType.object.name}
+            </td>
+          </t:forEach>
+        </tr>
+      </thead>
+      <tbody>
+        <t:forEach begin="${fields.minVersion}" end="${fields.maxVersion}">
+          <tr>
+            <t:variable name="version" value="${loopStatus.position}"/>
+            <td>${version}</td>
+
+            <t:forEach var="fieldType" in="${fields.fieldTypes}">
+              <td>
+                <t:choose>
+                  <t:when test="${fields.isDeleted(version, fieldType.id)}">
+                    <i>deleted marker</i>
+                  </t:when>
+                  <t:when test="${fields.isNull(version, fieldType.id)}">
+                  </t:when>
+                  <t:otherwise>
+                    ${fields.getValue(version, fieldType.id)}
+                  </t:otherwise>
+                </t:choose>
+              </td>
+            </t:forEach>
+          </tr>
+        </t:forEach>
+      </tbody>
+    </table>
+
+  </t:macro>
+
+  <t:macro name="executionStateList">
+    <t:parameter name="state"/>
+
+    <t:forEach var="item" in="${state.entrySet()}">
+      <h3>Nr ${item.key.sequenceNr} - hbase version ${item.key.hbaseVersion}</h3>
+
+      <table border="1">
+        <thead>
+          <th>Subscription ID</th>
+          <th>try count</th>
+          <th>Success</th>
+          <th>Lock</th>
+        </thead>
+        <tbody>
+          <t:forEach var="sub" in="${item.value}">
+            <td>${sub.subscriptionId}</td>
+            <td>${sub.tryCount}</td>
+            <td>${sub.success}</td>
+            <td>${sub.lock}</td>
+          </t:forEach>
+        </tbody>
+      </table>
+    </t:forEach>
+  </t:macro>
+
+  <t:macro name="payloadList">
+    <t:parameter name="payload"/>
+
+    <t:forEach var="item" in="${payload.entrySet()}">
+      <h3>Nr ${item.key.sequenceNr} - hbase version ${item.key.hbaseVersion}</h3>
+
+      ${item.value}
+    </t:forEach>
+  </t:macro>
+
+</html>

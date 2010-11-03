@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DecoderFactory;
@@ -54,6 +55,10 @@ public class SubscriptionExecutionState {
             entries.put(subscriptionId, entry);
         }
         return entry;
+    }
+
+    public Set<CharSequence> getSubscriptionIds() {
+        return entries.keySet();
     }
 
     public void setState(String subscriptionId, boolean state) {
