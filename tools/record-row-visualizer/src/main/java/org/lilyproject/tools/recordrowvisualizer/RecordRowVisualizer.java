@@ -322,6 +322,9 @@ public class RecordRowVisualizer extends BaseZkCliTool {
 
     public static class Base64ValueDecoder implements ValueDecoder<String> {
         public String decode(byte[] bytes) {
+            if (bytes == null)
+                return null;
+            
             char[] result = new char[bytes.length * 2];
 
             for (int i = 0; i < bytes.length; i++) {

@@ -9,6 +9,7 @@ To test you can create a record with the import tool:
 
 Ideas for future improvements:
  * make HBase access parameters configurable
+ * support versioned-mutable scope
  * improve presentation in general
  * improve rendering of various types (blobs, multivalue, etc.)
  * indicate visually what is stored data and what is extra displayed information

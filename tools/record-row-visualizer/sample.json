@@ -70,12 +70,16 @@
       type: "r$TestType",
       id: "rr1",
       fields: {
-        "r$field1": "field 1 v2"
+        "r$field1": "field 1 v2",
+        /* this is to illustrate that an unchanged field is not stored twice */
+        "r$field2": 2
       }
     },
     {
       type: "r$TestType",
       id: "rr1",
+      /* this is to illustrate that, at the time of this writing, delete markers
+         are stored even for fields that were never part of the record.*/
       fieldsToDelete: ["r$field1", "r$field2", "r$field3", "r$field4"]
     },
     {
@@ -83,7 +87,9 @@
       id: "rr1",
       fields: {
         "r$field1": "field 1 v3"
-      },      
+      },
+      /* this is to illustrate that, at the time of this writing, delete markers
+         are stored even if there was already a delete marker in the previous version. */ 
       fieldsToDelete: ["r$field2", "r$field3", "r$field4"]
     }
   ]

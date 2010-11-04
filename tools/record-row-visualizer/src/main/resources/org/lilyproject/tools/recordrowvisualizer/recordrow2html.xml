@@ -199,17 +199,21 @@
 
       <table border="1">
         <thead>
-          <th>Subscription ID</th>
-          <th>try count</th>
-          <th>Success</th>
-          <th>Lock</th>
+          <tr>
+            <th>Subscription ID</th>
+            <th>try count</th>
+            <th>Success</th>
+            <th>Lock</th>            
+          </tr>
         </thead>
         <tbody>
           <t:forEach var="sub" in="${item.value}">
-            <td>${sub.subscriptionId}</td>
-            <td>${sub.tryCount}</td>
-            <td>${sub.success}</td>
-            <td>${sub.lock}</td>
+            <tr>
+              <td>${sub.subscriptionId}</td>
+              <td>${sub.tryCount}</td>
+              <td>${sub.success}</td>
+              <td>${sub.lock}</td>
+            </tr>
           </t:forEach>
         </tbody>
       </table>
