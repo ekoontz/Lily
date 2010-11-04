@@ -21,6 +21,11 @@
       scope: "non_versioned"
     },
     {
+      name: "r$field4",
+      valueType: { primitive: "STRING" },
+      scope: "versioned"
+    },
+    {
       name: "vtag$last",
       valueType: { primitive: "LONG" },
       scope: "non_versioned"
@@ -67,6 +72,19 @@
       fields: {
         "r$field1": "field 1 v2"
       }
+    },
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fieldsToDelete: ["r$field1", "r$field2", "r$field3", "r$field4"]
+    },
+    {
+      type: "r$TestType",
+      id: "rr1",
+      fields: {
+        "r$field1": "field 1 v3"
+      },      
+      fieldsToDelete: ["r$field2", "r$field3", "r$field4"]
     }
   ]
 }

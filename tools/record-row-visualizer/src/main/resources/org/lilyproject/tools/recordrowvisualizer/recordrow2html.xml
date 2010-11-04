@@ -82,7 +82,7 @@
 
     <h1>RowLog: Message Queue Payload</h1>
     <t:callMacro name="payloadList">
-      <t:parameter name="state" value="${row.mqPayload}"/>
+      <t:parameter name="payload" value="${row.mqPayload}"/>
     </t:callMacro>
 
     <h1>RowLog: WAL Execution State</h1>
@@ -92,7 +92,7 @@
 
     <h1>RowLog: WAL Payload</h1>
     <t:callMacro name="payloadList">
-      <t:parameter name="state" value="${row.walPayload}"/>
+      <t:parameter name="payload" value="${row.walPayload}"/>
     </t:callMacro>
 
     <h1>Unknown or untreated column families</h1>
