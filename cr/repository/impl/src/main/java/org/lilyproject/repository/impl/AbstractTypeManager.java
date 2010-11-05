@@ -77,6 +77,7 @@ public abstract class AbstractTypeManager implements TypeManager {
     
     public AbstractTypeManager(ZooKeeperItf zooKeeper) {
         this.zooKeeper = zooKeeper;
+        cacheRefresher.start();
     }
     
     public void close() throws IOException {
