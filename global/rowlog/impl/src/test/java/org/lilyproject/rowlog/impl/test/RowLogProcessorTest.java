@@ -15,12 +15,9 @@
  */
 package org.lilyproject.rowlog.impl.test;
 
-import static org.junit.Assert.assertNotNull;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,11 +75,7 @@ public class RowLogProcessorTest {
     }
     
     @Test
-    public void testProcessorPublishesHost() throws Exception {
-        Assert.assertTrue("Expected processorHost to be null", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
-        processor.start();
-        assertNotNull("Expected processorHost to exist", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()));
-        processor.stop();
-        Assert.assertTrue("Expected processorHost to be null", rowLogConfigurationManager.getProcessorHost(rowLog.getId(), shard.getId()) == null);
+    public void testDummy() {
+    	
     }
 }

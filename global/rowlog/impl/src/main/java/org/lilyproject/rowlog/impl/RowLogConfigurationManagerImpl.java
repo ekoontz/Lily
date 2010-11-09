@@ -28,7 +28,6 @@ import javax.annotation.PreDestroy;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -37,6 +36,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.lilyproject.rowlog.api.ListenersObserver;
+import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogSubscription;
@@ -220,35 +220,21 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         }
     }
     
-    // Processor Host
-    public void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) throws KeeperException, InterruptedException {
-        String path = processorPath(rowLogId, shardId);
-        if (zooKeeper.exists(path, false) == null) {
-                ZkUtil.createPath(zooKeeper, path);
-        }
-        zooKeeper.setData(path, Bytes.toBytes(hostName + ":" + port), -1);
+    // Processor Notify
+    public void addProcessorNotifyObserver(String rowLogId, String shardId, ProcessorNotifyObserver observer) {
+    	observerSupport.addProcessorNotifyObserver(new ProcessorKey(rowLogId, shardId), observer);
     }
     
-    public void unPublishProcessorHost(final String rowLogId, final String shardId) throws InterruptedException, KeeperException {
-        try {
-            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
-                public Object execute() throws KeeperException, InterruptedException {
-                    zooKeeper.delete(processorPath(rowLogId, shardId), -1);
-                    return null;
-                }
-            });
-        } catch (KeeperException.NoNodeException ignore) {
-            // Silently ignore. Might occur because we use retryOperation.
-        }
+    public void removeProcessorNotifyObserver(String rowLogId, String shardId) {
+    	observerSupport.removeProcessorNotifyObserver(new ProcessorKey(rowLogId, shardId));
     }
-
-    public String getProcessorHost(String rowLogId, String shardId) throws InterruptedException {
-        try {
-            return Bytes.toString(zooKeeper.getData(processorPath(rowLogId, shardId), false, new Stat()));
-        } catch (KeeperException e) {
-            log.info("Exception while retrieving processor host from zooKeeper for rowLog " + rowLogId + " and shard " + shardId, e);
-            return null;
-        }
+    
+    public void notifyProcessor(String rowLogId, String shardId) throws InterruptedException, KeeperException {
+    	try {
+    		zooKeeper.setData(processorNotifyPath(rowLogId, shardId), null, -1);
+		} catch (KeeperException.NoNodeException e) {
+			// No RowLogProcessor is listening
+		}
     }
     
     // Paths
@@ -264,8 +250,8 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         return rowLogPath + "/" + rowLogId + "/shards" + "/" + shardId;
     }
     
-    private String processorPath(String rowLogId, String shardId) {
-        return shardPath(rowLogId, shardId) + "/" + "processorHost";
+    private String processorNotifyPath(String rowLogId, String shardId) {
+        return shardPath(rowLogId, shardId) + "/" + "processorNotify";
     }
     
     private String listenerPath(String rowLogId, String subscriptionId, String listenerId) {
@@ -277,9 +263,11 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         /** key = row log id. */
         private Map<String, SubscriptionsObservers> subscriptionsObservers = Collections.synchronizedMap(new HashMap<String, SubscriptionsObservers>());
         private Map<ListenerKey, ListenersObservers> listenersObservers = Collections.synchronizedMap(new HashMap<ListenerKey, ListenersObservers>());
-
+        private Map<ProcessorKey, ProcessorNotifyObserver> processorNotifyObservers = Collections.synchronizedMap(new HashMap<ProcessorKey, ProcessorNotifyObserver>());
+        
         private Set<String> changedSubscriptions = new HashSet<String>();
         private Set<ListenerKey> changedListeners = new HashSet<ListenerKey>();
+        private Set<ProcessorKey> changedProcessors = new HashSet<ProcessorKey>();
         private final Object changesLock = new Object();
 
         private ConnectStateWatcher connectStateWatcher = new ConnectStateWatcher(this);
@@ -314,12 +302,15 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 try {
                     Set<String> changedSubscriptions;
                     Set<ListenerKey> changedListeners;
+                    Set<ProcessorKey> changedProcessors;
 
                     synchronized (changesLock) {
                         changedSubscriptions = new HashSet<String>(this.changedSubscriptions);
                         changedListeners = new HashSet<ListenerKey>(this.changedListeners);
+                        changedProcessors = new HashSet<ProcessorKey>(this.changedProcessors);
                         this.changedSubscriptions.clear();
                         this.changedListeners.clear();
+                        this.changedProcessors.clear();
                     }
 
                     for (String rowLogId : changedSubscriptions) {
@@ -339,9 +330,13 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                                 observers.notifyObservers();
                         }
                     }
+                    
+                    for (ProcessorKey processorKey : changedProcessors) {
+                    	performNotifyProcessor(processorKey);
+                    }
 
                     synchronized (changesLock) {
-                        while (this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty() && !stop) {
+                        while (this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty() && this.changedProcessors.isEmpty() && !stop) {
                             changesLock.wait();
                         }
                     }
@@ -369,6 +364,28 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 changesLock.notifyAll();
             }
         }
+        
+        public void notifyProcessor(ProcessorKey processorKey) {
+        	synchronized (changesLock) {
+        		changedProcessors.add(processorKey);
+        		changesLock.notifyAll();
+        	}
+        }
+
+        private void performNotifyProcessor(ProcessorKey processorKey) throws InterruptedException, KeeperException {
+        	ProcessorNotifyObserver processorNotifyObserver = processorNotifyObservers.get(processorKey);
+        	if (processorNotifyObserver != null) {
+        		processorNotifyObserver.notifyProcessor();
+        		// Only put a watcher when an observer has been registerd
+        		String processorNotifyPath = processorNotifyPath(processorKey.getRowLogId(), processorKey.getShardId());
+        		try {
+        			zooKeeper.getData(processorNotifyPath, new ProcessorNotifyWatcher(processorKey, ObserverSupport.this), null);
+        		} catch (KeeperException.NoNodeException e) {
+        			ZkUtil.createPath(zooKeeper, processorNotifyPath);
+        			zooKeeper.getData(processorNotifyPath, new ProcessorNotifyWatcher(processorKey, ObserverSupport.this), null);
+        		}
+        	}
+        }
 
         public void notifyEverythingChanged() {
             synchronized (changesLock) {
@@ -377,6 +394,9 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 }
                 for (ListenerKey listenerKey : listenersObservers.keySet()) {
                     changedListeners.add(listenerKey);
+                }
+                for (ProcessorKey processorKey : processorNotifyObservers.keySet()) {
+                	changedProcessors.add(processorKey);
                 }
                 changesLock.notifyAll();
             }
@@ -439,6 +459,19 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     }
                 }
             }
+        }
+        
+        void addProcessorNotifyObserver(ProcessorKey processorKey, ProcessorNotifyObserver observer) {
+        	synchronized(changesLock) {
+        		processorNotifyObservers.put(processorKey, observer);
+        	}
+        	notifyProcessor(processorKey);
+        }
+        
+        void removeProcessorNotifyObserver(ProcessorKey processorKey) {
+        	synchronized(changesLock) {
+        		processorNotifyObservers.remove(processorKey);
+        	}
         }
 
         private class SubscriptionsObservers {
@@ -593,6 +626,47 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             return result;
         }
     }
+    
+    private static class ProcessorKey {
+    	private String rowLogId;
+    	private String shardId;
+    	
+    	public ProcessorKey(String rowLogId, String shardId) {
+    		ArgumentValidator.notNull(rowLogId, "rowLogId");
+    		ArgumentValidator.notNull(shardId, "shardId");
+    		this.rowLogId = rowLogId;
+    		this.shardId = shardId;
+    	}
+    	
+    	public String getRowLogId() {
+    		return rowLogId;
+    	}
+    	
+    	public String getShardId() {
+    		return shardId;
+    	}
+    	
+    	@Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            ProcessorKey other = (ProcessorKey) obj;
+            return other.rowLogId.equals(rowLogId) && other.shardId.equals(shardId);
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + rowLogId.hashCode();
+            result = prime * result + shardId.hashCode();
+            return result;
+        }
+    }
 
     // Watchers
     private class SubscriptionsWatcher implements Watcher {
@@ -612,8 +686,8 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     private class ListenersWatcher implements Watcher {
+    	private final ListenerKey listenerKey;
         private final ObserverSupport observerSupport;
-        private final ListenerKey listenerKey;
 
         public ListenersWatcher(ListenerKey listenerKey, ObserverSupport observerSupport) {
             this.listenerKey = listenerKey;
@@ -625,6 +699,22 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 observerSupport.notifyListenersChanged(listenerKey);
             }
         }
+    }
+    
+    private class ProcessorNotifyWatcher implements Watcher {
+    	private final ProcessorKey processorKey;
+    	private final ObserverSupport observerSupport;
+    	
+    	public ProcessorNotifyWatcher(ProcessorKey processorKey, ObserverSupport observerSupport) {
+    		this.processorKey = processorKey;
+    		this.observerSupport = observerSupport;
+    	}
+    	
+    	public void process(WatchedEvent event) {
+    		if (!event.getType().equals(Watcher.Event.EventType.None)) {
+    			observerSupport.notifyProcessor(processorKey);
+    		}
+    	}
     }
 
     public class ConnectStateWatcher implements Watcher {

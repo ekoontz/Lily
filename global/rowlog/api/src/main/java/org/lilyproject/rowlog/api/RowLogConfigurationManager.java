@@ -64,20 +64,12 @@ public interface RowLogConfigurationManager {
     void removeListenersObserver(String rowLogId, String subscriptionId, ListenersObserver observer);
 
     /**
-     * Publish the hostName and port number of where the rowlog processor is running.
-     * @param hostName
-     * @param port
-     * @param rowLogId the rowlog for which the processor is running
-     * @param shardId the shard for which the processor is running
-     * @throws KeeperException
-     * @throws InterruptedException
+     * Add a new processor notify obeserver.
      */
-    void publishProcessorHost(String hostName, int port, String rowLogId, String shardId) throws KeeperException, InterruptedException;
-
-    void unPublishProcessorHost(String rowLogId, String shardId) throws InterruptedException, KeeperException;
-
-    String getProcessorHost(String rowLogId, String shardId) throws InterruptedException;
-
+    void addProcessorNotifyObserver(String rowLogId, String shardId, ProcessorNotifyObserver observer);
+    
+    void removeProcessorNotifyObserver(String rowLogId, String shardId);
+    
     /**
      *
      * <p>This method blocks if the ZK connection is down.
@@ -96,5 +88,8 @@ public interface RowLogConfigurationManager {
      * <p>If the listener would not exist, this method silently returns.
      */
     void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException, InterruptedException, KeeperException;
+
+	void notifyProcessor(String rowLogId, String shardId)
+			throws InterruptedException, KeeperException;
 
 }

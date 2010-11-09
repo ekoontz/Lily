@@ -15,9 +15,6 @@
  */
 package org.lilyproject.rowlog.impl;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,24 +23,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.zookeeper.KeeperException;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
+import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
@@ -53,17 +36,16 @@ import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.SubscriptionsObserver;
 import org.lilyproject.util.Logs;
-import org.lilyproject.util.io.Closer;
 
-public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver {
+public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver, ProcessorNotifyObserver {
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
     private final Map<String, SubscriptionThread> subscriptionThreads = Collections.synchronizedMap(new HashMap<String, SubscriptionThread>());
-    private Channel channel;
-    private ChannelFactory channelFactory;
     private RowLogConfigurationManager rowLogConfigurationManager;
     private Log log = LogFactory.getLog(getClass());
+    private long lastNotify = -1;
+    private long notifyDelay = 100;
     
     public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLog = rowLog;
@@ -85,7 +67,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         if (stop) {
             stop = false;
             rowLogConfigurationManager.addSubscriptionsObserver(rowLog.getId(), this);
-            startConsumerNotifyListener();
+            rowLogConfigurationManager.addProcessorNotifyObserver(rowLog.getId(), shard.getId(), this);
         }
     }
 
@@ -132,7 +114,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     public synchronized void stop() {
         stop = true;
         rowLogConfigurationManager.removeSubscriptionsObserver(rowLog.getId(), this);
-        stopConsumerNotifyListener();
+        rowLogConfigurationManager.removeProcessorNotifyObserver(rowLog.getId(), shard.getId());
         Collection<SubscriptionThread> threadsToStop;
         synchronized (subscriptionThreads) {
             threadsToStop = new ArrayList<SubscriptionThread>(subscriptionThreads.values());
@@ -160,95 +142,25 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         return subscriptionThreads.get(consumerId) != null;
     }
     
-    private void startConsumerNotifyListener() throws InterruptedException {
-        if (channel == null) {
-            if (channelFactory == null) { 
-                channelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-            }
-            ServerBootstrap bootstrap = new ServerBootstrap(channelFactory);
-            
-            bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-                public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new NotifyDecoder(), new ConsumersNotifyHandler());
-                }
-            });
-            
-            bootstrap.setOption("child.tcpNoDelay", true);
-            bootstrap.setOption("child.keepAlive", true);
-            
-            String hostName = null;
-            try {
-                InetAddress inetAddress = InetAddress.getLocalHost();
-                hostName = inetAddress.getHostName();
-                InetSocketAddress inetSocketAddress = new InetSocketAddress(hostName, 0);
-                channel = bootstrap.bind(inetSocketAddress);
-                int port = ((InetSocketAddress)channel.getLocalAddress()).getPort();
-                rowLogConfigurationManager.publishProcessorHost(hostName, port, rowLog.getId(), shard.getId());
-            } catch (KeeperException e) {
-                // Don't listen to any wakeup events
-                // Fallback on the default timeout behaviour
-                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
-            } catch (UnknownHostException e) {
-                // Don't listen to any wakeup events
-                // Fallback on the default timeout behaviour
-                log.warn("Did not start the server for waking up the processor for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
-            }
-        }
-    }
-    
-    private void stopConsumerNotifyListener() {
-        try {
-            rowLogConfigurationManager.unPublishProcessorHost(rowLog.getId(), shard.getId());
-        } catch (KeeperException e) {
-            log.warn("Exception while removing processor host from the row log configuration for row log " + rowLog.getId() + " and shard " + shard.getId(), e);
-        } catch (InterruptedException e) {
-            // Put the interrupted flag again, but still try to close the channel.
-            Thread.currentThread().interrupt();
-        }
-        Closer.close(channel);
-        if (channelFactory != null) {
-            channelFactory.releaseExternalResources();
-            channelFactory = null;
-        }
+    /**
+     * Called when a message has been posted on the rowlog that needs to be processed by this RowLogProcessor. </p>
+     * The notification will only be taken into account when a delay has passed since the previous notification.
+     */
+    synchronized public void notifyProcessor() {
+    	long now = System.currentTimeMillis();
+    	// Only consume the notification if the notifyDelay has expired to avoid too many wakeups
+    	if ((lastNotify + notifyDelay) <= now) { 
+    		lastNotify = now;
+	    	Collection<SubscriptionThread> threadsToWakeup;
+	        synchronized (subscriptionThreads) {
+	            threadsToWakeup = new HashSet<SubscriptionThread>(subscriptionThreads.values());
+	        }
+	        for (SubscriptionThread subscriptionThread : threadsToWakeup) {
+	            subscriptionThread.wakeup();
+	        }
+    	}
     }
 
-    private class NotifyDecoder extends FrameDecoder {
-        @Override
-        protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception {
-            if (buffer.readableBytes() < 1) {
-                return null;
-            }
-            
-            return buffer.readBytes(1);
-        }
-        
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            // Ignore and rely on the automatic retries
-        }
-    }
-    
-    private class ConsumersNotifyHandler extends SimpleChannelHandler {
-        @Override
-        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            ChannelBuffer buffer = (ChannelBuffer)e.getMessage();
-            byte notifyByte = buffer.readByte(); // Does not contain any usefull information currently
-            Collection<SubscriptionThread> threadsToWakeup;
-            synchronized (subscriptionThreads) {
-                threadsToWakeup = new HashSet<SubscriptionThread>(subscriptionThreads.values());
-            }
-            for (SubscriptionThread consumerThread : threadsToWakeup) {
-                consumerThread.wakeup();
-            }
-            e.getChannel().close();
-        }
-        
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            // Ignore and rely on the automatic retries
-        }
-    }
-    
     private class SubscriptionThread extends Thread {
         private long lastWakeup;
         private ProcessorMetrics metrics;
@@ -256,6 +168,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
         private String subscriptionId;
+		private long wakeupTimeout;
 
         public SubscriptionThread(RowLogSubscription subscription) {
             super("Row log SubscriptionThread for " + subscription.getId());
@@ -329,11 +242,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                             }
                         } else {
                             try {
-                                long timeout = 5000;
+                                wakeupTimeout = 5000;
                                 long now = System.currentTimeMillis();
-                                if (lastWakeup + timeout < now) {
+                                if (lastWakeup + wakeupTimeout < now) {
                                     synchronized (this) {
-                                        wait(timeout);
+                                        wait(wakeupTimeout);
                                     }
                                 }
                             } catch (InterruptedException e) {

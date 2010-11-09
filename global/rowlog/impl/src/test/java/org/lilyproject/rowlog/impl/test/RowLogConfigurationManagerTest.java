@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilyproject.rowlog.api.ListenersObserver;
+import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.SubscriptionsObserver;
 import org.lilyproject.rowlog.api.RowLogSubscription.Type;
@@ -194,6 +195,58 @@ public class RowLogConfigurationManagerTest {
                 Assert.assertTrue(listeners.contains(listener));
             }
         }
-
     }
+
+    @Test
+    public void testProcessorNotify() throws Exception {
+    	String rowLogId = "testProcessorNotifyRowLogId";
+    	String shardId1 = "testProcessorNotifyShardId1";
+    	String shardId2 = "testProcessorNotifyShardId2";
+    	
+        // Initialize
+        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+
+        ProcessorNotifyCallBack callBack1 = new ProcessorNotifyCallBack();
+        ProcessorNotifyCallBack callBack2 = new ProcessorNotifyCallBack();
+
+        // Add observers and expect an initial notify
+        callBack1.expect(true);
+        callBack2.expect(false);
+        rowLogConfigurationManager.addProcessorNotifyObserver(rowLogId, shardId1, callBack1);
+        callBack1.validate();
+        callBack2.validate();
+
+        callBack1.expect(false);
+        callBack2.expect(true);
+        rowLogConfigurationManager.addProcessorNotifyObserver(rowLogId, shardId2, callBack2);
+        callBack1.validate();
+        callBack2.validate();
+
+        // Notify one processor
+        callBack1.expect(true);
+        callBack2.expect(false);
+        rowLogConfigurationManager.notifyProcessor(rowLogId, shardId1);
+        callBack1.validate();
+        callBack2.validate();
+    }
+    
+    private class ProcessorNotifyCallBack implements ProcessorNotifyObserver {
+        
+        private Semaphore semaphore = new Semaphore(0);
+		private boolean expect = false;
+        
+        public void notifyProcessor() {
+            semaphore.release();
+        }
+
+        public void expect(boolean expect) {
+            this.expect  = expect;
+			semaphore.drainPermits();
+        }
+        
+        private void validate() throws Exception{
+        	Assert.assertEquals(expect, semaphore.tryAcquire(10, TimeUnit.SECONDS));
+        }
+    }
+    
 }

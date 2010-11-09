@@ -35,7 +35,6 @@ import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogMessage;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.RowLogSubscription.Type;
-import org.lilyproject.rowlog.impl.RowLogImpl;
 import org.lilyproject.rowlog.impl.RowLogMessageImpl;
 import org.lilyproject.rowlog.impl.RowLogShardImpl;
 import org.lilyproject.testfw.HBaseProxy;
@@ -54,7 +53,6 @@ public class RowLogShardTest {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         control = createControl();
-        rowLog = control.createMock(RowLog.class);
     }
 
     @AfterClass
@@ -66,6 +64,9 @@ public class RowLogShardTest {
 
     @Before
     public void setUp() throws Exception {
+    	rowLog = control.createMock(RowLog.class);
+    	rowLog.getId();
+    	expectLastCall().andReturn("rowLogId").anyTimes();
     }
 
     @After
@@ -78,8 +79,6 @@ public class RowLogShardTest {
         String subscriptionId = "Subscription1";
         rowLog.getSubscriptions();
         expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
-        rowLog.getId();
-        expectLastCall().andReturn("rowLogId").anyTimes();
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         byte[] messageId1 = Bytes.toBytes("messageId1");
@@ -102,6 +101,7 @@ public class RowLogShardTest {
         expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
+        shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
         byte[] messageId2 = Bytes.toBytes("messageId2");
@@ -130,6 +130,7 @@ public class RowLogShardTest {
         
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
+        shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         for (int i = 0; i < 7; i++) {
             RowLogMessageImpl message = new RowLogMessageImpl(Bytes.toBytes("messageId" + i), Bytes.toBytes("row1"), 0L, null, rowLog);
             expectedMessages[i] = message;
@@ -166,6 +167,7 @@ public class RowLogShardTest {
                 new RowLogSubscription("id", subscriptionId2, Type.VM, 3, 2))).anyTimes();
         
         control.replay();
+        shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 1L, null, rowLog);
         byte[] messageId2 = Bytes.toBytes("messageId2");
@@ -200,6 +202,7 @@ public class RowLogShardTest {
         expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId1, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
+        shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 1L, null, rowLog);
 
@@ -222,6 +225,7 @@ public class RowLogShardTest {
         expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         
         control.replay();
+        shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
         byte[] messageId1 = Bytes.toBytes("messageId1");
         RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
         shard.putMessage(message1);
