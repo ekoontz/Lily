@@ -35,7 +35,7 @@ public class ZkUtil {
         } catch (IOException e) {
             throw new ZkConnectException("Failed to connect with Zookeeper @ <" + connectString + ">", e);
         }
-        long waitUntil = System.currentTimeMillis() + 10000;
+        long waitUntil = System.currentTimeMillis() + sessionTimeout;
         boolean connected = (States.CONNECTED).equals(zooKeeper.getState());
         while (!connected && waitUntil > System.currentTimeMillis()) {
             try {
