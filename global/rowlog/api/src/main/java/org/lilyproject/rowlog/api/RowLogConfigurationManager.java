@@ -32,6 +32,11 @@ public interface RowLogConfigurationManager {
      * by the time this method returns into your code. Therefore, the advice is that subscriptionId's should be
      * selected such that it does not matter if the subscription already existed, but only that the outcome is
      * 'a subscription with this id exists'.
+     * @param rowLogId the id of the rowlog to add the subscription to
+     * @param subscriptionId the id of the subscription to add
+     * @param type to indicate wether the listeners of the subscription will run locally (VM) or remote (Netty)
+     * @param maxTries the number of times to try processing a message for this subscription before marking it as problematic
+     * @param orderNr a number to order the subscription wrt the other subscriptions
      */
     void addSubscription(String rowLogId, String subscriptionId, Type type, int maxTries, int orderNr) throws KeeperException,
             InterruptedException;
@@ -89,6 +94,10 @@ public interface RowLogConfigurationManager {
      */
     void removeListener(String rowLogId, String subscriptionId, String listenerId) throws RowLogException, InterruptedException, KeeperException;
 
+    /**
+     * Notify the processor that a new message has been put on the rowlog.
+     * <p>If the processor was in a wait mode, it will wake up and check the rowlog for new messages.
+     */
 	void notifyProcessor(String rowLogId, String shardId)
 			throws InterruptedException, KeeperException;
 

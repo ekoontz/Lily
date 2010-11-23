@@ -122,7 +122,7 @@ public interface RowLog {
      * @param message the {@link RowLogMessage} for which to take the lock
      * @param subscriptionId the id of the subscription for which to lock the message
      * @return a lock when the message was successfully locked or null when locking the message failed for instance when
-     * it was locked by another instance of the same consumer
+     * it was locked by another instance of the same subscription
      * @throws RowLogException
      */
     byte[] lockMessage(RowLogMessage message, String subscriptionId) throws RowLogException;
