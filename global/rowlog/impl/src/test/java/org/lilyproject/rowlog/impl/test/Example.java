@@ -30,7 +30,7 @@ import org.lilyproject.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilyproject.rowlog.impl.RowLogImpl;
 import org.lilyproject.rowlog.impl.RowLogProcessorImpl;
 import org.lilyproject.rowlog.impl.RowLogShardImpl;
-import org.lilyproject.util.zookeeper.StateWatchingZooKeeper;
+import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 
 public class Example {
@@ -55,7 +55,7 @@ public class Example {
 
         // Setup a zooKeeper connection
         String zkConnectionString = configuration.get("hbase.zookeeper.quorum") + ":" + configuration.get("hbase.zookeeper.property.clientPort");
-        ZooKeeperItf zooKeeper = new StateWatchingZooKeeper(zkConnectionString, 10000);
+        ZooKeeperItf zooKeeper = ZkUtil.connect(zkConnectionString, 10000);
 
         // Create the row log configuration manager
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
@@ -67,11 +67,13 @@ public class Example {
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
         
-        // Register a consumer class on the ConsumerClassMapping
-        RowLogMessageListenerMapping.INSTANCE.put("FooBar", new FooBarConsumer());
+        // Register a listener class on the RowLogMessageListenerMapping
+        RowLogMessageListenerMapping.INSTANCE.put("FooBar", new FooBarListener());
         
-        // Add a subscription to the configuration manager for the example Rowlog
+        // Add a subscription and listener to the configuration manager for the example Rowlog
         configurationManager.addSubscription("Example", "FooBar", Type.VM, 3, 0);
+        configurationManager.addListener("Example", "FooBar", "listener1");
+        
         // The WAL use case 
         
         // Update a row with some user data
@@ -93,12 +95,14 @@ public class Example {
         message  = rowLog.putMessage(row1, Bytes.toBytes("SomeMoreInfo"), Bytes.toBytes("Re-evaluate:AUserField"), null);
         
         // Give the processor some time to process the message
-        Thread.sleep(30000);
+        Thread.sleep(10000);
         processor.stop();
+        configurationManager.shutdown();
+        zooKeeper.close();
         TEST_UTIL.shutdownMiniCluster();
     }
     
-    private static class FooBarConsumer implements RowLogMessageListener {
+    private static class FooBarListener implements RowLogMessageListener {
         public boolean processMessage(RowLogMessage message) {
                 System.out.println("= Received a message =");
                 System.out.println(Bytes.toString(message.getRowKey()));
