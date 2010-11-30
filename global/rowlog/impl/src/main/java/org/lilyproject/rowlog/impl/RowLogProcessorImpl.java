@@ -173,7 +173,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         public SubscriptionThread(RowLogSubscription subscription) {
             super("Row log SubscriptionThread for " + subscription.getId());
             this.subscriptionId = subscription.getId();
-            this.metrics = new ProcessorMetrics(subscriptionId);
+            this.metrics = new ProcessorMetrics(rowLog.getId()+"_"+subscriptionId);
             switch (subscription.getType()) {
             case VM:
                 subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);

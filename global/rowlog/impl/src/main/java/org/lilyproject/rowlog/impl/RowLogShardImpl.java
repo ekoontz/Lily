@@ -32,10 +32,13 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowLock;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.lilyproject.rowlog.api.*;
+import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogException;
+import org.lilyproject.rowlog.api.RowLogMessage;
+import org.lilyproject.rowlog.api.RowLogShard;
+import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.util.hbase.LocalHTable;
 import org.lilyproject.util.io.Closer;
 
@@ -104,26 +107,10 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     private void removeMessage(RowLogMessage message, String subscription, boolean problematic) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), subscription, problematic);
-
-        RowLock rowLock = null;
         try {
-            if (table.exists(new Get(rowKey))) {
-                rowLock = table.lockRow(rowKey);
-                Delete delete = new Delete(rowKey, Long.MAX_VALUE, rowLock);
-                table.delete(delete);
-            }
+            table.delete(new Delete(createRowKey(message.getId(), subscription, problematic)));
         } catch (IOException e) {
             throw new RowLogException("Failed to remove message from RowLogShard", e);
-        } finally {
-            if (rowLock != null) {
-                try {
-                    table.unlockRow(rowLock);
-                } catch (IOException e) {
-                    log.warn("Exception while unlocking row <" + rowKey + ">", e);
-                    // Ignore, the lock will timeout eventually
-                }
-            }
         }
     }
 

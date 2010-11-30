@@ -27,12 +27,14 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
     protected final String subscriptionId;
     protected final MessagesWorkQueue messagesWorkQueue;
     private Log log = LogFactory.getLog(getClass());
+	private SubscriptionHandlerMetrics metrics;
     
     public AbstractSubscriptionHandler(String subscriptionId, MessagesWorkQueue messagesWorkQueue, RowLog rowLog) {
         this.rowLog = rowLog;
         this.rowLogId = rowLog.getId();
         this.subscriptionId = subscriptionId;
         this.messagesWorkQueue = messagesWorkQueue;
+        this.metrics = new SubscriptionHandlerMetrics(rowLog.getId()+"_"+subscriptionId);
     }
     
     protected abstract boolean processMessage(String context, RowLogMessage message) throws InterruptedException;
@@ -64,6 +66,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
             while(!stop && !Thread.interrupted()) {
                 RowLogMessage message;
                 try {
+                	metrics.queueSize.set(messagesWorkQueue.size());
                     message = messagesWorkQueue.take();
                     if (message != null) {
                         try {
@@ -73,8 +76,10 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                                     rowLog.unlockMessage(message, subscriptionId, false, lock);
                                 } else {
                                     if (processMessage(listener, message)) {
+                                    	metrics.successRate.inc();
                                         rowLog.messageDone(message, subscriptionId, lock);
                                     } else {
+                                    	metrics.failureRate.inc();
                                         rowLog.unlockMessage(message, subscriptionId, true, lock);
                                     }
                                 }

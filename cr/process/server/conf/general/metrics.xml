@@ -32,6 +32,13 @@
     <attribute name="repository.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
     <attribute name="repository.servers" value="localhost:8649"/>
     -->
+    
+    <attribute name="subscriptionHandler.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="subscriptionHandler.period" value="15"/>
+    <!--
+    <attribute name="subscriptionHandler.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="subscriptionHandler.servers" value="localhost:8649"/>
+    -->
 
     <!--
     <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>

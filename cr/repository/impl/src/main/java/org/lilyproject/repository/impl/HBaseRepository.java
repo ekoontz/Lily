@@ -15,10 +15,21 @@
  */
 package org.lilyproject.repository.impl;
 
+import static org.lilyproject.util.hbase.LilyHBaseSchema.DELETE_MARKER;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.EXISTS_FLAG;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
@@ -72,12 +83,12 @@ import org.lilyproject.rowlog.api.RowLogMessage;
 import org.lilyproject.util.ArgumentValidator;
 import org.lilyproject.util.Pair;
 import org.lilyproject.util.hbase.HBaseTableUtil;
-import org.lilyproject.util.hbase.LilyHBaseSchema;
+import org.lilyproject.util.hbase.LilyHBaseSchema.RecordCf;
+import org.lilyproject.util.hbase.LilyHBaseSchema.RecordColumn;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.repo.RecordEvent;
 import org.lilyproject.util.repo.VersionTag;
 import org.lilyproject.util.repo.RecordEvent.Type;
-import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 /**
  * Repository implementation.
@@ -174,16 +185,16 @@ public class HBaseRepository implements Repository {
                             + "> in HBase table", null);
     
                 long version = 1L;
-                Get get = new Get(rowId, rowLock);
                 // If the record existed it would have been deleted.
                 // The version numbering continues from where it has been deleted.
-                if (recordTable.exists(get)) {
-                    get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.VERSION.bytes);
-                    Result result = recordTable.get(get);
-                    byte[] oldVersion = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.VERSION.bytes);
-                    if (oldVersion != null) {
-                        version = Bytes.toLong(oldVersion);
-                    }
+                Get get = new Get(rowId, rowLock);
+                get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.VERSION.bytes);
+                Result result = recordTable.get(get);
+                if (!result.isEmpty()) {
+	                byte[] oldVersion = result.getValue(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.VERSION.bytes);
+	                if (oldVersion != null) {
+	                    version = Bytes.toLong(oldVersion);
+	                }
                 }
                 
                 Record dummyOriginalRecord = newRecord();
@@ -765,8 +776,6 @@ public class HBaseRepository implements Repository {
         Result result;
         Get get = new Get(recordId.toBytes());
         try {
-            if (!recordTable.exists(get))
-                throw new RecordNotFoundException(newRecord(recordId));
             // Add the columns for the fields to get
             addFieldsToGet(get, fields);
             if (version != null)
@@ -780,7 +789,7 @@ public class HBaseRepository implements Repository {
             // Retrieve the data from the repository
             result = recordTable.get(get);
             
-            if (result == null)
+            if (result == null || result.isEmpty())
                 throw new RecordNotFoundException(newRecord(recordId));
             
             // Check if the record was deleted
@@ -797,7 +806,6 @@ public class HBaseRepository implements Repository {
     
     private boolean recordExists(byte[] rowId, RowLock rowLock) throws IOException {
         Get get = new Get(rowId, rowLock);
-        if (!recordTable.exists(get)) return false;
         
         get.addColumn(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.DELETED.bytes);
         Result result = recordTable.get(get);

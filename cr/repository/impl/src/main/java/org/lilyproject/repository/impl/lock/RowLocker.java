@@ -22,7 +22,6 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.mortbay.log.Log;
 
 public class RowLocker {
 
@@ -46,49 +45,26 @@ public class RowLocker {
         long now = System.currentTimeMillis();
         Get get = new Get(rowKey);
         get.addColumn(family, qualifier);
-        org.apache.hadoop.hbase.client.RowLock actualHBaseRowLock;
-        if (!table.exists(get)) {
-            if (hbaseRowLock == null) {
-                actualHBaseRowLock = table.lockRow(rowKey);
-            } else {
-                actualHBaseRowLock = hbaseRowLock;
+        
+        Result result = table.get(get);
+        byte[] previousPermit = null;
+        long previousTimestamp = -1L;
+        if (result != null && !result.isEmpty()) {
+            previousPermit = result.getValue(family, qualifier);
+            if (previousPermit != null) {
+                RowLock previousRowLock = new RowLock(rowKey, previousPermit);
+                previousTimestamp = previousRowLock.getTimestamp();
             }
-            if (actualHBaseRowLock == null) return null;
-            try {
-                Put put = new Put(rowKey, actualHBaseRowLock);
-                RowLock rowLock = RowLock.createRowLock(rowKey);
-                put.add(family, qualifier, rowLock.getPermit());
-                table.put(put);
-                return rowLock;
-            } finally {
-                if (hbaseRowLock == null)
-                try {
-                    table.unlockRow(actualHBaseRowLock);
-                } catch (IOException e) {
-                    Log.warn("Exception while unlocking HBaseRowLock <"+actualHBaseRowLock+"> while putting a RowLock ", e);
-                }
-            }
-        } else {
-            Result result = table.get(get);
-            byte[] previousPermit = null;
-            long previousTimestamp = -1L;
-            if (!result.isEmpty()) {
-                previousPermit = result.getValue(family, qualifier);
-                if (previousPermit != null) {
-                    RowLock previousRowLock = new RowLock(rowKey, previousPermit);
-                    previousTimestamp = previousRowLock.getTimestamp();
-                }
-            }
-            if ((previousTimestamp == -1) || (previousTimestamp + timeout  < now)) {
-                Put put = new Put(rowKey, hbaseRowLock);
-                RowLock rowLock = RowLock.createRowLock(rowKey);
-                put.add(family, qualifier, rowLock.getPermit());
-                if (table.checkAndPut(rowKey, family, qualifier, previousPermit, put)) {
-                    return rowLock;
-                }
-            }
-            return null;
         }
+        if ((previousTimestamp == -1) || (previousTimestamp + timeout  < now)) {
+            Put put = new Put(rowKey, hbaseRowLock);
+            RowLock rowLock = RowLock.createRowLock(rowKey);
+            put.add(family, qualifier, rowLock.getPermit());
+            if (table.checkAndPut(rowKey, family, qualifier, previousPermit, put)) {
+                return rowLock;
+            }
+        }
+        return null;
     }
 
     public void unlockRow(RowLock lock) throws IOException {

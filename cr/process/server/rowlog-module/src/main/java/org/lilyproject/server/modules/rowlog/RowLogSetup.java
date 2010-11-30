@@ -35,6 +35,7 @@ public class RowLogSetup {
     private RowLogImpl messageQueue;
     private RowLogImpl writeAheadLog;
     private RowLogProcessorElection messageQueueProcessorLeader;
+    private RowLogProcessorElection writeAheadLogProcessorLeader;
 
     public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf) {
         this.confMgr = confMgr;
@@ -43,7 +44,7 @@ public class RowLogSetup {
     }
 
     @PostConstruct
-    public void start() throws InterruptedException, KeeperException, IOException, LeaderElectionSetupException {
+    public void start() throws InterruptedException, KeeperException, IOException, LeaderElectionSetupException, RowLogException {
         // If the subscription already exists, this method will silently return
         if (!confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
             confMgr.addSubscription("wal", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
@@ -63,18 +64,27 @@ public class RowLogSetup {
 
         RowLogMessageListenerMapping.INSTANCE.put("MQFeeder", new MessageQueueFeeder(messageQueue));
 
-        // Start the processor
+        // Start the message queue processor
         messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, confMgr));
         messageQueueProcessorLeader.start();
+        
+        // Start the wal processor
+        writeAheadLogProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(writeAheadLog, confMgr));
+        writeAheadLogProcessorLeader.start();
+        
+        confMgr.addListener("wal", "LinkIndexUpdater", "LinkIndexUpdaterListener");
+        confMgr.addListener("wal", "MQFeeder", "MQFeederListener");
     }
 
     @PreDestroy
-    public void stop() {
+    public void stop() throws RowLogException, InterruptedException, KeeperException {
         messageQueueProcessorLeader.stop();
+        writeAheadLogProcessorLeader.stop();
         messageQueue.stop();
         writeAheadLog.stop();
-        RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;
-        listenerClassMapping.remove("MQFeeder");        
+        confMgr.removeListener("wal", "LinkIndexUpdater", "LinkIndexUpdaterListener");
+        confMgr.removeListener("wal", "MQFeeder", "MQFeederListener");
+        RowLogMessageListenerMapping.INSTANCE.remove("MQFeeder");        
     }
 
     public RowLog getMessageQueue() {

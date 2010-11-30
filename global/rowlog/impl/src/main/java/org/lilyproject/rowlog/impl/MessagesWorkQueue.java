@@ -50,4 +50,8 @@ public class MessagesWorkQueue {
             messagesWorkingOn.remove(message);
         }
     }
+    
+    public int size() {
+    	return messageQueue.size();
+    }
 }

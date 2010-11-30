@@ -15,6 +15,9 @@
  */
 package org.lilyproject.repository.impl;
 
+import static org.lilyproject.util.hbase.LilyHBaseSchema.DELETE_MARKER;
+import static org.lilyproject.util.hbase.LilyHBaseSchema.EXISTS_FLAG;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,12 +29,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -54,11 +52,10 @@ import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.api.ValueType;
 import org.lilyproject.util.ArgumentValidator;
 import org.lilyproject.util.hbase.HBaseTableUtil;
-import org.lilyproject.util.hbase.LilyHBaseSchema;
-import org.lilyproject.util.hbase.LocalHTable;
+import org.lilyproject.util.hbase.LilyHBaseSchema.TypeCf;
+import org.lilyproject.util.hbase.LilyHBaseSchema.TypeColumn;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
-import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
 public class HBaseTypeManager extends AbstractTypeManager implements TypeManager {
 
@@ -230,13 +227,10 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         }
         Result result;
         try {
-            if (!getTypeTable().exists(get)) {
-                throw new RecordTypeNotFoundException(id, null);
-            }
             result = getTypeTable().get(get);
             // This covers the case where a given id would match a name that was
             // used for setting the concurrent counters
-            if (result.getValue(TypeCf.DATA.bytes, TypeColumn.VERSION.bytes) == null) {
+            if (result == null || result.isEmpty() || result.getValue(TypeCf.DATA.bytes, TypeColumn.VERSION.bytes) == null) {
                 throw new RecordTypeNotFoundException(id, null);
             }
         } catch (IOException e) {
@@ -494,13 +488,10 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         Result result;
         Get get = new Get(idToBytes(id));
         try {
-            if (!getTypeTable().exists(get)) {
-                throw new FieldTypeNotFoundException(id);
-            }
             result = getTypeTable().get(get);
             // This covers the case where a given id would match a name that was
             // used for setting the concurrent counters
-            if (result.getValue(TypeCf.DATA.bytes, TypeColumn.FIELDTYPE_NAME.bytes) == null) {
+            if (result == null || result.isEmpty() || result.getValue(TypeCf.DATA.bytes, TypeColumn.FIELDTYPE_NAME.bytes) == null) {
                 throw new FieldTypeNotFoundException(id);
             }
         } catch (IOException e) {
