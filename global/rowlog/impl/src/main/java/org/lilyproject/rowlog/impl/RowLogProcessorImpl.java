@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
@@ -46,6 +47,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     private Log log = LogFactory.getLog(getClass());
     private long lastNotify = -1;
     private long notifyDelay = 100;
+    private long minimalProcessDelay = 1000;
     
     public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLog = rowLog;
@@ -168,7 +170,8 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
         private String subscriptionId;
-		private long wakeupTimeout;
+		private long wakeupTimeout = 5000;
+		private long waitAtLeastUntil = 0;
 
         public SubscriptionThread(RowLogSubscription subscription) {
             super("Row log SubscriptionThread for " + subscription.getId());
@@ -190,7 +193,8 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         public synchronized void wakeup() {
             metrics.wakeups.inc();
             lastWakeup = System.currentTimeMillis();
-            this.notify();
+            if (lastWakeup > waitAtLeastUntil) 
+            	this.notify(); // Only notify if the process delay of the oldest message has expired
         }
         
         @Override
@@ -219,39 +223,34 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                         }
 
                         metrics.messagesPerScan.inc(messages != null ? messages.size() : 0);
-                        if (messages != null && !messages.isEmpty()) {
+						if (messages != null && !messages.isEmpty()) {
                             for (RowLogMessage message : messages) {
                                 if (stopRequested)
                                     return;
 
-                                try {
-                                    if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
-                                        // The above calls to isMessageDone and isProblematic pass into HBase client code,
-                                        // which, if interrupted, continue what it is doing and does not re-assert
-                                        // the thread's interrupted status. By checking here that stopRequested is false,
-                                        // we are sure that any interruption which comes after is is not ignored.
-                                        // (The above about eating interruption status was true for HBase 0.89 beta
-                                        // of October 2010).
-                                        if (!stopRequested) {
-                                            messagesWorkQueue.offer(message);
-                                        }
+                                if (checkMinimalProcessDelay(message))
+                                	break; // Rescan the messages since they might have been processed in the meanwhile
+                                
+                                if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
+                                    // The above calls to isMessageDone and isProblematic pass into HBase client code,
+                                    // which, if interrupted, continue what it is doing and does not re-assert
+                                    // the thread's interrupted status. By checking here that stopRequested is false,
+                                    // we are sure that any interruption which comes after is is not ignored.
+                                    // (The above about eating interruption status was true for HBase 0.89 beta
+                                    // of October 2010).
+                                    if (!stopRequested) {
+                                        messagesWorkQueue.offer(message);
                                     }
-                                } catch (InterruptedException e) {
-                                    return;
                                 }
                             }
                         } else {
-                            try {
-                                wakeupTimeout = 5000;
-                                long now = System.currentTimeMillis();
-                                if (lastWakeup + wakeupTimeout < now) {
-                                    synchronized (this) {
-                                        wait(wakeupTimeout);
-                                    }
+                        	// There are no messages in the queue
+                        	// We wait for a while to avoid too many scans on the HBase table
+                        	// If a wake-up comes in, a notify will take us out of the wait
+                            if (lastWakeup + wakeupTimeout < System.currentTimeMillis()) {
+                                synchronized (this) {
+                                    wait(wakeupTimeout);
                                 }
-                            } catch (InterruptedException e) {
-                                // if we are interrupted, we stop working
-                                return;
                             }
                         }
                     } catch (RowLogException e) {
@@ -266,6 +265,28 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
             } finally {
                 metrics.shutdown();
             }
+        }
+
+        /**
+         * Check if the message is old enough to be processed. If not, wait
+         * until it is. Any other messages that might be in the queue to be
+         * processed should (will) be younger and don't have to be processed yet
+         * either.
+         * 
+         * @return true if we waited
+         * @throws InterruptedException
+         */
+        private boolean checkMinimalProcessDelay(RowLogMessage message) throws InterruptedException {
+            long now = System.currentTimeMillis();
+            long messageTimestamp = Bytes.toLong(message.getId()); // The timestamp should be an explicit part of the RowLogMessage cfr #187
+            waitAtLeastUntil = messageTimestamp + minimalProcessDelay;
+            if (now < waitAtLeastUntil) {
+                synchronized (this) {
+                    wait(waitAtLeastUntil - now);
+                }
+                return true;
+   	}
+        	return false;
         }
     }
 }
