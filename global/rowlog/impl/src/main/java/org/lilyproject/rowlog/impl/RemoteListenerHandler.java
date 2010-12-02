@@ -125,13 +125,15 @@ public class RemoteListenerHandler {
         @Override
         protected RowLogMessage decode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
             ChannelBufferInputStream inputStream = new ChannelBufferInputStream((ChannelBuffer)msg);
-            int idLength = inputStream.readInt();
-            byte[] id = new byte[idLength];
-            inputStream.readFully(id, 0, idLength);
+            
+            long timestamp = inputStream.readLong();
+            
             int rowKeyLength = inputStream.readInt();
             byte[] rowKey = new byte[rowKeyLength];
             inputStream.readFully(rowKey, 0, rowKeyLength);
+            
             long seqnr = inputStream.readLong();
+            
             int dataLength = inputStream.readInt();
             byte[] data = null;
             if (dataLength > 0) {
@@ -139,7 +141,7 @@ public class RemoteListenerHandler {
                 inputStream.readFully(data, 0, dataLength);
             }
             inputStream.close();
-            return new RowLogMessageImpl(id, rowKey, seqnr, data, rowLog);
+            return new RowLogMessageImpl(timestamp, rowKey, seqnr, data, rowLog);
         }
     }
     

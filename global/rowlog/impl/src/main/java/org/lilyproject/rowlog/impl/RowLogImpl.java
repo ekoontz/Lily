@@ -151,12 +151,8 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         
         try {
             long seqnr = putPayload(rowKey, payload, put);
-        
-            byte[] messageId = Bytes.toBytes(System.currentTimeMillis()); 
-            messageId = Bytes.add(messageId, Bytes.toBytes(seqnr));
-            messageId = Bytes.add(messageId, rowKey);
-            
-            RowLogMessage message = new RowLogMessageImpl(messageId, rowKey, seqnr, data, this);
+                    
+            RowLogMessage message = new RowLogMessageImpl(System.currentTimeMillis(), rowKey, seqnr, data, this);
 
             // Take current snapshot of the subscriptions so that shard.putMessage and initializeSubscriptions
             // use the exact same set of subscriptions.
@@ -176,7 +172,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     
     private void initializeSubscriptions(RowLogMessage message, Put put, List<RowLogSubscription> subscriptions)
             throws IOException {
-        SubscriptionExecutionState executionState = new SubscriptionExecutionState(message.getId());
+        SubscriptionExecutionState executionState = new SubscriptionExecutionState(message.getTimestamp());
         for (RowLogSubscription subscription : subscriptions) {
             executionState.setState(subscription.getId(), false);
         }
@@ -345,12 +341,14 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                 for (RowLogSubscription otherSubscription : subscriptions) {
                     if (otherSubscription.getOrderNr() >= subscription.getOrderNr()) {
                         rowLogShard.markProblematic(message, otherSubscription.getId());
-                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times. Respecting subscription order: subscription %4$s has been marked as problematic", subscription.getId(), message.getId(), maxTries, otherSubscription.getId()));
+                        log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times. Respecting subscription order: subscription %4$s has been marked as problematic", 
+                                subscription.getId(), message.toString(), maxTries, otherSubscription.getId()));
                     }
                 }
             } else {
                 rowLogShard.markProblematic(message, subscription.getId());
-                log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", subscription.getId(), message.getId(), maxTries));
+                log.warn(String.format("Subscription %1$s failed to process message %2$s %3$s times, it has been marked as problematic", 
+                        subscription.getId(), message.toString(), maxTries));
             }
         }
     }
@@ -499,7 +497,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                         }
                     }
                     if (add)
-                        messages.add(new RowLogMessageImpl(executionState.getMessageId(), rowKey, Bytes.toLong(entry.getKey()), null, this));
+                        messages.add(new RowLogMessageImpl(executionState.getTimestamp(), rowKey, Bytes.toLong(entry.getKey()), null, this));
                 }
             }
         } catch (IOException e) {

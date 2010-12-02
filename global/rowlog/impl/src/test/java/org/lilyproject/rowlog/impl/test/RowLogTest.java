@@ -139,7 +139,7 @@ public class RowLogTest {
         } catch (RowLogException expected) {
         }
         
-        RowLogMessage message = new RowLogMessageImpl(Bytes.toBytes("id"), Bytes.toBytes("row1"), 0L, null, rowLog);
+        RowLogMessage message = new RowLogMessageImpl(System.currentTimeMillis(), Bytes.toBytes("row1"), 0L, null, rowLog);
         try {
             rowLog.messageDone(message , subscriptionId1, null);
             fail("Expected a MessageQueueException since no shards are registered");

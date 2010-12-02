@@ -26,19 +26,15 @@ public class RowLogMessageImpl implements RowLogMessage {
     private final byte[] rowKey;
     private final long seqnr;
     private final byte[] data;
-    private final byte[] id;
     private final RowLog rowLog;
+    private final long timestamp;
 
-    public RowLogMessageImpl(byte[] id, byte[] rowKey, long seqnr, byte[] data, RowLog rowLog) {
-        this.id = id;
+    public RowLogMessageImpl(long timestamp, byte[] rowKey, long seqnr, byte[] data, RowLog rowLog) {
+        this.timestamp = timestamp;
         this.rowKey = rowKey;
         this.seqnr = seqnr;
         this.data = data;
         this.rowLog = rowLog;
-    }
-    
-    public byte[] getId() {
-        return id;
     }
     
     public byte[] getData() {
@@ -56,15 +52,18 @@ public class RowLogMessageImpl implements RowLogMessage {
     public long getSeqNr() {
         return seqnr;
     }
+    
+    public long getTimestamp() {
+        return timestamp;
+    }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + Arrays.hashCode(data);
-        result = prime * result + Arrays.hashCode(id);
         result = prime * result + Arrays.hashCode(rowKey);
         result = prime * result + (int) (seqnr ^ (seqnr >>> 32));
+        result = prime * result + (int) (timestamp ^ (timestamp >>> 32));
         return result;
     }
 
@@ -77,15 +76,20 @@ public class RowLogMessageImpl implements RowLogMessage {
         if (getClass() != obj.getClass())
             return false;
         RowLogMessageImpl other = (RowLogMessageImpl) obj;
-        if (!Arrays.equals(data, other.data))
-            return false;
-        if (!Arrays.equals(id, other.id))
-            return false;
         if (!Arrays.equals(rowKey, other.rowKey))
             return false;
         if (seqnr != other.seqnr)
             return false;
+        if (timestamp != other.timestamp)
+            return false;
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "RowLogMessageImpl [rowLog=" + rowLog.getId() + ", timestamp=" + timestamp + ", rowKey="
+                + Arrays.toString(rowKey) + ", seqnr=" + seqnr + "]";
+    }    
+    
     
 }

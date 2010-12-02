@@ -32,18 +32,18 @@ import org.lilyproject.rowlog.avro.AvroExecStateEntry;
 
 public class SubscriptionExecutionState {
 
-    private final byte[] messageId;
+    private final long timestamp;
 
     private final Map<CharSequence, AvroExecStateEntry> entries = new HashMap<CharSequence, AvroExecStateEntry>();
 
     private static final short FORMAT_VERSION = 1;
 
-    public SubscriptionExecutionState(byte[] messageId) {
-        this.messageId = messageId;
+    public SubscriptionExecutionState(long timestamp) {
+        this.timestamp = timestamp;
     }
     
-    public byte[] getMessageId() {
-        return messageId;
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public AvroExecStateEntry getEntry(String subscriptionId) {
@@ -118,7 +118,7 @@ public class SubscriptionExecutionState {
 
     public byte[] toBytes() {
         AvroExecState state = new AvroExecState();
-        state.messageId = ByteBuffer.wrap(messageId);
+        state.timestamp = timestamp;
         state.entries = entries;
 
         ByteArrayOutputStream os = new ByteArrayOutputStream(400);
@@ -153,7 +153,7 @@ public class SubscriptionExecutionState {
         AvroExecState state = STATE_READER.read(null,
                 DecoderFactory.defaultFactory().createBinaryDecoder(bytes, 2, bytes.length - 2, null));
 
-        SubscriptionExecutionState result = new SubscriptionExecutionState(state.messageId.array());
+        SubscriptionExecutionState result = new SubscriptionExecutionState(state.timestamp);
 
         result.setEntries(state.entries);
 

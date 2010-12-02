@@ -212,10 +212,11 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                 
         public void run() {
             try {
+                Long minimalTimestamp = null;
                 while (!isInterrupted() && !stopRequested) {
                     try {
                         metrics.scans.inc();
-                        List<RowLogMessage> messages = shard.next(subscriptionId);
+                        List<RowLogMessage> messages = shard.next(subscriptionId, minimalTimestamp);
 
                         if (stopRequested) {
                             // Check if not stopped because HBase hides thread interruptions
@@ -224,6 +225,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
 
                         metrics.messagesPerScan.inc(messages != null ? messages.size() : 0);
 						if (messages != null && !messages.isEmpty()) {
+						    minimalTimestamp = messages.get(0).getTimestamp(); 
                             for (RowLogMessage message : messages) {
                                 if (stopRequested)
                                     return;
@@ -278,7 +280,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
          */
         private boolean checkMinimalProcessDelay(RowLogMessage message) throws InterruptedException {
             long now = System.currentTimeMillis();
-            long messageTimestamp = Bytes.toLong(message.getId()); // The timestamp should be an explicit part of the RowLogMessage cfr #187
+            long messageTimestamp = message.getTimestamp();
             waitAtLeastUntil = messageTimestamp + minimalProcessDelay;
             if (now < waitAtLeastUntil) {
                 synchronized (this) {

@@ -3,7 +3,7 @@
   "name": "AvroExecState",
   "type": "record",
   "fields": [
-    { "name": "messageId", "type": "bytes" },
+    { "name": "timestamp", "type": "long" },
     { "name": "entries",
       "type": {
         "type": "map",

@@ -139,16 +139,14 @@ public class RemoteListenersSubscriptionHandler extends AbstractListenersSubscri
             ChannelBufferOutputStream outputStream = null;
             try {
                 RowLogMessage message = (RowLogMessage) msg;
-                byte[] id = message.getId();
                 byte[] rowKey = message.getRowKey();
                 byte[] data = message.getData();
-                int capacity = 4 + id.length + 4 + rowKey.length + 8 + 4;
+                int capacity = 4 + 8 + rowKey.length + 8 + 4;
                 if (data != null)
                     capacity = capacity + data.length;
                 ChannelBuffer channelBuffer = ChannelBuffers.buffer(capacity);
                 outputStream = new ChannelBufferOutputStream(channelBuffer);
-                outputStream.writeInt(id.length);
-                outputStream.write(id);
+                outputStream.writeLong(message.getTimestamp());
                 outputStream.writeInt(rowKey.length);
                 outputStream.write(rowKey);
                 outputStream.writeLong(message.getSeqNr());

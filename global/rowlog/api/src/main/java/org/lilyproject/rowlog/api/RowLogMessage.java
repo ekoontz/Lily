@@ -25,14 +25,10 @@ package org.lilyproject.rowlog.api;
  * In other words, the producer of the message and the consumers should agree on the content of the message.
  * 
  * <p> A message is always related to a specific HBase-row and is used to describe an event that happened on the data of that row. 
+ * 
+ * <p> A RowLogMessage is uniquely identified by the combination of its rowKey, seqNr and timestamp.
  */
 public interface RowLogMessage {
-    /**
-     * An id uniquely identifying the message. 
-     * This id will be assigned to the message by the {@link RowLog} when it is put on the {@link RowLog}.
-     */
-    byte[] getId();
-    
     /**
      * Identifies the row to which the message is related. 
      * @return the HBase row key
@@ -44,6 +40,12 @@ public interface RowLogMessage {
      * @return a sequence number , unique within the context of a row
      */
     long getSeqNr();
+    
+    /**
+     * The timestamp of when the message was created. 
+     * @return the timestamp
+     */
+    long getTimestamp();
     
     /**
      * The data field can be used to put extra informative information on the message. 

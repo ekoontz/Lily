@@ -81,8 +81,7 @@ public class RowLogShardTest {
         expectLastCall().andReturn(asList(new RowLogSubscription("id", subscriptionId, Type.VM, 3, 1))).anyTimes();
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
-        byte[] messageId1 = Bytes.toBytes("messageId1");
-        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
+        RowLogMessageImpl message1 = new RowLogMessageImpl(System.currentTimeMillis(), Bytes.toBytes("row1"), 0L, null, rowLog);
         shard.putMessage(message1); 
         
         List<RowLogMessage> messages = shard.next(subscriptionId);
@@ -102,10 +101,10 @@ public class RowLogShardTest {
         
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
-        byte[] messageId1 = Bytes.toBytes("messageId1");
-        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
-        byte[] messageId2 = Bytes.toBytes("messageId2");
-        RowLogMessageImpl message2 = new RowLogMessageImpl(messageId2, Bytes.toBytes("row2"), 0L, null, rowLog);
+        long timestamp1 = System.currentTimeMillis();
+        RowLogMessageImpl message1 = new RowLogMessageImpl(timestamp1, Bytes.toBytes("row1"), 0L, null, rowLog);
+        long timestamp2 = System.currentTimeMillis()+1;
+        RowLogMessageImpl message2 = new RowLogMessageImpl(timestamp2, Bytes.toBytes("row2"), 0L, null, rowLog);
 
         shard.putMessage(message1);
         shard.putMessage(message2);
@@ -131,8 +130,9 @@ public class RowLogShardTest {
         RowLogMessage[] expectedMessages = new RowLogMessage[7];
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
+        long now = System.currentTimeMillis();
         for (int i = 0; i < 7; i++) {
-            RowLogMessageImpl message = new RowLogMessageImpl(Bytes.toBytes("messageId" + i), Bytes.toBytes("row1"), 0L, null, rowLog);
+            RowLogMessageImpl message = new RowLogMessageImpl(now + i, Bytes.toBytes("row1"), 0L, null, rowLog);
             expectedMessages[i] = message;
             shard.putMessage(message);
         }
@@ -168,10 +168,10 @@ public class RowLogShardTest {
         
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
-        byte[] messageId1 = Bytes.toBytes("messageId1");
-        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 1L, null, rowLog);
-        byte[] messageId2 = Bytes.toBytes("messageId2");
-        RowLogMessageImpl message2 = new RowLogMessageImpl(messageId2, Bytes.toBytes("row2"), 1L, null, rowLog);
+        long timestamp1 = System.currentTimeMillis();
+        RowLogMessageImpl message1 = new RowLogMessageImpl(timestamp1, Bytes.toBytes("row1"), 1L, null, rowLog);
+        long timestamp2 = timestamp1 + 1;
+        RowLogMessageImpl message2 = new RowLogMessageImpl(timestamp2, Bytes.toBytes("row2"), 1L, null, rowLog);
         
         shard.putMessage(message1);
         shard.putMessage(message2);
@@ -203,8 +203,8 @@ public class RowLogShardTest {
         
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
-        byte[] messageId1 = Bytes.toBytes("messageId1");
-        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 1L, null, rowLog);
+        long timestamp1 = System.currentTimeMillis();
+        RowLogMessageImpl message1 = new RowLogMessageImpl(timestamp1, Bytes.toBytes("row1"), 1L, null, rowLog);
 
         shard.putMessage(message1);
         assertTrue(shard.next(subscriptionId2).isEmpty());
@@ -226,8 +226,8 @@ public class RowLogShardTest {
         
         control.replay();
         shard = new RowLogShardImpl("TestShard", HBASE_PROXY.getConf(), rowLog, batchSize);
-        byte[] messageId1 = Bytes.toBytes("messageId1");
-        RowLogMessageImpl message1 = new RowLogMessageImpl(messageId1, Bytes.toBytes("row1"), 0L, null, rowLog);
+        long timestamp1 = System.currentTimeMillis();
+        RowLogMessageImpl message1 = new RowLogMessageImpl(timestamp1, Bytes.toBytes("row1"), 0L, null, rowLog);
         shard.putMessage(message1);
         
         shard.markProblematic(message1, subscriptionId);

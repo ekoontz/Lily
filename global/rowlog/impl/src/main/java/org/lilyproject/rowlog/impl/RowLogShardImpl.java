@@ -88,7 +88,7 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     private void putMessage(RowLogMessage message, String subscriptionId) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), subscriptionId, false);
+        byte[] rowKey = createRowKey(message, subscriptionId, false);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {
@@ -108,17 +108,21 @@ public class RowLogShardImpl implements RowLogShard {
 
     private void removeMessage(RowLogMessage message, String subscription, boolean problematic) throws RowLogException {
         try {
-            table.delete(new Delete(createRowKey(message.getId(), subscription, problematic)));
+            table.delete(new Delete(createRowKey(message, subscription, problematic)));
         } catch (IOException e) {
             throw new RowLogException("Failed to remove message from RowLogShard", e);
         }
     }
 
     public List<RowLogMessage> next(String subscription) throws RowLogException {
-        return next(subscription, false);
+        return next(subscription, null, false);
+    }
+
+    public List<RowLogMessage> next(String subscription, Long minimalTimestamp) throws RowLogException {
+        return next(subscription, minimalTimestamp, false);
     }
     
-    public List<RowLogMessage> next(String subscription, boolean problematic) throws RowLogException {
+    public List<RowLogMessage> next(String subscription, Long minimalTimestamp, boolean problematic) throws RowLogException {
         byte[] rowPrefix;
         byte[] subscriptionBytes = Bytes.toBytes(subscription);
         if (problematic) {
@@ -127,10 +131,15 @@ public class RowLogShardImpl implements RowLogShard {
         } else {
             rowPrefix = subscriptionBytes;
         }
-        Scan scan = new Scan(rowPrefix);
-        scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
-        List<RowLogMessage> rowLogMessages = new ArrayList<RowLogMessage>();
+        byte[] startRow = rowPrefix;
+        if (minimalTimestamp != null) 
+            startRow = Bytes.add(startRow, Bytes.toBytes(minimalTimestamp));
         try {
+            List<RowLogMessage> rowLogMessages = new ArrayList<RowLogMessage>();
+            Scan scan = new Scan(startRow);
+            if (minimalTimestamp != null)
+                scan.setTimeRange(minimalTimestamp, Long.MAX_VALUE);
+            scan.addColumn(MESSAGES_CF, MESSAGE_COLUMN);
             ResultScanner scanner = table.getScanner(scan);
             boolean keepScanning = problematic;
             do {
@@ -165,7 +174,7 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void markProblematic(RowLogMessage message, String subscription) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), subscription, true);
+        byte[] rowKey = createRowKey(message, subscription, true);
         Put put = new Put(rowKey);
         put.add(MESSAGES_CF, MESSAGE_COLUMN, encodeMessage(message));
         try {
@@ -177,11 +186,11 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public List<RowLogMessage> getProblematic(String subscription) throws RowLogException {
-        return next(subscription, true);
+        return next(subscription, null, true);
     }
     
     public boolean isProblematic(RowLogMessage message, String subscription) throws RowLogException {
-        byte[] rowKey = createRowKey(message.getId(), subscription, true);
+        byte[] rowKey = createRowKey(message, subscription, true);
         try {
             return table.exists(new Get(rowKey));
         } catch (IOException e) {
@@ -189,37 +198,29 @@ public class RowLogShardImpl implements RowLogShard {
         }
     }
 
-    private byte[] createRowKey(byte[] messageId, String subscription, boolean problematic) {
+    private byte[] createRowKey(RowLogMessage message, String subscription, boolean problematic) {
         byte[] rowKey = new byte[0];
         if (problematic) {
             rowKey = PROBLEMATIC_MARKER;
         }
         rowKey = Bytes.add(rowKey, Bytes.toBytes(subscription));
-        rowKey = Bytes.add(rowKey, messageId);
+
+        rowKey = Bytes.add(rowKey, Bytes.toBytes(message.getTimestamp()));
+        rowKey = Bytes.add(rowKey, Bytes.toBytes(message.getSeqNr()));
+        rowKey = Bytes.add(rowKey, message.getRowKey());
+        
         return rowKey;
     }
 
     private byte[] encodeMessage(RowLogMessage message) {
-        byte[] bytes = Bytes.toBytes(message.getSeqNr());
-        bytes = Bytes.add(bytes, Bytes.toBytes(message.getRowKey().length));
-        bytes = Bytes.add(bytes, message.getRowKey());
-        if (message.getData() != null) {
-            bytes = Bytes.add(bytes, message.getData());
-        }
-        return bytes;
+        return message.getData();
     }
 
-    private RowLogMessage decodeMessage(byte[] messageId, byte[] bytes) {
-        long seqnr = Bytes.toLong(bytes);
-        int rowKeyLength = Bytes.toInt(bytes, Bytes.SIZEOF_LONG);
-        byte[] rowKey = Bytes
-                .head(Bytes.tail(bytes, bytes.length - Bytes.SIZEOF_LONG - Bytes.SIZEOF_INT), rowKeyLength);
-        int dataLength = bytes.length - Bytes.SIZEOF_LONG - Bytes.SIZEOF_INT - rowKeyLength;
-        byte[] data = null;
-        if (dataLength > 0) {
-            data = Bytes.tail(bytes, dataLength);
-        }
-        return new RowLogMessageImpl(messageId, rowKey, seqnr, data, rowLog);
+    private RowLogMessage decodeMessage(byte[] messageId, byte[] data) {
+        long timestamp = Bytes.toLong(messageId);
+        long seqNr = Bytes.toLong(messageId, Bytes.SIZEOF_LONG);
+        byte[] rowKey = Bytes.tail(messageId, messageId.length - (2*Bytes.SIZEOF_LONG));
+        return new RowLogMessageImpl(timestamp, rowKey, seqNr, data, rowLog);
     }
 
 }
