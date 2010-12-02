@@ -67,6 +67,11 @@
       <groupId>org.lilyproject</groupId>
       <artifactId>lily-solr-test-fw</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-print-host</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

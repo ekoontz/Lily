@@ -87,6 +87,7 @@
     <module>tools/doc-tools</module>
     <module>tools/licensecheck</module>
     <module>tools/record-row-visualizer</module>
+    <module>tools/print-host</module>
 
     <module>apps/import</module>
     <module>apps/tester</module>
@@ -238,6 +239,11 @@
       <dependency>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-cli-fw</artifactId>
+        <version>0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilyproject</groupId>
+        <artifactId>lily-print-host</artifactId>
         <version>0.3-SNAPSHOT</version>
       </dependency>
       <dependency>

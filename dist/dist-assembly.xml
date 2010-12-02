@@ -205,6 +205,18 @@
       <outputDirectory>/bin/</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
+
+    <!-- Print host tool -->
+    <file>
+      <source>${basedir}/../tools/print-host/target/dist-scripts/lily-print-host</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>${basedir}/../tools/print-host/target/dist-scripts/lily-print-host.bat</source>
+      <outputDirectory>/bin/</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
   </files>
 
   <fileSets>
