@@ -72,16 +72,22 @@ public class LinkIndex {
         Set<Pair<FieldedLink, String>> oldLinks = getAllForwardLinks(sourceRecord);
 
         // Delete existing entries from the backwards table
+        List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
         for (Pair<FieldedLink, String> link : oldLinks) {
             IndexEntry entry = createBackwardIndexEntry(link.getV2(), link.getV1().getRecordId(), link.getV1().getFieldTypeId());
-            BACKWARD_INDEX.get().removeEntry(entry, sourceAsBytes);
+            entry.setIdentifier(sourceAsBytes);
+            entries.add(entry);
         }
+        BACKWARD_INDEX.get().removeEntries(entries);
 
         // Delete existing entries from the forwards table
+        entries.clear();
         for (Pair<FieldedLink, String> link : oldLinks) {
             IndexEntry entry = createForwardIndexEntry(link.getV2(), sourceRecord, link.getV1().getFieldTypeId());
-            FORWARD_INDEX.get().removeEntry(entry, link.getV1().getRecordId().toBytes());
+            entry.setIdentifier(link.getV1().getRecordId().toBytes());
+            entries.add(entry);
         }
+        FORWARD_INDEX.get().removeEntries(entries);
     }
 
     public void deleteLinks(RecordId sourceRecord, String vtag) throws IOException {
@@ -91,16 +97,22 @@ public class LinkIndex {
         Set<FieldedLink> oldLinks = getForwardLinks(sourceRecord, vtag);
 
         // Delete existing entries from the backwards table
+        List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
         for (FieldedLink link : oldLinks) {
             IndexEntry entry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-            BACKWARD_INDEX.get().removeEntry(entry, sourceAsBytes);
+            entry.setIdentifier(sourceAsBytes);
+            entries.add(entry);
         }
+        BACKWARD_INDEX.get().removeEntries(entries);
 
         // Delete existing entries from the forwards table
+        entries.clear();
         for (FieldedLink link : oldLinks) {
             IndexEntry entry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-            FORWARD_INDEX.get().removeEntry(entry, link.getRecordId().toBytes());
+            entry.setIdentifier(link.getRecordId().toBytes());
+            entries.add(entry);
         }
+        FORWARD_INDEX.get().removeEntries(entries);
     }
 
     /**
@@ -123,21 +135,45 @@ public class LinkIndex {
         addedLinks.removeAll(oldLinks);
 
         // Apply added links
-        for (FieldedLink link : addedLinks) {
-            IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-            FORWARD_INDEX.get().addEntry(fwdEntry, link.getRecordId().toBytes());
+        List<IndexEntry> fwdEntries = null;
+        List<IndexEntry> bkwdEntries = null;
+        if (addedLinks.size() > 0) {
+            fwdEntries = new ArrayList<IndexEntry>(Math.max(addedLinks.size(), removedLinks.size()));
+            bkwdEntries = new ArrayList<IndexEntry>(fwdEntries.size());
+            for (FieldedLink link : addedLinks) {
+                IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
+                fwdEntry.setIdentifier(link.getRecordId().toBytes());
+                fwdEntries.add(fwdEntry);
 
-            IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-            BACKWARD_INDEX.get().addEntry(bkwdEntry, sourceAsBytes);
+                IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
+                bkwdEntry.setIdentifier(sourceAsBytes);
+                bkwdEntries.add(bkwdEntry);
+            }
+            FORWARD_INDEX.get().addEntries(fwdEntries);
+            BACKWARD_INDEX.get().addEntries(bkwdEntries);
         }
 
         // Apply removed links
-        for (FieldedLink link : removedLinks) {
-            IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-            BACKWARD_INDEX.get().removeEntry(bkwdEntry, sourceAsBytes);
+        if (removedLinks.size() > 0) {
+            if (fwdEntries != null) {
+                fwdEntries.clear();
+                bkwdEntries.clear();
+            } else {
+                fwdEntries = new ArrayList<IndexEntry>(removedLinks.size());
+                bkwdEntries = new ArrayList<IndexEntry>(fwdEntries.size());
+            }
 
-            IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-            FORWARD_INDEX.get().removeEntry(fwdEntry, link.getRecordId().toBytes());
+            for (FieldedLink link : removedLinks) {
+                IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
+                bkwdEntry.setIdentifier(sourceAsBytes);
+                bkwdEntries.add(bkwdEntry);
+
+                IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
+                fwdEntry.setIdentifier(link.getRecordId().toBytes());
+                fwdEntries.add(fwdEntry);
+            }
+            BACKWARD_INDEX.get().removeEntries(bkwdEntries);
+            FORWARD_INDEX.get().removeEntries(fwdEntries);
         }
     }
 
