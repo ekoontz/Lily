@@ -63,7 +63,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -89,7 +90,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -119,7 +121,8 @@ public class IndexTest {
         for (int value : values) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", value);
-            index.addEntry(entry, Bytes.toBytes("key" + value));
+            entry.setIdentifier(Bytes.toBytes("key" + value));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -149,7 +152,8 @@ public class IndexTest {
         for (long value : values) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", value);
-            index.addEntry(entry, Bytes.toBytes("key" + value));
+            entry.setIdentifier(Bytes.toBytes("key" + value));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -178,7 +182,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -209,7 +214,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -234,7 +240,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", new BigDecimal(values[i]));
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         {
@@ -270,7 +277,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -296,19 +304,24 @@ public class IndexTest {
         IndexEntry entry = new IndexEntry();
         entry.addField("field1", 10);
         entry.addField("field2", "a");
-        index.addEntry(entry, Bytes.toBytes("key1"));
-        index.addEntry(entry, Bytes.toBytes("key2"));
-        index.addEntry(entry, Bytes.toBytes("key3"));
+        entry.setIdentifier(Bytes.toBytes("key1"));
+        index.addEntry(entry);
+        entry.setIdentifier(Bytes.toBytes("key2"));
+        index.addEntry(entry);
+        entry.setIdentifier(Bytes.toBytes("key3"));
+        index.addEntry(entry);
 
         entry = new IndexEntry();
         entry.addField("field1", 11);
         entry.addField("field2", "a");
-        index.addEntry(entry, Bytes.toBytes("key4"));
+        entry.setIdentifier(Bytes.toBytes("key4"));
+        index.addEntry(entry);
 
         entry = new IndexEntry();
         entry.addField("field1", 10);
         entry.addField("field2", "b");
-        index.addEntry(entry, Bytes.toBytes("key5"));
+        entry.setIdentifier(Bytes.toBytes("key5"));
+        index.addEntry(entry);
 
         Query query = new Query();
         query.addEqualsCondition("field1", 10);
@@ -333,7 +346,8 @@ public class IndexTest {
         // Add the entry
         IndexEntry entry = new IndexEntry();
         entry.addField("field1", "foobar");
-        index.addEntry(entry, Bytes.toBytes("key1"));
+        entry.setIdentifier(Bytes.toBytes("key1"));
+        index.addEntry(entry);
 
         // Test it is there
         Query query = new Query();
@@ -343,14 +357,14 @@ public class IndexTest {
         assertNull(result.next());
 
         // Delete the entry
-        index.removeEntry(entry, Bytes.toBytes("key1"));
+        index.removeEntry(entry);
 
         // Test it is gone
         result = index.performQuery(query);
         assertNull(result.next());
 
         // Delete the entry again, this should not give an error
-        index.removeEntry(entry, Bytes.toBytes("key1"));
+        index.removeEntry(entry);
     }
 
     @Test
@@ -368,14 +382,17 @@ public class IndexTest {
 
         IndexEntry entry = new IndexEntry();
         entry.addField("field1", "foobar");
-        index.addEntry(entry, Bytes.toBytes("key1"));
+        entry.setIdentifier(Bytes.toBytes("key1"));
+        index.addEntry(entry);
 
         entry = new IndexEntry();
-        index.addEntry(entry, Bytes.toBytes("key2"));
+        entry.setIdentifier(Bytes.toBytes("key2"));
+        index.addEntry(entry);
 
         entry = new IndexEntry();
         entry.addField("field2", "foobar");
-        index.addEntry(entry, Bytes.toBytes("key3"));
+        entry.setIdentifier(Bytes.toBytes("key3"));
+        index.addEntry(entry);
 
         Query query = new Query();
         query.addEqualsCondition("field1", "foobar");
@@ -445,9 +462,10 @@ public class IndexTest {
 
         IndexEntry entry = new IndexEntry();
         entry.addField("nonexistingfield", "foobar");
+        entry.setIdentifier(Bytes.toBytes("key"));
 
         try {
-            index.addEntry(entry, Bytes.toBytes("key"));
+            index.addEntry(entry);
             fail("Expected a MalformedIndexEntryException.");
         } catch (MalformedIndexEntryException e) {
             // ok
@@ -455,9 +473,10 @@ public class IndexTest {
 
         entry = new IndexEntry();
         entry.addField("stringfield", new Integer(55));
+        entry.setIdentifier(Bytes.toBytes("key"));
 
         try {
-            index.addEntry(entry, Bytes.toBytes("key"));
+            index.addEntry(entry);
             fail("Expected a MalformedIndexEntryException.");
         } catch (MalformedIndexEntryException e) {
             // ok
@@ -465,9 +484,10 @@ public class IndexTest {
 
         entry = new IndexEntry();
         entry.addField("floatfield", "hello world");
+        entry.setIdentifier(Bytes.toBytes("key"));
 
         try {
-            index.addEntry(entry, Bytes.toBytes("key"));
+            index.addEntry(entry);
             fail("Expected a MalformedIndexEntryException.");
         } catch (MalformedIndexEntryException e) {
             // ok
@@ -491,7 +511,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         Query query = new Query();
@@ -522,7 +543,8 @@ public class IndexTest {
             entry.addField("field1", "value A " + i);
             entry.addField("field2", 10 + i);
             entry.addField("field3", "value B " + i);
-            index.addEntry(entry, Bytes.toBytes("key" + i));
+            entry.setIdentifier(Bytes.toBytes("key" + i));
+            index.addEntry(entry);
         }
 
         // Search only on the leftmost field
@@ -624,13 +646,15 @@ public class IndexTest {
         // First test correct situation
         IndexEntry entry = new IndexEntry();
         entry.addField("field1", "a");
-        index.addEntry(entry, Bytes.toBytes("1"));
+        entry.setIdentifier(Bytes.toBytes("1"));
+        index.addEntry(entry);
 
         // Now test incorrect situation
         entry = new IndexEntry();
         entry.addField("field1", 55);
+        entry.setIdentifier(Bytes.toBytes("1"));
         try {
-            index.addEntry(entry, Bytes.toBytes("1"));
+            index.addEntry(entry);
             fail("Expected exception.");
         } catch (MalformedIndexEntryException e) {
             //System.out.println(e.getMessage());
@@ -682,7 +706,8 @@ public class IndexTest {
         for (int value : values) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", value);
-            index.addEntry(entry, Bytes.toBytes("key" + value));
+            entry.setIdentifier(Bytes.toBytes("key" + value));
+            index.addEntry(entry);
         }
 
         {
@@ -728,7 +753,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + (i + 1)));
+            entry.setIdentifier(Bytes.toBytes("key" + (i + 1)));
+            index.addEntry(entry);
         }
 
         {
@@ -769,7 +795,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + (i + 1)));
+            entry.setIdentifier(Bytes.toBytes("key" + (i + 1)));
+            index.addEntry(entry);
         }
 
         {
@@ -802,7 +829,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + (i + 1)));
+            entry.setIdentifier(Bytes.toBytes("key" + (i + 1)));
+            index.addEntry(entry);
         }
 
         // The index on the value is descending, the identifiers themselves are ascending!
@@ -829,7 +857,8 @@ public class IndexTest {
         for (int i = 0; i < values.length; i++) {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", values[i]);
-            index.addEntry(entry, Bytes.toBytes("key" + (i + 1)));
+            entry.setIdentifier(Bytes.toBytes("key" + (i + 1)));
+            index.addEntry(entry);
         }
 
         {
@@ -870,7 +899,8 @@ public class IndexTest {
             IndexEntry entry = new IndexEntry();
             entry.addField("field1", value);
             entry.addData(Bytes.toBytes("originalValue"), Bytes.toBytes(value));
-            index.addEntry(entry, Bytes.toBytes(value));
+            entry.setIdentifier(Bytes.toBytes(value));
+            index.addEntry(entry);
         }
 
 

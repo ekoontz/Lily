@@ -37,8 +37,8 @@ public class Index {
     private IndexDefinition definition;
 
     protected static final byte[] DATA_FAMILY = Bytes.toBytes("data");
-    private static final byte[] DUMMY_QUALIFIER = Bytes.toBytes("dummy");
-    private static final byte[] DUMMY_VALUE = Bytes.toBytes("dummy");
+    private static final byte[] DUMMY_QUALIFIER = new byte[] { 0 };
+    private static final byte[] DUMMY_VALUE = new byte[] { 0 };
 
     /** Number of bytes overhead per field. */
     private static final int FIELD_FLAGS_SIZE = 1;
@@ -59,15 +59,33 @@ public class Index {
      *
      * @param entry the values to be part of the index key, should correspond to the fields
      *              defined in the {@link IndexDefinition}
-     * @param identifier the identifier of the indexed object, typically the key of a row in
-     *                   another HBase table
      */
-    public void addEntry(IndexEntry entry, byte[] identifier) throws IOException {
+    public void addEntry(IndexEntry entry) throws IOException {
         ArgumentValidator.notNull(entry, "entry");
-        ArgumentValidator.notNull(identifier, "identifier");
         validateIndexEntry(entry);
 
-        byte[] indexKey = buildRowKey(entry, identifier);
+        Put put = createAddEntryPut(entry);
+        htable.put(put);
+    }
+
+    /**
+     * Adds multiple entries to the index. Uses one HBase put so is more efficient
+     * than adding each entry individually.
+     */
+    public void addEntries(List<IndexEntry> entries) throws IOException {
+        List<Put> puts = new ArrayList<Put>();
+
+        for (IndexEntry entry : entries) {
+            validateIndexEntry(entry);
+            Put put = createAddEntryPut(entry);
+            puts.add(put);
+        }
+
+        htable.put(puts);
+    }
+
+    private Put createAddEntryPut(IndexEntry entry) {
+        byte[] indexKey = buildRowKey(entry);
         Put put = new Put(indexKey);
 
         Map<IndexEntry.ByteArrayKey, byte[]> data = entry.getData();
@@ -79,8 +97,7 @@ public class Index {
             // HBase does not allow to create a row without columns, so add a dummy column
             put.add(DATA_FAMILY, DUMMY_QUALIFIER, DUMMY_VALUE);
         }
-
-        htable.put(put);
+        return put;
     }
 
     /**
@@ -88,17 +105,35 @@ public class Index {
      * entry and the identifier should exactly match those supplied
      * when creating the index entry.
      */
-    public void removeEntry(IndexEntry entry, byte[] identifier) throws IOException {
+    public void removeEntry(IndexEntry entry) throws IOException {
         ArgumentValidator.notNull(entry, "entry");
-        ArgumentValidator.notNull(identifier, "identifier");
         validateIndexEntry(entry);
 
-        byte[] indexKey = buildRowKey(entry, identifier);
+        byte[] indexKey = buildRowKey(entry);
         Delete delete = new Delete(indexKey);
         htable.delete(delete);
     }
 
+    public void removeEntries(List<IndexEntry> entries) throws IOException {
+        ArgumentValidator.notNull(entries, "entries");
+
+        List<Delete> deletes = new ArrayList<Delete>();
+        for (IndexEntry entry : entries) {
+            validateIndexEntry(entry);
+
+            byte[] indexKey = buildRowKey(entry);
+            Delete delete = new Delete(indexKey);
+            deletes.add(delete);
+        }
+
+        htable.delete(deletes);
+    }
+
     private void validateIndexEntry(IndexEntry indexEntry) {
+        if (indexEntry.getIdentifier() == null) {
+            throw new MalformedIndexEntryException("Index entry does not specify an identifier.");
+        }
+
         for (Map.Entry<String, Object> entry : indexEntry.getFields().entrySet()) {
             IndexFieldDefinition fieldDef = definition.getField(entry.getKey());
             if (fieldDef == null) {
@@ -128,7 +163,7 @@ public class Index {
      * <p>The field flags are currently used to mark if a field is null
      * or not. If a field is null, its value will be encoded as all-zero bits.
      */
-    private byte[] buildRowKey(IndexEntry entry, byte[] identifier) {
+    private byte[] buildRowKey(IndexEntry entry) {
         List<byte[]> keyComponents = new ArrayList<byte[]>();
 
         for (IndexFieldDefinition fieldDef : definition.getFields()) {
@@ -137,7 +172,7 @@ public class Index {
             keyComponents.add(bytes);
         }
 
-        byte[] encodedIdentifier = IdentifierEncoding.encode(identifier);
+        byte[] encodedIdentifier = IdentifierEncoding.encode(entry.getIdentifier());
 
         // Calculate length of the index key
         int keyLength = 0;

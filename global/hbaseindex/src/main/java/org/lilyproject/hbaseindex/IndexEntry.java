@@ -37,6 +37,7 @@ import java.util.Map;
 public class IndexEntry {
     private Map<String, Object> fields = new HashMap<String, Object>();
     private Map<ByteArrayKey, byte[]> data = new HashMap<ByteArrayKey, byte[]>();
+    private byte[] identifier;
 
     public void addField(String name, Object value) {
         fields.put(name, value);
@@ -68,6 +69,18 @@ public class IndexEntry {
 
     protected Map<ByteArrayKey, byte[]> getData() {
         return data;
+    }
+
+    /**
+     * The identifier of the indexed object, typically the key of a row in
+     * another HBase table.
+     */
+    public byte[] getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(byte[] identifier) {
+        this.identifier = identifier;
     }
 
     protected static class ByteArrayKey {
