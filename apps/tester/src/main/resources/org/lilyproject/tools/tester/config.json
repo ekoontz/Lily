@@ -20,7 +20,8 @@
   },
 
   namespaces: {
-    "org.lilyproject.tools.tester": "tester"
+    "org.lilyproject.tools.tester": "tester",
+    "org.lilyproject.vtag": "vtag"
   },
 
   /*
@@ -88,8 +89,12 @@
       name: "tester$field10",
       valueType: { "primitive": "BOOLEAN" },
       scope: "versioned"
+    },
+    {
+      name: "vtag$last",
+      valueType: { primitive: "LONG" },
+      scope: "non_versioned"
     }
-
   ],
 
   /*

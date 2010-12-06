@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<indexer xmlns:t="org.lilyproject.tools.tester">
+  <cases>
+    <case recordType="t:TesterRecordType" variant="*" vtags="last"/>
+  </cases>
+
+  <indexFields>
+    <indexField name="t$field1">
+      <value>
+        <field name="t:field1"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field2">
+      <value>
+        <field name="t:field2"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field3">
+      <value>
+        <field name="t:field3"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field4">
+      <value>
+        <field name="t:field4"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field5">
+      <value>
+        <field name="t:field5"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field6">
+      <value>
+        <field name="t:field6"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field7">
+      <value>
+        <field name="t:field7"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field8">
+      <value>
+        <field name="t:field8"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field9">
+      <value>
+        <field name="t:field9"/>
+      </value>
+    </indexField>
+
+    <indexField name="t$field10">
+      <value>
+        <field name="t:field10"/>
+      </value>
+    </indexField>
+  </indexFields>
+
+</indexer>
