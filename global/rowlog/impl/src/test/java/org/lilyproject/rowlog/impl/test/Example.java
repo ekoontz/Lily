@@ -61,7 +61,8 @@ public class Example {
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
 
         // Create a RowLog instance
-        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, 1000L, false, configurationManager);
+        configurationManager.addRowLog("Example", new RowLogConfig(1000L, false, true, 100L, 0L));
+        RowLog rowLog = new RowLogImpl("Example", rowTable, PAYLOAD_COLUMN_FAMILY, EXECUTIONSTATE_COLUMN_FAMILY, configurationManager);
         
         // Create a shard and register it with the rowlog
         RowLogShard shard = new RowLogShardImpl("AShard", configuration, rowLog, 100);

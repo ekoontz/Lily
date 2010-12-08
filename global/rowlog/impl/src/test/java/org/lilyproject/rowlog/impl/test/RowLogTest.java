@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogMessage;
@@ -60,7 +61,7 @@ public class RowLogTest {
     private static byte[] rowLogColumnFamily = RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY;
     private static HTableInterface rowTable;
     private static String subscriptionId1 = "SubscriptionId";
-    private static String RowLogId = "RowLogTest";
+    private static String rowLogId = "RowLogTest";
     private static ZooKeeperItf zooKeeper;
     private RowLogShard shard;
 
@@ -70,7 +71,8 @@ public class RowLogTest {
         HBASE_PROXY.start();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        configurationManager.addSubscription(RowLogId, subscriptionId1, Type.VM, 3, 1);
+        configurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
+        configurationManager.addRowLog(rowLogId, new RowLogConfig(60000L, true, true, 100L, 500L));
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
     }
@@ -84,7 +86,7 @@ public class RowLogTest {
 
     @Before
     public void setUp() throws Exception {
-        rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 60000L, true, configurationManager);
+        rowLog = new RowLogImpl(rowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, configurationManager);
         shard = control.createMock(RowLogShard.class);
         shard.getId();
         expectLastCall().andReturn("ShardId").anyTimes();
@@ -201,7 +203,7 @@ public class RowLogTest {
     
     @Test
     public void testLockTimeout() throws Exception {
-        RowLog rowLog = new RowLogImpl(RowLogId, rowTable, payloadColumnFamily, rowLogColumnFamily, 1L, true, configurationManager);
+        configurationManager.updateRowLog(rowLogId, new RowLogConfig(1L, true, false, 0L, 5000L));
 
         shard.putMessage(isA(RowLogMessage.class), eq(rowLog.getSubscriptions()));
         
@@ -227,7 +229,7 @@ public class RowLogTest {
         String subscriptionId2 = "subscriptionId2";
                 
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        configurationManager.addSubscription(RowLogId, subscriptionId2, Type.Netty, 3, 2);
+        configurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 3, 2);
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
             if (rowLog.getSubscriptions().size() == 2)
@@ -257,7 +259,7 @@ public class RowLogTest {
         control.verify();
         //Cleanup 
         rowLog.unlockMessage(message, subscriptionId2, true, lock2);
-        configurationManager.removeSubscription(RowLogId, subscriptionId2);
+        configurationManager.removeSubscription(rowLogId, subscriptionId2);
 
         waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
@@ -272,7 +274,7 @@ public class RowLogTest {
         String subscriptionId3 = "subscriptionId2";
         
         RowLogConfigurationManagerImpl configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        configurationManager.addSubscription(RowLogId, subscriptionId3, Type.VM, 5, 3);
+        configurationManager.addSubscription(rowLogId, subscriptionId3, Type.VM, 5, 3);
         
         long waitUntil = System.currentTimeMillis() + 10000;
         while (waitUntil > System.currentTimeMillis()) {
@@ -315,6 +317,6 @@ public class RowLogTest {
         assertEquals(2, messages.size());
         
         control.verify();
-        configurationManager.removeSubscription(RowLogId, subscriptionId3);
+        configurationManager.removeSubscription(rowLogId, subscriptionId3);
     }
 }

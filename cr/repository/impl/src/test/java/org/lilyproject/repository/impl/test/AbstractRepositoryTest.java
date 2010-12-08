@@ -51,6 +51,7 @@ import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.api.VersionNotFoundException;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogMessageListenerMapping;
 import org.lilyproject.rowlog.api.RowLogShard;
@@ -106,7 +107,8 @@ public abstract class AbstractRepositoryTest {
     }
     
     protected static void setupWal() throws Exception {
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfigurationManager);
+        rowLogConfigurationManager.addRowLog("WAL", new RowLogConfig(10000L, true, false, 100L, 5000L));
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfigurationManager);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }
@@ -165,10 +167,10 @@ public abstract class AbstractRepositoryTest {
     
     protected static void setupMessageQueue() throws Exception {
         
+        rowLogConfigurationManager.addRowLog("MQ", new RowLogConfig(10000L, false, true, 100L, 0L));
         rowLogConfigurationManager.addSubscription("WAL", "MQFeeder", Type.VM, 3, 1);
-
         messageQueue = new RowLogImpl("MQ", HBaseTableUtil.getRecordTable(configuration), RecordCf.MQ_PAYLOAD.bytes,
-                RecordCf.MQ_STATE.bytes, 10000L, true, rowLogConfigurationManager);
+                RecordCf.MQ_STATE.bytes, rowLogConfigurationManager);
         messageQueue.registerShard(new RowLogShardImpl("MQS1", configuration, messageQueue, 100));
 
         RowLogMessageListenerMapping listenerClassMapping = RowLogMessageListenerMapping.INSTANCE;

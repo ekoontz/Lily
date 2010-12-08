@@ -34,11 +34,14 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.lilyproject.rowlog.api.ListenersObserver;
 import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
+import org.lilyproject.rowlog.api.RowLogObserver;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.SubscriptionsObserver;
 import org.lilyproject.util.ArgumentValidator;
@@ -46,6 +49,12 @@ import org.lilyproject.util.Logs;
 import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 import org.lilyproject.util.zookeeper.ZooKeeperOperation;
+
+
+// The paths used in zookeeper to store the data are :
+// /lily/rowlog/<rowlogid>+<data>
+// /lily/rowlog/<rowlogid>/shards/<shardid>/processorNotify+<data>
+// /lily/rowlog/<rowlogid>/subscriptions/<subscriptionid>/<listenerid>
 
 public class RowLogConfigurationManagerImpl implements RowLogConfigurationManager {
     private String lilyPath = "/lily";
@@ -66,6 +75,68 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     @PreDestroy
     public void shutdown() throws InterruptedException {
         observerSupport.shutdown();
+    }
+    
+    // RowLogs
+    public synchronized void addRowLog(String rowLogId, RowLogConfig rowLogConfig) throws KeeperException, InterruptedException {
+        final String path = rowLogPath(rowLogId);
+        
+        final byte[] data = RowLogConfigConverter.INSTANCE.toJsonBytes(rowLogId, rowLogConfig);
+        ZkUtil.createPath(zooKeeper, path, data, CreateMode.PERSISTENT);
+        // Perform an extra update in case the rowlog node already existed
+        zooKeeper.retryOperation(new ZooKeeperOperation<String>() {
+            public String execute() throws KeeperException, InterruptedException {
+                zooKeeper.setData(path, data, -1);
+                return null;
+            }
+        });
+    }
+    
+    public synchronized void updateRowLog(String rowLogId, RowLogConfig rowLogConfig) throws KeeperException, InterruptedException {
+        final String path = rowLogPath(rowLogId);
+        final byte[] data = RowLogConfigConverter.INSTANCE.toJsonBytes(rowLogId, rowLogConfig);
+        zooKeeper.retryOperation(new ZooKeeperOperation<String>() {
+            public String execute() throws KeeperException, InterruptedException {
+                zooKeeper.setData(path, data, -1);
+                return null;
+            }
+        });
+    }
+
+    public synchronized void removeRowLog(String rowLogId) throws KeeperException, InterruptedException, RowLogException {
+        if (subscriptionsExist(rowLogId)) 
+            throw new RowLogException("Cannot remove rowlog " + rowLogId + " because it has subscriptions ");
+        if (!deepRemove(rowLogPath(rowLogId)))
+            throw new RowLogException("Failed to remove rowlog " + rowLogId);
+    }
+    
+    
+    
+    private synchronized boolean subscriptionsExist(String rowLogId) throws KeeperException, InterruptedException {
+        final String subscriptionsPath = subscriptionsPath(rowLogId);
+        return zooKeeper.retryOperation(new ZooKeeperOperation<Boolean>() {
+           public Boolean execute() throws KeeperException, InterruptedException {
+               return zooKeeper.exists(subscriptionsPath, false) != null;
+           }
+        });
+    } 
+    
+    public boolean rowLogExists(String rowLogId) throws InterruptedException, KeeperException {
+        final String path = rowLogPath(rowLogId);
+
+        return zooKeeper.retryOperation(new ZooKeeperOperation<Boolean>() {
+            public Boolean execute() throws KeeperException, InterruptedException {
+                return zooKeeper.exists(path, false) != null;
+            }
+        });
+    }
+    
+    public void addRowLogObserver(String rowLogId, RowLogObserver observer) {
+        observerSupport.addRowLogObserver(rowLogId, observer);
+    }
+    
+    public void removeRowLogObserver(String rowLogId, RowLogObserver observer) {
+        observerSupport.removeRowLogObserver(rowLogId, observer);
     }
     
     // Subscriptions
@@ -89,7 +160,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
 
     public synchronized void addSubscription(String rowLogId, String subscriptionId, RowLogSubscription.Type type,
-            int maxTries, int orderNr) throws KeeperException, InterruptedException {
+            int maxTries, int orderNr) throws KeeperException, InterruptedException, RowLogException {
 
         ZkUtil.createPath(zooKeeper, subscriptionsPath(rowLogId));
 
@@ -106,22 +177,44 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
             });
         } catch (KeeperException.NodeExistsException e) {
             // The subscription already exists. This can be because someone else already created it, but also
-            // because of the use of retryOperation. We silently ignore this situation.
+            // because of the use of retryOperation.
+            // We will try to update the subscription.
+            updateSubscription(rowLogId, subscriptionId, type, maxTries, orderNr);
         }
+    }
+    
+    public synchronized void updateSubscription(String rowLogId, String subscriptionId, RowLogSubscription.Type type, int maxTries, int orderNr) throws KeeperException, InterruptedException, RowLogException {
+        if (!subscriptionExists(rowLogId, subscriptionId))
+            throw new RowLogException("Subscription " + subscriptionId + "does not exist for rowlog " + rowLogId);
+        
+        final String path = subscriptionPath(rowLogId, subscriptionId);
 
-        // TODO if the subscription already existed, the configuration will not be adjusted to what is
-        // specified here. I think it should however do this, but leaving this out since we do not
-        // have a way to update subscriptions yet. Once done, should document this in the interface.
-        // We should not bother with situations such as 'what if the subscription would have been removed
-        // since the above create call and the current setData call'. After all, even if we do not do
-        // the setData call, the subscription could have been removed again by the time this method returns.
-        // We assume the processes that are adding subscriptions, as far as they run concurrently, to use
-        // subscriptionIds which do not collide.
-        // (cfr. #122)
+        RowLogSubscription subscription = new RowLogSubscription(rowLogId, subscriptionId, type, maxTries, orderNr);
+        final byte[] data = SubscriptionConverter.INSTANCE.toJsonBytes(subscription);
+
+        try {
+            zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
+                public String execute() throws KeeperException, InterruptedException {
+                    zooKeeper.setData(path, data, -1);
+                    return null;
+                }
+            });
+        } catch (KeeperException.NoNodeException e) {
+            throw new RowLogException("Subscription " + subscriptionId + "does not exist for rowlog " + rowLogId);
+        }
     }
     
     public synchronized void removeSubscription(String rowLogId, String subscriptionId) throws InterruptedException, KeeperException, RowLogException {
-        final String path = subscriptionPath(rowLogId, subscriptionId);
+        // The children of the subscription are ephemeral listener nodes. These listeners should shut
+        // down when the subscription is removed. Usually it is the task of the application to shut
+        // down the listeners before removing the subscription. If there would still be listeners running,
+        // delete their ephemeral nodes now. A running listener will not do anything anymore, since it
+        // will not be offered any message anymore.
+        if (!deepRemove(subscriptionPath(rowLogId, subscriptionId)))
+            throw new RowLogException("Failed to remove subscription " + subscriptionId + " from rowlog " + rowLogId);
+    }
+    
+    private synchronized boolean deepRemove(final String path) throws InterruptedException, KeeperException {
         boolean success = false;
         int tryCount = 0;
 
@@ -142,11 +235,6 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 removeChildren = true;
             }
 
-            // The children of the subscription are ephemeral listener nodes. These listeners should shut
-            // down when the subscription is removed. Usually it is the task of the application to shut
-            // down the listeners before removing the subscription. If there would still be listeners running,
-            // delete their ephemeral nodes now. A running listener will not do anything anymore, since it
-            // will not be offered any message anymore.
             if (removeChildren) {
                 zooKeeper.retryOperation(new ZooKeeperOperation<Object>() {
                     public Object execute() throws KeeperException, InterruptedException {
@@ -159,7 +247,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                         }
                         for (String child : children) {
                             try {
-                                zooKeeper.delete(path + "/" + child, -1);
+                                deepRemove(path + "/" + child);
                             } catch (NoNodeException e) {
                                 // listener was removed in the meantime
                             }
@@ -171,10 +259,10 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
 
             tryCount++;
             if (tryCount > 3) {
-                throw new RowLogException("Failed to remove subscription " + subscriptionId +
-                        " because it was impossible to remove the listeners.");
+                return false;
             }
         }
+        return true;
     }
     
     // Listeners
@@ -238,16 +326,20 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
     
     // Paths
+    private String rowLogPath(String rowLogId) {
+        return rowLogPath + "/" + rowLogId;
+    }
+    
     private String subscriptionPath(String rowLogId, String subscriptionId) {
         return subscriptionsPath(rowLogId) + "/" + subscriptionId;
     }
     
     private String subscriptionsPath(String rowLogId) {
-        return rowLogPath + "/" + rowLogId + "/subscriptions";
+        return rowLogPath(rowLogId) + "/subscriptions";
     }
     
     private String shardPath(String rowLogId, String shardId) {
-        return rowLogPath + "/" + rowLogId + "/shards" + "/" + shardId;
+        return rowLogPath(rowLogId) + "/shards" + "/" + shardId;
     }
     
     private String processorNotifyPath(String rowLogId, String shardId) {
@@ -264,10 +356,12 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         private Map<String, SubscriptionsObservers> subscriptionsObservers = Collections.synchronizedMap(new HashMap<String, SubscriptionsObservers>());
         private Map<ListenerKey, ListenersObservers> listenersObservers = Collections.synchronizedMap(new HashMap<ListenerKey, ListenersObservers>());
         private Map<ProcessorKey, ProcessorNotifyObserver> processorNotifyObservers = Collections.synchronizedMap(new HashMap<ProcessorKey, ProcessorNotifyObserver>());
+        private Map<String, RowLogObservers> rowLogObservers = Collections.synchronizedMap(new HashMap<String, RowLogObservers>());
         
         private Set<String> changedSubscriptions = new HashSet<String>();
         private Set<ListenerKey> changedListeners = new HashSet<ListenerKey>();
         private Set<ProcessorKey> changedProcessors = new HashSet<ProcessorKey>();
+        private Set<String> changedRowLogs = new HashSet<String>();
         private final Object changesLock = new Object();
 
         private ConnectStateWatcher connectStateWatcher = new ConnectStateWatcher(this);
@@ -303,14 +397,26 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     Set<String> changedSubscriptions;
                     Set<ListenerKey> changedListeners;
                     Set<ProcessorKey> changedProcessors;
+                    Set<String> changedRowLogs;
 
                     synchronized (changesLock) {
                         changedSubscriptions = new HashSet<String>(this.changedSubscriptions);
                         changedListeners = new HashSet<ListenerKey>(this.changedListeners);
                         changedProcessors = new HashSet<ProcessorKey>(this.changedProcessors);
+                        changedRowLogs = new HashSet<String>(this.changedRowLogs);
                         this.changedSubscriptions.clear();
                         this.changedListeners.clear();
                         this.changedProcessors.clear();
+                        this.changedRowLogs.clear();
+                    }
+                    
+                    for (String rowLogId : changedRowLogs) {
+                        RowLogObservers observers = rowLogObservers.get(rowLogId);
+                        if (observers != null) {
+                            boolean notify = observers.refresh();
+                            if (notify)
+                                observers.notifyObservers();
+                        }
                     }
 
                     for (String rowLogId : changedSubscriptions) {
@@ -336,7 +442,7 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                     }
 
                     synchronized (changesLock) {
-                        while (this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty() && this.changedProcessors.isEmpty() && !stop) {
+                        while (this.changedRowLogs.isEmpty() && this.changedListeners.isEmpty() && this.changedSubscriptions.isEmpty() && this.changedProcessors.isEmpty() && !stop) {
                             changesLock.wait();
                         }
                     }
@@ -348,6 +454,13 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 } catch (Throwable t) {
                     log.error("RowLogConfigurationManager observers notifier thread: some exception happened.", t);
                 }
+            }
+        }
+        
+        public void notifyRowLogChanged(String rowLogId) {
+            synchronized (changesLock) {
+                changedRowLogs.add(rowLogId);
+                changesLock.notifyAll();
             }
         }
 
@@ -389,6 +502,9 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
 
         public void notifyEverythingChanged() {
             synchronized (changesLock) {
+                for (String rowLogId : rowLogObservers.keySet()) {
+                    changedRowLogs.add(rowLogId);
+                }
                 for (String rowLogId : subscriptionsObservers.keySet()) {
                     changedSubscriptions.add(rowLogId);
                 }
@@ -401,7 +517,36 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
                 changesLock.notifyAll();
             }
         }
+        
+        public void addRowLogObserver(String rowLogId, RowLogObserver observer) {
+            synchronized (changesLock) {
+                RowLogObservers observers = rowLogObservers.get(rowLogId);
+                if (observers == null) {
+                    observers = new RowLogObservers(rowLogId);
+                    rowLogObservers.put(rowLogId, observers);
+                }
+                observers.add(observer);
+            }
+            // The below is to cause the newly registered observer to receive the initial
+            // rowLogConfig. This will of course notify all observers, but this does not
+            // really hurt and is simpler. Note that we do not want the observer to be called
+            // from two different threads concurrently.
+            notifyRowLogChanged(rowLogId);
+        }
 
+        public void removeRowLogObserver(String rowLogId, RowLogObserver observer) {
+            synchronized (changesLock) {
+                RowLogObservers observers = rowLogObservers.get(rowLogId);
+                if (observers != null) {
+                    observers.observers.remove(observer);
+                    
+                    if (observers.observers.isEmpty()) {
+                        rowLogObservers.remove(rowLogId);
+                    }
+                }
+            }
+        }
+        
         public void addSubscriptionsObserver(String rowLogId, SubscriptionsObserver observer) {
             synchronized (changesLock) {
                 SubscriptionsObservers observers = subscriptionsObservers.get(rowLogId);
@@ -472,6 +617,56 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
         	synchronized(changesLock) {
         		processorNotifyObservers.remove(processorKey);
         	}
+        }
+        
+        private class RowLogObservers {
+            private String rowLogId;
+            private RowLogWatcher watcher;
+            private Set<RowLogObserver> observers = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<RowLogObserver, Boolean>()));
+            private RowLogConfig config = null;
+
+            public RowLogObservers(String rowLogId) {
+                this.rowLogId = rowLogId;
+                watcher = new RowLogWatcher(rowLogId, ObserverSupport.this);
+            }
+
+            public void add(RowLogObserver observer) {
+                this.observers.add(observer);
+            }
+
+            public boolean refresh() throws InterruptedException, KeeperException {
+                Stat stat = new Stat();
+                try {
+                    byte[] data = zooKeeper.getData(rowLogPath(rowLogId), watcher, stat);
+                    if (data == null) 
+                        return false;
+                    config = RowLogConfigConverter.INSTANCE.fromJsonBytes(rowLogId, data);
+                } catch (NoNodeException e) {
+                 // Someone added an observer for a row log which does not exist, this is allowed
+                    zooKeeper.exists(rowLogPath(rowLogId), watcher);
+                    config = null;
+                }
+                
+                return true;
+            }
+
+            public void notifyObservers() {
+                for (RowLogObserver observer : new ArrayList<RowLogObserver>(observers)) {
+                    try {
+                        // Note that if you enable this debug logging (or noticed this in some other way) you
+                        // might see multiple times the same rowlog config being reported to observers.
+                        // This is because each time a new observer is added, everyone observer is again called
+                        // with the current rowlog config. See addRowLogObserver for why this is.
+                        // Since often a new observer is registered in response to a configuration change,
+                        // you will often see double events.
+                        log.debug("Row log " + rowLogId + ": notifying to the observers " + observers +
+                                " that the current config is" + config);
+                        observer.rowLogConfigChanged(config);
+                    } catch (Throwable t) {
+                        log.error("Error notifying rowlog observer " + observer.getClass().getName(), t);
+                    }
+                }
+            }
         }
 
         private class SubscriptionsObservers {
@@ -669,6 +864,23 @@ public class RowLogConfigurationManagerImpl implements RowLogConfigurationManage
     }
 
     // Watchers
+    private class RowLogWatcher implements Watcher {
+        private final String rowLogId;
+        private final ObserverSupport observerSupport;
+        
+        public RowLogWatcher(String rowLogId, ObserverSupport observerSupport) {
+            this.rowLogId = rowLogId;
+            this.observerSupport = observerSupport;
+        }
+        
+        public void process(WatchedEvent event) {
+            EventType eventType = event.getType(); 
+            if (!eventType.equals(Watcher.Event.EventType.None) && !eventType.equals(Watcher.Event.EventType.NodeChildrenChanged)) {
+                observerSupport.notifyRowLogChanged(rowLogId);
+            }
+        }
+    }
+    
     private class SubscriptionsWatcher implements Watcher {
         private final String rowLogId;
         private final ObserverSupport observerSupport;

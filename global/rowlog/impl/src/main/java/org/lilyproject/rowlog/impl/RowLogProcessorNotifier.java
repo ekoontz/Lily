@@ -28,11 +28,16 @@ public class RowLogProcessorNotifier {
     
     private RowLogConfigurationManager rowLogConfigurationManager;
     private Map<String, Long> wakeupDelays = Collections.synchronizedMap(new HashMap<String, Long>());
-    private long delay = 100;
+    private long delay;
     private Log log = LogFactory.getLog(getClass());
 
-    public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager) {
+    public RowLogProcessorNotifier(RowLogConfigurationManager rowLogConfigurationManager, long delay) {
         this.rowLogConfigurationManager = rowLogConfigurationManager;
+        this.delay = delay;
+    }
+    
+    public void setDelay(long delay) {
+        this.delay = delay;
     }
     
     protected void notifyProcessor(String rowLogId, String shardId) throws InterruptedException {
@@ -40,7 +45,7 @@ public class RowLogProcessorNotifier {
         Long delayUntil = wakeupDelays.get(rowLogId+shardId);
         if (delayUntil == null || now >= delayUntil) {
             sendNotification(rowLogId, shardId);
-            // Wait at least 100ms before sending another notification 
+            // Wait at least <delay>miliseconds before sending another notification 
             wakeupDelays.put(rowLogId+shardId, now + delay);
         }
     }

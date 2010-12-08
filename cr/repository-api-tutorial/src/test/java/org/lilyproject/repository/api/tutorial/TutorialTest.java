@@ -42,6 +42,7 @@ import org.lilyproject.repository.impl.HBaseTypeManager;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
 import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.impl.RowLogImpl;
@@ -90,9 +91,10 @@ public class TutorialTest {
 
     }
     
-    protected static void setupWal() throws IOException, RowLogException, InterruptedException {
+    protected static void setupWal() throws Exception {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
+        rowLogConfMgr.addRowLog("WAL", new RowLogConfig(10000L, true, false, 0L, 5000L));
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

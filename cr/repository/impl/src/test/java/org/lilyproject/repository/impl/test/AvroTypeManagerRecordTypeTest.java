@@ -42,6 +42,7 @@ import org.lilyproject.repository.impl.RemoteRepository;
 import org.lilyproject.repository.impl.RemoteTypeManager;
 import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogShard;
@@ -110,9 +111,10 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
         setupFieldTypes();
     }
     
-    protected static void setupWal() throws IOException, RowLogException, InterruptedException {
+    protected static void setupWal() throws Exception {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
+        rowLogConfMgr.addRowLog("WAL", new RowLogConfig(10000L, true, false, 100L, 5000L));
+        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

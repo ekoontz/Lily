@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogProcessor;
 import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.impl.RowLogConfigurationManagerImpl;
@@ -60,8 +61,9 @@ public class RowLogProcessorTest {
         // to be JVM-level).
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 120000);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+        rowLogConfigurationManager.addRowLog("EndToEndRowLog", new RowLogConfig(60000L, true, true, 100L, 1000L));
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
-                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, 60000L, true, rowLogConfigurationManager);
+                RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, rowLogConfigurationManager);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
         rowLog.registerShard(shard);
         processor = new RowLogProcessorImpl(rowLog, rowLogConfigurationManager);

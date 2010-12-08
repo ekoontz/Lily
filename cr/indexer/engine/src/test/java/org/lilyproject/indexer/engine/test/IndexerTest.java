@@ -120,9 +120,9 @@ public class IndexerTest {
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
 
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
-
+        rowLogConfMgr.addRowLog("WAL", new RowLogConfig(10000L, true, false, 100L, 5000L));
         RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
-                RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, 10000L, true, rowLogConfMgr);
+                RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 

@@ -40,23 +40,23 @@ import org.lilyproject.util.io.Closer;
 /**
  * See {@link RowLog}
  */
-public class RowLogImpl implements RowLog, SubscriptionsObserver {
+public class RowLogImpl implements RowLog, SubscriptionsObserver, RowLogObserver {
 
     private static final byte[] SEQ_NR = Bytes.toBytes("SEQNR");
     private RowLogShard shard; // TODO: We only work with one shard for now
     private final HTableInterface rowTable;
     private final byte[] payloadColumnFamily;
     private final byte[] executionStateColumnFamily;
+    private RowLogConfig rowLogConfig;
     
     private Map<String, RowLogSubscription> subscriptions = Collections.synchronizedMap(new HashMap<String, RowLogSubscription>());
-    private final long lockTimeout;
     private final String id;
     private RowLogProcessorNotifier processorNotifier = null;
     private Log log = LogFactory.getLog(getClass());
-    private final boolean respectOrder;
     private RowLogConfigurationManager rowLogConfigurationManager;
 
     private final AtomicBoolean initialSubscriptionsLoaded = new AtomicBoolean(false);
+    private final AtomicBoolean initialRowLogConfigLoaded = new AtomicBoolean(false);
 
     /**
      * The RowLog should be instantiated with information about the table that contains the rows the messages are 
@@ -65,20 +65,22 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
      * @param rowTable the HBase table containing the rows to which the messages are related
      * @param payloadColumnFamily the column family in which the payload of the messages can be stored
      * @param executionStateColumnFamily the column family in which the execution state of the messages can be stored
-     * @param lockTimeout the timeout to be used for the locks that are put on the messages
-     * @param respectOrder true if the order of the subscriptions needs to be followed
      * @throws RowLogException
      */
     public RowLogImpl(String id, HTableInterface rowTable, byte[] payloadColumnFamily, byte[] executionStateColumnFamily,
-            long lockTimeout, boolean respectOrder, RowLogConfigurationManager rowLogConfigurationManager) throws InterruptedException {
+            RowLogConfigurationManager rowLogConfigurationManager) throws InterruptedException {
         this.id = id;
         this.rowTable = rowTable;
         this.payloadColumnFamily = payloadColumnFamily;
         this.executionStateColumnFamily = executionStateColumnFamily;
-        this.lockTimeout = lockTimeout;
-        this.respectOrder = respectOrder;
-        this.processorNotifier = new RowLogProcessorNotifier(rowLogConfigurationManager);
         this.rowLogConfigurationManager = rowLogConfigurationManager;
+        rowLogConfigurationManager.addRowLogObserver(id, this);
+        synchronized (initialRowLogConfigLoaded) {
+            while(!initialRowLogConfigLoaded.get()) {
+                initialRowLogConfigLoaded.wait();
+            }
+        }
+        this.processorNotifier = new RowLogProcessorNotifier(rowLogConfigurationManager, rowLogConfig.getNotifyDelay());
         rowLogConfigurationManager.addSubscriptionsObserver(id, this);
         synchronized (initialSubscriptionsLoaded) {
             while (!initialSubscriptionsLoaded.get()) {
@@ -88,7 +90,14 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     }
 
     public void stop() {
+        rowLogConfigurationManager.removeRowLogObserver(id, this);
+        synchronized (initialRowLogConfigLoaded) {
+            initialRowLogConfigLoaded.set(false);
+        }
         rowLogConfigurationManager.removeSubscriptionsObserver(id, this);
+        synchronized (initialSubscriptionsLoaded) {
+            initialSubscriptionsLoaded.set(false);
+        }
         Closer.close(processorNotifier);
     }
     
@@ -160,7 +169,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             shard.putMessage(message, subscriptions);
             initializeSubscriptions(message, put, subscriptions);
 
-            if (processorNotifier != null) {
+            if (rowLogConfig.isEnableNotify()) {
                 processorNotifier.notifyProcessor(id, shard.getId());
             }
             return message;
@@ -212,7 +221,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException, InterruptedException {
         boolean allDone = true;
         List<RowLogSubscription> subscriptionsSnapshot = getSubscriptions();
-        if (respectOrder) {
+        if (rowLogConfig.isRespectOrder()) {
             Collections.sort(subscriptionsSnapshot);
         }
         for (RowLogSubscription subscription : getSubscriptions()) {
@@ -227,7 +236,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                 if (!done) {
                     allDone = false;
                     checkAndMarkProblematic(message, subscription, executionState);
-                    if (respectOrder) {
+                    if (rowLogConfig.isRespectOrder()) {
                         break;
                     }
                 } else {
@@ -271,7 +280,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                 return putLock(message, subscriptionId, rowKey, qualifier, previousValue, executionState, now, count);
             } else {
                 long previousTimestamp = Bytes.toLong(previousLock);
-                if (previousTimestamp + lockTimeout < now) {
+                if (previousTimestamp + rowLogConfig.getLockTimeout() < now) {
                     return putLock(message, subscriptionId, rowKey, qualifier, previousValue, executionState, now, count);
                 } else {
                     return null;
@@ -300,6 +309,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     }
     
     public boolean unlockMessage(RowLogMessage message, String subscriptionId, boolean realTry, byte[] lock) throws RowLogException {
+        RowLogSubscription subscription = subscriptions.get(subscriptionId);
+        if (subscription == null)
+            throw new RowLogException("Failed to unlock message, subscription " + subscriptionId + " no longer exists for rowlog " + this.getId());
         byte[] rowKey = message.getRowKey();
         long seqnr = message.getSeqNr();
         byte[] qualifier = Bytes.toBytes(seqnr);
@@ -318,7 +330,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             
             executionState.setLock(subscriptionId, null);
             if (realTry) {
-                checkAndMarkProblematic(message, subscriptions.get(subscriptionId), executionState);
+                checkAndMarkProblematic(message, subscription, executionState);
             } else { 
                 executionState.decTryCount(subscriptionId);
             }
@@ -335,7 +347,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         int maxTries = subscription.getMaxTries();
         RowLogShard rowLogShard = getShard();
         if (executionState.getTryCount(subscription.getId()) >= maxTries) {
-            if (respectOrder) {
+            if (rowLogConfig.isRespectOrder()) {
                 List<RowLogSubscription> subscriptions = getSubscriptions();
                 Collections.sort(subscriptions);
                 for (RowLogSubscription otherSubscription : subscriptions) {
@@ -367,9 +379,9 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
             byte[] lock = executionState.getLock(subscriptionId);
             if (lock == null) return false;
         
-            return (Bytes.toLong(lock) + lockTimeout > System.currentTimeMillis());
+            return (Bytes.toLong(lock) + rowLogConfig.getLockTimeout() > System.currentTimeMillis());
         } catch (IOException e) {
-            throw new RowLogException("Failed to check if messages is locked", e);
+            throw new RowLogException("Failed to check if message is locked", e);
         }
     }
     
@@ -441,7 +453,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         SubscriptionExecutionState executionState = getExecutionState(message);
         if (executionState == null)
             return false;
-        if (respectOrder) {
+        if (rowLogConfig.isRespectOrder()) {
             List<RowLogSubscription> subscriptions = getSubscriptions();
             Collections.sort(subscriptions);
             for (RowLogSubscription subscriptionContext : subscriptions) {
@@ -517,8 +529,7 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
     public void subscriptionsChanged(List<RowLogSubscription> newSubscriptions) {
         synchronized (subscriptions) {
             for (RowLogSubscription subscription : newSubscriptions) {
-                if (!subscriptions.containsKey(subscription.getId()))
-                    subscriptions.put(subscription.getId(), subscription);
+                subscriptions.put(subscription.getId(), subscription);
             }
             Iterator<RowLogSubscription> iterator = subscriptions.values().iterator();
             while (iterator.hasNext()) {
@@ -527,9 +538,11 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
                     iterator.remove();
             }
         }
-        synchronized (initialSubscriptionsLoaded) {
-            initialSubscriptionsLoaded.set(true);
-            initialSubscriptionsLoaded.notifyAll();
+        if (!initialSubscriptionsLoaded.get()) {
+            synchronized (initialSubscriptionsLoaded) {
+                initialSubscriptionsLoaded.set(true);
+                initialSubscriptionsLoaded.notifyAll();
+            }
         }
     }
 
@@ -537,5 +550,15 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver {
         List<RowLogShard> shards = new ArrayList<RowLogShard>();
         shards.add(shard);
         return shards;
+    }
+    
+    public void rowLogConfigChanged(RowLogConfig rowLogConfig) {
+        this.rowLogConfig = rowLogConfig;
+        if (!initialRowLogConfigLoaded.get()) {
+            synchronized(initialRowLogConfigLoaded) {
+                initialRowLogConfigLoaded.set(true);
+                initialRowLogConfigLoaded.notifyAll();
+            }
+        }
     }
  }

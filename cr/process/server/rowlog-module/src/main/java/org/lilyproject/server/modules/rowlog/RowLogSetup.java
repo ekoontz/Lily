@@ -45,6 +45,14 @@ public class RowLogSetup {
 
     @PostConstruct
     public void start() throws InterruptedException, KeeperException, IOException, LeaderElectionSetupException, RowLogException {
+        if (!confMgr.rowLogExists("wal")) {
+            confMgr.addRowLog("wal", new RowLogConfig(10000L, true, false, 100L, 5000L));
+        }
+        
+        if (!confMgr.rowLogExists("mq")) {
+            confMgr.addRowLog("mq", new RowLogConfig(10000L, true, true, 100L, 0L));
+        }
+        
         // If the subscription already exists, this method will silently return
         if (!confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
             confMgr.addSubscription("wal", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
@@ -54,11 +62,11 @@ public class RowLogSetup {
         }
 
         messageQueue = new RowLogImpl("mq", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.MQ_PAYLOAD.bytes,
-                RecordCf.MQ_STATE.bytes, 10000L, true, confMgr);
+                RecordCf.MQ_STATE.bytes, confMgr);
         messageQueue.registerShard(new RowLogShardImpl("shard1", hbaseConf, messageQueue, 100));
 
         writeAheadLog = new RowLogImpl("wal", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.WAL_PAYLOAD.bytes,
-                RecordCf.WAL_STATE.bytes, 10000L, true, confMgr);
+                RecordCf.WAL_STATE.bytes, confMgr);
         RowLogShard walShard = new RowLogShardImpl("shard1", hbaseConf, writeAheadLog, 100);
         writeAheadLog.registerShard(walShard);
 

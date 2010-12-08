@@ -34,20 +34,19 @@ public class RowLogLocalEndToEndTest extends AbstractRowLogEndToEndTest {
 
     @Before
     public void setUp() throws Exception {
-        t0 = System.currentTimeMillis();
         System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName());
         validationListener = new ValidationMessageListener("VML1", subscriptionId, rowLog);
         RowLogMessageListenerMapping.INSTANCE.put(subscriptionId , validationListener);
         rowLogConfigurationManager.addSubscription(rowLog.getId(), subscriptionId,  RowLogSubscription.Type.VM, 3, 1);
         waitForSubscription(subscriptionId);
         rowLogConfigurationManager.addListener(rowLog.getId(), subscriptionId, "listener1");
+        t0 = System.currentTimeMillis();
     }
 
     @After
     public void tearDown() throws Exception {
         rowLogConfigurationManager.removeListener(rowLog.getId(), subscriptionId, "listener1");
         rowLogConfigurationManager.removeSubscription(rowLog.getId(), subscriptionId);
-        System.out.println(">>RowLogLocalEndToEndTest#"+name.getMethodName() + " teardown done " + (System.currentTimeMillis() - t0));
     }
 
     @Test(timeout=270000)

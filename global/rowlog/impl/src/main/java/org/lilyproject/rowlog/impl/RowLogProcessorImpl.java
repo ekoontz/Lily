@@ -23,22 +23,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogMessage;
+import org.lilyproject.rowlog.api.RowLogObserver;
 import org.lilyproject.rowlog.api.RowLogProcessor;
 import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.SubscriptionsObserver;
 import org.lilyproject.util.Logs;
 
-public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserver, ProcessorNotifyObserver {
+public class RowLogProcessorImpl implements RowLogProcessor, RowLogObserver, SubscriptionsObserver, ProcessorNotifyObserver {
     private volatile boolean stop = true;
     private final RowLog rowLog;
     private final RowLogShard shard;
@@ -46,8 +48,9 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     private RowLogConfigurationManager rowLogConfigurationManager;
     private Log log = LogFactory.getLog(getClass());
     private long lastNotify = -1;
-    private long notifyDelay = 100;
-    private long minimalProcessDelay = 1000;
+    private RowLogConfig rowLogConfig;
+    
+    private final AtomicBoolean initialRowLogConfigLoaded = new AtomicBoolean(false);
     
     public RowLogProcessorImpl(RowLog rowLog, RowLogConfigurationManager rowLogConfigurationManager) {
         this.rowLog = rowLog;
@@ -68,6 +71,12 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     public synchronized void start() throws InterruptedException {
         if (stop) {
             stop = false;
+            rowLogConfigurationManager.addRowLogObserver(rowLog.getId(), this);
+            synchronized (initialRowLogConfigLoaded) {
+                while(!initialRowLogConfigLoaded.get()) {
+                    initialRowLogConfigLoaded.wait();
+                }
+            }
             rowLogConfigurationManager.addSubscriptionsObserver(rowLog.getId(), this);
             rowLogConfigurationManager.addProcessorNotifyObserver(rowLog.getId(), shard.getId(), this);
         }
@@ -79,10 +88,16 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
             if (!stop) {
                 List<String> newSubscriptionIds = new ArrayList<String>();
                 for (RowLogSubscription newSubscription : newSubscriptions) {
-                    newSubscriptionIds.add(newSubscription.getId());
-                    if (!subscriptionThreads.containsKey(newSubscription.getId())) {
+                    String subscriptionId = newSubscription.getId();
+                    newSubscriptionIds.add(subscriptionId);
+                    SubscriptionThread existingSubscriptionThread = subscriptionThreads.get(subscriptionId);
+                    if (existingSubscriptionThread == null) {
                         SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
-                        subscriptionThreads.put(newSubscription.getId(), subscriptionThread);
+                        subscriptionThreads.put(subscriptionId, subscriptionThread);
+                    } else if (!existingSubscriptionThread.getSubscription().equals(newSubscription)) {
+                        stopSubscriptionThread(subscriptionId);
+                        SubscriptionThread subscriptionThread = startSubscriptionThread(newSubscription);
+                        subscriptionThreads.put(subscriptionId, subscriptionThread);
                     }
                 }
                 Iterator<String> iterator = subscriptionThreads.keySet().iterator();
@@ -115,6 +130,10 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
 
     public synchronized void stop() {
         stop = true;
+        rowLogConfigurationManager.removeRowLogObserver(rowLog.getId(), this);
+        synchronized (initialRowLogConfigLoaded) {
+            initialRowLogConfigLoaded.set(false);
+        }
         rowLogConfigurationManager.removeSubscriptionsObserver(rowLog.getId(), this);
         rowLogConfigurationManager.removeProcessorNotifyObserver(rowLog.getId(), shard.getId());
         Collection<SubscriptionThread> threadsToStop;
@@ -151,7 +170,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
     synchronized public void notifyProcessor() {
     	long now = System.currentTimeMillis();
     	// Only consume the notification if the notifyDelay has expired to avoid too many wakeups
-    	if ((lastNotify + notifyDelay) <= now) { 
+    	if ((lastNotify + rowLogConfig.getNotifyDelay()) <= now) { 
     		lastNotify = now;
 	    	Collection<SubscriptionThread> threadsToWakeup;
 	        synchronized (subscriptionThreads) {
@@ -169,25 +188,29 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private volatile boolean stopRequested = false; // do not rely only on Thread.interrupt since some libraries eat interruptions
         private MessagesWorkQueue messagesWorkQueue = new MessagesWorkQueue();
         private SubscriptionHandler subscriptionHandler;
-        private String subscriptionId;
 		private long wakeupTimeout = 5000;
 		private long waitAtLeastUntil = 0;
+        private final RowLogSubscription subscription;
 
         public SubscriptionThread(RowLogSubscription subscription) {
             super("Row log SubscriptionThread for " + subscription.getId());
-            this.subscriptionId = subscription.getId();
-            this.metrics = new ProcessorMetrics(rowLog.getId()+"_"+subscriptionId);
+            this.subscription = subscription;
+            this.metrics = new ProcessorMetrics(rowLog.getId()+"_"+subscription.getId());
             switch (subscription.getType()) {
             case VM:
-                subscriptionHandler = new LocalListenersSubscriptionHandler(subscriptionId, messagesWorkQueue, rowLog, rowLogConfigurationManager);
+                subscriptionHandler = new LocalListenersSubscriptionHandler(subscription.getId(), messagesWorkQueue, rowLog, rowLogConfigurationManager);
                 break;
                 
             case Netty:
-                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscriptionId,  messagesWorkQueue, rowLog, rowLogConfigurationManager);
+                subscriptionHandler = new RemoteListenersSubscriptionHandler(subscription.getId(),  messagesWorkQueue, rowLog, rowLogConfigurationManager);
 
             default:
                 break;
             }
+        }
+        
+        public RowLogSubscription getSubscription() {
+            return subscription;
         }
         
         public synchronized void wakeup() {
@@ -216,7 +239,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                 while (!isInterrupted() && !stopRequested) {
                     try {
                         metrics.scans.inc();
-                        List<RowLogMessage> messages = shard.next(subscriptionId, minimalTimestamp);
+                        List<RowLogMessage> messages = shard.next(subscription.getId(), minimalTimestamp);
 
                         if (stopRequested) {
                             // Check if not stopped because HBase hides thread interruptions
@@ -233,7 +256,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                                 if (checkMinimalProcessDelay(message))
                                 	break; // Rescan the messages since they might have been processed in the meanwhile
                                 
-                                if (!rowLog.isMessageDone(message, subscriptionId) && !rowLog.isProblematic(message, subscriptionId)) {
+                                if (!rowLog.isMessageDone(message, subscription.getId()) && !rowLog.isProblematic(message, subscription.getId())) {
                                     // The above calls to isMessageDone and isProblematic pass into HBase client code,
                                     // which, if interrupted, continue what it is doing and does not re-assert
                                     // the thread's interrupted status. By checking here that stopRequested is false,
@@ -255,13 +278,15 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                                 }
                             }
                         }
+                    } catch (InterruptedException e) {
+                        return;
                     } catch (RowLogException e) {
                         // The message will be retried later
-                        log.info("Error processing message for subscription " + subscriptionId + " (message will be retried later).", e);
+                        log.info("Error processing message for subscription " + subscription.getId() + " (message will be retried later).", e);
                     } catch (Throwable t) {
                         if (Thread.currentThread().isInterrupted())
                             return;
-                        log.error("Error in subscription thread for " + subscriptionId, t);
+                        log.error("Error in subscription thread for " + subscription.getId(), t);
                     }
                 }
             } finally {
@@ -281,7 +306,7 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
         private boolean checkMinimalProcessDelay(RowLogMessage message) throws InterruptedException {
             long now = System.currentTimeMillis();
             long messageTimestamp = message.getTimestamp();
-            waitAtLeastUntil = messageTimestamp + minimalProcessDelay;
+            waitAtLeastUntil = messageTimestamp + rowLogConfig.getMinimalProcessDelay();
             if (now < waitAtLeastUntil) {
                 synchronized (this) {
                     wait(waitAtLeastUntil - now);
@@ -289,6 +314,16 @@ public class RowLogProcessorImpl implements RowLogProcessor, SubscriptionsObserv
                 return true;
    	}
         	return false;
+        }
+    }
+    
+    public void rowLogConfigChanged(RowLogConfig rowLogConfig) {
+        this.rowLogConfig = rowLogConfig;
+        if (!initialRowLogConfigLoaded.get()) {
+            synchronized(initialRowLogConfigLoaded) {
+                initialRowLogConfigLoaded.set(true);
+                initialRowLogConfigLoaded.notifyAll();
+            }
         }
     }
 }

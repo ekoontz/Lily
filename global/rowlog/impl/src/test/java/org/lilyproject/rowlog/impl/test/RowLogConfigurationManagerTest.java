@@ -31,6 +31,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lilyproject.rowlog.api.ListenersObserver;
 import org.lilyproject.rowlog.api.ProcessorNotifyObserver;
+import org.lilyproject.rowlog.api.RowLogConfig;
+import org.lilyproject.rowlog.api.RowLogObserver;
 import org.lilyproject.rowlog.api.RowLogSubscription;
 import org.lilyproject.rowlog.api.SubscriptionsObserver;
 import org.lilyproject.rowlog.api.RowLogSubscription.Type;
@@ -67,6 +69,69 @@ public class RowLogConfigurationManagerTest {
     }
 
     @Test
+    public void testRowLog() throws Exception {
+        String rowLogId = "testRowLogId";
+        String rowLogId2 = "testRowLogId2";
+        // Initialize
+        RowLogConfigurationManagerImpl rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
+        RowLogCallBack callBack = new RowLogCallBack();
+        Assert.assertTrue(callBack.rowLogConfig == null);
+        rowLogConfigurationManager.addRowLogObserver(rowLogId, callBack);
+
+        // After adding the observer we will receive an initial report of the subscriptions
+        callBack.validate();
+
+        // Add rowlog
+        callBack.expect(new RowLogConfig(10L, true, true, 100L, 5000L));
+        rowLogConfigurationManager.addRowLog(rowLogId, new RowLogConfig(10L, true, true, 100L, 5000L));
+        callBack.validate();
+        
+        RowLogCallBack callBack2 = new RowLogCallBack();
+        callBack2.expect(new RowLogConfig(10L, true, true, 100L, 5000L));
+        rowLogConfigurationManager.addRowLog(rowLogId2, new RowLogConfig(10L, true, true, 100L, 5000L));
+        rowLogConfigurationManager.addRowLogObserver(rowLogId2, callBack2);
+        callBack2.validate();
+        
+        // Update rowlog
+        callBack.expect(new RowLogConfig(11L, false, true, 200L, 9L));
+        rowLogConfigurationManager.updateRowLog(rowLogId, new RowLogConfig(11L, false, true, 200L, 9L));
+        callBack.validate();
+        
+        // Remove rowlog
+        callBack.expect(null);
+        rowLogConfigurationManager.removeRowLog(rowLogId);
+        callBack.validate();
+        
+        // RowLogId2 was not updated nor removed
+        callBack2.expect(new RowLogConfig(10L, true, true, 100L, 5000L));
+        callBack2.validate(); 
+    }
+    
+    private class RowLogCallBack implements RowLogObserver {
+        public RowLogConfig rowLogConfig;
+        private RowLogConfig expectedRowLogConfig;
+        private Semaphore semaphore = new Semaphore(0);
+        
+        public void rowLogConfigChanged(RowLogConfig rowLogConfig) {
+            this.rowLogConfig = rowLogConfig;
+            semaphore.release();
+        }
+
+        public void expect(RowLogConfig rowLogConfig) {
+            semaphore.drainPermits();
+            this.expectedRowLogConfig = rowLogConfig;
+        }
+        
+        public void validate() throws Exception{
+            semaphore.tryAcquire(3, TimeUnit.SECONDS);
+            if (expectedRowLogConfig == null)
+                Assert.assertNull(rowLogConfig);
+            else 
+                Assert.assertEquals(expectedRowLogConfig, rowLogConfig);
+        }
+    }
+
+    @Test
     public void testSubscription() throws Exception {
         String rowLogId = "testSubscriptionRowLogId";
         String subscriptionId1 = "testSubscriptionSubScriptionId1";
@@ -91,6 +156,10 @@ public class RowLogConfigurationManagerTest {
         callBack.expect(Arrays.asList(expectedSubscriptionContext, expectedSubscriptionContext2));
         rowLogConfigurationManager.addSubscription(rowLogId, subscriptionId2, Type.Netty, 5, 2);
         callBack.validate();
+        
+        // Update subscription
+        RowLogSubscription expectedSubscriptionContext3 = new RowLogSubscription(rowLogId, subscriptionId1, Type.Netty, 6, 7);
+        callBack.expect(Arrays.asList(expectedSubscriptionContext2, expectedSubscriptionContext3));
 
         // Remove subscription
         callBack.expect(Arrays.asList(expectedSubscriptionContext2));
