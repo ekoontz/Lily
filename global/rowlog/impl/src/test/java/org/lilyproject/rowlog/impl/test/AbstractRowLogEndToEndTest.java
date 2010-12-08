@@ -64,7 +64,7 @@ public abstract class AbstractRowLogEndToEndTest {
         // to be JVM-level).
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 120000);
         rowLogConfigurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        rowLogConfigurationManager.addRowLog("EndToEndRowLog", new RowLogConfig(1000L, true, true, 100L, 1000L));
+        rowLogConfigurationManager.addRowLog("EndToEndRowLog", new RowLogConfig(1000L, true, true, 100L, 0L));
         rowLog = new RowLogImpl("EndToEndRowLog", rowTable, RowLogTableUtil.PAYLOAD_COLUMN_FAMILY,
                 RowLogTableUtil.EXECUTIONSTATE_COLUMN_FAMILY, rowLogConfigurationManager);
         shard = new RowLogShardImpl("EndToEndShard", configuration, rowLog, 100);
@@ -140,7 +140,7 @@ public abstract class AbstractRowLogEndToEndTest {
 
     @Test(timeout=150000)
     public void testProblematicMessage() throws Exception {
-        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
+        RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row100"), null, null, null);
         validationListener.messagesToBehaveAsProblematic.add(message);
         validationListener.expectMessage(message, 3);
         validationListener.expectMessages(3);

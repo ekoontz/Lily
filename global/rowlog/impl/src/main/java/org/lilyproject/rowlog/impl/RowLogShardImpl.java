@@ -99,10 +99,10 @@ public class RowLogShardImpl implements RowLogShard {
     }
 
     public void removeMessage(RowLogMessage message, String subscription) throws RowLogException {
-        // There is a slight chance that when marking a message as problematic,
-        // the problematic message was put on the table, but the non-problematic
-        // message was not removed. So we always try to remove both.
         removeMessage(message, subscription, false);
+    }
+    
+    public void removeProblematicMessage(RowLogMessage message, String subscription) throws RowLogException {
         removeMessage(message, subscription, true);
     }
 
@@ -151,7 +151,7 @@ public class RowLogShardImpl implements RowLogShard {
                     byte[] rowKey = next.getRow();
                     if (!Bytes.startsWith(rowKey, rowPrefix)) {
                         keepScanning = false;
-                        break; // There were no messages for this consumer
+                        break; // There were no messages for this subscription
                     }
                     if (problematic) {
                         rowKey = Bytes.tail(rowKey, rowKey.length - PROBLEMATIC_MARKER.length);

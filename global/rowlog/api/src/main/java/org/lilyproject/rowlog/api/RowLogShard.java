@@ -83,6 +83,13 @@ public interface RowLogShard {
     void markProblematic(RowLogMessage message, String subscription) throws RowLogException;
     
     /**
+     * Removes a RowLogMessage from the set of problematic messages.
+     * 
+     * <p>This method does not transform a problematic message back to a normal message.
+     */
+    void removeProblematicMessage(RowLogMessage message, String subscription) throws RowLogException;
+
+    /**
      * Retrieves the messages that have been marked as problematic for the indicated subscription.
      * @param subscription the id of the subscription for which the problematic messages should be retrieved
      * @return all {@link RowLogMessage}s that have been marked as problematic
@@ -94,4 +101,5 @@ public interface RowLogShard {
      * Checks if a message has been marked as problematic on this shard for a certain subscription.
      */
     boolean isProblematic(RowLogMessage message, String subscription) throws RowLogException;
+
 }

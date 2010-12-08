@@ -74,10 +74,15 @@ public class ValidationMessageListener implements RowLogMessageListener {
         long waitUntil = System.currentTimeMillis() + timeout;
         RowLogShard shard = rowLog.getShards().get(0);
         List<RowLogMessage> messages = shard.next(subscriptionId);
-        while ((!messages.isEmpty() 
-//                || !expectedMessages.isEmpty() 
-                || (count < numberOfMessagesToBeExpected))
-                && System.currentTimeMillis() < waitUntil) {
+        while(true) {
+            if (System.currentTimeMillis() >= waitUntil) {
+                System.out.println("ValidationMessageListener#waitUntilMessagesConsumed: Timeout expired");
+                break;
+            }
+            if (messages.isEmpty() && count >= numberOfMessagesToBeExpected) {
+                System.out.println("ValidationMessageListener#waitUntilMessagesConsumed: No more messages and count reached");
+                break;
+            }
             Thread.sleep(1000);
             messages = shard.next(subscriptionId);
         }

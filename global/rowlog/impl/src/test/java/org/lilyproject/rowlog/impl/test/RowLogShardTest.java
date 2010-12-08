@@ -238,7 +238,7 @@ public class RowLogShardTest {
         
         assertTrue(shard.next(subscriptionId).isEmpty());
         
-        shard.removeMessage(message1, subscriptionId);
+        shard.removeProblematicMessage(message1, subscriptionId);
         assertTrue(shard.getProblematic(subscriptionId).isEmpty());
         assertTrue(shard.next(subscriptionId).isEmpty());
         control.verify();
