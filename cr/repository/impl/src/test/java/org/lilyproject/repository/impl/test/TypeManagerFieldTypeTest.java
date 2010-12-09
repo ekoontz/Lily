@@ -55,5 +55,4 @@ public class TypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTest {
     @After
     public void tearDown() throws Exception {
     }
-
 }

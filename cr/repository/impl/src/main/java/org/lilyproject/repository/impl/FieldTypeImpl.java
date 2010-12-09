@@ -24,6 +24,7 @@ import org.lilyproject.repository.api.ValueType;
 public class FieldTypeImpl implements FieldType {
 
     private String id;
+    private byte[] idBytes;
     private ValueType valueType;
     private QName name;
     private Scope scope;
@@ -37,14 +38,21 @@ public class FieldTypeImpl implements FieldType {
         this.valueType = valueType;
         this.name = name;
         this.scope = scope;
+        setIdBytes(id);
     }
 
+    private FieldTypeImpl(){}
+    
     public QName getName() {
         return name;
     }
 
     public String getId() {
         return id;
+    }
+    
+    protected byte[] getIdBytes() {
+        return idBytes;
     }
 
     public ValueType getValueType() {
@@ -57,6 +65,14 @@ public class FieldTypeImpl implements FieldType {
 
     public void setId(String id) {
         this.id = id;
+        setIdBytes(id);
+    }
+    
+    private void setIdBytes(String id) {
+        if (id == null)
+            this.idBytes = null;
+        else 
+            this.idBytes = HBaseTypeManager.idToBytes(id);
     }
     
     public void setName(QName name) {
@@ -72,7 +88,13 @@ public class FieldTypeImpl implements FieldType {
     }
     
     public FieldType clone() {
-        return new FieldTypeImpl(this.id, this.valueType, this.name, this.scope);
+        FieldTypeImpl newFieldType = new FieldTypeImpl();
+        newFieldType.id = this.id;
+        newFieldType.idBytes = this.idBytes;
+        newFieldType.valueType = this.valueType;
+        newFieldType.name = this.name;
+        newFieldType.scope = this.scope;
+        return newFieldType;
     }
 
     @Override

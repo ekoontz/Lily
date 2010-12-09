@@ -48,7 +48,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
         fieldType = typeManager.createFieldType(fieldType);
         assertFalse(fieldType.getId().equals(id));
     }
-
+    
     @Test
     public void testCreateSameNameFails() throws Exception {
         QName name = new QName(null, "testCreateSameNameFails");

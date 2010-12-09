@@ -396,8 +396,8 @@ public class HBaseRepository implements Repository {
                 byte[] versionBytes = Bytes.toBytes(version);
                 put.add(systemColumnFamilies.get(Scope.NON_VERSIONED), RecordColumn.VERSION.bytes, 1L, versionBytes);
                 if (VersionTag.hasLastVTag(recordType, typeManager) || VersionTag.hasLastVTag(record, typeManager) || VersionTag.hasLastVTag(originalRecord, typeManager)) {
-                    FieldType lastVTagType = VersionTag.getLastVTagType(typeManager);
-                    put.add(columnFamilies.get(Scope.NON_VERSIONED), Bytes.toBytes(lastVTagType.getId()), 1L, encodeFieldValue(lastVTagType, version));
+                    FieldTypeImpl lastVTagType = (FieldTypeImpl)VersionTag.getLastVTagType(typeManager);
+                    put.add(columnFamilies.get(Scope.NON_VERSIONED), lastVTagType.getIdBytes(), 1L, encodeFieldValue(lastVTagType, version));
                     record.setField(lastVTagType.getName(), version);
                 }
             }
@@ -488,9 +488,9 @@ public class HBaseRepository implements Repository {
             boolean fieldIsNew = !originalFields.containsKey(fieldName);
             Object originalValue = originalFields.get(fieldName);
             if (fieldIsNew || ((newValue == null) && (originalValue != null)) || !newValue.equals(originalValue)) {
-                FieldType fieldType = typeManager.getFieldTypeByName(fieldName);
+                FieldTypeImpl fieldType = (FieldTypeImpl)typeManager.getFieldTypeByName(fieldName);
                 Scope scope = fieldType.getScope();
-                byte[] fieldIdAsBytes = Bytes.toBytes(fieldType.getId());
+                byte[] fieldIdAsBytes = fieldType.getIdBytes();
                 byte[] encodedFieldValue = encodeFieldValue(fieldType, newValue);
 
                 if (Scope.NON_VERSIONED.equals(scope)) {
@@ -610,10 +610,9 @@ public class HBaseRepository implements Repository {
             throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException {
         Object originalNextValue = originalNextFields.get(fieldName);
         if ((originalValue == null && originalNextValue == null) || originalValue.equals(originalNextValue)) {
-            FieldType fieldType = typeManager.getFieldTypeByName(fieldName);
-            byte[] fieldIdBytes = Bytes.toBytes(fieldType.getId());
+            FieldTypeImpl fieldType = (FieldTypeImpl)typeManager.getFieldTypeByName(fieldName);
             byte[] encodedValue = encodeFieldValue(fieldType, originalValue);
-            put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldIdBytes, version + 1, encodedValue);
+            put.add(columnFamilies.get(Scope.VERSIONED_MUTABLE), fieldType.getIdBytes(), version + 1, encodedValue);
         }
     }
 
@@ -895,8 +894,7 @@ public class HBaseRepository implements Repository {
         if (EncodingUtil.isDeletedField(prefixedValue)) {
             return null;
         }
-        String fieldId = Bytes.toString(key);
-        FieldType fieldType = typeManager.getFieldTypeById(fieldId);
+        FieldType fieldType = typeManager.getFieldTypeById(HBaseTypeManager.idFromBytes(key));
         context.addFieldType(fieldType);
         ValueType valueType = fieldType.getValueType();
         Object value = valueType.fromBytes(EncodingUtil.stripPrefix(prefixedValue));
@@ -907,7 +905,7 @@ public class HBaseRepository implements Repository {
         boolean added = false;
         if (fields != null) {
             for (FieldType field : fields) {
-                get.addColumn(columnFamilies.get(field.getScope()), Bytes.toBytes(field.getId()));
+                get.addColumn(columnFamilies.get(field.getScope()), ((FieldTypeImpl)field).getIdBytes());
                 added = true;
             }
         }

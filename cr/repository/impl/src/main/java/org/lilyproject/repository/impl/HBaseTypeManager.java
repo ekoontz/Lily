@@ -432,7 +432,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
 
     public FieldType updateFieldType(FieldType fieldType) throws FieldTypeNotFoundException, FieldTypeUpdateException,
             TypeException {
-        byte[] rowId = idToBytes(fieldType.getId());
+        byte[] rowId = ((FieldTypeImpl)fieldType).getIdBytes();
         try {
             // Do an exists check first and avoid useless creation of the row
             // due to an incrementColumnValue call
@@ -513,8 +513,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         try {
             scanner = getTypeTable().getScanner(TypeCf.DATA.bytes, TypeColumn.FIELDTYPE_NAME.bytes);
             for (Result result : scanner) {
-                String id = idFromBytes(result.getRow());
-                FieldType fieldType = getFieldTypeByIdWithoutCache(id);
+                FieldType fieldType = getFieldTypeByIdWithoutCache(idFromBytes(result.getRow()));
                 fieldTypes.add(fieldType);
             }
         } finally {
@@ -530,8 +529,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         try {
             scanner = getTypeTable().getScanner(TypeCf.DATA.bytes, TypeColumn.RECORDTYPE_NAME.bytes);
             for (Result result : scanner) {
-                String id = idFromBytes(result.getRow());
-                RecordType recordType = getRecordTypeByIdWithoutCache(id, null);
+                RecordType recordType = getRecordTypeByIdWithoutCache(idFromBytes(result.getRow()), null);
                 recordTypes.add(recordType);
             }
         } finally {
@@ -579,7 +577,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return rowId;
     }
 
-    private byte[] idToBytes(String id) {
+    protected static byte[] idToBytes(String id) {
         UUID uuid = UUID.fromString(id);
         byte[] rowId;
         rowId = new byte[16];
@@ -588,7 +586,7 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
         return rowId;
     }
 
-    private String idFromBytes(byte[] bytes) {
+    protected static String idFromBytes(byte[] bytes) {
         UUID uuid = new UUID(Bytes.toLong(bytes, 0, 8), Bytes.toLong(bytes, 8, 8));
         return uuid.toString();
     }
