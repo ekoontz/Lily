@@ -19,10 +19,10 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
+import java.util.UUID;
+
 import org.junit.Test;
 import org.lilyproject.repository.api.*;
-import org.lilyproject.repository.api.FieldTypeExistsException;
-import org.lilyproject.repository.api.FieldTypeUpdateException;
 
 public abstract class AbstractTypeManagerFieldTypeTest {
 
@@ -42,7 +42,7 @@ public abstract class AbstractTypeManagerFieldTypeTest {
 
     @Test
     public void testCreateIgnoresGivenId() throws Exception {
-        String id = "IgnoreId";
+        String id = UUID.randomUUID().toString();
         ValueType valueType = typeManager.getValueType("STRING", false, false);
         FieldType fieldType = typeManager.newFieldType(id, valueType , new QName(null, "aName"), Scope.VERSIONED_MUTABLE);
         fieldType = typeManager.createFieldType(fieldType);

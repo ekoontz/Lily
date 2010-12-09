@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -155,14 +156,15 @@ public class AvroConverterTest {
         typeManager.getValueType("STRING", true, true);
         expectLastCall().andReturn(valueType);
         QName name = new QName("aNamespace", "aName");
-        FieldType fieldType = new FieldTypeImpl("fieldTypeId", valueType , name, Scope.NON_VERSIONED);
-        typeManager.newFieldType("fieldTypeId", valueType, name, Scope.NON_VERSIONED);
+        String fieldTypeId = UUID.randomUUID().toString();
+        FieldType fieldType = new FieldTypeImpl(fieldTypeId, valueType , name, Scope.NON_VERSIONED);
+        typeManager.newFieldType(fieldTypeId, valueType, name, Scope.NON_VERSIONED);
         expectLastCall().andReturn(fieldType);
 
         control.replay();
                 converter = new AvroConverter();        converter.setRepository(repository);
         AvroFieldType avroFieldType = new AvroFieldType();
-        avroFieldType.id = "fieldTypeId";
+        avroFieldType.id = fieldTypeId;
         AvroQName avroQName = new AvroQName();
         avroQName.namespace = "aNamespace";
         avroQName.name = "aName";

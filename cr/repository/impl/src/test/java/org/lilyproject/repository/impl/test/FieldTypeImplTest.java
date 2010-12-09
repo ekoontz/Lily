@@ -19,6 +19,8 @@ package org.lilyproject.repository.impl.test;
 import static org.easymock.classextension.EasyMock.createControl;
 import static org.junit.Assert.assertEquals;
 
+import java.util.UUID;
+
 import org.easymock.classextension.IMocksControl;
 import org.junit.After;
 import org.junit.Test;
@@ -46,7 +48,7 @@ public class FieldTypeImplTest {
     public void testClone() {
         ValueType valueType = control.createMock(ValueType.class);
         control.replay();
-        FieldType fieldType = new FieldTypeImpl("id", valueType, new QName("DS9", "name"), Scope.VERSIONED);
+        FieldType fieldType = new FieldTypeImpl(UUID.randomUUID().toString(), valueType, new QName("DS9", "name"), Scope.VERSIONED);
         assertEquals(fieldType, fieldType.clone());
         assertEquals(fieldType, fieldType.clone());
         control.verify();
