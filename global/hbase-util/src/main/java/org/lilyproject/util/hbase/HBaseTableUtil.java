@@ -32,11 +32,8 @@ public class HBaseTableUtil {
         } catch (TableNotFoundException e) {
             try {
                 HTableDescriptor tableDescriptor = new HTableDescriptor(Table.RECORD.bytes);
-                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.NON_VERSIONED_SYSTEM.bytes));
-                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED_SYSTEM.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
-                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.NON_VERSIONED.bytes));
-                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
-                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.VERSIONED_MUTABLE.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.SYSTEM.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
+                tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.DATA.bytes, HConstants.ALL_VERSIONS, "none", false, true, HConstants.FOREVER, HColumnDescriptor.DEFAULT_BLOOMFILTER));
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.WAL_PAYLOAD.bytes));
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.WAL_STATE.bytes));
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.MQ_PAYLOAD.bytes));

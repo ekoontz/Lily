@@ -24,11 +24,8 @@ public class LilyHBaseSchema {
      * Column families in the record table.
      */
     public static enum RecordCf {
-        NON_VERSIONED("nonversioned"),
-        NON_VERSIONED_SYSTEM("system-nonversioned"),
-        VERSIONED("versioned"),
-        VERSIONED_MUTABLE("versioned-mutable"),
-        VERSIONED_SYSTEM("system-versioned"),
+        DATA("data"),
+        SYSTEM("system"),
         WAL_PAYLOAD("wal-payload"),
         WAL_STATE("wal-state"),
         MQ_PAYLOAD("mq-payload"),

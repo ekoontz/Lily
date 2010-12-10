@@ -83,11 +83,11 @@ public class BatchIndexBuilder {
         // Define the HBase scanner
         //
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        filterList.addFilter(new SingleColumnValueFilter(RecordCf.NON_VERSIONED_SYSTEM.bytes,
+        filterList.addFilter(new SingleColumnValueFilter(RecordCf.SYSTEM.bytes,
                 RecordColumn.DELETED.bytes, CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes(true)));
         Scan scan = new Scan();
         scan.setFilter(filterList);
-        scan.addColumn(RecordCf.NON_VERSIONED_SYSTEM.bytes, RecordColumn.DELETED.bytes);
+        scan.addColumn(RecordCf.SYSTEM.bytes, RecordColumn.DELETED.bytes);
 
         TableMapReduceUtil.initTableMapperJob(Table.RECORD.name, scan,
             IndexingMapper.class, null, null, job);

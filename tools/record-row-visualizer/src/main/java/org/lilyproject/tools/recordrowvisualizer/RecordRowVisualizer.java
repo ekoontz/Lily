@@ -17,6 +17,7 @@ import org.kauriproject.template.source.SourceResolver;
 import org.lilyproject.cli.BaseZkCliTool;
 import org.lilyproject.repository.api.IdGenerator;
 import org.lilyproject.repository.api.RecordId;
+import org.lilyproject.repository.api.Scope;
 import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.impl.HBaseTypeManager;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
@@ -96,11 +97,9 @@ public class RecordRowVisualizer extends BaseZkCliTool {
 
         NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long,byte[]>>> root = row.getMap();
 
-        readNonVersionedSystemFields(root.get(RecordCf.NON_VERSIONED_SYSTEM.bytes));
-        readNonVersionedFields(root.get(RecordCf.NON_VERSIONED.bytes));
+        readSystemFields(root.get(RecordCf.SYSTEM.bytes));
 
-        readVersionedSystemFields(root.get(RecordCf.VERSIONED_SYSTEM.bytes));
-        readVersionedFields(root.get(RecordCf.VERSIONED.bytes));
+        readFields(root.get(RecordCf.DATA.bytes));
 
         readExecutionState(recordRow.mqState, root.get(RecordCf.MQ_STATE.bytes));
         readPayload(recordRow.mqPayload, root.get(RecordCf.MQ_PAYLOAD.bytes));
@@ -109,10 +108,8 @@ public class RecordRowVisualizer extends BaseZkCliTool {
         readPayload(recordRow.walPayload, root.get(RecordCf.WAL_PAYLOAD.bytes));
 
         byte[][] treatedColumnFamilies = {
-                RecordCf.NON_VERSIONED_SYSTEM.bytes,
-                RecordCf.VERSIONED_SYSTEM.bytes,
-                RecordCf.NON_VERSIONED.bytes,
-                RecordCf.VERSIONED.bytes,
+                RecordCf.SYSTEM.bytes,
+                RecordCf.DATA.bytes,
                 RecordCf.MQ_STATE.bytes,
                 RecordCf.MQ_PAYLOAD.bytes,
                 RecordCf.WAL_STATE.bytes,
@@ -139,16 +136,22 @@ public class RecordRowVisualizer extends BaseZkCliTool {
         return false;
     }
 
-    private void readNonVersionedSystemFields(NavigableMap<byte[], NavigableMap<Long, byte[]>> cf) throws Exception {
+    private void readSystemFields(NavigableMap<byte[], NavigableMap<Long, byte[]>> cf) throws Exception {
         for (Map.Entry<byte[], NavigableMap<Long, byte[]>> columnEntry : cf.entrySet()) {
             byte[] columnKey = columnEntry.getKey();
 
+            
+            
             if (Arrays.equals(columnKey, RecordColumn.DELETED.bytes)) {
                 setVersionedValue(recordRow.deleted, columnEntry.getValue(), BOOLEAN_DECODER);
             } else if (Arrays.equals(columnKey, RecordColumn.NON_VERSIONED_RT_ID.bytes)) {
                 setTypeId(recordRow.nvRecordType, columnEntry.getValue());
             } else if (Arrays.equals(columnKey, RecordColumn.NON_VERSIONED_RT_VERSION.bytes)) {
                 setTypeVersion(recordRow.nvRecordType, columnEntry.getValue());
+            } else if (Arrays.equals(columnKey, RecordColumn.VERSIONED_RT_ID.bytes)) {
+                setTypeId(recordRow.vRecordType, columnEntry.getValue());
+            } else if (Arrays.equals(columnKey, RecordColumn.VERSIONED_RT_VERSION.bytes)) {
+                    setTypeVersion(recordRow.vRecordType, columnEntry.getValue());
             } else if (Arrays.equals(columnKey, RecordColumn.LOCK.bytes)) {
                 setVersionedValue(recordRow.lock, columnEntry.getValue(), BASE64_DECODER);
             } else if (Arrays.equals(columnKey, RecordColumn.VERSION.bytes)) {
@@ -161,38 +164,18 @@ public class RecordRowVisualizer extends BaseZkCliTool {
         for (Type type : recordRow.nvRecordType.getValues().values()) {
             type.object = typeMgr.getRecordTypeById(type.getId(), type.getVersion());
         }
-    }
-
-    private void readVersionedSystemFields(NavigableMap<byte[], NavigableMap<Long, byte[]>> cf) throws Exception {
-        for (Map.Entry<byte[], NavigableMap<Long, byte[]>> columnEntry : cf.entrySet()) {
-            byte[] columnKey = columnEntry.getKey();
-
-            if (Arrays.equals(columnKey, RecordColumn.VERSIONED_RT_ID.bytes)) {
-                setTypeId(recordRow.vRecordType, columnEntry.getValue());
-            } else if (Arrays.equals(columnKey, RecordColumn.VERSIONED_RT_VERSION.bytes)) {
-                setTypeVersion(recordRow.vRecordType, columnEntry.getValue());
-            } else {
-                recordRow.unknownVColumns.add(Bytes.toString(columnKey));
-            }
-        }
-
+        
         for (Type type : recordRow.vRecordType.getValues().values()) {
             type.object = typeMgr.getRecordTypeById(type.getId(), type.getVersion());
         }
     }
 
-    private void readVersionedFields(NavigableMap<byte[], NavigableMap<Long,byte[]>> cf) throws Exception {
+    private void readFields(NavigableMap<byte[], NavigableMap<Long,byte[]>> cf) throws Exception {
         if (cf == null)
             return;
 
-        recordRow.vFields = new Fields(cf, typeMgr);
-    }
-
-    private void readNonVersionedFields(NavigableMap<byte[], NavigableMap<Long,byte[]>> cf) throws Exception {
-        if (cf == null)
-            return;
-
-        recordRow.nvFields = new Fields(cf, typeMgr);
+        recordRow.nvFields = new Fields(cf, typeMgr, Scope.NON_VERSIONED);
+        recordRow.vFields = new Fields(cf, typeMgr, Scope.VERSIONED);
     }
 
     private void readExecutionState(Map<RowLogKey, List<ExecutionData>> stateByKey, NavigableMap<byte[], NavigableMap<Long, byte[]>> cf) throws IOException {

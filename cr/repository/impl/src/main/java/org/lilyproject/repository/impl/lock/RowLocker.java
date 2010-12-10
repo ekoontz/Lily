@@ -59,7 +59,7 @@ public class RowLocker {
         if ((previousTimestamp == -1) || (previousTimestamp + timeout  < now)) {
             Put put = new Put(rowKey, hbaseRowLock);
             RowLock rowLock = RowLock.createRowLock(rowKey);
-            put.add(family, qualifier, rowLock.getPermit());
+            put.add(family, qualifier, 1L, rowLock.getPermit());
             if (table.checkAndPut(rowKey, family, qualifier, previousPermit, put)) {
                 return rowLock;
             }
@@ -70,7 +70,7 @@ public class RowLocker {
     public void unlockRow(RowLock lock) throws IOException {
         byte[] rowKey = lock.getRowKey();
         Put put = new Put(rowKey);
-        put.add(family, qualifier, Bytes.toBytes(-1L));
+        put.add(family, qualifier, 1L, Bytes.toBytes(-1L));
         table.checkAndPut(rowKey, family, qualifier, lock.getPermit(), put); // If it fails, we already lost the lock
     }
     

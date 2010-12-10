@@ -2,8 +2,10 @@ package org.lilyproject.tools.recordrowvisualizer;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.lilyproject.repository.api.FieldType;
+import org.lilyproject.repository.api.Scope;
 import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.impl.EncodingUtil;
+import org.lilyproject.repository.impl.HBaseTypeManager;
 
 import java.util.*;
 
@@ -15,46 +17,49 @@ public class Fields {
 
     Object DELETED = new Object();
 
-    public Fields(NavigableMap<byte[], NavigableMap<Long,byte[]>> cf, TypeManager typeMgr) throws Exception {
+    public Fields(NavigableMap<byte[], NavigableMap<Long,byte[]>> cf, TypeManager typeMgr, Scope scope) throws Exception {
         // The fields are rotated so that the version is the primary point of access.
         // Also, field values are decoded, etc. 
         for (Map.Entry<byte[], NavigableMap<Long,byte[]>> entry : cf.entrySet()) {
             byte[] column = entry.getKey();
-            String fieldId = Bytes.toString(column);
+            UUID uuid = new UUID(Bytes.toLong(column, 0, 8), Bytes.toLong(column, 8, 8));
+            String fieldId = uuid.toString();
 
             for (Map.Entry<Long, byte[]> columnEntry : entry.getValue().entrySet()) {
                 long version = columnEntry.getKey();
                 byte[] value = columnEntry.getValue();
 
-                Map<String, Object> columns = values.get(version);
-                if (columns == null) {
-                    columns = new HashMap<String, Object>();
-                    values.put(version, columns);
-                }
+                FieldType fieldType = registerFieldType(fieldId, typeMgr, scope);
 
-                FieldType fieldType = registerFieldType(fieldId, typeMgr);
+                if (fieldType != null) {
+                    Map<String, Object> columns = values.get(version);
+                    if (columns == null) {
+                        columns = new HashMap<String, Object>();
+                        values.put(version, columns);
+                    }
 
-                Object decodedValue;
-                if (EncodingUtil.isDeletedField(value)) {
-                    decodedValue = DELETED;
-                } else {
-                    decodedValue = fieldType.getValueType().fromBytes(EncodingUtil.stripPrefix(value));
-                }
-
-                columns.put(fieldId, decodedValue);
-
-                if (version > maxVersion) {
-                    maxVersion = version;
-                }
-
-                if (version < minVersion) {
-                    minVersion = version;
+                    Object decodedValue;
+                    if (EncodingUtil.isDeletedField(value)) {
+                        decodedValue = DELETED;
+                    } else {
+                        decodedValue = fieldType.getValueType().fromBytes(EncodingUtil.stripPrefix(value));
+                    }
+    
+                    columns.put(fieldId, decodedValue);
+    
+                    if (version > maxVersion) {
+                        maxVersion = version;
+                    }
+    
+                    if (version < minVersion) {
+                        minVersion = version;
+                    }
                 }
             }
         }
     }
 
-    private FieldType registerFieldType(String fieldId, TypeManager typeMgr) throws Exception {
+    private FieldType registerFieldType(String fieldId, TypeManager typeMgr, Scope scope) throws Exception {
         for (Type<FieldType> entry : fields) {
             if (entry.id.equals(fieldId))
                 return entry.object;
@@ -63,9 +68,13 @@ public class Fields {
         Type<FieldType> type = new Type<FieldType>();
         type.id = fieldId;
         type.object = typeMgr.getFieldTypeById(fieldId);
-        fields.add(type);
-
-        return type.object;
+        
+        // Filter the scope
+        if (scope.equals(type.object.getScope())) {
+            fields.add(type);
+            return type.object;
+        }
+        return null;
     }
 
     public List<Type<FieldType>> getFieldTypes() {
