@@ -443,7 +443,10 @@ public class HBaseRepository implements Repository {
         Set<Scope> changedScopes = new HashSet<Scope>();
         
         Map<QName, Object> fields = getFieldsToUpdate(record);
+        
         changedScopes.addAll(calculateUpdateFields(fields, originalFields, null, version, put, recordEvent));
+        
+        // Update record types
         for (Scope scope : changedScopes) {
             if (Scope.NON_VERSIONED.equals(scope)) {
                 put.add(systemColumnFamily, recordTypeIdColumnNames.get(scope), 1L, Bytes.toBytes(recordType
@@ -479,9 +482,12 @@ public class HBaseRepository implements Repository {
         for (Entry<QName, Object> field : fields.entrySet()) {
             QName fieldName = field.getKey();
             Object newValue = field.getValue();
-            boolean fieldIsNew = !originalFields.containsKey(fieldName);
+            boolean fieldIsNewOrDeleted = !originalFields.containsKey(fieldName);
             Object originalValue = originalFields.get(fieldName);
-            if (fieldIsNew || ((newValue == null) && (originalValue != null)) || !newValue.equals(originalValue)) {
+            if (!(
+                    ((newValue == null) && (originalValue == null))         // Don't update if both are null
+                    || (isDeleteMarker(newValue) && fieldIsNewOrDeleted)    // Don't delete if it doesn't exist
+                    || (newValue.equals(originalValue)))) {                 // Don't update if they didn't change
                 FieldTypeImpl fieldType = (FieldTypeImpl)typeManager.getFieldTypeByName(fieldName);
                 Scope scope = fieldType.getScope();
                 byte[] fieldIdAsBytes = fieldType.getIdBytes();
@@ -491,7 +497,7 @@ public class HBaseRepository implements Repository {
                     put.add(columnFamily, fieldIdAsBytes, 1L, encodedFieldValue);
                 } else {
                     put.add(columnFamily, fieldIdAsBytes, version, encodedFieldValue);
-                    if (originalNextFields != null && !fieldIsNew && originalNextFields.containsKey(fieldName)) {
+                    if (originalNextFields != null && !fieldIsNewOrDeleted && originalNextFields.containsKey(fieldName)) {
                         copyValueToNextVersionIfNeeded(version, put, originalNextFields, fieldName, originalValue);
                     }
                 }
@@ -504,9 +510,13 @@ public class HBaseRepository implements Repository {
         return changedScopes;
     }
 
+    private boolean updateNeeded(Object newValue, boolean fieldIsNewOrDeleted, Object originalValue) {
+        return (!(((newValue == null) && (originalValue == null)) || (isDeleteMarker(newValue) && fieldIsNewOrDeleted) || (newValue.equals(originalValue))));
+    }
+    
     private byte[] encodeFieldValue(FieldType fieldType, Object fieldValue) throws FieldTypeNotFoundException,
             RecordTypeNotFoundException, RecordException {
-        if ((fieldValue instanceof byte[]) && Arrays.equals(DELETE_MARKER, (byte[])fieldValue))
+        if (isDeleteMarker(fieldValue))
             return DELETE_MARKER;
         ValueType valueType = fieldType.getValueType();
 
@@ -514,6 +524,10 @@ public class HBaseRepository implements Repository {
         byte[] encodedFieldValue = valueType.toBytes(fieldValue);
         encodedFieldValue = EncodingUtil.prefixValue(encodedFieldValue, EXISTS_FLAG);
         return encodedFieldValue;
+    }
+
+    private boolean isDeleteMarker(Object fieldValue) {
+        return (fieldValue instanceof byte[]) && Arrays.equals(DELETE_MARKER, (byte[])fieldValue);
     }
 
     private Record updateMutableFields(Record record, boolean latestRecordType) throws InvalidRecordException, RecordNotFoundException,
