@@ -64,6 +64,17 @@ public class PrintHostTool extends BaseCliTool {
         InetSocketAddress ad = new InetSocketAddress(cn, 1234);
         System.out.println("Address of the canonical host name: " + ad.getAddress().getHostAddress());
 
+        System.out.println();
+        System.out.println("If you use the hostname \"" + cn + "\" in your ZooKeeper connection");
+        System.out.println("string, it is interesting to know that what ZooKeeper actually does");
+        System.out.println("is retrieving all IP addresses of all hosts listed in the ZK connection");
+        System.out.println("string, and then it picks one out of these to connect to.");
+        System.out.println("These are all the IP-addresses coupled to " + cn + ":");
+        InetAddress addrs[] = InetAddress.getAllByName(cn);
+        for (InetAddress addr : addrs) {
+            System.out.println("  " + addr.getHostAddress());
+        }
+        
         return 0;
     }
 }
