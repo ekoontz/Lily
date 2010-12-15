@@ -221,7 +221,7 @@ public class IndexerConfBuilder {
         return varPropsPattern;
     }
 
-    private Set<String> parseVersionTags(String vtagsSpec) throws IndexerConfException {
+    private Set<String> parseVersionTags(String vtagsSpec) throws IndexerConfException, InterruptedException {
         Set<String> vtags = new HashSet<String>();
 
         if (vtagsSpec == null)
@@ -385,7 +385,7 @@ public class IndexerConfBuilder {
         return new QName(uri, localName);
     }
 
-    private String getFieldTypeId(String qname, Element contextEl) throws IndexerConfException {
+    private String getFieldTypeId(String qname, Element contextEl) throws IndexerConfException, InterruptedException {
         QName parsedQName = parseQName(qname, contextEl);
 
         try {
@@ -397,7 +397,7 @@ public class IndexerConfBuilder {
         }
     }
 
-    private FieldType getFieldType(String qname, Element contextEl) throws IndexerConfException {
+    private FieldType getFieldType(String qname, Element contextEl) throws IndexerConfException, InterruptedException {
         QName parsedQName = parseQName(qname, contextEl);
 
         try {

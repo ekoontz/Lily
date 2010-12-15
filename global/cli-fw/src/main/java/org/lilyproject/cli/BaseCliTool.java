@@ -21,6 +21,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.lilyproject.util.exception.StackTracePrinter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,7 +61,7 @@ public abstract class BaseCliTool {
     }
 
     protected void reportThrowable(Throwable throwable) {
-        throwable.printStackTrace();
+        StackTracePrinter.printStackTrace(throwable);
     }
 
     /**
@@ -105,6 +106,9 @@ public abstract class BaseCliTool {
     private void setupLogging() {
         Logger rootLogger = Logger.getRootLogger();
         rootLogger.setLevel(Level.WARN);
+
+        Logger log = Logger.getLogger("org.lilyproject.client");
+        log.setLevel(Level.INFO);
 
         final String CONSOLE_LAYOUT = "[%-5p][%d{ABSOLUTE}][%-10.10t] %c - %m%n";
 

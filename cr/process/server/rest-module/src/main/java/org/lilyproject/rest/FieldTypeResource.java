@@ -36,7 +36,7 @@ public class FieldTypeResource extends RepositoryEnabled {
             return repository.getTypeManager().getFieldTypeByName(qname);
         } catch (FieldTypeNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (TypeException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading field type with name " + qname, e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
@@ -53,7 +53,7 @@ public class FieldTypeResource extends RepositoryEnabled {
         try {
             result = FieldTypeImport.importFieldType(fieldType, ImportMode.CREATE_OR_UPDATE, IdentificationMode.NAME,
                     qname, repository.getTypeManager());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error creating or updating field type named " + qname, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }

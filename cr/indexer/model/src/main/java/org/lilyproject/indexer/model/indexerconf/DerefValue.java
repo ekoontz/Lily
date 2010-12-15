@@ -32,7 +32,7 @@ public class DerefValue extends BaseValue {
     /**
      * This method should be called after all follow-expressions have been added.
      */
-    protected void init(TypeManager typeManager) {
+    protected void init(TypeManager typeManager) throws TypeException {
         follows = Collections.unmodifiableList(follows);
 
         // In case the deref field itself is not multi-valued, but one of the follow-fields is multivalued,

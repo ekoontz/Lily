@@ -119,7 +119,7 @@ public class JsonImport {
     }
 
     public FieldType importFieldType(JsonNode node) throws RepositoryException, ImportConflictException,
-            ImportException, JsonFormatException {
+            ImportException, JsonFormatException, InterruptedException {
 
         if (!node.isObject()) {
             throw new ImportException("Field type should be specified as object node.");
@@ -154,7 +154,8 @@ public class JsonImport {
         return fieldType;
     }
 
-    public RecordType importRecordType(JsonNode node) throws RepositoryException, ImportException, JsonFormatException {
+    public RecordType importRecordType(JsonNode node) throws RepositoryException, ImportException, JsonFormatException,
+            InterruptedException {
 
         if (!node.isObject()) {
             throw new ImportException("Record type should be specified as object node.");
@@ -164,7 +165,8 @@ public class JsonImport {
         return importRecordType(recordType);
     }
 
-    public RecordType importRecordType(RecordType recordType) throws RepositoryException, ImportException, JsonFormatException {
+    public RecordType importRecordType(RecordType recordType) throws RepositoryException, ImportException,
+            JsonFormatException, InterruptedException {
 
         if (recordType.getName() == null) {
             throw new ImportException("Missing name property on record type.");
@@ -191,7 +193,8 @@ public class JsonImport {
         return recordType;
     }
 
-    private Record importRecord(JsonNode node) throws RepositoryException, ImportException, JsonFormatException {
+    private Record importRecord(JsonNode node) throws RepositoryException, ImportException, JsonFormatException,
+            InterruptedException {
 
         if (!node.isObject()) {
             throw new ImportException("Record should be specified as object node.");

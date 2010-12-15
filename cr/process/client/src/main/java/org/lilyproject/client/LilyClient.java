@@ -62,6 +62,7 @@ public class LilyClient implements Closeable {
     private boolean managedZk;
     private List<ServerNode> servers = Collections.synchronizedList(new ArrayList<ServerNode>());
     private Set<String> serverAddresses = new HashSet<String>();
+    private RetryConf retryConf = new RetryConf();
     private static final String nodesPath = "/lily/repositoryNodes";
     private static final String blobDfsUriPath = "/lily/blobStoresConfig/dfsUri";
     private static final String blobHBaseZkQuorumPath = "/lily/blobStoresConfig/hbaseZkQuorum";
@@ -71,29 +72,31 @@ public class LilyClient implements Closeable {
 
     private ZkWatcher watcher = new ZkWatcher();
 
+    private Repository balancingAndRetryingRepository = BalancingAndRetryingRepository.getInstance(this);
+
     public LilyClient(ZooKeeperItf zk) throws IOException, InterruptedException, KeeperException,
-            ZkConnectException, ServerUnavailableException {
+            ZkConnectException, NoServersException {
         this.zk = zk;
         init();
     }
 
     /**
      *
-     * @throws ServerUnavailableException if the znode under which the repositories are published does not exist
+     * @throws NoServersException if the znode under which the repositories are published does not exist
      */
     public LilyClient(String zookeeperConnectString, int sessionTimeout) throws IOException, InterruptedException,
-            KeeperException, ZkConnectException, ServerUnavailableException {
+            KeeperException, ZkConnectException, NoServersException {
         managedZk = true;
         zk = ZkUtil.connect(zookeeperConnectString, sessionTimeout);
         init();
     }
 
-    private void init() throws InterruptedException, KeeperException, ServerUnavailableException {
+    private void init() throws InterruptedException, KeeperException, NoServersException {
         zk.addDefaultWatcher(watcher);
         refreshServers();
         Stat stat = zk.exists(nodesPath, false);
         if (stat == null) {
-            throw new ServerUnavailableException("Repositories znode does not exist in ZooKeeper: " + nodesPath);
+            throw new NoServersException("Repositories znode does not exist in ZooKeeper: " + nodesPath);
         }
     }
 
@@ -109,18 +112,41 @@ public class LilyClient implements Closeable {
         }
     }
 
-    public synchronized Repository getRepository() throws IOException, ServerUnavailableException, InterruptedException, KeeperException {
+    /**
+     * Returns a Repository that uses one of the available Lily servers (randomly selected).
+     * This repository instance will not automatically retry operations and to balance requests
+     * over multiple Lily servers, you need to recall this method regularly to retrieve other
+     * repository instances. Most of the time, you will rather use {@link #getRepository()}.
+     */
+    public synchronized Repository getPlainRepository() throws IOException, NoServersException, InterruptedException, KeeperException {
         if (servers.size() == 0) {
-            throw new ServerUnavailableException("No servers available");
+            throw new NoServersException("No servers available");
         }
         int pos = (int)Math.floor(Math.random() * servers.size());
         ServerNode server = servers.get(pos);
         if (server.repository == null) {
-            // TODO if this particular repository server would not be reachable, we could retry a number
-            // of times with other servers instead.
             constructRepository(server);
         }
         return server.repository;
+    }
+
+    /**
+     * Returns a repository instance which will automatically balance requests over the available
+     * Lily servers, and will retry operations according to what is specified in {@link RetryConf}.
+     *
+     * <p>To see some information when the client goes into retry mode, enable INFO logging for
+     * the category org.lilyproject.client.
+     */
+    public Repository getRepository() {
+        return balancingAndRetryingRepository;
+    }
+
+    public RetryConf getRetryConf() {
+        return retryConf;
+    }
+
+    public void setRetryConf(RetryConf retryConf) {
+        this.retryConf = retryConf;
     }
 
     private void constructRepository(ServerNode server) throws IOException, InterruptedException, KeeperException {

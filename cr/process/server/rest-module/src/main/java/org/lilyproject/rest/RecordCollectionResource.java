@@ -45,7 +45,7 @@ public class RecordCollectionResource extends RepositoryEnabled {
             record = repository.create(record);
             URI uri = UriBuilder.fromResource(RecordResource.class).build(record.getId());
             return Response.created(uri).entity(record).build();
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

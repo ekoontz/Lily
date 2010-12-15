@@ -71,7 +71,7 @@ public class Indexer {
      * @param recordId
      */
     public void index(RecordId recordId) throws RepositoryException, IOException,
-            SolrServerException, ShardSelectorException {
+            SolrServerException, ShardSelectorException, InterruptedException {
 
         IdRecord record = repository.readWithIds(recordId, null, null);
         Map<String, Long> vtags = VersionTag.getTagsById(record, typeManager);
@@ -88,7 +88,7 @@ public class Indexer {
     }
 
     protected void index(IdRecord record, Set<String> vtagsToIndex, Map<String, Long> vtags)
-            throws IOException, SolrServerException, RepositoryException, ShardSelectorException {
+            throws IOException, SolrServerException, RepositoryException, ShardSelectorException, InterruptedException {
         if (vtagsToIndex.contains(VersionTag.VERSIONLESS_TAG)) {
             // Usually when the @@versionless vtag should be indexed, the vtagsToIndex set will
             // not contain any other tags.
@@ -113,7 +113,7 @@ public class Indexer {
      */
     protected void indexRecord(RecordId recordId, Set<String> vtagsToIndex, Map<String, Long> vtags)
             throws IOException, SolrServerException, FieldTypeNotFoundException, RepositoryException,
-            RecordTypeNotFoundException, ShardSelectorException {
+            RecordTypeNotFoundException, ShardSelectorException, InterruptedException {
         // One version might have multiple vtags, so to index we iterate the version numbers
         // rather than the vtags
         Map<Long, Set<String>> vtagsToIndexByVersion = getVtagsByVersion(vtagsToIndex, vtags);

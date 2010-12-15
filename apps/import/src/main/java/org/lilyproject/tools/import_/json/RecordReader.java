@@ -35,13 +35,14 @@ import static org.lilyproject.util.json.JsonUtil.*;
 public class RecordReader implements EntityReader<Record> {
     public static EntityReader<Record> INSTANCE = new RecordReader();
 
-    public Record fromJson(ObjectNode node, Repository repository) throws JsonFormatException, RepositoryException {
+    public Record fromJson(ObjectNode node, Repository repository) throws JsonFormatException, RepositoryException,
+            InterruptedException {
         Namespaces namespaces = NamespacesConverter.fromContextJson(node);
         return fromJson(node, namespaces, repository);
     }
 
     public Record fromJson(ObjectNode node, Namespaces namespaces, Repository repository)
-            throws JsonFormatException, RepositoryException {
+            throws JsonFormatException, RepositoryException, InterruptedException {
 
         Record record = repository.newRecord();
 

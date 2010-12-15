@@ -60,9 +60,12 @@ public class RecordByVtagResource extends RepositoryEnabled {
             long version = (Long)record.getField(vtagName);
 
             record = repository.read(recordId, version, fieldQNames);
+        } catch (ResourceException e) {
+            // was thrown above, just throw further on, don't want to catch it here below
+            throw e;
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
         return record;

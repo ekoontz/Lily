@@ -171,6 +171,14 @@
     },
 
     {
+      "name": "AvroInterruptedException",
+      "type": "error",
+      "fields": [
+        {"name": "message", "type": "string"}
+      ]
+    },
+
+    {
       "name": "AvroValueType",
       "type": "record",
       "fields": [
@@ -277,7 +285,7 @@
       "response": "AvroRecord",
       "errors": ["AvroRecordExistsException", "AvroInvalidRecordException",
       "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException"]
+      "AvroGenericException", "AvroInterruptedException"]
     },
      
     "update": {
@@ -288,7 +296,7 @@
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
       "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException"]
+      "AvroGenericException", "AvroInterruptedException"]
     },
 
     "read": {
@@ -299,7 +307,8 @@
       ],
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroRecordTypeNotFoundException",
-      "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
+      "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
      },
      
     "readVersions": {
@@ -311,25 +320,27 @@
       ],
       "response": {"type": "array", "items": "AvroRecord"},
       "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroRecordTypeNotFoundException",
-      "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
+      "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
      },
 
     "delete": {
       "request": [{"name": "recordId", "type": "string"}],
       "response": "null",
-      "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroGenericException"]
+      "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
     
     "deleteBlob": {
       "request": [{"name": "blob", "type": "AvroBlob"}],
       "response": "null",
-      "errors": ["AvroBlobNotFoundException", "AvroBlobException", "AvroGenericException"]
+      "errors": ["AvroBlobNotFoundException", "AvroBlobException", "AvroGenericException", "AvroInterruptedException"]
     },
     
     "getVariants": {
       "request": [{"name": "recordId", "type": "string"}],
       "response": {"type": "array", "items": "string"},
-      "errors": ["AvroRepositoryException", "AvroGenericException"]
+      "errors": ["AvroRepositoryException", "AvroGenericException", "AvroInterruptedException"]
     },
     
     "readWithIds": {
@@ -340,14 +351,15 @@
       ],
       "response": "AvroIdRecord",
       "errors": ["AvroRecordNotFoundException", "AvroVersionNotFoundException", "AvroRecordTypeNotFoundException",
-                 "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException"]
+                 "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException", "AvroGenericException",
+                 "AvroInterruptedException"]
     },
 
     "createRecordType": {
       "request": [{"name": "recordType", "type": "AvroRecordType"}],
       "response": "AvroRecordType",
       "errors": ["AvroRecordTypeExistsException", "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException",
-      "AvroTypeException", "AvroGenericException"]
+      "AvroTypeException", "AvroGenericException", "AvroInterruptedException"]
     },
 
     "getRecordTypeById": {
@@ -356,7 +368,8 @@
         {"name": "version", "type": "long"}
       ],
       "response": "AvroRecordType",
-      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
     
     "getRecordTypeByName": {
@@ -365,52 +378,56 @@
         {"name": "version", "type": "long"}
       ],
       "response": "AvroRecordType",
-      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroRecordTypeNotFoundException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
 
     "updateRecordType": {
       "request": [{"name": "recordType", "type": "AvroRecordType"}],
       "response": "AvroRecordType",
       "errors": ["AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroTypeException",
-      "AvroGenericException"]
+      "AvroGenericException", "AvroInterruptedException"]
     },
 
     "createFieldType": {
       "request": [{"name": "fieldType", "type": "AvroFieldType"}],
       "response": "AvroFieldType",
-      "errors": ["AvroFieldTypeExistsException", "AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroFieldTypeExistsException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
 
     "updateFieldType": {
       "request": [{"name": "fieldType", "type": "AvroFieldType"}],
       "response": "AvroFieldType",
       "errors": ["AvroFieldTypeNotFoundException", "AvroFieldTypeUpdateException", "AvroTypeException",
-      "AvroGenericException"]
+      "AvroGenericException", "AvroInterruptedException"]
     },
 
     "getFieldTypeById": {
       "request": [{"name": "id", "type": "string"}],
       "response": "AvroFieldType",
-      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
 
     "getFieldTypeByName": {
       "request": [{"name": "name", "type": "AvroQName"}],
       "response": "AvroFieldType",
-      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroFieldTypeNotFoundException", "AvroTypeException", "AvroGenericException",
+      "AvroInterruptedException"]
     },
     
     "getFieldTypes": {
       "request": [],
       "response": {"type": "array", "items": "AvroFieldType"},
-      "errors": ["AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroTypeException", "AvroGenericException", "AvroInterruptedException"]
       
     }, 
     
     "getRecordTypes": {
       "request": [],
       "response": {"type": "array", "items": "AvroRecordType"},
-      "errors": ["AvroTypeException", "AvroGenericException"]
+      "errors": ["AvroTypeException", "AvroGenericException", "AvroInterruptedException"]
     }
  }
 }

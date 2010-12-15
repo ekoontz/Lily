@@ -78,7 +78,7 @@ public class PostActionMessageBodyReader extends RepositoryEnabled implements Me
             entity = EntityRegistry.findReader((Class)entityType).fromJson(objectNode, repository);
         } catch (JsonFormatException e) {
             throw new ResourceException("Error in submitted JSON.", e, BAD_REQUEST.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error reading submitted JSON.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
 

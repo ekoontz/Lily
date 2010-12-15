@@ -18,6 +18,9 @@ package org.lilyproject.repository.api;
 import java.io.Closeable;
 import java.util.Collection;
 
+// IMPORTANT:
+//   See the note on the requirement TypeException described in the Repository.java file.
+
 /**
  * TypeManager provides access to the repository schema. This is where {@link RecordType}s and {@link FieldType}s
  * are managed.
@@ -31,14 +34,14 @@ public interface TypeManager extends Closeable {
      *
      * <p>This is only a factory method, nothing is created in the repository.
      */
-    RecordType newRecordType(QName name);
+    RecordType newRecordType(QName name) throws TypeException;
 
     /**
      * Instantiates a new RecordType object.
      *
      * <p>This is only a factory method, nothing is created in the repository.
      */
-    RecordType newRecordType(String recordTypeId, QName name);
+    RecordType newRecordType(String recordTypeId, QName name) throws TypeException;
     
     /**
      * Creates a RecordType in the repository.
@@ -49,7 +52,7 @@ public interface TypeManager extends Closeable {
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
     RecordType createRecordType(RecordType recordType) throws RecordTypeExistsException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, TypeException;
+            FieldTypeNotFoundException, TypeException, InterruptedException;
     
     /**
      * Gets a RecordType from the repository.
@@ -59,7 +62,8 @@ public interface TypeManager extends Closeable {
      * @throws RecordTypeNotFoundException when the recordType does not exist
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
-    RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException;
+    RecordType getRecordTypeById(String id, Long version) throws RecordTypeNotFoundException, TypeException,
+            InterruptedException;
     
     /**
      * Gets a RecordType from the repository.
@@ -69,7 +73,8 @@ public interface TypeManager extends Closeable {
      * @throws RecordTypeNotFoundException when the recordType does not exist
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
-    RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException;
+    RecordType getRecordTypeByName(QName name, Long version) throws RecordTypeNotFoundException, TypeException,
+            InterruptedException;
 
     /**
      * Updates an existing record type.
@@ -90,13 +95,13 @@ public interface TypeManager extends Closeable {
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
     RecordType updateRecordType(RecordType recordType) throws  RecordTypeNotFoundException, FieldTypeNotFoundException,
-            TypeException;
+            TypeException, InterruptedException;
 
     /**
      * Get the list of all record types that exist in the repository. This returns the latest version of
      * each record type. 
      */
-    Collection<RecordType> getRecordTypes() throws TypeException;
+    Collection<RecordType> getRecordTypes() throws TypeException, InterruptedException;
     
     /**
      * Instantiates a new FieldTypeEntry object.
@@ -132,7 +137,8 @@ public interface TypeManager extends Closeable {
      * @throws RepositoryException when an unexpected exception occurs on the repository
      * @throws FieldTypeExistsException 
      */
-    FieldType createFieldType(FieldType fieldType) throws FieldTypeExistsException, TypeException;
+    FieldType createFieldType(FieldType fieldType) throws FieldTypeExistsException, TypeException,
+            InterruptedException;
 
     /**
      * Updates an existing FieldType.
@@ -150,7 +156,7 @@ public interface TypeManager extends Closeable {
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
     FieldType updateFieldType(FieldType fieldType) throws FieldTypeNotFoundException, FieldTypeUpdateException,
-            TypeException;
+            TypeException, InterruptedException;
     
     /**
      * Gets a FieldType from the repository.
@@ -158,7 +164,7 @@ public interface TypeManager extends Closeable {
      * @throws FieldTypeNotFoundException when no fieldType with the given ID exists
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
-    FieldType getFieldTypeById(String id) throws FieldTypeNotFoundException, TypeException;
+    FieldType getFieldTypeById(String id) throws FieldTypeNotFoundException, TypeException, InterruptedException;
 
     /**
      * Gets a FieldType from the repository.
@@ -166,12 +172,12 @@ public interface TypeManager extends Closeable {
      * @throws FieldTypeNotFoundException when no fieldType with the given name exists
      * @throws RepositoryException when an unexpected exception occurs on the repository
      */
-    FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException, TypeException;
+    FieldType getFieldTypeByName(QName name) throws FieldTypeNotFoundException, TypeException, InterruptedException;
 
     /**
      * Gets the list of all field types that exist in the repository.
      */
-    Collection<FieldType> getFieldTypes() throws TypeException;
+    Collection<FieldType> getFieldTypes() throws TypeException, InterruptedException;
 
     /**
      * Provides {@link ValueType} instances. These are used to set to value type of {@link FieldType}s.
@@ -200,7 +206,7 @@ public interface TypeManager extends Closeable {
      * @param multiValue if this {@link ValueType} should represent a multi value field or not
      * @param hierarchical if this{@link ValueType} should represent a {@link HierarchyPath} field or not
      */
-    ValueType getValueType(String primitiveValueTypeName, boolean multiValue, boolean hierarchical);
+    ValueType getValueType(String primitiveValueTypeName, boolean multiValue, boolean hierarchical) throws TypeException;
 
     /**
      * Registers custom {@link PrimitiveValueType}s.
@@ -209,5 +215,5 @@ public interface TypeManager extends Closeable {
      * value type if the name corresponds? Does it make sense to allow registering at any time? Probably implies
      * registering on all Lily nodes? This needs more thought.
      */
-    void registerPrimitiveValueType(PrimitiveValueType primitiveValueType);
+    void registerPrimitiveValueType(PrimitiveValueType primitiveValueType) throws TypeException;
 }

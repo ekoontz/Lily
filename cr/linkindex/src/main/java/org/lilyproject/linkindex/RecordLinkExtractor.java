@@ -27,7 +27,8 @@ public class RecordLinkExtractor {
      * Extracts the links from a record. The provided Record object should
      * be "fully loaded" (= contain all fields).
      */
-    public static void extract(IdRecord record, LinkCollector collector, Repository repository) throws RepositoryException {
+    public static void extract(IdRecord record, LinkCollector collector, Repository repository)
+            throws RepositoryException, InterruptedException {
         for (Map.Entry<String, Object> field : record.getFieldsById().entrySet()) {
             FieldType fieldType;
             try {

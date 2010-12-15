@@ -18,6 +18,7 @@ package org.lilyproject.util.repo;
 import org.apache.commons.logging.LogFactory;
 import org.lilyproject.repository.api.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -63,6 +64,10 @@ public class VersionTag {
                 continue;
             } catch (TypeException e) {
                 // TODO maybe this should rather be thrown?
+                continue;
+            } catch (InterruptedException e) {
+                // TODO
+                Thread.currentThread().interrupt();
                 continue;
             }
 
@@ -121,6 +126,10 @@ public class VersionTag {
                 continue;
             } catch (TypeException e) {
                 // TODO maybe this should rather be thrown?
+                continue;
+            } catch (InterruptedException e) {
+                // TODO
+                Thread.currentThread().interrupt();
                 continue;
             }
 
@@ -217,6 +226,10 @@ public class VersionTag {
         } catch (TypeException e) {
             // TODO log this? or throw it?
             return null;
+        } catch (InterruptedException e) {
+            // TODO
+            Thread.currentThread().interrupt();
+            return null;
         }
 
         if (!VersionTag.isVersionTag(fieldType)) {
@@ -237,8 +250,7 @@ public class VersionTag {
      * <p>The @@versionless version tag is supported.
      */
     public static Record getRecord(RecordId recordId, String vtagId, Repository repository, List<QName> fieldNames)
-            throws FieldTypeNotFoundException, RepositoryException, RecordNotFoundException,
-            RecordTypeNotFoundException, VersionNotFoundException {
+            throws RepositoryException, InterruptedException {
         if (vtagId.equals(VersionTag.VERSIONLESS_TAG)) {
             // TODO this should include an option to only read non-versioned-scoped data
             return repository.read(recordId);
@@ -256,20 +268,17 @@ public class VersionTag {
      * See {@link #getRecord(org.lilyproject.repository.api.RecordId, String, org.lilyproject.repository.api.Repository, java.util.List)}.
      */
     public static Record getRecord(RecordId recordId, String vtagId, Repository repository)
-            throws FieldTypeNotFoundException, RepositoryException, RecordNotFoundException,
-            RecordTypeNotFoundException, VersionNotFoundException {
+            throws RepositoryException, InterruptedException {
         return getRecord(recordId, vtagId, repository, null);
     }
 
     public static IdRecord getIdRecord(RecordId recordId, String vtagId, Repository repository)
-            throws FieldTypeNotFoundException, RepositoryException, RecordNotFoundException,
-            RecordTypeNotFoundException, VersionNotFoundException {
+            throws RepositoryException, IOException, InterruptedException {
         return getIdRecord(recordId, vtagId, repository, null);
     }
 
     public static IdRecord getIdRecord(RecordId recordId, String vtagId, Repository repository, List<String> fieldIds)
-            throws FieldTypeNotFoundException, RepositoryException, RecordNotFoundException,
-            RecordTypeNotFoundException, VersionNotFoundException {
+            throws RepositoryException, InterruptedException {
         if (vtagId.equals(VersionTag.VERSIONLESS_TAG)) {
             // TODO this should include an option to only read non-versioned-scoped data
             return repository.readWithIds(recordId, null, null);
@@ -287,7 +296,8 @@ public class VersionTag {
     /**
      * Returns true if the Record contains a field that serves as the last version tag.
      */
-    public static boolean hasLastVTag(Record record, TypeManager typeManager) throws FieldTypeNotFoundException, TypeException {
+    public static boolean hasLastVTag(Record record, TypeManager typeManager) throws FieldTypeNotFoundException,
+            TypeException, InterruptedException {
         for (QName name : record.getFields().keySet()) {
             if (isLastVersionTag(typeManager.getFieldTypeByName(name)))
                 return true;
@@ -298,7 +308,9 @@ public class VersionTag {
     /**
      * Returns true if the RecordType or one of its mixins has FieldType defined that serves as last version tag.
      */
-    public static boolean hasLastVTag(RecordType recordType, TypeManager typeManager) throws FieldTypeNotFoundException, RecordTypeNotFoundException, TypeException {
+    public static boolean hasLastVTag(RecordType recordType, TypeManager typeManager)
+            throws FieldTypeNotFoundException, RecordTypeNotFoundException, TypeException,
+            InterruptedException {
         Collection<FieldTypeEntry> fieldTypeEntries = recordType.getFieldTypeEntries();
         for (FieldTypeEntry fieldTypeEntry : fieldTypeEntries) {
             if (isLastVersionTag(typeManager.getFieldTypeById(fieldTypeEntry.getFieldTypeId())))
@@ -315,14 +327,16 @@ public class VersionTag {
     /**
      * Creates the FieldType to serve as last version tag. 
      */
-    public static FieldType createLastVTagType(TypeManager typeManager) throws FieldTypeExistsException, TypeException {
+    public static FieldType createLastVTagType(TypeManager typeManager) throws FieldTypeExistsException, TypeException,
+            InterruptedException {
         return typeManager.createFieldType(typeManager.newFieldType(typeManager.getValueType("LONG", false, false), qname(LAST), Scope.NON_VERSIONED));
     }
     
     /**
      * Returns the FieldType that serves as last version tag if it exists.
      */
-    public static FieldType getLastVTagType(TypeManager typeManager) throws FieldTypeNotFoundException, TypeException {
+    public static FieldType getLastVTagType(TypeManager typeManager) throws FieldTypeNotFoundException, TypeException,
+            InterruptedException {
         return typeManager.getFieldTypeByName(qname(LAST));
     }
 }

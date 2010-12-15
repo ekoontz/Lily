@@ -50,6 +50,8 @@ public class MboxImport extends BaseZkCliTool {
 
     private LilyClient lilyClient;
 
+    private Repository repository;
+
     private int messageCount;
 
     private int partCount;
@@ -125,6 +127,7 @@ public class MboxImport extends BaseZkCliTool {
         }
 
         lilyClient = new LilyClient(zkConnectionString, 10000);
+        repository = lilyClient.getRepository();
 
         if (cmd.hasOption(schemaOption.getOpt()) || cmd.hasOption(fileOption.getOpt())) {
             loadSchema();
@@ -192,7 +195,6 @@ public class MboxImport extends BaseZkCliTool {
     private void loadSchema() throws Exception {
         System.out.println("Creating the schema (if necessary)");
         System.out.println();
-        Repository repository = lilyClient.getRepository();
         InputStream is = getClass().getClassLoader().getResourceAsStream("org/lilyproject/tools/mboximport/mail_schema.json");
         JsonImport.load(repository, is, false);
         System.out.println();
@@ -248,7 +250,7 @@ public class MboxImport extends BaseZkCliTool {
             while (mboxStream.nextMessage()) {
                 MimeTokenStream stream = new MyMimeTokenStream();
                 stream.parse(mboxStream);
-                importMessage(stream, lilyClient.getRepository());
+                importMessage(stream);
             }
 
         } finally {
@@ -269,7 +271,7 @@ public class MboxImport extends BaseZkCliTool {
         }
     }
 
-    private void importMessage(MimeTokenStream stream, Repository repository) throws Exception {
+    private void importMessage(MimeTokenStream stream) throws Exception {
         int multiPartNesting = 0; // note that a multipart can again contain a multipart
 
         Message message = new Message();

@@ -34,18 +34,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lilyproject.repository.api.FieldType;
-import org.lilyproject.repository.api.FieldTypeEntry;
-import org.lilyproject.repository.api.IdGenerator;
-import org.lilyproject.repository.api.PrimitiveValueType;
-import org.lilyproject.repository.api.QName;
-import org.lilyproject.repository.api.Record;
-import org.lilyproject.repository.api.RecordId;
-import org.lilyproject.repository.api.RecordType;
-import org.lilyproject.repository.api.Repository;
-import org.lilyproject.repository.api.Scope;
-import org.lilyproject.repository.api.TypeManager;
-import org.lilyproject.repository.api.ValueType;
+import org.lilyproject.repository.api.*;
 import org.lilyproject.repository.avro.AvroConverter;
 import org.lilyproject.repository.avro.AvroFieldType;
 import org.lilyproject.repository.avro.AvroFieldTypeEntry;
@@ -115,7 +104,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testValueType() {
+    public void testValueType() throws TypeException {
         PrimitiveValueType primitiveValueType = new StringValueType();
         ValueType valueType = new ValueTypeImpl(primitiveValueType , false, true);
         typeManager.getValueType("STRING", false, true);
@@ -151,7 +140,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testFieldType() {
+    public void testFieldType() throws TypeException {
         ValueType valueType = new ValueTypeImpl(new StringValueType(), true, true);
         typeManager.getValueType("STRING", true, true);
         expectLastCall().andReturn(valueType);
@@ -182,7 +171,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testFieldTypeWithoutId() {
+    public void testFieldTypeWithoutId() throws TypeException {
         ValueType valueType = new ValueTypeImpl(new StringValueType(), true, true);
         typeManager.getValueType("STRING", true, true);
         expectLastCall().andReturn(valueType);
@@ -211,7 +200,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testEmptyRecordType() {
+    public void testEmptyRecordType() throws TypeException {
         QName name = new QName("aNamespace", "aName");
         RecordType recordType = new RecordTypeImpl("recordTypeId", name);
         typeManager.newRecordType("recordTypeId", name);
@@ -234,7 +223,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testRecordTypeVersion() {
+    public void testRecordTypeVersion() throws TypeException {
         QName name = new QName("aNamespace", "aName");
         RecordType recordType = new RecordTypeImpl("recordTypeId", name);
         typeManager.newRecordType("recordTypeId", name);
@@ -259,7 +248,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testRecordTypeFieldTypeEntries() {
+    public void testRecordTypeFieldTypeEntries() throws TypeException {
         QName name = new QName("aNamespace", "aName");
         RecordType recordType = new RecordTypeImpl("recordTypeId", name);
         typeManager.newRecordType("recordTypeId", name);
@@ -309,7 +298,7 @@ public class AvroConverterTest {
     }
     
     @Test
-    public void testRecordTypeMixins() {
+    public void testRecordTypeMixins() throws TypeException {
         QName name = new QName("aNamespace", "aName");
         RecordType recordType = new RecordTypeImpl("recordTypeId", name);
         typeManager.newRecordType("recordTypeId", name);

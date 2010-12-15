@@ -350,7 +350,7 @@ public class HBaseRepository implements Repository {
     // this information on the Put object and the RecordEvent
     private boolean calculateRecordChanges(Record record, Record originalRecord, Long version, Put put,
             RecordEvent recordEvent, boolean useLatestRecordType) throws RecordTypeNotFoundException, FieldTypeNotFoundException,
-            RecordException, TypeException, InvalidRecordException {
+            RecordException, TypeException, InvalidRecordException, InterruptedException {
         QName recordTypeName = record.getRecordTypeName();
         Long recordTypeVersion = null;
         if (recordTypeName == null) {
@@ -412,7 +412,8 @@ public class HBaseRepository implements Repository {
         return fieldsHaveChanged;
     }
     
-    private void validateRecord(Record record, Record originalRecord, RecordType recordType) throws FieldTypeNotFoundException, TypeException, InvalidRecordException {
+    private void validateRecord(Record record, Record originalRecord, RecordType recordType) throws
+            FieldTypeNotFoundException, TypeException, InvalidRecordException, InterruptedException {
         // Check mandatory fields
         Collection<FieldTypeEntry> fieldTypeEntries = recordType.getFieldTypeEntries();
         List<QName> fieldsToDelete = record.getFieldsToDelete();
@@ -438,7 +439,7 @@ public class HBaseRepository implements Repository {
 
     private Set<Scope> calculateChangedFields(Record record, Record originalRecord, RecordType recordType,
             Long version, Put put, RecordEvent recordEvent) throws FieldTypeNotFoundException,
-            RecordTypeNotFoundException, RecordException, TypeException {
+            RecordTypeNotFoundException, RecordException, TypeException, InterruptedException {
         Map<QName, Object> originalFields = originalRecord.getFields();
         Set<Scope> changedScopes = new HashSet<Scope>();
         
@@ -477,7 +478,7 @@ public class HBaseRepository implements Repository {
 
     private Set<Scope> calculateUpdateFields(Map<QName, Object> fields, Map<QName, Object> originalFields, Map<QName, Object> originalNextFields,
             Long version, Put put, RecordEvent recordEvent) throws FieldTypeNotFoundException,
-            RecordTypeNotFoundException, RecordException, TypeException {
+            RecordTypeNotFoundException, RecordException, TypeException, InterruptedException {
         Set<Scope> changedScopes = new HashSet<Scope>();
         for (Entry<QName, Object> field : fields.entrySet()) {
             QName fieldName = field.getKey();
@@ -596,7 +597,7 @@ public class HBaseRepository implements Repository {
     }
 
     private Map<QName, Object> filterMutableFields(Map<QName, Object> fields) throws FieldTypeNotFoundException,
-            RecordTypeNotFoundException, RecordException, TypeException {
+            RecordTypeNotFoundException, RecordException, TypeException, InterruptedException {
         Map<QName, Object> mutableFields = new HashMap<QName, Object>();
         for (Entry<QName, Object> field : fields.entrySet()) {
             FieldType fieldType = typeManager.getFieldTypeByName(field.getKey());
@@ -615,7 +616,8 @@ public class HBaseRepository implements Repository {
      */
     private void copyValueToNextVersionIfNeeded(Long version, Put put, Map<QName, Object> originalNextFields,
             QName fieldName, Object originalValue)
-            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException {
+            throws FieldTypeNotFoundException, RecordTypeNotFoundException, RecordException, TypeException,
+            InterruptedException {
         Object originalNextValue = originalNextFields.get(fieldName);
         if ((originalValue == null && originalNextValue == null) || originalValue.equals(originalNextValue)) {
             FieldTypeImpl fieldType = (FieldTypeImpl)typeManager.getFieldTypeByName(fieldName);
@@ -625,41 +627,45 @@ public class HBaseRepository implements Repository {
     }
 
     private Map<QName, Object> getOriginalNextFields(RecordId recordId, Long version)
-            throws RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, 
-            TypeException, RecordNotFoundException {
+            throws RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
+            TypeException, RecordNotFoundException, InterruptedException {
         try {
             Record originalNextRecord = read(recordId, version + 1, null, new ReadContext());
             return filterMutableFields(originalNextRecord.getFields());
         } catch (VersionNotFoundException exception) {
             // There is no next record
             return null;
-        } 
+        }
     }
 
     public Record read(RecordId recordId) throws RecordNotFoundException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException {
         return read(recordId, null, null);
     }
 
     public Record read(RecordId recordId, List<QName> fieldNames) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, InterruptedException {
         return read(recordId, null, fieldNames);
     }
 
     public Record read(RecordId recordId, Long version) throws RecordNotFoundException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException {
         return read(recordId, version, null);
     }
 
     public Record read(RecordId recordId, Long version, List<QName> fieldNames) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, InterruptedException {
         List<FieldType> fields = getFieldTypesFromNames(fieldNames);
 
         return read(recordId, version, fields, new ReadContext());
     }
 
     private List<FieldType> getFieldTypesFromNames(List<QName> fieldNames) throws FieldTypeNotFoundException,
-            TypeException {
+            TypeException, InterruptedException {
         List<FieldType> fields = null;
         if (fieldNames != null) {
             fields = new ArrayList<FieldType>();
@@ -671,7 +677,7 @@ public class HBaseRepository implements Repository {
     }
     
     private List<FieldType> getFieldTypesFromIds(List<String> fieldIds) throws FieldTypeNotFoundException,
-            TypeException {
+            TypeException, InterruptedException {
         List<FieldType> fields = null;
         if (fieldIds != null) {
             fields = new ArrayList<FieldType>(fieldIds.size());
@@ -682,7 +688,9 @@ public class HBaseRepository implements Repository {
         return fields;
     }
     
-    public List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws FieldTypeNotFoundException, TypeException, RecordNotFoundException, RecordException, VersionNotFoundException, RecordTypeNotFoundException {
+    public List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames)
+            throws FieldTypeNotFoundException, TypeException, RecordNotFoundException, RecordException,
+            VersionNotFoundException, RecordTypeNotFoundException, InterruptedException {
         ArgumentValidator.notNull(recordId, "recordId");
         ArgumentValidator.notNull(fromVersion, "fromVersion");
         ArgumentValidator.notNull(toVersion, "toVersion");
@@ -706,7 +714,8 @@ public class HBaseRepository implements Repository {
     }
     
     public IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, InterruptedException {
         ReadContext readContext = new ReadContext();
 
         List<FieldType> fields = getFieldTypesFromIds(fieldIds);
@@ -728,7 +737,7 @@ public class HBaseRepository implements Repository {
     
     private Record read(RecordId recordId, Long requestedVersion, List<FieldType> fields, ReadContext readContext)
             throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException,
-            RecordException, VersionNotFoundException, TypeException {
+            RecordException, VersionNotFoundException, TypeException, InterruptedException {
         long before = System.currentTimeMillis();
         try {
             ArgumentValidator.notNull(recordId, "recordId");
@@ -753,7 +762,7 @@ public class HBaseRepository implements Repository {
 
     private Record getRecordFromRowResult(RecordId recordId, Long requestedVersion, ReadContext readContext,
             Result result) throws VersionNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException,
-            RecordException, TypeException {
+            RecordException, TypeException, InterruptedException {
         Record record = newRecord(recordId);
         record.setVersion(requestedVersion);
 
@@ -865,9 +874,8 @@ public class HBaseRepository implements Repository {
         return recordType;
     }
 
-    private List<Pair<QName, Object>> extractFields(Long version,
-            Result result, ReadContext context)
-            throws FieldTypeNotFoundException, RecordException, TypeException {
+    private List<Pair<QName, Object>> extractFields(Long version, Result result, ReadContext context)
+            throws FieldTypeNotFoundException, RecordException, TypeException, InterruptedException {
         List<Pair<QName, Object>> fields = new ArrayList<Pair<QName, Object>>();
         NavigableMap<byte[], NavigableMap<Long, byte[]>> mapWithVersions = result.getMap().get(columnFamily);
         if (mapWithVersions != null) {
@@ -887,7 +895,7 @@ public class HBaseRepository implements Repository {
     }
 
     private Pair<QName, Object> extractField(byte[] key, byte[] prefixedValue, ReadContext context)
-            throws FieldTypeNotFoundException, RecordException, TypeException {
+            throws FieldTypeNotFoundException, RecordException, TypeException, InterruptedException {
         if (EncodingUtil.isDeletedField(prefixedValue)) {
             return null;
         }
@@ -925,7 +933,8 @@ public class HBaseRepository implements Repository {
     }
 
     private boolean extractFieldsAndRecordTypes(Result result, Long version, Record record, ReadContext context)
-            throws RecordTypeNotFoundException, RecordException, FieldTypeNotFoundException, TypeException {
+            throws RecordTypeNotFoundException, RecordException, FieldTypeNotFoundException, TypeException,
+            InterruptedException {
         List<Pair<QName, Object>> fields;
         if (version == null) {
             // All non-versioned fields are stored at version 1

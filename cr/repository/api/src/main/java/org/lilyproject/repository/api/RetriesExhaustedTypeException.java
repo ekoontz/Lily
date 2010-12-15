@@ -15,19 +15,23 @@
  */
 package org.lilyproject.repository.api;
 
-public class BlobNotFoundException extends RepositoryException {
-    private final Blob blob;
+/**
+ * An IO exception happened during a TypeManager operation, the operation was retried but eventually still failed.
+ */
+public class RetriesExhaustedTypeException extends TypeException {
+    private String operation;
+    private int attempts;
+    private long duration;
 
-    public BlobNotFoundException(Blob blob) {
-        this.blob = blob;
-    }
-
-    public Blob getBlob() {
-        return blob;
+    public RetriesExhaustedTypeException(String operation, int attempts, long duration, Throwable cause) {
+        super(cause);
+        this.operation = operation;
+        this.attempts = attempts;
+        this.duration = duration;
     }
 
     @Override
     public String getMessage() {
-        return "Blob <" + blob + "> could not be found.";
+        return "Attempted " + operation + " operation " + attempts + " times during " + duration + " ms without success.";
     }
 }

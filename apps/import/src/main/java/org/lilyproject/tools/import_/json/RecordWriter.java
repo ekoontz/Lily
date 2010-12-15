@@ -28,7 +28,7 @@ import java.util.Map;
 public class RecordWriter implements EntityWriter<Record> {
     public static RecordWriter INSTANCE = new RecordWriter();
 
-    public ObjectNode toJson(Record record, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(Record record, Repository repository) throws RepositoryException, InterruptedException {
         Namespaces namespaces = new Namespaces();
 
         ObjectNode recordNode = toJson(record, namespaces, repository);
@@ -38,7 +38,8 @@ public class RecordWriter implements EntityWriter<Record> {
         return recordNode;
     }
 
-    public ObjectNode toJson(Record record, Namespaces namespaces, Repository repository) throws RepositoryException {
+    public ObjectNode toJson(Record record, Namespaces namespaces, Repository repository) throws RepositoryException,
+            InterruptedException {
         JsonNodeFactory factory = JsonNodeFactory.instance;
         ObjectNode recordNode = factory.objectNode();
 

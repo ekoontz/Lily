@@ -21,8 +21,8 @@ import org.lilyproject.repository.api.RepositoryException;
 
 public interface EntityReader<T> {
     T fromJson(ObjectNode node, Namespaces namespaces, Repository repository)
-            throws JsonFormatException, RepositoryException;
+            throws JsonFormatException, RepositoryException, InterruptedException;
 
     T fromJson(ObjectNode node, Repository repository)
-            throws JsonFormatException, RepositoryException;
+            throws JsonFormatException, RepositoryException, InterruptedException;
 }

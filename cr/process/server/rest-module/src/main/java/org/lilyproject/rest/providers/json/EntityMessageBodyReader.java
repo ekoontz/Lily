@@ -64,7 +64,7 @@ public class EntityMessageBodyReader extends RepositoryEnabled implements Messag
             return EntityRegistry.findReader(type).fromJson(objectNode, repository);
         } catch (JsonFormatException e) {
             throw new ResourceException("Error in submitted JSON.", e, BAD_REQUEST.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error reading submitted JSON.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

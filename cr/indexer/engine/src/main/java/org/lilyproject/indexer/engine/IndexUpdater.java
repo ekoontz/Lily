@@ -434,7 +434,7 @@ public class IndexUpdater implements RowLogMessageListener {
                             Set<RecordId> variants;
                             try {
                                 variants = repository.getVariants(referrer);
-                            } catch (RepositoryException e) {
+                            } catch (Exception e) {
                                 // TODO we should probably throw this higher up and let it be handled there
                                 throw new RuntimeException(e);
                             }
@@ -470,6 +470,10 @@ public class IndexUpdater implements RowLogMessageListener {
                                     variants = repository.getVariants(referrer);
                                 } catch (RepositoryException e) {
                                     // TODO we should probably throw this higher up and let it be handled there
+                                    throw new RuntimeException(e);
+                                } catch (InterruptedException e) {
+                                    // TODO we should probably throw this higher up and let it be handled there
+                                    Thread.currentThread().interrupt();
                                     throw new RuntimeException(e);
                                 }
 
@@ -582,7 +586,7 @@ public class IndexUpdater implements RowLogMessageListener {
                 fieldType = typeManager.getFieldTypeById(fieldId);
             } catch (FieldTypeNotFoundException e) {
                 continue;
-            } catch (RepositoryException e) {
+            } catch (Exception e) {
                 // TODO not sure what to do in these kinds of situations
                 throw new RuntimeException(e);
             }

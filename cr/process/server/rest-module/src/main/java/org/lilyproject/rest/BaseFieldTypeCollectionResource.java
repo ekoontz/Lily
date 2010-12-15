@@ -30,7 +30,7 @@ public abstract class BaseFieldTypeCollectionResource extends RepositoryEnabled 
     public EntityList<FieldType> get() {
         try {
             return new EntityList<FieldType>(repository.getTypeManager().getFieldTypes());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading field type list.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
@@ -47,7 +47,7 @@ public abstract class BaseFieldTypeCollectionResource extends RepositoryEnabled 
             fieldType = typeManager.createFieldType(fieldType);
         } catch (FieldTypeExistsException e) {
             throw new ResourceException(e, CONFLICT.getStatusCode());
-        } catch (TypeException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error creating field type.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
         return fieldType;

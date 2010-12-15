@@ -74,10 +74,10 @@ public class BlobByVersionAndFieldResource extends RepositoryEnabled {
                     try {
                         is = repository.getInputStream(blob);
                         IOUtils.copyLarge(is, output);
-                    } catch (BlobException e) {
-                        throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
                     } catch (BlobNotFoundException e) {
                         throw new ResourceException(e, NOT_FOUND.getStatusCode());
+                    } catch (Exception e) {
+                        throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
                     } finally {
                         Closer.close(is);
                     }
@@ -88,7 +88,7 @@ public class BlobByVersionAndFieldResource extends RepositoryEnabled {
 
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

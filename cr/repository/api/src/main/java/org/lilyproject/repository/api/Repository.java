@@ -21,6 +21,14 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
 
+// IMPORTANT:
+//   The Repository implementation might be wrapped to add automatic retrying of operations in case
+//   of IO exceptions or when no Lily servers are available. In case this fails, a
+//   RetriesExhausted(Record|Type|Blob)Exception is thrown. Therefore, all methods in this interface
+//   should declare this exception. Also, the remote implementation can cause IO exceptions which are
+//   dynamically wrapped in Record|Type|BlobException, thus this exception (which is a parent class
+//   of the RetriesExhausted exceptions) should be in the throws clause of all methods.
+
 /**
  * Repository is the primary access point for accessing the functionality of the Lily repository.
  *
@@ -32,14 +40,14 @@ public interface Repository extends Closeable {
      *
      * <p>This is only a factory method, nothing is created in the repository.
      */
-    Record newRecord();
+    Record newRecord() throws RecordException;
 
     /**
      * Instantiates a new Record object with the RecordId already filled in.
      *
      * <p>This is only a factory method, nothing is created in the repository.
      */
-    Record newRecord(RecordId recordId);
+    Record newRecord(RecordId recordId) throws RecordException;
 
     /**
      * Creates a new record in the repository.
@@ -59,7 +67,8 @@ public interface Repository extends Closeable {
      * @throws RecordTypeNotFoundException
      */
     Record create(Record record) throws RecordExistsException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException;
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException,
+            InterruptedException;
 
     /**
      * Updates an existing record in the repository.
@@ -90,14 +99,16 @@ public interface Repository extends Closeable {
      * @throws FieldTypeNotFoundException
      * @throws RecordTypeNotFoundException
      */
-    Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
-    FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+    Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws RecordNotFoundException,
+            InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
+            VersionNotFoundException, TypeException, InterruptedException;
     
     /**
      * Shortcut for update(record, false, true)
      */
     Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException;
 
     /**
      * Updates the version-mutable fields of an existing version.
@@ -113,7 +124,8 @@ public interface Repository extends Closeable {
      * <p>If the record has versions, it is the latest version that will be read.
      */
     Record read(RecordId recordId) throws RecordNotFoundException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException;
 
     /**
      * Reads a record limited to a subset of the fields. Only the fields specified in the fieldNames list will be
@@ -125,13 +137,15 @@ public interface Repository extends Closeable {
      * a non-existing field name.
      */
     Record read(RecordId recordId, List<QName> fieldNames) throws RecordNotFoundException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException;
 
     /**
      * Reads a specific version of a record.
      */
     Record read(RecordId recordId, Long version) throws RecordNotFoundException, RecordTypeNotFoundException,
-            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            InterruptedException;
 
     /**
      * Reads a specific version of a record limited to a subset of the fields.
@@ -139,15 +153,17 @@ public interface Repository extends Closeable {
      * <p>If the given list of fields is empty, all fields will be read.
      */
     Record read(RecordId recordId, Long version, List<QName> fieldNames) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, InterruptedException;
 
     /**
      * Reads all versions of a record between fromVersion and toVersion (both included), limited to a subset of the fields.
      * 
      * <p>If the given list of fields is empty, all fields will be read.
      */
-    List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+    List<Record> readVersions(RecordId recordId, Long fromVersion, Long toVersion, List<QName> fieldNames)
+            throws RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
+            VersionNotFoundException, TypeException, InterruptedException;
 
     /**
      * Reads a Record and also returns the mapping from QNames to IDs.
@@ -158,7 +174,8 @@ public interface Repository extends Closeable {
      * @param fieldIds load only the fields with these ids. optional, can be null.
      */
     IdRecord readWithIds(RecordId recordId, Long version, List<String> fieldIds) throws RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, InterruptedException;
 
     /**
      * Delete a {@link Record} from the repository.
@@ -166,7 +183,7 @@ public interface Repository extends Closeable {
      * @param recordId
      *            id of the record to delete
      */
-    void delete(RecordId recordId) throws RecordException, RecordNotFoundException;
+    void delete(RecordId recordId) throws RecordException, RecordNotFoundException, InterruptedException;
 
     /**
      * Returns the IdGenerator service.
@@ -204,7 +221,7 @@ public interface Repository extends Closeable {
      * @return an OutputStream
      * @throws RepositoryException when an unexpected exception occurs
      */
-    OutputStream getOutputStream(Blob blob) throws BlobException;
+    OutputStream getOutputStream(Blob blob) throws BlobException, InterruptedException;
 
     /**
      * Returns an {@link InputStream} from which the binary data of a blob can
@@ -216,7 +233,7 @@ public interface Repository extends Closeable {
      * @throws BlobNotFoundException when the blob does not contain a valid key in its value
      * @throws RepositoryException when an unexpected exception occurs
      */
-    InputStream getInputStream(Blob blob) throws BlobNotFoundException, BlobException;
+    InputStream getInputStream(Blob blob) throws BlobNotFoundException, BlobException, InterruptedException;
 
     /**
      * Deletes the data identified by a blob from the underlying blobstore. See {@link #getOutputStream(Blob)} and {@link #getInputStream(Blob)}.
@@ -224,7 +241,7 @@ public interface Repository extends Closeable {
      * @throws BlobNotFoundException when the blob does not contain a valid key in its value
      * @throws RepositoryException when an unexpected exception occurs
      */
-    void delete(Blob blob) throws BlobNotFoundException, BlobException;
+    void delete(Blob blob) throws BlobNotFoundException, BlobException, InterruptedException;
 
     /**
      * Get all the variants that exist for the given recordId.
@@ -233,6 +250,6 @@ public interface Repository extends Closeable {
      *                 be used
      * @return the set of variants, including the master record id.
      */
-    Set<RecordId> getVariants(RecordId recordId) throws RepositoryException;    
+    Set<RecordId> getVariants(RecordId recordId) throws RepositoryException, InterruptedException;
 
 }

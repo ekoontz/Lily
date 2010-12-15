@@ -24,7 +24,7 @@ import static org.lilyproject.tools.import_.core.ImportMode.*;
 
 public class RecordImport {
     public static ImportResult<Record> importRecord(Record newRecord, ImportMode impMode, Repository repository)
-            throws RepositoryException {
+            throws RepositoryException, InterruptedException {
 
         int loopCount = 0;
         while (true) {

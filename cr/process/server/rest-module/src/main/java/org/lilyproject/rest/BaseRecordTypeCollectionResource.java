@@ -33,7 +33,7 @@ public abstract class BaseRecordTypeCollectionResource extends RepositoryEnabled
     public EntityList<RecordType> get() {
         try {
             return new EntityList<RecordType>(repository.getTypeManager().getRecordTypes());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record type list.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
@@ -50,7 +50,7 @@ public abstract class BaseRecordTypeCollectionResource extends RepositoryEnabled
             recordType = typeManager.createRecordType(recordType);
         } catch (RecordTypeExistsException e) {
             throw new ResourceException(e, CONFLICT.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error creating record type.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
 

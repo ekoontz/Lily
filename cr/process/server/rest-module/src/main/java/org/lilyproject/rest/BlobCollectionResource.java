@@ -17,7 +17,6 @@ package org.lilyproject.rest;
 
 import org.apache.commons.io.IOUtils;
 import org.lilyproject.repository.api.Blob;
-import org.lilyproject.repository.api.BlobException;
 import org.lilyproject.tools.import_.json.BlobConverter;
 import org.lilyproject.util.io.Closer;
 
@@ -29,7 +28,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
@@ -58,9 +56,7 @@ public class BlobCollectionResource extends RepositoryEnabled {
         try {
             os = repository.getOutputStream(blob);
             IOUtils.copyLarge(is, os);
-        } catch (BlobException e) {
-            throw new ResourceException("Error writing blob.", e, INTERNAL_SERVER_ERROR.getStatusCode());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error writing blob.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         } finally {
             Closer.close(os);

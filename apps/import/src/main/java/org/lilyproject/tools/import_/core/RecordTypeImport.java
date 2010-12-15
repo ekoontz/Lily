@@ -25,7 +25,8 @@ import static org.lilyproject.tools.import_.core.ImportMode.*;
 
 public class RecordTypeImport {
     public static ImportResult<RecordType> importRecordType(RecordType newRecordType, ImportMode impMode,
-            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException {
+            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException,
+            InterruptedException {
 
         if (idMode == IdentificationMode.ID && impMode == CREATE_OR_UPDATE) {
             throw new IllegalArgumentException("The combination of import mode " + CREATE_OR_UPDATE

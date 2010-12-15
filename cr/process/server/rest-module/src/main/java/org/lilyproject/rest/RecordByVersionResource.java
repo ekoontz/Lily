@@ -34,7 +34,7 @@ public class RecordByVersionResource extends RepositoryEnabled {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
         } catch (VersionNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

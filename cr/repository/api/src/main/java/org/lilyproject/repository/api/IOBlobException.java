@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilyproject.client;
+package org.lilyproject.repository.api;
 
-public class ServerUnavailableException extends Exception {
-    public ServerUnavailableException() {
-        super();
-    }
-
-    public ServerUnavailableException(String message) {
-        super(message);
-    }
-
-    public ServerUnavailableException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ServerUnavailableException(Throwable cause) {
+/**
+ * An IO exception happened during a blob operation.
+ */
+public class IOBlobException extends BlobException {
+    public IOBlobException(Throwable cause) {
         super(cause);
     }
 }

@@ -36,7 +36,7 @@ public class RecordTypeByIdAndVersionResource extends RepositoryEnabled {
             return repository.getTypeManager().getRecordTypeById(id, version);
         } catch (RecordTypeNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (TypeException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record type with id " + id + ", version " + version, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }

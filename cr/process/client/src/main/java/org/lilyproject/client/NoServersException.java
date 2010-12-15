@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lilyproject.repository.api;
+package org.lilyproject.client;
 
-public class BlobNotFoundException extends RepositoryException {
-    private final Blob blob;
-
-    public BlobNotFoundException(Blob blob) {
-        this.blob = blob;
+/**
+ * This exception occurs when there are no Lily servers available.
+ */
+public class NoServersException extends Exception {
+    public NoServersException() {
+        super();
     }
 
-    public Blob getBlob() {
-        return blob;
+    public NoServersException(String message) {
+        super(message);
     }
 
-    @Override
-    public String getMessage() {
-        return "Blob <" + blob + "> could not be found.";
+    public NoServersException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public NoServersException(Throwable cause) {
+        super(cause);
     }
 }

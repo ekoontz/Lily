@@ -15,19 +15,11 @@
  */
 package org.lilyproject.repository.api;
 
-public class BlobNotFoundException extends RepositoryException {
-    private final Blob blob;
-
-    public BlobNotFoundException(Blob blob) {
-        this.blob = blob;
-    }
-
-    public Blob getBlob() {
-        return blob;
-    }
-
-    @Override
-    public String getMessage() {
-        return "Blob <" + blob + "> could not be found.";
+/**
+ * An IO exception happened during a record operation.
+ */
+public class IORecordException extends RecordException {
+    public IORecordException(Throwable cause) {
+        super(cause);
     }
 }

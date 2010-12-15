@@ -44,7 +44,7 @@ public class RecordResource extends RepositoryEnabled {
             return repository.read(recordId, fieldQNames);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
@@ -65,7 +65,7 @@ public class RecordResource extends RepositoryEnabled {
         ImportResult<Record> result;
         try {
             result = RecordImport.importRecord(record, ImportMode.CREATE_OR_UPDATE, repository);
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error creating or updating record type with id " + id, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }
@@ -112,7 +112,7 @@ public class RecordResource extends RepositoryEnabled {
         ImportResult<Record> result;
         try {
             result = RecordImport.importRecord(record, ImportMode.UPDATE, repository);
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException(e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
 
@@ -142,7 +142,7 @@ public class RecordResource extends RepositoryEnabled {
             repository.delete(recordId);
         } catch (RecordNotFoundException e) {
             // ignore: delete is idempotent!
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
         return Response.status(OK.getStatusCode()).build();

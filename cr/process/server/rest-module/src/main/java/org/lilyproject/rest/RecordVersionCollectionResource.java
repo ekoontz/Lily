@@ -45,7 +45,7 @@ public class RecordVersionCollectionResource extends RepositoryEnabled {
             return new EntityList<Record>(records);
         } catch (RecordNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record versions.", e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }

@@ -28,7 +28,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.lilyproject.cli.BaseCliTool;
 import org.lilyproject.client.LilyClient;
-import org.lilyproject.client.ServerUnavailableException;
+import org.lilyproject.client.NoServersException;
 import org.lilyproject.repository.api.*;
 import org.lilyproject.tools.import_.cli.*;
 import org.lilyproject.tools.import_.json.*;
@@ -43,7 +43,7 @@ import java.util.List;
 
 public class Tester extends BaseCliTool {
     private LilyClient client;
-    private Repository someRepository;
+    private Repository repository;
 
     private int createCount;
     private int readCount;
@@ -134,7 +134,7 @@ public class Tester extends BaseCliTool {
         readConfig(configNode);
 
         client = new LilyClient(zookeeperConnectString, 10000);
-        someRepository = client.getRepository();
+        repository = client.getRepository();
 
         createSchema(configNode);
 
@@ -217,9 +217,9 @@ public class Tester extends BaseCliTool {
     }
 
     public void createSchema(JsonNode configNode) throws IOException, RepositoryException, ImportConflictException,
-            ImportException, JsonFormatException, ServerUnavailableException, InterruptedException, KeeperException {
+            ImportException, JsonFormatException, NoServersException, InterruptedException, KeeperException {
 
-        JsonImport jsonImport = new JsonImport(client.getRepository(), new DefaultImportListener());
+        JsonImport jsonImport = new JsonImport(repository, new DefaultImportListener());
 
         // Namespaces
         ObjectNode namespacesNode = JsonUtil.getObject(configNode, "namespaces", null);
@@ -240,7 +240,7 @@ public class Tester extends BaseCliTool {
         // Record type
         String recordTypeName = JsonUtil.getString(configNode, "recordTypeName");
         QName recordTypeQName = QNameConverter.fromJson(recordTypeName, jsonImport.getNamespaces());
-        recordType = someRepository.getTypeManager().newRecordType(recordTypeQName);
+        recordType = repository.getTypeManager().newRecordType(recordTypeQName);
         for (Field field : fields) {
             recordType.addFieldTypeEntry(field.fieldType.getId(), false);
         }
@@ -253,15 +253,16 @@ public class Tester extends BaseCliTool {
         
         while (true) {
             for (int i = 0; i < createCount; i++) {
-                Record record = someRepository.newRecord();
-                record.setRecordType(recordType.getName());
-                for (Field field : fields) {
-                    record.setField(field.fieldType.getName(), field.generateValue());
-                }
-
                 long before = System.currentTimeMillis();
                 try {
-                    record = client.getRepository().create(record);
+                    Record record = repository.newRecord();
+                    record.setRecordType(recordType.getName());
+                    for (Field field : fields) {
+                        record.setField(field.fieldType.getName(), field.generateValue());
+                    }
+
+                    before = System.currentTimeMillis();
+                    record = repository.create(record);
                     long after = System.currentTimeMillis();
                     report(Action.CREATE, true, (int)(after - before));
                     records.add(new TestRecord(record));
@@ -282,7 +283,7 @@ public class Tester extends BaseCliTool {
 
                 long before = System.currentTimeMillis();
                 try {
-                    Record readRecord = client.getRepository().read(testRecord.record.getId());
+                    Record readRecord = repository.read(testRecord.record.getId());
                     long after = System.currentTimeMillis();
                     report(Action.READ, true, (int)(after - before));
 
@@ -312,7 +313,7 @@ public class Tester extends BaseCliTool {
 
                 long before = System.currentTimeMillis();
                 try {
-                    updatedRecord = client.getRepository().update(updatedRecord);
+                    updatedRecord = repository.update(updatedRecord);
                     long after = System.currentTimeMillis();
                     report(Action.UPDATE, true, (int)(after - before));
 
@@ -334,7 +335,7 @@ public class Tester extends BaseCliTool {
 
                 long before = System.currentTimeMillis();
                 try {
-                    client.getRepository().delete(testRecord.record.getId());
+                    repository.delete(testRecord.record.getId());
                     long after = System.currentTimeMillis();
                     testRecord.deleted = true;
                     report(Action.DELETE, true, (int)(after - before));
@@ -463,7 +464,7 @@ public class Tester extends BaseCliTool {
             } else if (primitive.equals("DATETIME")) {
                 return generateDateTime();
             } else if (primitive.equals("LINK")) {
-                return new Link(someRepository.getIdGenerator().newRecordId());
+                return new Link(repository.getIdGenerator().newRecordId());
             } else {
                 throw new RuntimeException("Unsupported primitive value type: " + primitive);
             }

@@ -33,7 +33,7 @@ public class RecordTypeByIdResource extends RepositoryEnabled {
             return repository.getTypeManager().getRecordTypeById(id, null);
         } catch (RecordTypeNotFoundException e) {
             throw new ResourceException(e, NOT_FOUND.getStatusCode());
-        } catch (TypeException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error loading record type with id " + id, e, INTERNAL_SERVER_ERROR.getStatusCode());
         }
     }
@@ -52,7 +52,7 @@ public class RecordTypeByIdResource extends RepositoryEnabled {
         try {
             result = RecordTypeImport.importRecordType(recordType, ImportMode.UPDATE, IdentificationMode.ID,
                     null, repository.getTypeManager());
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new ResourceException("Error creating or updating record type with id " + id, e,
                     INTERNAL_SERVER_ERROR.getStatusCode());
         }

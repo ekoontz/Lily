@@ -20,7 +20,8 @@ import org.lilyproject.repository.api.*;
 public class FieldTypeImport {
 
     public static ImportResult<FieldType> importFieldType(FieldType newFieldType, ImportMode impMode,
-            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException {
+            IdentificationMode idMode, QName identifyingName, TypeManager typeManager) throws RepositoryException,
+            InterruptedException {
 
         if (idMode == IdentificationMode.ID && impMode == ImportMode.CREATE_OR_UPDATE) {
             throw new IllegalArgumentException("The combination of import mode " + ImportMode.CREATE_OR_UPDATE

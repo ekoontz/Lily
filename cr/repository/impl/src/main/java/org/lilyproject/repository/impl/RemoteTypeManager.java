@@ -16,6 +16,7 @@
 package org.lilyproject.repository.impl;
 
 import java.io.IOException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
@@ -25,16 +26,7 @@ import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
-import org.lilyproject.repository.api.FieldType;
-import org.lilyproject.repository.api.FieldTypeExistsException;
-import org.lilyproject.repository.api.FieldTypeNotFoundException;
-import org.lilyproject.repository.api.FieldTypeUpdateException;
-import org.lilyproject.repository.api.IdGenerator;
-import org.lilyproject.repository.api.RecordType;
-import org.lilyproject.repository.api.RecordTypeExistsException;
-import org.lilyproject.repository.api.RecordTypeNotFoundException;
-import org.lilyproject.repository.api.TypeException;
-import org.lilyproject.repository.api.TypeManager;
+import org.lilyproject.repository.api.*;
 import org.lilyproject.repository.avro.AvroConverter;
 import org.lilyproject.repository.avro.AvroFieldType;
 import org.lilyproject.repository.avro.AvroFieldTypeExistsException;
@@ -47,6 +39,10 @@ import org.lilyproject.repository.avro.AvroRecordTypeNotFoundException;
 import org.lilyproject.repository.avro.AvroTypeException;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
+
+// ATTENTION: when adding new methods, do not forget to add handling for UndeclaredThrowableException! This is
+//            necessary because, at the time of this writing, Avro did not include IOException in its generated
+//            interfaces.
 
 public class RemoteTypeManager extends AbstractTypeManager implements TypeManager {
 
@@ -101,6 +97,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -121,6 +119,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -140,6 +140,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -158,6 +160,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -178,6 +182,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -188,6 +194,8 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
@@ -198,7 +206,16 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
             throw converter.convert(e);
         } catch (AvroRemoteException e) {
             throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredTypeThrowable(e);
         }
     }
 
+    private RuntimeException handleUndeclaredTypeThrowable(UndeclaredThrowableException e) throws TypeException {
+        if (e.getCause() instanceof IOException) {
+            throw new IOTypeException(e.getCause());
+        } else {
+            throw e;
+        }
+    }
 }

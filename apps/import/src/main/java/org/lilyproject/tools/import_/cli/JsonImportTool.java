@@ -64,14 +64,12 @@ public class JsonImportTool extends BaseZkCliTool {
 
         LilyClient client = new LilyClient(zkConnectionString, 10000);
 
-        JsonImport jsonImport = new JsonImport(client.getRepository(), new DefaultImportListener());
-        
         for (String arg : (List<String>)cmd.getArgList()) {
             System.out.println("----------------------------------------------------------------------");
             System.out.println("Importing " + arg);
             InputStream is = new FileInputStream(arg);
             try {
-                jsonImport.load(client.getRepository(), is, schemaOnly);
+                JsonImport.load(client.getRepository(), is, schemaOnly);
             } finally {
                 Closer.close(is);
             }
