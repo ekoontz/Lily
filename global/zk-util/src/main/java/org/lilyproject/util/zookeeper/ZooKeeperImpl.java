@@ -280,20 +280,19 @@ public class ZooKeeperImpl implements ZooKeeperItf {
     }
 
     public class MyWatcher implements Watcher {
-        private boolean firstConnect = true;
+        private boolean printConnectMsg = false; // do not print connect msg on initial connect
 
         public void process(WatchedEvent event) {
             zkEventThread = Thread.currentThread();
 
             if (event.getState() == Watcher.Event.KeeperState.Disconnected) {
                 System.err.println("ZooKeeper Disconnected.");
+                printConnectMsg = true;
             } else if (event.getState() == Event.KeeperState.Expired) {
                 System.err.println("ZooKeeper session expired.");
+                printConnectMsg = true;
             } else if (event.getState() == Event.KeeperState.SyncConnected) {
-                if (firstConnect) {
-                    // don't log the first time we connect.
-                    firstConnect = false;
-                } else {
+                if (printConnectMsg) {
                     System.out.println("ZooKeeper connected.");
                 }
             }
