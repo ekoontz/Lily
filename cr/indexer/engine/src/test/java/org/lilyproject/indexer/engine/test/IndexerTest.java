@@ -24,7 +24,8 @@ import org.lilyproject.linkindex.LinkIndexUpdater;
 import org.lilyproject.rowlog.api.*;
 import org.lilyproject.rowlog.impl.*;
 import org.lilyproject.solrtestfw.SolrTestingUtility;
-import org.lilyproject.util.hbase.HBaseTableUtil;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.repo.RecordEvent;
 
@@ -102,6 +103,7 @@ public class IndexerTest {
     private static MessageVerifier messageVerifier = new MessageVerifier();
     private static RecordType nvRecordType1;
     private static RecordType vRecordType1;
+    private static HBaseTableFactory hbaseTableFactory;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -114,19 +116,20 @@ public class IndexerTest {
         zk = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
 
         idGenerator = new IdGeneratorImpl();
-        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zk);
+        hbaseTableFactory = new HBaseTableFactoryImpl(HBASE_PROXY.getConf(), null, null);
+        typeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zk, hbaseTableFactory);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         SizeBasedBlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(Long.MAX_VALUE, dfsBlobStoreAccess);        
 
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zk);
         rowLogConfMgr.addRowLog("WAL", new RowLogConfig(10000L, true, false, 100L, 5000L));
-        RowLog wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(HBASE_PROXY.getConf()),
+        RowLog wal = new RowLogImpl("WAL", hbaseTableFactory.getRecordTable(),
                 RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", HBASE_PROXY.getConf(), wal, 100);
         wal.registerShard(walShard);
 
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, HBASE_PROXY.getConf());
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, HBASE_PROXY.getConf(), hbaseTableFactory);
 
         IndexManager.createIndexMetaTableIfNotExists(HBASE_PROXY.getConf());
         IndexManager indexManager = new IndexManager(HBASE_PROXY.getConf());

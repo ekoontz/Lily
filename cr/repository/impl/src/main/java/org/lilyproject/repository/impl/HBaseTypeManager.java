@@ -51,7 +51,8 @@ import org.lilyproject.repository.api.TypeException;
 import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.api.ValueType;
 import org.lilyproject.util.ArgumentValidator;
-import org.lilyproject.util.hbase.HBaseTableUtil;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.hbase.LilyHBaseSchema.TypeCf;
 import org.lilyproject.util.hbase.LilyHBaseSchema.TypeColumn;
 import org.lilyproject.util.io.Closer;
@@ -61,13 +62,13 @@ public class HBaseTypeManager extends AbstractTypeManager implements TypeManager
 
     private HTableInterface typeTable;
 
-    public HBaseTypeManager(IdGenerator idGenerator, Configuration configuration, ZooKeeperItf zooKeeper)
+    public HBaseTypeManager(IdGenerator idGenerator, Configuration configuration, ZooKeeperItf zooKeeper, HBaseTableFactory hbaseTableFactory)
             throws IOException, InterruptedException, KeeperException {
         super(zooKeeper);
         log = LogFactory.getLog(getClass());
         this.idGenerator = idGenerator;
 
-        this.typeTable = HBaseTableUtil.getTypeTable(configuration);
+        this.typeTable = hbaseTableFactory.getTypeTable();
         registerDefaultValueTypes();
         setupCaches();
     }

@@ -42,6 +42,7 @@ import org.lilyproject.repository.impl.RemoteTypeManager;
 import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.testfw.HBaseProxy;
 import org.lilyproject.testfw.TestHelper;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
 
@@ -60,7 +61,8 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
-        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        hbaseTableFactory = new HBaseTableFactoryImpl(configuration, null, null);
+        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper, hbaseTableFactory);
         BlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccess hbaseBlobStoreAccess = new HBaseBlobStoreAccess(configuration);
         BlobStoreAccess inlineBlobStoreAccess = new InlineBlobStoreAccess(); 
@@ -68,7 +70,7 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         blobStoreAccessFactory.addBlobStoreAccess(50, inlineBlobStoreAccess);
         blobStoreAccessFactory.addBlobStoreAccess(1024, hbaseBlobStoreAccess);
         setupWal();
-        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
+        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory, wal, configuration, hbaseTableFactory);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);

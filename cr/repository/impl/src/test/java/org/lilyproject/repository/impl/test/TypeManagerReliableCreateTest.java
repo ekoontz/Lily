@@ -43,6 +43,8 @@ import org.lilyproject.repository.impl.HBaseTypeManager;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
 import org.lilyproject.testfw.HBaseProxy;
 import org.lilyproject.testfw.TestHelper;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.hbase.LocalHTable;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
@@ -56,13 +58,15 @@ public class TypeManagerReliableCreateTest {
     private static ValueType valueType;
     private static TypeManager basicTypeManager;
     private static ZooKeeperItf zooKeeper;
+    private static HBaseTableFactory hbaseTableFactory;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
-        basicTypeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
+        hbaseTableFactory = new HBaseTableFactoryImpl(HBASE_PROXY.getConf(), null, null);
+        basicTypeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory);
         valueType = basicTypeManager.getValueType("LONG", false, false);
     }
     
@@ -100,7 +104,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -136,7 +140,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -171,7 +175,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -207,7 +211,7 @@ public class TypeManagerReliableCreateTest {
             }
         };
         
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper) {
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory) {
             @Override
             protected HTableInterface getTypeTable() {
                 return typeTable;
@@ -228,7 +232,7 @@ public class TypeManagerReliableCreateTest {
     @Test
     public void testGetTypeIgnoresConcurrentCounterRows() throws Exception {
         HTableInterface typeTable = new LocalHTable(HBASE_PROXY.getConf(), Bytes.toBytes("type"));
-        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper);
+        TypeManager typeManager = new HBaseTypeManager(new IdGeneratorImpl(), HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory);
         UUID id = UUID.randomUUID();
         byte[] rowId;
         rowId = new byte[16];

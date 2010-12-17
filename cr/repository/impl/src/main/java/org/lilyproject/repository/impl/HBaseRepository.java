@@ -82,7 +82,7 @@ import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogMessage;
 import org.lilyproject.util.ArgumentValidator;
 import org.lilyproject.util.Pair;
-import org.lilyproject.util.hbase.HBaseTableUtil;
+import org.lilyproject.util.hbase.HBaseTableFactory;
 import org.lilyproject.util.hbase.LilyHBaseSchema.RecordCf;
 import org.lilyproject.util.hbase.LilyHBaseSchema.RecordColumn;
 import org.lilyproject.util.io.Closer;
@@ -110,15 +110,17 @@ public class HBaseRepository implements Repository {
     
     private Log log = LogFactory.getLog(getClass());
     private RepositoryMetrics metrics;
+    private final HBaseTableFactory hbaseTableFactory;
 
     public HBaseRepository(TypeManager typeManager, IdGenerator idGenerator,
-            BlobStoreAccessFactory blobStoreAccessFactory, RowLog wal, Configuration configuration) throws IOException {
+            BlobStoreAccessFactory blobStoreAccessFactory, RowLog wal, Configuration configuration, HBaseTableFactory hbaseTableFactory) throws IOException {
         this.typeManager = typeManager;
         this.idGenerator = idGenerator;
         this.wal = wal;
+        this.hbaseTableFactory = hbaseTableFactory;
         blobStoreAccessRegistry = new BlobStoreAccessRegistry();
         blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
-        recordTable = HBaseTableUtil.getRecordTable(configuration);
+        recordTable = hbaseTableFactory.getRecordTable();
 
         recordTypeIdColumnNames.put(Scope.NON_VERSIONED, RecordColumn.NON_VERSIONED_RT_ID.bytes);
         recordTypeIdColumnNames.put(Scope.VERSIONED, RecordColumn.VERSIONED_RT_ID.bytes);

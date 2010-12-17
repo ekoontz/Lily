@@ -51,6 +51,10 @@
       id="writeAheadLog"
       service="org.lilyproject.rowlog.api.RowLog"/>
 
+  <kauri:import-service
+      id="hbaseTableFactory"
+      service="org.lilyproject.util.hbase.HBaseTableFactory"/>
+
   <kauri:export-service
       ref="repository"
       service="org.lilyproject.repository.api.Repository"/>
@@ -65,6 +69,7 @@
     <constructor-arg ref="idGenerator"/>
     <constructor-arg ref="hbaseConf"/>
     <constructor-arg ref="zooKeeper"/>
+    <constructor-arg ref="hbaseTableFactory"/>
   </bean>
 
   <bean
@@ -85,6 +90,7 @@
     <constructor-arg ref="blobStoreAccessFactory"/>
     <constructor-arg ref="writeAheadLog"/>
     <constructor-arg ref="hbaseConf"/>
+    <constructor-arg ref="hbaseTableFactory"/>
   </bean>
 
   <bean class="org.lilyproject.server.modules.repository.LinkIndexUpdaterSetup">

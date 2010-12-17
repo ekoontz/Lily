@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<tables xmlns:conf="http://kauriproject.org/configuration"
+       conf:inherit="shallow">
+
+  <!--  The amount of record table regions to be created at first startup.
+        The system generated record-id key-space will be divided evenly over these regions.
+        This number is only picked up when the recordRegionsKeys property is empty.
+        Default : 100  
+        -->
+  <nrOfRecordRegions>100</nrOfRecordRegions>
+
+  <!--  Comma separated list of start keys of the record table regions to be created at first startup.
+        Example: <recordRegionKeys>A,KLM,Z</recordRegionKeys>  -->
+  <recordRegionKeys></recordRegionKeys>
+
+</tables>

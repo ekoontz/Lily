@@ -39,6 +39,8 @@ import org.lilyproject.indexer.model.sharding.ShardSelector;
 import org.lilyproject.repository.api.*;
 import org.lilyproject.repository.impl.*;
 import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
@@ -60,6 +62,7 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
     private Repository repository;
     private ThreadPoolExecutor executor;
     private Log log = LogFactory.getLog(getClass());
+    private HBaseTableFactory hbaseTableFactory;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -77,13 +80,13 @@ public class IndexingMapper extends TableMapper<ImmutableBytesWritable, Result> 
             String zkConnectString = jobConf.get("org.lilyproject.indexer.batchbuild.zooKeeperConnectString");
             int zkSessionTimeout = getIntProp("org.lilyproject.indexer.batchbuild.zooKeeperSessionTimeout", null, jobConf);
             zk = ZkUtil.connect(zkConnectString, zkSessionTimeout);
-
-            TypeManager typeManager = new HBaseTypeManager(idGenerator, conf, zk);
+            hbaseTableFactory = new HBaseTableFactoryImpl(conf, null, null);
+            TypeManager typeManager = new HBaseTypeManager(idGenerator, conf, zk, hbaseTableFactory);
 
             BlobStoreAccessFactory blobStoreAccessFactory = LilyClient.getBlobStoreAccess(zk);
 
             RowLog wal = new DummyRowLog("The write ahead log should not be called from within MapReduce jobs.");
-            repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf);
+            repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, conf, hbaseTableFactory);
 
             byte[] indexerConfBytes = Base64.decode(jobConf.get("org.lilyproject.indexer.batchbuild.indexerconf"));
             IndexerConf indexerConf = IndexerConfBuilder.build(new ByteArrayInputStream(indexerConfBytes), repository);

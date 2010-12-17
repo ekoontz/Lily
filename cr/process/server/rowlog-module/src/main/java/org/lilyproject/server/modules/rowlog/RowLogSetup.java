@@ -15,18 +15,30 @@
  */
 package org.lilyproject.server.modules.rowlog;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.zookeeper.KeeperException;
-import org.lilyproject.rowlog.api.*;
-import org.lilyproject.rowlog.impl.*;
-import org.lilyproject.util.hbase.HBaseTableUtil;
-import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
-import org.lilyproject.util.zookeeper.ZooKeeperItf;
-import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
+import java.io.IOException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.zookeeper.KeeperException;
+import org.lilyproject.rowlog.api.RowLog;
+import org.lilyproject.rowlog.api.RowLogConfig;
+import org.lilyproject.rowlog.api.RowLogConfigurationManager;
+import org.lilyproject.rowlog.api.RowLogException;
+import org.lilyproject.rowlog.api.RowLogMessageListenerMapping;
+import org.lilyproject.rowlog.api.RowLogShard;
+import org.lilyproject.rowlog.api.RowLogSubscription;
+import org.lilyproject.rowlog.impl.MessageQueueFeeder;
+import org.lilyproject.rowlog.impl.RowLogImpl;
+import org.lilyproject.rowlog.impl.RowLogProcessorElection;
+import org.lilyproject.rowlog.impl.RowLogProcessorImpl;
+import org.lilyproject.rowlog.impl.RowLogShardImpl;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
+import org.lilyproject.util.hbase.LilyHBaseSchema.RecordCf;
+import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
+import org.lilyproject.util.zookeeper.ZooKeeperItf;
 
 public class RowLogSetup {
     private final RowLogConfigurationManager confMgr;
@@ -36,11 +48,13 @@ public class RowLogSetup {
     private RowLogImpl writeAheadLog;
     private RowLogProcessorElection messageQueueProcessorLeader;
     private RowLogProcessorElection writeAheadLogProcessorLeader;
+    private final HBaseTableFactory hbaseTableFactory;
 
-    public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf) {
+    public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf, HBaseTableFactory hbaseTableFactory) {
         this.confMgr = confMgr;
         this.zk = zk;
         this.hbaseConf = hbaseConf;
+        this.hbaseTableFactory = hbaseTableFactory;
     }
 
     @PostConstruct
@@ -61,11 +75,11 @@ public class RowLogSetup {
             confMgr.addSubscription("wal", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
         }
 
-        messageQueue = new RowLogImpl("mq", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.MQ_PAYLOAD.bytes,
+        messageQueue = new RowLogImpl("mq", hbaseTableFactory.getRecordTable(), RecordCf.MQ_PAYLOAD.bytes,
                 RecordCf.MQ_STATE.bytes, confMgr);
         messageQueue.registerShard(new RowLogShardImpl("shard1", hbaseConf, messageQueue, 100));
 
-        writeAheadLog = new RowLogImpl("wal", HBaseTableUtil.getRecordTable(hbaseConf), RecordCf.WAL_PAYLOAD.bytes,
+        writeAheadLog = new RowLogImpl("wal", hbaseTableFactory.getRecordTable(), RecordCf.WAL_PAYLOAD.bytes,
                 RecordCf.WAL_STATE.bytes, confMgr);
         RowLogShard walShard = new RowLogShardImpl("shard1", hbaseConf, writeAheadLog, 100);
         writeAheadLog.registerShard(walShard);

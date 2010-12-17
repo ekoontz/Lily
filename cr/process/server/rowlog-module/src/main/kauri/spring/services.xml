@@ -25,6 +25,10 @@
   <kauri:import-service
       id="zooKeeper"
       service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
+      
+  <kauri:import-service
+      id="hbaseTableFactory"
+      service="org.lilyproject.util.hbase.HBaseTableFactory"/>
 
   <kauri:export-service
       ref="rowLogConfigurationMgr"
@@ -50,6 +54,7 @@
     <constructor-arg ref="rowLogConfigurationMgr"/>
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="hbaseConf"/>
+    <constructor-arg ref="hbaseTableFactory"/>
   </bean>
 
   <bean id="messageQueue" factory-bean="rowLogSetup" factory-method="getMessageQueue"/>

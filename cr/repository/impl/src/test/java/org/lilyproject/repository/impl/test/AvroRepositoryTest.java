@@ -36,6 +36,7 @@ import org.lilyproject.repository.impl.RemoteRepository;
 import org.lilyproject.repository.impl.RemoteTypeManager;
 import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.testfw.TestHelper;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
 
@@ -51,13 +52,15 @@ public class AvroRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        hbaseTableFactory = new HBaseTableFactoryImpl(HBASE_PROXY.getConf(), null, null);
         setupRowLogConfigurationManager(zooKeeper);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl();
-        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        hbaseTableFactory = new HBaseTableFactoryImpl(HBASE_PROXY.getConf(), null, null);
+        serverTypeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper, hbaseTableFactory);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         BlobStoreAccessFactory blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         setupWal();
-        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , wal, configuration);
+        serverRepository = new HBaseRepository(serverTypeManager, idGenerator, blobStoreAccessFactory , wal, configuration, hbaseTableFactory);
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);

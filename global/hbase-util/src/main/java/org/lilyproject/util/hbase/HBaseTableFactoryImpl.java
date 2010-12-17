@@ -17,15 +17,29 @@ package org.lilyproject.util.hbase;
 
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.util.Bytes;
+
 import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
-public class HBaseTableUtil {    
-
-    public static HTableInterface getRecordTable(Configuration configuration) throws IOException {
+public class HBaseTableFactoryImpl implements HBaseTableFactory {    
+    private Log log = LogFactory.getLog(getClass());
+    private final Configuration configuration;
+    private final Integer nrOfRecordRegions;
+    private final String regionKeys;
+    
+    public HBaseTableFactoryImpl(Configuration configuration, String regionKeys, Integer nrOfRecordRegions) {
+        this.configuration = configuration;
+        this.regionKeys = regionKeys;
+        this.nrOfRecordRegions = nrOfRecordRegions;
+    }
+    
+    public HTableInterface getRecordTable() throws IOException {
         HBaseAdmin admin = new HBaseAdmin(configuration);
         try {
             admin.getTableDescriptor(Table.RECORD.bytes);
@@ -38,7 +52,7 @@ public class HBaseTableUtil {
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.WAL_STATE.bytes));
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.MQ_PAYLOAD.bytes));
                 tableDescriptor.addFamily(new HColumnDescriptor(RecordCf.MQ_STATE.bytes));
-                admin.createTable(tableDescriptor);
+                admin.createTable(tableDescriptor, getSplitKeys());
             } catch (TableExistsException e2) {
                 // Likely table is created by another process
             }
@@ -47,7 +61,29 @@ public class HBaseTableUtil {
         return new LocalHTable(configuration, Table.RECORD.bytes);
     }
 
-    public static HTableInterface getTypeTable(Configuration configuration) throws IOException {
+    private byte[][] getSplitKeys() {
+        byte[][] splitKeys = null;
+        if (regionKeys != null && !regionKeys.isEmpty()) {
+            log.info("Creating record table using region keys : " + regionKeys);
+            String[] split = regionKeys.split(",");
+            splitKeys = new byte[split.length][];
+            for (int i = 0; i < split.length; i++) {
+                splitKeys[i] = Bytes.toBytes(split[i]);
+            }
+            
+        } else if (nrOfRecordRegions != null) {
+            log.info("Creating record table using " + nrOfRecordRegions + " regions");
+            splitKeys = new byte[nrOfRecordRegions][1];
+            for (int i = 0; i < nrOfRecordRegions; i++) {
+                splitKeys[i] = new byte[]{(byte)((0xff/nrOfRecordRegions)*i)};
+            }
+        } else {
+            log.info("Creating record table with only 1 region");
+        }
+        return splitKeys;
+    }
+    
+    public HTableInterface getTypeTable() throws IOException {
         HBaseAdmin admin = new HBaseAdmin(configuration);
 
         try {

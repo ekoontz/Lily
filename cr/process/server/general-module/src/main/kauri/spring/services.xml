@@ -39,6 +39,8 @@
 
   <kauri:export-service ref="zooKeeper" service="org.lilyproject.util.zookeeper.ZooKeeperItf"/>
 
+  <kauri:export-service ref="hbaseTableFactory" service="org.lilyproject.util.hbase.HBaseTableFactory"/>
+  
   <bean id="hbaseConfiguration"
       class="org.lilyproject.server.modules.general.HadoopConfigurationFactoryImpl">
     <constructor-arg><kauri:conf path="hbase"/></constructor-arg>
@@ -56,6 +58,17 @@
         class="org.lilyproject.util.zookeeper.StateWatchingZooKeeper">
     <constructor-arg value="${zookeeper:connectString}"/>
     <constructor-arg value="${zookeeper:sessionTimeout}"/>
+  </bean>
+
+  <bean id="hbaseConf"
+      factory-bean="hbaseConfiguration"
+      factory-method="getHBaseConf"/>
+      
+  <bean id="hbaseTableFactory"
+        class="org.lilyproject.util.hbase.HBaseTableFactoryImpl">
+    <constructor-arg ref="hbaseConf"/>
+    <constructor-arg value="${tables:recordRegionKeys}"/>
+    <constructor-arg value="${tables:nrOfRecordRegions}"/>     
   </bean>
 
   <bean id="endProcessHook"

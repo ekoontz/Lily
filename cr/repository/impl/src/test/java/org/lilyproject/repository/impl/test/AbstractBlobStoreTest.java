@@ -46,7 +46,8 @@ import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilyproject.rowlog.impl.RowLogImpl;
 import org.lilyproject.rowlog.impl.RowLogShardImpl;
-import org.lilyproject.util.hbase.HBaseTableUtil;
+import org.lilyproject.util.hbase.HBaseTableFactory;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 import static org.lilyproject.util.hbase.LilyHBaseSchema.*;
 
@@ -57,11 +58,12 @@ public abstract class AbstractBlobStoreTest {
     protected static Configuration configuration;
     protected static ZooKeeperItf zooKeeper;
     protected static RowLogConfigurationManager rowLogConfMgr;
+    protected static HBaseTableFactory hbaseTableFactory;
     
     protected static void setupWal() throws Exception {
         rowLogConfMgr = new RowLogConfigurationManagerImpl(zooKeeper);
         rowLogConfMgr.addRowLog("WAL", new RowLogConfig(10000L, true, false, 100L, 5000L));
-        wal = new RowLogImpl("WAL", HBaseTableUtil.getRecordTable(configuration), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
+        wal = new RowLogImpl("WAL", hbaseTableFactory.getRecordTable(), RecordCf.WAL_PAYLOAD.bytes, RecordCf.WAL_STATE.bytes, rowLogConfMgr);
         RowLogShard walShard = new RowLogShardImpl("WS1", configuration, wal, 100);
         wal.registerShard(walShard);
     }

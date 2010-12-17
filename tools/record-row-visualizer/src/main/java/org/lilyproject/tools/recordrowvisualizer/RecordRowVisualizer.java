@@ -22,6 +22,7 @@ import org.lilyproject.repository.api.TypeManager;
 import org.lilyproject.repository.impl.HBaseTypeManager;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
 import org.lilyproject.rowlog.impl.SubscriptionExecutionState;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.zookeeper.StateWatchingZooKeeper;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 import org.xml.sax.SAXException;
@@ -89,7 +90,7 @@ public class RecordRowVisualizer extends BaseZkCliTool {
         // Type manager
         // TODO should be able to avoid ZK for this use-case?
         final ZooKeeperItf zk = new StateWatchingZooKeeper(zkConnectionString, 10000);
-        typeMgr = new HBaseTypeManager(idGenerator, conf, zk);
+        typeMgr = new HBaseTypeManager(idGenerator, conf, zk, new HBaseTableFactoryImpl(conf, null, null));
 
         Get get = new Get(recordId.toBytes());
         get.setMaxVersions();

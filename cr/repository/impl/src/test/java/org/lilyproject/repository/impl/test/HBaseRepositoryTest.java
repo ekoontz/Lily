@@ -32,6 +32,7 @@ import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.rowlog.api.RowLogMessageListenerMapping;
 import org.lilyproject.rowlog.api.RowLogSubscription.Type;
 import org.lilyproject.testfw.TestHelper;
+import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.ZkUtil;
 
@@ -44,12 +45,13 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
+        hbaseTableFactory = new HBaseTableFactoryImpl(HBASE_PROXY.getConf(), null, null);
         setupRowLogConfigurationManager(zooKeeper);
-        typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper);
+        typeManager = new HBaseTypeManager(idGenerator, configuration, zooKeeper, hbaseTableFactory);
         DFSBlobStoreAccess dfsBlobStoreAccess = new DFSBlobStoreAccess(HBASE_PROXY.getBlobFS(), new Path("/lily/blobs"));
         blobStoreAccessFactory = new SizeBasedBlobStoreAccessFactory(dfsBlobStoreAccess);
         setupWal();
-        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, configuration);
+        repository = new HBaseRepository(typeManager, idGenerator, blobStoreAccessFactory, wal, configuration, hbaseTableFactory);
         setupTypes();
         setupMessageQueue();
         setupMessageQueueProcessor();
@@ -67,7 +69,7 @@ public class HBaseRepositoryTest extends AbstractRepositoryTest {
     
     @Test
     public void testFieldTypeCacheInitialization() throws Exception {
-        TypeManager newTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper);
+        TypeManager newTypeManager = new HBaseTypeManager(idGenerator, HBASE_PROXY.getConf(), zooKeeper, hbaseTableFactory);
         assertEquals(fieldType1, newTypeManager.getFieldTypeByName(fieldType1.getName()));
         Closer.close(newTypeManager);
     }
