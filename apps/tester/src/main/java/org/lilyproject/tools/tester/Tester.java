@@ -74,7 +74,10 @@ public class Tester extends BaseCliTool {
 
     private Option configFileOption;
     private Option dumpSampleConfigOption;
+    private Option logDirOption;
 
+    private File logDirPath = null;
+    
     @Override
     protected String getCmdName() {
         return "lily-tester";
@@ -101,6 +104,12 @@ public class Tester extends BaseCliTool {
                 .withLongOpt("dump-sample-config")
                 .create("d");
         options.add(dumpSampleConfigOption);
+        
+        logDirOption = OptionBuilder
+            .withDescription("Directory to put the logfiles into.")
+            .withLongOpt("logdir")
+            .create("l");
+        options.add(logDirOption);
 
         return options;
     }
@@ -124,6 +133,11 @@ public class Tester extends BaseCliTool {
         if (!cmd.hasOption(configFileOption.getOpt())) {
             printHelp();
             return 1;
+        }
+        
+        if (cmd.hasOption(logDirOption.getOpt())) {
+            String logDir = cmd.getOptionValue(logDirOption.getOpt());
+            logDirPath = new File(logDir);
         }
 
         String configFileName = cmd.getOptionValue(configFileOption.getOpt());
@@ -162,12 +176,16 @@ public class Tester extends BaseCliTool {
     }
 
     private void openStreams() throws FileNotFoundException {
-        reportStream = new PrintStream(reportFileName);
+        reportStream = new PrintStream(new File(logDirPath, reportFileName));
         reportStream.println("Success/Failure,Create/Read/Update/Delete,Duration (ms)");
-        errorStream = new PrintStream(failuresFileName);
+        errorStream = new PrintStream(new File(logDirPath, failuresFileName));
+        reportStream.print(new DateTime() + " Opening file");
+        errorStream.print(new DateTime() + " Opening file");
     }
 
     private void closeStreams() {
+        reportStream.print(new DateTime() + " Closing file");
+        errorStream.print(new DateTime() + " Closing file");
         Closer.close(reportStream);
         Closer.close(errorStream);
     }
@@ -390,7 +408,7 @@ public class Tester extends BaseCliTool {
     }
 
     private void report(Action action, boolean success, int duration) {
-        reportStream.println((success ? "S" : "F") + "," + action + "," + duration);
+        reportStream.println(new DateTime() + "," +(success ? "S" : "F") + "," + action + "," + duration);
 
         if (metrics != null) {
             metrics.report(action, success, duration);
