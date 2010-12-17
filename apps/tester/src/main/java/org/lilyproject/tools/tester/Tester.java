@@ -77,6 +77,7 @@ public class Tester extends BaseCliTool {
     private Option logDirOption;
 
     private File logDirPath = null;
+    private int iteration = 0; 
     
     @Override
     protected String getCmdName() {
@@ -106,6 +107,8 @@ public class Tester extends BaseCliTool {
         options.add(dumpSampleConfigOption);
         
         logDirOption = OptionBuilder
+            .withArgName("logDir")
+            .hasArg()
             .withDescription("Directory to put the logfiles into.")
             .withLongOpt("logdir")
             .create("l");
@@ -137,6 +140,7 @@ public class Tester extends BaseCliTool {
         
         if (cmd.hasOption(logDirOption.getOpt())) {
             String logDir = cmd.getOptionValue(logDirOption.getOpt());
+            System.out.println("LogDir = " + logDir);
             logDirPath = new File(logDir);
         }
 
@@ -177,7 +181,7 @@ public class Tester extends BaseCliTool {
 
     private void openStreams() throws FileNotFoundException {
         reportStream = new PrintStream(new File(logDirPath, reportFileName));
-        reportStream.println("Success/Failure,Create/Read/Update/Delete,Duration (ms)");
+        reportStream.println("Date,Iteration,Success/Failure,Create/Read/Update/Delete,Duration (ms)");
         errorStream = new PrintStream(new File(logDirPath, failuresFileName));
         reportStream.print(new DateTime() + " Opening file");
         errorStream.print(new DateTime() + " Opening file");
@@ -268,8 +272,8 @@ public class Tester extends BaseCliTool {
 
     private void test() {
         startTime = System.currentTimeMillis();
-        
         while (true) {
+            iteration++;
             for (int i = 0; i < createCount; i++) {
                 long before = System.currentTimeMillis();
                 try {
@@ -408,7 +412,7 @@ public class Tester extends BaseCliTool {
     }
 
     private void report(Action action, boolean success, int duration) {
-        reportStream.println(new DateTime() + "," +(success ? "S" : "F") + "," + action + "," + duration);
+        reportStream.println(new DateTime() + ","+iteration+"," +(success ? "S" : "F") + "," + action + "," + duration);
 
         if (metrics != null) {
             metrics.report(action, success, duration);
