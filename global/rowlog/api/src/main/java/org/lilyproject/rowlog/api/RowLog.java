@@ -17,6 +17,7 @@ package org.lilyproject.rowlog.api;
 
 import java.util.List;
 
+import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 
 /**
@@ -90,7 +91,8 @@ public interface RowLog {
      * @param payload the information needed by a {@link RowLogMessageListener} to be able to process the message
      * @param put a HBase {@link Put} object that, when given, will be used by the RowLog to put the payload and 
      * execution state information on the HBase row. This enables the combination of the actual row data and the payload
-     * and execution state to be put on the HBase row with a single, atomic, put call. 
+     * and execution state to be put on the HBase row with a single, atomic, put call. When using this functionality, 
+     * a {@link HTable#put(Put)} call should follow this call. 
      * @return a new {@link RowLogMessage} with a unique id and a sequence number indicating its position in the list of
      * messages of the row.
      * @throws RowLogException
