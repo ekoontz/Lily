@@ -91,7 +91,7 @@ public class RecordTypeReader implements EntityReader<RecordType> {
                         throw new JsonFormatException("Record type " + name + ": error looking up mixin record type with name: " +
                                 rtQName, e);
                     }
-                    recordType.addMixin(rtId, rtVersion == -1 ? null : rtVersion);
+                    recordType.addMixin(rtId, rtVersion);
                 } else {
                     throw new JsonFormatException("Record type " + name + ": mixin should specify an id or name");
                 }
