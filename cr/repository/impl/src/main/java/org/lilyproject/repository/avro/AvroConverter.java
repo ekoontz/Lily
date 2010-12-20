@@ -90,6 +90,9 @@ public class AvroConverter {
             }
             record.addFieldsToDelete(fieldsToDelete);
         }
+
+        record.setResponseStatus(avroRecord.responseStatus);
+        
         return record;
     }
     
@@ -181,6 +184,10 @@ public class AvroConverter {
         for (QName fieldToDelete : fieldsToDelete) {
             avroRecord.fieldsToDelete.add(encodeQName(fieldToDelete));
         }
+
+        // Response status
+        avroRecord.responseStatus = record.getResponseStatus();
+
         return avroRecord; 
     }
     

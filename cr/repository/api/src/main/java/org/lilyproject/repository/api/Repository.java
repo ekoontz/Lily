@@ -111,12 +111,28 @@ public interface Repository extends Closeable {
             InterruptedException;
 
     /**
-     * Updates the version-mutable fields of an existing version.
+     * Creates or updates a record, depending on whether the record already exists.
      *
-     * <p><b>TODO</b>: this is being considered for redesign.
+     * <p>See {@link #createOrUpdate(Record, boolean)} for more details.
      */
-//    Record updateMutableFields(Record record) throws InvalidRecordException, RecordNotFoundException,
-//            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException;
+    Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
+            RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException;
+
+    /**
+     * Creates or updates a record, depending on whether the record already exists.
+     *
+     * <p>This method has the advantage that you do not have to deal with {@link RecordExistsException}
+     * (in case of create) or {@link RecordNotFoundException} (in case of update).
+     *
+     * <p>This method has the advantage over create that it can be safely retried in case of IO related problems,
+     * without having to worry about whether the previous call did or did not go through, and thus avoiding
+     * {@link RecordExistsException}'s or the creation of multiple records (in case the client did not
+     * specify an ID).
+     */
+    Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
+            RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException, InterruptedException;
 
     /**
      * Reads a record fully. All the fields of the record will be read.

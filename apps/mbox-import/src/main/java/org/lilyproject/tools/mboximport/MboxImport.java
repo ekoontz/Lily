@@ -52,6 +52,8 @@ public class MboxImport extends BaseZkCliTool {
 
     private Repository repository;
 
+    private IdGenerator idGenerator;
+
     private int messageCount;
 
     private int partCount;
@@ -128,6 +130,7 @@ public class MboxImport extends BaseZkCliTool {
 
         lilyClient = new LilyClient(zkConnectionString, 10000);
         repository = lilyClient.getRepository();
+        idGenerator = repository.getIdGenerator();
 
         if (cmd.hasOption(schemaOption.getOpt()) || cmd.hasOption(fileOption.getOpt())) {
             loadSchema();
@@ -350,9 +353,9 @@ public class MboxImport extends BaseZkCliTool {
         // and then the parts.
         List<RecordId> partRecordIds = new ArrayList<RecordId>(message.parts.size());
         for (Part part : message.parts)
-            partRecordIds.add(repository.getIdGenerator().newRecordId());
+            partRecordIds.add(idGenerator.newRecordId());
 
-        Record messageRecord = repository.newRecord();
+        Record messageRecord = repository.newRecord(idGenerator.newRecordId());
         messageRecord.setRecordType(new QName(NS, "Message"));
         if (message.subject != null)
             messageRecord.setField(new QName(NS, "subject"), message.subject);
@@ -379,7 +382,7 @@ public class MboxImport extends BaseZkCliTool {
         }
         messageRecord.setField(new QName(NS, "parts"), partLinks);
         long startTime = System.currentTimeMillis();
-        messageRecord = repository.create(messageRecord);
+        messageRecord = repository.createOrUpdate(messageRecord);
         metrics.messages.inc(System.currentTimeMillis() - startTime);
 
         for (int i = 0; i < message.parts.size(); i++) {
@@ -390,7 +393,7 @@ public class MboxImport extends BaseZkCliTool {
             partRecord.setField(new QName(NS, "content"), part.blob);
             partRecord.setField(new QName(NS, "message"), new Link(messageRecord.getId()));
             startTime = System.currentTimeMillis();
-            partRecord = repository.create(partRecord);
+            partRecord = repository.createOrUpdate(partRecord);
             metrics.parts.inc(System.currentTimeMillis() - startTime);
             part.recordId = partRecord.getId();
             increment(part.baseMediaType);

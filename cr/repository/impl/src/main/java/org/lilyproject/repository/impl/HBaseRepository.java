@@ -47,33 +47,7 @@ import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.lilyproject.repository.api.Blob;
-import org.lilyproject.repository.api.BlobException;
-import org.lilyproject.repository.api.BlobNotFoundException;
-import org.lilyproject.repository.api.BlobStoreAccess;
-import org.lilyproject.repository.api.BlobStoreAccessFactory;
-import org.lilyproject.repository.api.FieldNotFoundException;
-import org.lilyproject.repository.api.FieldType;
-import org.lilyproject.repository.api.FieldTypeEntry;
-import org.lilyproject.repository.api.FieldTypeNotFoundException;
-import org.lilyproject.repository.api.IdGenerator;
-import org.lilyproject.repository.api.IdRecord;
-import org.lilyproject.repository.api.InvalidRecordException;
-import org.lilyproject.repository.api.QName;
-import org.lilyproject.repository.api.Record;
-import org.lilyproject.repository.api.RecordException;
-import org.lilyproject.repository.api.RecordExistsException;
-import org.lilyproject.repository.api.RecordId;
-import org.lilyproject.repository.api.RecordNotFoundException;
-import org.lilyproject.repository.api.RecordType;
-import org.lilyproject.repository.api.RecordTypeNotFoundException;
-import org.lilyproject.repository.api.Repository;
-import org.lilyproject.repository.api.RepositoryException;
-import org.lilyproject.repository.api.Scope;
-import org.lilyproject.repository.api.TypeException;
-import org.lilyproject.repository.api.TypeManager;
-import org.lilyproject.repository.api.ValueType;
-import org.lilyproject.repository.api.VersionNotFoundException;
+import org.lilyproject.repository.api.*;
 import org.lilyproject.repository.impl.RepositoryMetrics.Action;
 import org.lilyproject.repository.impl.RepositoryMetrics.HBaseAction;
 import org.lilyproject.repository.impl.lock.RowLocker;
@@ -153,13 +127,21 @@ public class HBaseRepository implements Repository {
         return new RecordImpl(recordId);
     }
 
-    /*
-    public void createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException, RecordExistsException, RecordTypeNotFoundException, InvalidRecordException, TypeException, VersionNotFoundException, RecordNotFoundException {
-        // TODO ondersteun de useLatestRecordType flag
+    public Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
+            RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException {
+        return createOrUpdate(record, true);
+    }
+
+    public Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
+            RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException {
 
         if (record.getId() == null) {
-            // TODO
-            throw new RuntimeException("Dit pikken we niet");
+            // While we could generate an ID ourselves in this case, this would defeat partly the purpose of
+            // createOrUpdate, which is that clients would be able to retry the operation (in case of IO exceptions)
+            // without having to worry that more than one record might be created.
+            throw new RecordException("Record ID is mandatory when using create-or-update.");
         }
 
         byte[] rowId = record.getId().toBytes();
@@ -167,31 +149,39 @@ public class HBaseRepository implements Repository {
         get.addColumn(RecordCf.SYSTEM.bytes, RecordColumn.DELETED.bytes);
 
         int attempts = 0;
+        int maxAttempts = 3;
 
-        while (attempts < 3) {
-            Result result = recordTable.get(get);
+        while (attempts < maxAttempts) {
+            Result result;
+            try {
+                result = recordTable.get(get);
+            } catch (IOException e) {
+                throw new RecordException("Error reading record row for record id " + record.getId());
+            }
+
             byte[] deleted = result.getValue(systemColumnFamily, RecordColumn.DELETED.bytes);
             if ((deleted == null) || (Bytes.toBoolean(deleted))) {
-                // doe de create
+                // do the create
                 try {
                     Record createdRecord = create(record);
+                    return createdRecord;
                 } catch (RecordExistsException e) {
-
+                     // someone created the record since we checked, we will try again
                 }
             } else {
-                // doe de update
+                // do the update
                 try {
-                    update(record, false, true);
+                    record = update(record, false, useLatestRecordType);
+                    return record;
                 } catch (RecordNotFoundException e) {
-
+                    // some deleted the record since we checked, we will try again
                 }
             }
         }
 
-
-
+        throw new RecordException("Create-or-update failed after " + maxAttempts +
+                " attempts, toggling between create and update mode.");
     }
-    */
 
     public Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
@@ -288,6 +278,8 @@ public class HBaseRepository implements Repository {
                     unlockRow(customRowLock);
                 }
             }
+
+            newRecord.setResponseStatus(ResponseStatus.CREATED);
             return newRecord;
         } finally {
             metrics.report(Action.CREATE, System.currentTimeMillis() - before);
@@ -352,6 +344,9 @@ public class HBaseRepository implements Repository {
             long newVersion = originalRecord.getVersion() == null ? 1 : originalRecord.getVersion() + 1;
             if (calculateRecordChanges(newRecord, originalRecord, newVersion, put, recordEvent, useLatestRecordType)) {
                 putMessageOnWalAndProcess(recordId, rowLock, put, recordEvent);
+                newRecord.setResponseStatus(ResponseStatus.UPDATED);
+            } else {
+                newRecord.setResponseStatus(ResponseStatus.UP_TO_DATE);
             }
         } catch (RowLogException e) {
             throw new RecordException("Exception occurred while putting updated record <" + recordId

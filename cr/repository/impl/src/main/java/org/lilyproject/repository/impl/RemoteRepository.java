@@ -251,7 +251,39 @@ public class RemoteRepository implements Repository {
             throw handleUndeclaredRecordThrowable(e);
         }
     }
-    
+
+    public Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
+            RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException {
+        return createOrUpdate(record, true);
+    }
+
+    public Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
+            RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            VersionNotFoundException {
+        try {
+            return converter.convert(lilyProxy.createOrUpdate(converter.convert(record), useLatestRecordType));
+        } catch (AvroInvalidRecordException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroFieldTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordException e) {
+            throw converter.convert(e);
+        } catch (AvroTypeException e) {
+            throw converter.convert(e);
+        } catch (AvroVersionNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroGenericException e) {
+            throw converter.convert(e);
+        } catch (AvroRemoteException e) {
+            throw converter.convert(e);
+        } catch (UndeclaredThrowableException e) {
+            throw handleUndeclaredRecordThrowable(e);
+        }
+    }
+
     public Set<RecordId> getVariants(RecordId recordId) throws RepositoryException {
         try {
             return converter.convertAvroRecordIds(lilyProxy.getVariants(converter.convert(recordId)));

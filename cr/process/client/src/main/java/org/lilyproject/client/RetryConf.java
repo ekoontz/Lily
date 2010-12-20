@@ -23,6 +23,7 @@ public class RetryConf {
     private boolean retryReads = true;
     private boolean retryUpdates = true;
     private boolean retryDeletes = true;
+    private boolean retryCreateOrUpdate = true;
     private boolean retryCreate = true;
     private boolean retryCreateRiskDoubles = false;
     private int retryMaxTime = 30000;
@@ -53,6 +54,14 @@ public class RetryConf {
      */
     public void setRetryDeletes(boolean retryDeletes) {
         this.retryDeletes = retryDeletes;
+    }
+
+    public boolean getRetryCreateOrUpdate() {
+        return retryCreateOrUpdate;
+    }
+
+    public void setRetryCreateOrUpdate(boolean retryCreateOrUpdate) {
+        this.retryCreateOrUpdate = retryCreateOrUpdate;
     }
 
     public boolean getRetryCreate() {

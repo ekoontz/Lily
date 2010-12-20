@@ -191,6 +191,8 @@ public class BalancingAndRetryingRepository {
             if ((methodName.startsWith("read") || methodName.startsWith("get") || methodName.startsWith("new"))
                     && retryConf.getRetryReads()) {
                 retry = true;
+            } else if (methodName.equals("createOrUpdate") && retryConf.getRetryCreateOrUpdate()) {
+                retry = true;
             } else if (methodName.startsWith("update") && retryConf.getRetryUpdates()) {
                 retry = true;
             } else if (methodName.startsWith("delete") && retryConf.getRetryDeletes()) {

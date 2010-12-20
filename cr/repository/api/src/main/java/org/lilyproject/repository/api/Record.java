@@ -163,6 +163,16 @@ public interface Record {
      * Gets the lists of fields to delete. Modifying the returned list modifies the state of this Record object.
      */
     List<QName> getFieldsToDelete();
+
+    /**
+     * After performing a create or update, gives some information as to whether a record was created, updated,
+     * or unchanged. Especially useful when using {@link Repository#createOrUpdate}.
+     *
+     * <p>This property is output-only (= assigned by the repository, ignored on input) and ephemeral (not stored).
+     */
+    ResponseStatus getResponseStatus();
+
+    void setResponseStatus(ResponseStatus status);
     
     Record clone();
     

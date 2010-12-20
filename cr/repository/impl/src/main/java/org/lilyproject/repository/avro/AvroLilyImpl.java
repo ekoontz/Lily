@@ -70,6 +70,28 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
+    public AvroRecord createOrUpdate(AvroRecord record, boolean useLatestRecordType) throws AvroInvalidRecordException,
+            AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordException, AvroTypeException,
+            AvroGenericException, AvroInterruptedException, AvroVersionNotFoundException {
+        try {
+            return converter.convert(repository.createOrUpdate(converter.convert(record), useLatestRecordType));
+        } catch (VersionNotFoundException e) {
+            throw converter.convert(e);
+        } catch (InvalidRecordException e) {
+            throw converter.convert(e);
+        } catch (RecordTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (FieldTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (RecordException e) {
+            throw converter.convert(e);
+        } catch (TypeException e) {
+            throw converter.convert(e);
+        } catch (InterruptedException e) {
+            throw converter.convert(e);
+        }
+    }
+
     public Void delete(CharSequence recordId) throws AvroRecordException, AvroTypeException, AvroFieldTypeNotFoundException,
             AvroRecordNotFoundException, AvroInterruptedException {
         try {

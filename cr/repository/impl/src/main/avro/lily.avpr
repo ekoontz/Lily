@@ -35,7 +35,12 @@
         {"name": "scopeRecordTypeNames", "type": {"type": "map", "values": ["AvroQName", "null"]}},
         {"name": "scopeRecordTypeVersions", "type": {"type": "map", "values": "long"}},
         {"name": "fields", "type": {"type": "array", "items": "AvroField"}},
-        {"name": "fieldsToDelete", "type": {"type": "array", "items": "string"}}
+        {"name": "fieldsToDelete", "type": {"type": "array", "items": "string"}},
+        {"name": "responseStatus", "type": [
+          {"namespace": "org.lilyproject.repository.api", "name": "ResponseStatus", "type": "enum", "symbols": ["CREATED", "UPDATED", "UP_TO_DATE"]},
+          "null"
+        ]
+        }
       ]
     },
     
@@ -296,6 +301,17 @@
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
       "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
+      "AvroGenericException", "AvroInterruptedException"]
+    },
+
+    "createOrUpdate": {
+      "request": [
+        {"name": "record", "type": "AvroRecord"},
+        {"name": "useLatestRecordType", "type": "boolean"}
+      ],
+      "response": "AvroRecord",
+      "errors": ["AvroInvalidRecordException",
+      "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
       "AvroGenericException", "AvroInterruptedException"]
     },
 

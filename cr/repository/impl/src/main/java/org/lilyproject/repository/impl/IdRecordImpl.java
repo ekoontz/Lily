@@ -156,6 +156,14 @@ public class IdRecordImpl implements IdRecord {
         record.delete(fieldName, addToFieldsToDelete);
     }
 
+    public ResponseStatus getResponseStatus() {
+        return record.getResponseStatus();
+    }
+
+    public void setResponseStatus(ResponseStatus status) {
+        record.setResponseStatus(status);
+    }
+
     public Record clone() {
         throw new UnsupportedOperationException("IdRecordImpl does not support cloning.");
     }

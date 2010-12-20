@@ -34,21 +34,7 @@ import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.lilyproject.repository.api.FieldNotFoundException;
-import org.lilyproject.repository.api.FieldType;
-import org.lilyproject.repository.api.IdGenerator;
-import org.lilyproject.repository.api.IdRecord;
-import org.lilyproject.repository.api.InvalidRecordException;
-import org.lilyproject.repository.api.QName;
-import org.lilyproject.repository.api.Record;
-import org.lilyproject.repository.api.RecordId;
-import org.lilyproject.repository.api.RecordNotFoundException;
-import org.lilyproject.repository.api.RecordType;
-import org.lilyproject.repository.api.RecordTypeNotFoundException;
-import org.lilyproject.repository.api.Repository;
-import org.lilyproject.repository.api.Scope;
-import org.lilyproject.repository.api.TypeManager;
-import org.lilyproject.repository.api.VersionNotFoundException;
+import org.lilyproject.repository.api.*;
 import org.lilyproject.repository.impl.IdGeneratorImpl;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogConfig;
@@ -1346,4 +1332,27 @@ public abstract class AbstractRepositoryTest {
         record.setField(fieldType3.getName(), false);
         repository.update(record, true, false);
     }
+
+    @Test
+    public void testCreateOrUpdate() throws Exception {
+        RecordId id = idGenerator.newRecordId();
+        Record record = repository.newRecord(id);
+        record.setRecordType(recordType1.getName(), recordType1.getVersion());
+        record.setField(fieldType1.getName(), "value1");
+
+        Record resultRecord;
+        resultRecord = repository.createOrUpdate(record);
+        assertEquals(ResponseStatus.CREATED, resultRecord.getResponseStatus());
+        resultRecord = repository.createOrUpdate(record);
+        assertEquals(ResponseStatus.UP_TO_DATE, resultRecord.getResponseStatus());
+
+        record.setField(fieldType1.getName(), "value2");
+        resultRecord = repository.createOrUpdate(record);
+        assertEquals(ResponseStatus.UPDATED, resultRecord.getResponseStatus());
+        resultRecord = repository.createOrUpdate(record);
+        assertEquals(ResponseStatus.UP_TO_DATE, resultRecord.getResponseStatus());
+        resultRecord = repository.createOrUpdate(record);
+        assertEquals(ResponseStatus.UP_TO_DATE, resultRecord.getResponseStatus());
+    }
+
 }

@@ -20,12 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.lilyproject.repository.api.QName;
-import org.lilyproject.repository.api.Record;
-import org.lilyproject.repository.api.RecordId;
-import org.lilyproject.repository.api.Repository;
-import org.lilyproject.repository.api.Scope;
-import org.lilyproject.repository.api.FieldNotFoundException;
+import org.lilyproject.repository.api.*;
 
 public class RecordImpl implements Record {
     private RecordId id;
@@ -34,6 +29,7 @@ public class RecordImpl implements Record {
     private Map<Scope, QName> recordTypeNames = new HashMap<Scope, QName>();
     private Map<Scope, Long> recordTypeVersions = new HashMap<Scope, Long>();
     private Long version;
+    private ResponseStatus responseStatus;
     
 
     /**
@@ -137,6 +133,14 @@ public class RecordImpl implements Record {
         fieldsToDelete.removeAll(names);
     }
 
+    public ResponseStatus getResponseStatus() {
+        return responseStatus;
+    }
+
+    public void setResponseStatus(ResponseStatus status) {
+        this.responseStatus = status;
+    }
+
     public Record clone() {
         RecordImpl record = new RecordImpl();
         record.id = id;
@@ -145,6 +149,7 @@ public class RecordImpl implements Record {
         record.recordTypeVersions.putAll(recordTypeVersions);
         record.fields.putAll(fields);
         record.fieldsToDelete.addAll(fieldsToDelete);
+        // the ResponseStatus is not cloned, on purpose
         return record;
     }
 
