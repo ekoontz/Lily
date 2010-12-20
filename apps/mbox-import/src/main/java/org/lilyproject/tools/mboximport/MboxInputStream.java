@@ -43,11 +43,14 @@ public class MboxInputStream extends InputStream {
             return false;
 
         if (!atFromLine) {
-            while (!atFromLine) {
+            while (!atFromLine && !eof) {
                 System.err.println("Not yet at next message, skipping line: " + new String(buffer, 0, currentLineLength));
                 readLine();
             }
         }
+
+        if (eof)
+            return false;
 
         readLine();
 
