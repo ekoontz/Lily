@@ -153,6 +153,46 @@ public class HBaseRepository implements Repository {
         return new RecordImpl(recordId);
     }
 
+    /*
+    public void createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException, RecordExistsException, RecordTypeNotFoundException, InvalidRecordException, TypeException, VersionNotFoundException, RecordNotFoundException {
+        // TODO ondersteun de useLatestRecordType flag
+
+        if (record.getId() == null) {
+            // TODO
+            throw new RuntimeException("Dit pikken we niet");
+        }
+
+        byte[] rowId = record.getId().toBytes();
+        Get get = new Get(rowId);
+        get.addColumn(RecordCf.SYSTEM.bytes, RecordColumn.DELETED.bytes);
+
+        int attempts = 0;
+
+        while (attempts < 3) {
+            Result result = recordTable.get(get);
+            byte[] deleted = result.getValue(systemColumnFamily, RecordColumn.DELETED.bytes);
+            if ((deleted == null) || (Bytes.toBoolean(deleted))) {
+                // doe de create
+                try {
+                    Record createdRecord = create(record);
+                } catch (RecordExistsException e) {
+
+                }
+            } else {
+                // doe de update
+                try {
+                    update(record, false, true);
+                } catch (RecordNotFoundException e) {
+
+                }
+            }
+        }
+
+
+
+    }
+    */
+
     public Record create(Record record) throws RecordExistsException, InvalidRecordException,
             RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
         long before = System.currentTimeMillis();

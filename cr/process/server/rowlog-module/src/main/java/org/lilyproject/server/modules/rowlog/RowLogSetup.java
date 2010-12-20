@@ -73,12 +73,29 @@ public class RowLogSetup {
             confMgr.addRowLog("mq", new RowLogConfig(10000L, true, true, 100L, 0L));
         }
         
-        // If the subscription already exists, this method will silently return
-        if (!confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
-            confMgr.addSubscription("wal", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
+        boolean linkIdxEnabled = rowLogConf.getChild("linkIndexUpdater").getAttributeAsBoolean("enabled", true);
+        if (linkIdxEnabled) {
+            if (!confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
+                // If the subscription already exists, this method will silently return
+                confMgr.addSubscription("wal", "LinkIndexUpdater", RowLogSubscription.Type.VM, 3, 10);
+            }
+        } else {
+            log.info("LinkIndexUpdater is disabled.");
+            if (confMgr.subscriptionExists("wal", "LinkIndexUpdater")) {
+                confMgr.removeSubscription("wal", "LinkIndexUpdater");
+            }
         }
-        if (!confMgr.subscriptionExists("wal", "MQFeeder")) {
-            confMgr.addSubscription("wal", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
+
+        boolean mqFeederEnabled = rowLogConf.getChild("mqFeeder").getAttributeAsBoolean("enabled", true);
+        if (mqFeederEnabled) {
+            if (!confMgr.subscriptionExists("wal", "MQFeeder")) {
+                confMgr.addSubscription("wal", "MQFeeder", RowLogSubscription.Type.VM, 3, 20);
+            }
+        } else {
+            log.info("MQFeeder is disabled.");
+            if (confMgr.subscriptionExists("wal", "MQFeeder")) {
+                confMgr.removeSubscription("wal", "MQFeeder");
+            }
         }
 
         messageQueue = new RowLogImpl("mq", hbaseTableFactory.getRecordTable(), RecordCf.MQ_PAYLOAD.bytes,
@@ -109,9 +126,14 @@ public class RowLogSetup {
         } else {
             log.info("Not participating in WAL processor election.");
         }
-        
-        confMgr.addListener("wal", "LinkIndexUpdater", "LinkIndexUpdaterListener");
-        confMgr.addListener("wal", "MQFeeder", "MQFeederListener");
+
+        if (linkIdxEnabled) {
+            confMgr.addListener("wal", "LinkIndexUpdater", "LinkIndexUpdaterListener");
+        }
+
+        if (mqFeederEnabled) {
+            confMgr.addListener("wal", "MQFeeder", "MQFeederListener");
+        }
     }
 
     @PreDestroy

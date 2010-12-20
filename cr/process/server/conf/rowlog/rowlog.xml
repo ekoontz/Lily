@@ -8,4 +8,14 @@
        Lily servers, no processing at all will happen. -->
   <walProcessor enabled="true"/>
   <mqProcessor enabled="true"/>
+
+  <!-- linkIndexUpdater: if enabled, the wal-rowlog subscription will be made if necessary, if false,
+       the subscription will be removed if present (effectively disabling updating of the
+       link index). This setting should be the same on all your Lily nodes. -->
+  <linkIndexUpdater enabled="true"/>
+
+  <!-- mqFeeder: similar to linkIndexUpdater (adds/remove the wal-rowlog subscription).
+       If disabled, the message queue will not be fed with messages.
+  -->
+  <mqFeeder enabled="true"/>
 </rowlog>
