@@ -62,7 +62,7 @@ public class HBaseProxy {
     // are used in this way.
     private static Map<String, byte[]> EXPLOIT_TIMESTAMP_TABLES = new HashMap<String, byte[]>();
     static {
-        EXPLOIT_TIMESTAMP_TABLES.put("record", Bytes.toBytes("versioned"));
+        EXPLOIT_TIMESTAMP_TABLES.put("record", Bytes.toBytes("data"));
         EXPLOIT_TIMESTAMP_TABLES.put("type", Bytes.toBytes("fieldtype-entry"));
     }
 
