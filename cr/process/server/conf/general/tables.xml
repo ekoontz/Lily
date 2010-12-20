@@ -7,7 +7,7 @@
         This number is only picked up when the recordRegionsKeys property is empty.
         Default : 100  
         -->
-  <nrOfRecordRegions>100</nrOfRecordRegions>
+  <nrOfRecordRegions>10</nrOfRecordRegions>
 
   <!--  Comma separated list of start keys of the record table regions to be created at first startup.
         Example: <recordRegionKeys>A,KLM,Z</recordRegionKeys>  -->
