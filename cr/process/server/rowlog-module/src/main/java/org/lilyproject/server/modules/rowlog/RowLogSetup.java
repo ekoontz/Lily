@@ -20,8 +20,11 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.KeeperException;
+import org.kauriproject.conf.Conf;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
@@ -35,7 +38,6 @@ import org.lilyproject.rowlog.impl.RowLogProcessorElection;
 import org.lilyproject.rowlog.impl.RowLogProcessorImpl;
 import org.lilyproject.rowlog.impl.RowLogShardImpl;
 import org.lilyproject.util.hbase.HBaseTableFactory;
-import org.lilyproject.util.hbase.HBaseTableFactoryImpl;
 import org.lilyproject.util.hbase.LilyHBaseSchema.RecordCf;
 import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
@@ -49,12 +51,16 @@ public class RowLogSetup {
     private RowLogProcessorElection messageQueueProcessorLeader;
     private RowLogProcessorElection writeAheadLogProcessorLeader;
     private final HBaseTableFactory hbaseTableFactory;
+    private final Conf rowLogConf;
+    private final Log log = LogFactory.getLog(getClass());
 
-    public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf, HBaseTableFactory hbaseTableFactory) {
+    public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf,
+            HBaseTableFactory hbaseTableFactory, Conf rowLogConf) {
         this.confMgr = confMgr;
         this.zk = zk;
         this.hbaseConf = hbaseConf;
         this.hbaseTableFactory = hbaseTableFactory;
+        this.rowLogConf = rowLogConf;
     }
 
     @PostConstruct
@@ -87,12 +93,22 @@ public class RowLogSetup {
         RowLogMessageListenerMapping.INSTANCE.put("MQFeeder", new MessageQueueFeeder(messageQueue));
 
         // Start the message queue processor
-        messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, confMgr));
-        messageQueueProcessorLeader.start();
+        boolean mqProcEnabled = rowLogConf.getChild("mqProcessor").getAttributeAsBoolean("enabled", true);
+        if (mqProcEnabled) {
+            messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, confMgr));
+            messageQueueProcessorLeader.start();
+        } else {
+            log.info("Not participating in MQ processor election.");
+        }
         
         // Start the wal processor
-        writeAheadLogProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(writeAheadLog, confMgr));
-        writeAheadLogProcessorLeader.start();
+        boolean walProcEnabled = rowLogConf.getChild("walProcessor").getAttributeAsBoolean("enabled", true);
+        if (walProcEnabled) {
+            writeAheadLogProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(writeAheadLog, confMgr));
+            writeAheadLogProcessorLeader.start();
+        } else {
+            log.info("Not participating in WAL processor election.");
+        }
         
         confMgr.addListener("wal", "LinkIndexUpdater", "LinkIndexUpdaterListener");
         confMgr.addListener("wal", "MQFeeder", "MQFeederListener");

@@ -55,6 +55,7 @@
     <constructor-arg ref="zooKeeper"/>
     <constructor-arg ref="hbaseConf"/>
     <constructor-arg ref="hbaseTableFactory"/>
+    <constructor-arg><kauri:conf path="rowlog"/></constructor-arg>
   </bean>
 
   <bean id="messageQueue" factory-bean="rowLogSetup" factory-method="getMessageQueue"/>

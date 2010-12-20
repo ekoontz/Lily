@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<rowlog>
+  <!-- The WAL or MQ processor is a component which is active on one of the Lily servers,
+       elected through ZooKeeper. The processor is responsible for continuing interrupted
+       secondary actions (in case of the WAL) or distributing messages to listeners (in
+       case of the MQ). By setting the enabled flag to false, this Lily instance will
+       not be a candidate to run the WAL or MQ processor. If they are disabled on all
+       Lily servers, no processing at all will happen. -->
+  <walProcessor enabled="true"/>
+  <mqProcessor enabled="true"/>
+</rowlog>
