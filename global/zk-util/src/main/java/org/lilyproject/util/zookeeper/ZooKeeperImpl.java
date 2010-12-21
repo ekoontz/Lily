@@ -286,14 +286,14 @@ public class ZooKeeperImpl implements ZooKeeperItf {
             zkEventThread = Thread.currentThread();
 
             if (event.getState() == Watcher.Event.KeeperState.Disconnected) {
-                System.err.println("ZooKeeper Disconnected.");
+                System.err.println("ZooKeeper disconnected at " + new Date());
                 printConnectMsg = true;
             } else if (event.getState() == Event.KeeperState.Expired) {
-                System.err.println("ZooKeeper session expired.");
+                System.err.println("ZooKeeper session expired at " + new Date());
                 printConnectMsg = true;
             } else if (event.getState() == Event.KeeperState.SyncConnected) {
                 if (printConnectMsg) {
-                    System.out.println("ZooKeeper connected.");
+                    System.out.println("ZooKeeper connected at " + new Date());
                 }
             }
 
