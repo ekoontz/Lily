@@ -148,10 +148,9 @@ public class HBaseRepository implements Repository {
         Get get = new Get(rowId);
         get.addColumn(RecordCf.SYSTEM.bytes, RecordColumn.DELETED.bytes);
 
-        int attempts = 0;
-        int maxAttempts = 3;
-
-        while (attempts < maxAttempts) {
+        int attempts;
+        
+        for (attempts = 0; attempts < 3; attempts++) {            
             Result result;
             try {
                 result = recordTable.get(get);
@@ -179,7 +178,7 @@ public class HBaseRepository implements Repository {
             }
         }
 
-        throw new RecordException("Create-or-update failed after " + maxAttempts +
+        throw new RecordException("Create-or-update failed after " + attempts +
                 " attempts, toggling between create and update mode.");
     }
 
