@@ -252,6 +252,7 @@ public class LilyClient implements Closeable {
             ServerNode server = serverIt.next();
             if (removedServers.contains(server.lilyAddressAndPort)) {
                 serverIt.remove();
+                Closer.close(server.repository);
             }
         }
         serverAddresses.removeAll(removedServers);
