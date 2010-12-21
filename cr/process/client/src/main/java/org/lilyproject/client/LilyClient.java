@@ -242,7 +242,7 @@ public class LilyClient implements Closeable {
         newServers.removeAll(serverAddresses);
 
         if (log.isDebugEnabled()) {
-            log.debug("ZK watcher: # current servers in ZK: " + currentServers.size() + ", # added servers: " +
+            log.debug("# current servers in ZK: " + currentServers.size() + ", # added servers: " +
                     newServers.size() + ", # removed servers: " + removedServers.size());
         }
 
@@ -261,9 +261,16 @@ public class LilyClient implements Closeable {
             servers.add(new ServerNode(server));
             serverAddresses.add(server);
         }
+
+        if (log.isInfoEnabled()) {
+            log.info("Current Lily servers = " + serverAddresses.toString());
+        }
     }
 
-    private void clearServers() {
+    private synchronized void clearServers() {
+        if (log.isInfoEnabled()) {
+            log.info("Not connected to ZooKeeper, will clear list of servers.");
+        }
         servers.clear();
         serverAddresses.clear();
     }
