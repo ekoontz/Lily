@@ -16,6 +16,7 @@
 package org.lilyproject.linkindex;
 
 import org.lilyproject.hbaseindex.*;
+import org.lilyproject.linkindex.LinkIndexMetrics.Action;
 import org.lilyproject.repository.api.IdGenerator;
 import org.lilyproject.repository.api.RecordId;
 import org.lilyproject.repository.api.Repository;
@@ -33,10 +34,12 @@ import java.util.*;
 // never be left any state in the backward table which would not be found via the forward index.
 public class LinkIndex {
     private IdGenerator idGenerator;
+    private LinkIndexMetrics metrics;
     private static ThreadLocal<Index> FORWARD_INDEX;
     private static ThreadLocal<Index> BACKWARD_INDEX;
 
     public LinkIndex(final IndexManager indexManager, Repository repository) throws IndexNotFoundException, IOException {
+        metrics = new LinkIndexMetrics("linkIndex");
         this.idGenerator = repository.getIdGenerator();
 
         FORWARD_INDEX = new ThreadLocal<Index>() {
@@ -66,53 +69,63 @@ public class LinkIndex {
      * Deletes all links of a record, irrespective of the vtag.
      */
     public void deleteLinks(RecordId sourceRecord) throws IOException {
-        byte[] sourceAsBytes = sourceRecord.toBytes();
-
-        // Read links from the forwards table
-        Set<Pair<FieldedLink, String>> oldLinks = getAllForwardLinks(sourceRecord);
-
-        // Delete existing entries from the backwards table
-        List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
-        for (Pair<FieldedLink, String> link : oldLinks) {
-            IndexEntry entry = createBackwardIndexEntry(link.getV2(), link.getV1().getRecordId(), link.getV1().getFieldTypeId());
-            entry.setIdentifier(sourceAsBytes);
-            entries.add(entry);
+        long before = System.currentTimeMillis();
+        try {
+            byte[] sourceAsBytes = sourceRecord.toBytes();
+    
+            // Read links from the forwards table
+            Set<Pair<FieldedLink, String>> oldLinks = getAllForwardLinks(sourceRecord);
+    
+            // Delete existing entries from the backwards table
+            List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
+            for (Pair<FieldedLink, String> link : oldLinks) {
+                IndexEntry entry = createBackwardIndexEntry(link.getV2(), link.getV1().getRecordId(), link.getV1().getFieldTypeId());
+                entry.setIdentifier(sourceAsBytes);
+                entries.add(entry);
+            }
+            BACKWARD_INDEX.get().removeEntries(entries);
+    
+            // Delete existing entries from the forwards table
+            entries.clear();
+            for (Pair<FieldedLink, String> link : oldLinks) {
+                IndexEntry entry = createForwardIndexEntry(link.getV2(), sourceRecord, link.getV1().getFieldTypeId());
+                entry.setIdentifier(link.getV1().getRecordId().toBytes());
+                entries.add(entry);
+            }
+            FORWARD_INDEX.get().removeEntries(entries);
+        } finally {
+            metrics.report(Action.DELETE_LINKS, System.currentTimeMillis() - before);
         }
-        BACKWARD_INDEX.get().removeEntries(entries);
-
-        // Delete existing entries from the forwards table
-        entries.clear();
-        for (Pair<FieldedLink, String> link : oldLinks) {
-            IndexEntry entry = createForwardIndexEntry(link.getV2(), sourceRecord, link.getV1().getFieldTypeId());
-            entry.setIdentifier(link.getV1().getRecordId().toBytes());
-            entries.add(entry);
-        }
-        FORWARD_INDEX.get().removeEntries(entries);
     }
 
     public void deleteLinks(RecordId sourceRecord, String vtag) throws IOException {
-        byte[] sourceAsBytes = sourceRecord.toBytes();
-
-        // Read links from the forwards table
-        Set<FieldedLink> oldLinks = getForwardLinks(sourceRecord, vtag);
-
-        // Delete existing entries from the backwards table
-        List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
-        for (FieldedLink link : oldLinks) {
-            IndexEntry entry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-            entry.setIdentifier(sourceAsBytes);
-            entries.add(entry);
+        long before = System.currentTimeMillis();
+        try {
+            byte[] sourceAsBytes = sourceRecord.toBytes();
+    
+            // Read links from the forwards table
+            Set<FieldedLink> oldLinks = getForwardLinks(sourceRecord, vtag);
+    
+            // Delete existing entries from the backwards table
+            List<IndexEntry> entries = new ArrayList<IndexEntry>(oldLinks.size());
+            for (FieldedLink link : oldLinks) {
+                IndexEntry entry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
+                entry.setIdentifier(sourceAsBytes);
+                entries.add(entry);
+            }
+            BACKWARD_INDEX.get().removeEntries(entries);
+    
+            // Delete existing entries from the forwards table
+            entries.clear();
+            for (FieldedLink link : oldLinks) {
+                IndexEntry entry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
+                entry.setIdentifier(link.getRecordId().toBytes());
+                entries.add(entry);
+            }
+            FORWARD_INDEX.get().removeEntries(entries);
+        } finally {
+            metrics.report(Action.DELETE_LINKS_VTAG, System.currentTimeMillis() - before);
         }
-        BACKWARD_INDEX.get().removeEntries(entries);
-
-        // Delete existing entries from the forwards table
-        entries.clear();
-        for (FieldedLink link : oldLinks) {
-            IndexEntry entry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-            entry.setIdentifier(link.getRecordId().toBytes());
-            entries.add(entry);
-        }
-        FORWARD_INDEX.get().removeEntries(entries);
     }
 
     /**
@@ -120,60 +133,65 @@ public class LinkIndex {
      * @param links if this set is empty, then calling this method is equivalent to calling deleteLinks
      */
     public void updateLinks(RecordId sourceRecord, String vtag, Set<FieldedLink> links) throws IOException {
-        // We could simply delete all the old entries using deleteLinks() and then add
-        // all new entries, but instead we find out what actually needs adding or removing and only
-        // perform that. This is to avoid running into problems due to http://search-hadoop.com/m/rNnhN15Xecu
-        // (= delete and put within the same millisecond).
-        byte[] sourceAsBytes = sourceRecord.toBytes();
-
-        Set<FieldedLink> oldLinks = getForwardLinks(sourceRecord, vtag);
-
-        // Find out what changed
-        Set<FieldedLink> removedLinks = new HashSet<FieldedLink>(oldLinks);
-        removedLinks.removeAll(links);
-        Set<FieldedLink> addedLinks = new HashSet<FieldedLink>(links);
-        addedLinks.removeAll(oldLinks);
-
-        // Apply added links
-        List<IndexEntry> fwdEntries = null;
-        List<IndexEntry> bkwdEntries = null;
-        if (addedLinks.size() > 0) {
-            fwdEntries = new ArrayList<IndexEntry>(Math.max(addedLinks.size(), removedLinks.size()));
-            bkwdEntries = new ArrayList<IndexEntry>(fwdEntries.size());
-            for (FieldedLink link : addedLinks) {
-                IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-                fwdEntry.setIdentifier(link.getRecordId().toBytes());
-                fwdEntries.add(fwdEntry);
-
-                IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-                bkwdEntry.setIdentifier(sourceAsBytes);
-                bkwdEntries.add(bkwdEntry);
-            }
-            FORWARD_INDEX.get().addEntries(fwdEntries);
-            BACKWARD_INDEX.get().addEntries(bkwdEntries);
-        }
-
-        // Apply removed links
-        if (removedLinks.size() > 0) {
-            if (fwdEntries != null) {
-                fwdEntries.clear();
-                bkwdEntries.clear();
-            } else {
-                fwdEntries = new ArrayList<IndexEntry>(removedLinks.size());
+        long before = System.currentTimeMillis();
+        try {
+            // We could simply delete all the old entries using deleteLinks() and then add
+            // all new entries, but instead we find out what actually needs adding or removing and only
+            // perform that. This is to avoid running into problems due to http://search-hadoop.com/m/rNnhN15Xecu
+            // (= delete and put within the same millisecond).
+            byte[] sourceAsBytes = sourceRecord.toBytes();
+    
+            Set<FieldedLink> oldLinks = getForwardLinks(sourceRecord, vtag);
+    
+            // Find out what changed
+            Set<FieldedLink> removedLinks = new HashSet<FieldedLink>(oldLinks);
+            removedLinks.removeAll(links);
+            Set<FieldedLink> addedLinks = new HashSet<FieldedLink>(links);
+            addedLinks.removeAll(oldLinks);
+    
+            // Apply added links
+            List<IndexEntry> fwdEntries = null;
+            List<IndexEntry> bkwdEntries = null;
+            if (addedLinks.size() > 0) {
+                fwdEntries = new ArrayList<IndexEntry>(Math.max(addedLinks.size(), removedLinks.size()));
                 bkwdEntries = new ArrayList<IndexEntry>(fwdEntries.size());
+                for (FieldedLink link : addedLinks) {
+                    IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
+                    fwdEntry.setIdentifier(link.getRecordId().toBytes());
+                    fwdEntries.add(fwdEntry);
+    
+                    IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
+                    bkwdEntry.setIdentifier(sourceAsBytes);
+                    bkwdEntries.add(bkwdEntry);
+                }
+                FORWARD_INDEX.get().addEntries(fwdEntries);
+                BACKWARD_INDEX.get().addEntries(bkwdEntries);
             }
-
-            for (FieldedLink link : removedLinks) {
-                IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
-                bkwdEntry.setIdentifier(sourceAsBytes);
-                bkwdEntries.add(bkwdEntry);
-
-                IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
-                fwdEntry.setIdentifier(link.getRecordId().toBytes());
-                fwdEntries.add(fwdEntry);
+    
+            // Apply removed links
+            if (removedLinks.size() > 0) {
+                if (fwdEntries != null) {
+                    fwdEntries.clear();
+                    bkwdEntries.clear();
+                } else {
+                    fwdEntries = new ArrayList<IndexEntry>(removedLinks.size());
+                    bkwdEntries = new ArrayList<IndexEntry>(fwdEntries.size());
+                }
+    
+                for (FieldedLink link : removedLinks) {
+                    IndexEntry bkwdEntry = createBackwardIndexEntry(vtag, link.getRecordId(), link.getFieldTypeId());
+                    bkwdEntry.setIdentifier(sourceAsBytes);
+                    bkwdEntries.add(bkwdEntry);
+    
+                    IndexEntry fwdEntry = createForwardIndexEntry(vtag, sourceRecord, link.getFieldTypeId());
+                    fwdEntry.setIdentifier(link.getRecordId().toBytes());
+                    fwdEntries.add(fwdEntry);
+                }
+                BACKWARD_INDEX.get().removeEntries(bkwdEntries);
+                FORWARD_INDEX.get().removeEntries(fwdEntries);
             }
-            BACKWARD_INDEX.get().removeEntries(bkwdEntries);
-            FORWARD_INDEX.get().removeEntries(fwdEntries);
+        } finally {
+            metrics.report(Action.UPDATE_LINKS, System.currentTimeMillis() - before);
         }
     }
 
@@ -209,81 +227,101 @@ public class LinkIndex {
     }
 
     public Set<RecordId> getReferrers(RecordId record, String vtag, String sourceField) throws IOException {
-        Query query = new Query();
-        query.addEqualsCondition("vtag", vtag);
-        query.addEqualsCondition("target", record.getMaster().toString());
-        query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
-        if (sourceField != null) {
-            query.addEqualsCondition("sourcefield", sourceField);
+        long before = System.currentTimeMillis();
+        try {
+            Query query = new Query();
+            query.addEqualsCondition("vtag", vtag);
+            query.addEqualsCondition("target", record.getMaster().toString());
+            query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
+            if (sourceField != null) {
+                query.addEqualsCondition("sourcefield", sourceField);
+            }
+    
+            Set<RecordId> result = new HashSet<RecordId>();
+    
+            QueryResult qr = BACKWARD_INDEX.get().performQuery(query);
+            byte[] id;
+            while ((id = qr.next()) != null) {
+                result.add(idGenerator.fromBytes(id));
+            }
+            Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
+    
+            return result;
+        } finally {
+            metrics.report(Action.GET_REFERRERS, System.currentTimeMillis() - before);
         }
-
-        Set<RecordId> result = new HashSet<RecordId>();
-
-        QueryResult qr = BACKWARD_INDEX.get().performQuery(query);
-        byte[] id;
-        while ((id = qr.next()) != null) {
-            result.add(idGenerator.fromBytes(id));
-        }
-        Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
-
-        return result;
     }
 
     public Set<FieldedLink> getFieldedReferrers(RecordId record, String vtag) throws IOException {
-        Query query = new Query();
-        query.addEqualsCondition("target", record.getMaster().toString());
-        query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
-        query.addEqualsCondition("vtag", vtag);
-
-        Set<FieldedLink> result = new HashSet<FieldedLink>();
-
-        QueryResult qr = BACKWARD_INDEX.get().performQuery(query);
-        byte[] id;
-        while ((id = qr.next()) != null) {
-            String sourceField = qr.getDataAsString("sourcefield");
-            result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
+        long before = System.currentTimeMillis();
+        try {
+            Query query = new Query();
+            query.addEqualsCondition("target", record.getMaster().toString());
+            query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
+            query.addEqualsCondition("vtag", vtag);
+    
+            Set<FieldedLink> result = new HashSet<FieldedLink>();
+    
+            QueryResult qr = BACKWARD_INDEX.get().performQuery(query);
+            byte[] id;
+            while ((id = qr.next()) != null) {
+                String sourceField = qr.getDataAsString("sourcefield");
+                result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
+            }
+            Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
+    
+            return result;
+        } finally {
+            metrics.report(Action.GET_FIELDED_REFERRERS, System.currentTimeMillis() - before);
         }
-        Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
-
-        return result;
     }
 
     public Set<Pair<FieldedLink, String>> getAllForwardLinks(RecordId record) throws IOException {
-        Query query = new Query();
-        query.addEqualsCondition("source", record.getMaster().toString());
-        query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
-
-        Set<Pair<FieldedLink, String>> result = new HashSet<Pair<FieldedLink, String>>();
-
-        QueryResult qr = FORWARD_INDEX.get().performQuery(query);
-        byte[] id;
-        while ((id = qr.next()) != null) {
-            String sourceField = qr.getDataAsString("sourcefield");
-            String vtag = qr.getDataAsString("vtag");
-            result.add(new Pair<FieldedLink, String>(new FieldedLink(idGenerator.fromBytes(id), sourceField), vtag));
+        long before = System.currentTimeMillis();
+        try {
+            Query query = new Query();
+            query.addEqualsCondition("source", record.getMaster().toString());
+            query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
+    
+            Set<Pair<FieldedLink, String>> result = new HashSet<Pair<FieldedLink, String>>();
+    
+            QueryResult qr = FORWARD_INDEX.get().performQuery(query);
+            byte[] id;
+            while ((id = qr.next()) != null) {
+                String sourceField = qr.getDataAsString("sourcefield");
+                String vtag = qr.getDataAsString("vtag");
+                result.add(new Pair<FieldedLink, String>(new FieldedLink(idGenerator.fromBytes(id), sourceField), vtag));
+            }
+            Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
+    
+            return result;
+        } finally {
+            metrics.report(Action.GET_ALL_FW_LINKS, System.currentTimeMillis() - before);
         }
-        Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
-
-        return result;
     }
 
     public Set<FieldedLink> getForwardLinks(RecordId record, String vtag) throws IOException {
-        Query query = new Query();
-        query.addEqualsCondition("source", record.getMaster().toString());
-        query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
-        query.addEqualsCondition("vtag", vtag);
-
-        Set<FieldedLink> result = new HashSet<FieldedLink>();
-
-        QueryResult qr = FORWARD_INDEX.get().performQuery(query);
-        byte[] id;
-        while ((id = qr.next()) != null) {
-            String sourceField = qr.getDataAsString("sourcefield");
-            result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
+        long before = System.currentTimeMillis();
+        try {
+            Query query = new Query();
+            query.addEqualsCondition("source", record.getMaster().toString());
+            query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
+            query.addEqualsCondition("vtag", vtag);
+    
+            Set<FieldedLink> result = new HashSet<FieldedLink>();
+    
+            QueryResult qr = FORWARD_INDEX.get().performQuery(query);
+            byte[] id;
+            while ((id = qr.next()) != null) {
+                String sourceField = qr.getDataAsString("sourcefield");
+                result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
+            }
+            Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
+    
+            return result;
+        } finally {
+            metrics.report(Action.GET_FW_LINKS, System.currentTimeMillis() - before);
         }
-        Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
-
-        return result;
     }
 
     private String formatVariantProps(SortedMap<String, String> props) {

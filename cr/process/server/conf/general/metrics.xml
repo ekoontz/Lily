@@ -39,6 +39,20 @@
     <attribute name="subscriptionHandler.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
     <attribute name="subscriptionHandler.servers" value="localhost:8649"/>
     -->
+    
+    <attribute name="linkIndex.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="linkIndex.period" value="15"/>
+    <!--
+    <attribute name="linkIndex.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="linkIndex.servers" value="localhost:8649"/>
+    -->
+    
+    <attribute name="linkIndexUpdater.class" value="org.apache.hadoop.metrics.spi.NullContextWithUpdateThread"/>
+    <attribute name="linkIndexUpdater.period" value="15"/>
+    <!--
+    <attribute name="linkIndexUpdater.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
+    <attribute name="linkIndexUpdater.servers" value="localhost:8649"/>
+    -->
 
     <!--
     <attribute name="jvm.class" value="org.apache.hadoop.metrics.ganglia.GangliaContext31"/>
