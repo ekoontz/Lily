@@ -77,7 +77,8 @@ public class Tester extends BaseCliTool {
     private Option logDirOption;
 
     private File logDirPath = null;
-    private int iteration = 0; 
+    private int iteration = 0;
+    private DurationMetrics durationMetrics; 
     
     @Override
     protected String getCmdName() {
@@ -180,6 +181,7 @@ public class Tester extends BaseCliTool {
     }
 
     private void openStreams() throws FileNotFoundException {
+        durationMetrics = new DurationMetrics(new File(logDirPath, "metrics.txt"));
         reportStream = new PrintStream(new File(logDirPath, reportFileName));
         reportStream.println("Date,Iteration,Success/Failure,Create/Read/Update/Delete,Duration (ms)");
         errorStream = new PrintStream(new File(logDirPath, failuresFileName));
@@ -188,6 +190,7 @@ public class Tester extends BaseCliTool {
     }
 
     private void closeStreams() {
+        durationMetrics.finish();
         reportStream.print(new DateTime() + " Closing file");
         errorStream.print(new DateTime() + " Closing file");
         Closer.close(reportStream);
@@ -274,101 +277,121 @@ public class Tester extends BaseCliTool {
         startTime = System.currentTimeMillis();
         while (true) {
             iteration++;
-            for (int i = 0; i < createCount; i++) {
-                long before = System.currentTimeMillis();
-                try {
-                    Record record = repository.newRecord();
-                    record.setRecordType(recordType.getName());
-                    for (Field field : fields) {
-                        record.setField(field.fieldType.getName(), field.generateValue());
-                    }
+            testCreate();
+            if (checkStopConditions()) return;
 
-                    before = System.currentTimeMillis();
-                    record = repository.create(record);
-                    long after = System.currentTimeMillis();
-                    report(Action.CREATE, true, (int)(after - before));
-                    records.add(new TestRecord(record));
-                } catch (Throwable t) {
-                    long after = System.currentTimeMillis();
-                    report(Action.CREATE, false, (int)(after - before));
-                    reportError("Error creating record.", t);
-                }
+            testRead();
+            if (checkStopConditions()) return;
 
-                if (checkStopConditions()) return;
+            testUpdate();
+            if (checkStopConditions()) return;
+
+            testDelete();
+            if (checkStopConditions()) return;
+        }
+    }
+
+    private void testDelete() {
+        for (int i = 0; i < deleteCount; i++) {
+            TestRecord testRecord = getNonDeletedRecord();
+
+            if (testRecord == null)
+                continue;
+
+            long before = System.currentTimeMillis();
+            try {
+                repository.delete(testRecord.record.getId());
+                long after = System.currentTimeMillis();
+                testRecord.deleted = true;
+                report(Action.DELETE, true, (int)(after - before));
+            } catch (Throwable t) {
+                long after = System.currentTimeMillis();
+                report(Action.DELETE, true, (int)(after - before));
+                reportError("Error deleting record.", t);
             }
 
-            for (int i = 0; i < readCount; i++) {
-                TestRecord testRecord = getNonDeletedRecord();
+            if (checkStopConditions()) break;
+        }
+    }
 
-                if (testRecord == null)
-                    continue;
+    private void testUpdate() {
+        for (int i = 0; i < updateCount; i++) {
+            TestRecord testRecord = getNonDeletedRecord();
 
-                long before = System.currentTimeMillis();
-                try {
-                    Record readRecord = repository.read(testRecord.record.getId());
-                    long after = System.currentTimeMillis();
-                    report(Action.READ, true, (int)(after - before));
+            if (testRecord == null)
+                continue;
 
-                    if (!readRecord.equals(testRecord.record)) {
-                        System.out.println("Read record does not match written record!");
-                    }
-                } catch (Throwable t) {
-                    long after = System.currentTimeMillis();
-                    report(Action.READ, true, (int)(after - before));
-                    reportError("Error reading record.", t);
-                }
+            int selectedField = (int)Math.floor(Math.random() * fields.size());
+            Field field = fields.get(selectedField);
 
-                if (checkStopConditions()) return;
+            Record updatedRecord = testRecord.record.clone();
+            updatedRecord.setField(field.fieldType.getName(), field.generateValue());
+
+            long before = System.currentTimeMillis();
+            try {
+                updatedRecord = repository.update(updatedRecord);
+                long after = System.currentTimeMillis();
+                report(Action.UPDATE, true, (int)(after - before));
+
+                testRecord.record = updatedRecord;
+            } catch (Throwable t) {
+                long after = System.currentTimeMillis();
+                report(Action.UPDATE, true, (int)(after - before));
+                reportError("Error updating record.", t);
             }
 
-            for (int i = 0; i < updateCount; i++) {
-                TestRecord testRecord = getNonDeletedRecord();
+            if (checkStopConditions()) break;
+        }
+    }
 
-                if (testRecord == null)
-                    continue;
+    private void testRead() {
+        for (int i = 0; i < readCount; i++) {
+            TestRecord testRecord = getNonDeletedRecord();
 
-                int selectedField = (int)Math.floor(Math.random() * fields.size());
-                Field field = fields.get(selectedField);
+            if (testRecord == null)
+                continue;
 
-                Record updatedRecord = testRecord.record.clone();
-                updatedRecord.setField(field.fieldType.getName(), field.generateValue());
+            long before = System.currentTimeMillis();
+            try {
+                Record readRecord = repository.read(testRecord.record.getId());
+                long after = System.currentTimeMillis();
+                report(Action.READ, true, (int)(after - before));
 
-                long before = System.currentTimeMillis();
-                try {
-                    updatedRecord = repository.update(updatedRecord);
-                    long after = System.currentTimeMillis();
-                    report(Action.UPDATE, true, (int)(after - before));
-
-                    testRecord.record = updatedRecord;
-                } catch (Throwable t) {
-                    long after = System.currentTimeMillis();
-                    report(Action.UPDATE, true, (int)(after - before));
-                    reportError("Error updating record.", t);
+                if (!readRecord.equals(testRecord.record)) {
+                    System.out.println("Read record does not match written record!");
                 }
-
-                if (checkStopConditions()) return;
+            } catch (Throwable t) {
+                long after = System.currentTimeMillis();
+                report(Action.READ, true, (int)(after - before));
+                reportError("Error reading record.", t);
             }
 
-            for (int i = 0; i < deleteCount; i++) {
-                TestRecord testRecord = getNonDeletedRecord();
+            if (checkStopConditions()) break;
+        }
+    }
 
-                if (testRecord == null)
-                    continue;
-
-                long before = System.currentTimeMillis();
-                try {
-                    repository.delete(testRecord.record.getId());
-                    long after = System.currentTimeMillis();
-                    testRecord.deleted = true;
-                    report(Action.DELETE, true, (int)(after - before));
-                } catch (Throwable t) {
-                    long after = System.currentTimeMillis();
-                    report(Action.DELETE, true, (int)(after - before));
-                    reportError("Error deleting record.", t);
+    private void testCreate() {
+        for (int i = 0; i < createCount; i++) {
+            long before = System.currentTimeMillis();
+            try {
+                Record record = repository.newRecord();
+                record.setRecordType(recordType.getName());
+                for (Field field : fields) {
+                    record.setField(field.fieldType.getName(), field.generateValue());
                 }
 
-                if (checkStopConditions()) return;
+                before = System.currentTimeMillis();
+                record = repository.create(record);
+                long after = System.currentTimeMillis();
+                report(Action.CREATE, true, (int)(after - before));
+                records.add(new TestRecord(record));
+            } catch (Throwable t) {
+                long after = System.currentTimeMillis();
+                report(Action.CREATE, false, (int)(after - before));
+                reportError("Error creating record.", t);
             }
+
+            if (checkStopConditions()) break;
         }
     }
 
@@ -416,6 +439,9 @@ public class Tester extends BaseCliTool {
 
         if (metrics != null) {
             metrics.report(action, success, duration);
+        }
+        if (durationMetrics != null) {
+            durationMetrics.increment(action.name(), duration);
         }
     }
 
