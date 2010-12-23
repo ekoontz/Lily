@@ -17,12 +17,14 @@ package org.lilyproject.repository.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -72,6 +74,7 @@ public abstract class AbstractTypeManager implements TypeManager {
     private Map<QName, RecordType> recordTypeNameCache = new HashMap<QName, RecordType>();
     private Map<String, FieldType> fieldTypeIdCache = new HashMap<String, FieldType>();
     private Map<String, RecordType> recordTypeIdCache = new HashMap<String, RecordType>();
+    private Map<BytesId, FieldType> fieldTypeBytesIdCache = new HashMap<BytesId, FieldType>();
     private final CacheWatcher cacheWatcher = new CacheWatcher();
     protected static final String CACHE_INVALIDATION_PATH = "/lily/typemanager/cache";
     
@@ -185,14 +188,17 @@ public abstract class AbstractTypeManager implements TypeManager {
     private synchronized void refreshFieldTypeCache() {
         Map<QName, FieldType> newFieldTypeNameCache = new HashMap<QName, FieldType>();
         Map<String, FieldType> newFieldTypeIdCache = new HashMap<String, FieldType>();
+        Map<BytesId, FieldType> newFieldTypeBytesIdCache = new HashMap<BytesId, FieldType>();
         try {
             List<FieldType> fieldTypes = getFieldTypesWithoutCache();
             for (FieldType fieldType : fieldTypes) {
                 newFieldTypeNameCache.put(fieldType.getName(), fieldType);
                 newFieldTypeIdCache.put(fieldType.getId(), fieldType);
+                newFieldTypeBytesIdCache.put(new BytesId(HBaseTypeManager.idToBytes(fieldType.getId())), fieldType);
             }
             fieldTypeNameCache = newFieldTypeNameCache;
             fieldTypeIdCache = newFieldTypeIdCache;
+            fieldTypeBytesIdCache = newFieldTypeBytesIdCache;
         } catch (Exception e) {
             // We keep on working with the old cache
             log.warn("Exception while refreshing FieldType cache. Cache is possibly out of date.", e);
@@ -225,9 +231,11 @@ public abstract class AbstractTypeManager implements TypeManager {
         if (oldFieldType != null) {
             fieldTypeNameCache.remove(oldFieldType.getName());
             fieldTypeIdCache.remove(oldFieldType.getId());
+            fieldTypeBytesIdCache.remove(new BytesId(HBaseTypeManager.idToBytes(oldFieldType.getId())));
         }
         fieldTypeNameCache.put(fieldType.getName(), fieldType);
         fieldTypeIdCache.put(fieldType.getId(), fieldType);
+        fieldTypeBytesIdCache.put(new BytesId(HBaseTypeManager.idToBytes(fieldType.getId())), fieldType);
     }
 
     protected synchronized void updateRecordTypeCache(RecordType recordType) {
@@ -262,6 +270,10 @@ public abstract class AbstractTypeManager implements TypeManager {
     
     protected synchronized FieldType getFieldTypeFromCache(String id) {
         return fieldTypeIdCache.get(id);
+    }
+    
+    protected synchronized FieldType getFieldTypeFromCache(byte[] id) {
+        return fieldTypeBytesIdCache.get(new BytesId(id));
     }
     
     protected synchronized RecordType getRecordTypeFromCache(QName name) {
@@ -311,6 +323,15 @@ public abstract class AbstractTypeManager implements TypeManager {
         FieldType fieldType = getFieldTypeFromCache(id);
         if (fieldType == null) {
             throw new FieldTypeNotFoundException(id);
+        }
+        return fieldType.clone();
+    }
+    
+    public FieldType getFieldTypeById(byte[] id) throws FieldTypeNotFoundException {
+        ArgumentValidator.notNull(id, "id");
+        FieldType fieldType = getFieldTypeFromCache(id);
+        if (fieldType == null) {
+            throw new FieldTypeNotFoundException(HBaseTypeManager.idFromBytes(id));
         }
         return fieldType.clone();
     }
@@ -390,5 +411,29 @@ public abstract class AbstractTypeManager implements TypeManager {
         registerPrimitiveValueType(new LinkValueType(idGenerator));
         registerPrimitiveValueType(new BlobValueType());
         registerPrimitiveValueType(new UriValueType());
+    }
+    
+    private class BytesId {
+        private byte[] id;
+        private String idString;
+        public BytesId(byte[] id) {
+            this.id = id;
+        }
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(id);
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            BytesId other = (BytesId) obj;
+            return Arrays.equals(id, other.id);
+        }
+        
     }
 }

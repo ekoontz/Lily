@@ -935,7 +935,7 @@ public class HBaseRepository implements Repository {
         if (EncodingUtil.isDeletedField(prefixedValue)) {
             return null;
         }
-        FieldType fieldType = typeManager.getFieldTypeById(HBaseTypeManager.idFromBytes(key));
+        FieldType fieldType = typeManager.getFieldTypeById(key);
         context.addFieldType(fieldType);
         ValueType valueType = fieldType.getValueType();
         Object value = valueType.fromBytes(EncodingUtil.stripPrefix(prefixedValue));
