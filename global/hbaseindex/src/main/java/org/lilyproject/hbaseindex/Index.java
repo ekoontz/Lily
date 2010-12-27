@@ -366,10 +366,10 @@ public class Index {
             //  WhileMatchFilter.
             FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
             filters.addFilter(new RowFilter(CompareOp.GREATER, new BinaryPrefixComparator(fromKey)));
-            filters.addFilter(toFilter);
+            filters.addFilter(new WhileMatchFilter(toFilter));
             scan.setFilter(filters);
         } else {
-            scan.setFilter(toFilter);
+            scan.setFilter(new WhileMatchFilter(toFilter));
         }
 
         return new ScannerQueryResult(htable.getScanner(scan), definition.getIdentifierOrder() == Order.DESCENDING);
