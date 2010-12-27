@@ -133,14 +133,14 @@ public class JsonImport {
 
         ImportResult<FieldType> result = FieldTypeImport.importFieldType(fieldType, ImportMode.CREATE_OR_UPDATE,
                 IdentificationMode.NAME, fieldType.getName(), typeManager);
-        fieldType = result.getEntity();
+        FieldType newFieldType = result.getEntity();
 
         switch (result.getResultType()) {
             case CREATED:
-                importListener.created(EntityType.FIELD_TYPE, fieldType.getName().toString(), fieldType.getId());
+                importListener.created(EntityType.FIELD_TYPE, newFieldType.getName().toString(), newFieldType.getId());
                 break;
             case UP_TO_DATE:
-                importListener.existsAndEqual(EntityType.FIELD_TYPE, fieldType.getName().toString(), null);
+                importListener.existsAndEqual(EntityType.FIELD_TYPE, newFieldType.getName().toString(), null);
                 break;
             case CONFLICT:
                 importListener.conflict(EntityType.FIELD_TYPE, fieldType.getName().toString(),
@@ -151,7 +151,7 @@ public class JsonImport {
                 throw new ImportException("Unexpected import result type for field type: " + result.getResultType());
         }
 
-        return fieldType;
+        return newFieldType;
     }
 
     public RecordType importRecordType(JsonNode node) throws RepositoryException, ImportException, JsonFormatException,
@@ -174,14 +174,14 @@ public class JsonImport {
 
         ImportResult<RecordType> result = RecordTypeImport.importRecordType(recordType, ImportMode.CREATE_OR_UPDATE,
                 IdentificationMode.NAME, recordType.getName(), typeManager);
-        recordType = result.getEntity();
+        RecordType newRecordType = result.getEntity();
 
         switch (result.getResultType()) {
             case CREATED:
-                importListener.created(EntityType.RECORD_TYPE, recordType.getName().toString(), recordType.getId());
+                importListener.created(EntityType.RECORD_TYPE, newRecordType.getName().toString(), newRecordType.getId());
                 break;
             case UPDATED:
-                importListener.updated(EntityType.RECORD_TYPE, null, recordType.getId(), recordType.getVersion());
+                importListener.updated(EntityType.RECORD_TYPE, null, newRecordType.getId(), newRecordType.getVersion());
                 break;
             case UP_TO_DATE:
                 importListener.existsAndEqual(EntityType.RECORD_TYPE, recordType.getName().toString(), null);
@@ -190,7 +190,7 @@ public class JsonImport {
                 throw new ImportException("Unexpected import result type for record type: " + result.getResultType());
         }
 
-        return recordType;
+        return newRecordType;
     }
 
     private Record importRecord(JsonNode node) throws RepositoryException, ImportException, JsonFormatException,
