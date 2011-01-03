@@ -15,6 +15,7 @@
  */
 package org.lilyproject.rest.providers.json;
 
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
@@ -77,7 +78,7 @@ public class EntityListMessageBodyWriter extends RepositoryEnabled implements Me
                 resultsNode.add(writer.toJson(entity, repository));
             }
 
-            JsonFormat.serialize(listNode, entityStream);
+            JsonFormat.serialize(listNode, new CloseShieldOutputStream(entityStream));
         } catch (Throwable e) {
             // We catch every throwable, since otherwise no one does it and we will not have any trace
             // of Errors that happened.

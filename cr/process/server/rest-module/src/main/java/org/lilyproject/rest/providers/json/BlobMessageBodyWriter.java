@@ -15,6 +15,7 @@
  */
 package org.lilyproject.rest.providers.json;
 
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.lilyproject.repository.api.Blob;
 import org.lilyproject.rest.ResourceException;
 import org.lilyproject.tools.import_.json.BlobConverter;
@@ -46,7 +47,7 @@ public class BlobMessageBodyWriter implements MessageBodyWriter<Blob> {
             throws IOException, WebApplicationException {
 
         try {
-            JsonFormat.serialize(BlobConverter.toJson(blob), entityStream);
+            JsonFormat.serialize(BlobConverter.toJson(blob), new CloseShieldOutputStream(entityStream));
         } catch (Throwable e) {
             // We catch every throwable, since otherwise no one does it and we will not have any trace
             // of Errors that happened.

@@ -15,6 +15,7 @@
  */
 package org.lilyproject.rest.providers.json;
 
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.lilyproject.rest.RepositoryEnabled;
 import org.lilyproject.rest.ResourceException;
 import org.lilyproject.util.json.JsonFormat;
@@ -48,7 +49,8 @@ public class EntityMessageBodyWriter extends RepositoryEnabled implements Messag
 
     public void writeTo(Object object, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         try {
-            JsonFormat.serialize(EntityRegistry.findWriter(object.getClass()).toJson(object, repository), entityStream);
+            JsonFormat.serialize(EntityRegistry.findWriter(object.getClass()).toJson(object, repository),
+                    new CloseShieldOutputStream(entityStream));
         } catch (Throwable e) {
             // We catch every throwable, since otherwise no one does it and we will not have any trace
             // of Errors that happened.
