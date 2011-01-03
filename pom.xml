@@ -71,6 +71,7 @@
     <module>cr/repository-api-tutorial</module>
 
     <module>global/hbaseindex</module>
+    <module>global/hbaseindex-perftest</module>
     <module>global/rowlog</module>
     <module>global/util</module>
     <module>global/test-fw</module>
@@ -80,6 +81,8 @@
     <module>global/hbase-client</module>
     <module>global/cli-fw</module>
     <module>global/solr-test-fw</module>
+    <module>global/testclient-fw</module>
+    <module>global/clientmetrics</module>
 
     <module>tools/lily-kauri-plugin</module>
     <module>tools/hbase-exclusions-plugin</module>
@@ -136,6 +139,16 @@
       <dependency>
         <groupId>org.lilyproject</groupId>
         <artifactId>lily-linkindex</artifactId>
+        <version>0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilyproject</groupId>
+        <artifactId>lily-clientmetrics</artifactId>
+        <version>0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lilyproject</groupId>
+        <artifactId>lily-testclient-fw</artifactId>
         <version>0.3-SNAPSHOT</version>
       </dependency>
       <dependency>

@@ -25,7 +25,7 @@ import java.util.List;
  * Base for CLI tools that need a ZooKeeper connect string.
  */
 public abstract class BaseZkCliTool extends BaseCliTool {
-    private static final String DEFAULT_ZK_CONNECT = "localhost:2181";
+    private static final String DEFAULT_ZK_CONNECT = "localhost";
 
     protected String zkConnectionString;
 
