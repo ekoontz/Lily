@@ -57,11 +57,10 @@ public class BlobConverter {
 
     public static byte[] valueFromString(String value) {
         try {
-            return Base64.decode(value);
+            return Base64.decode(value, Base64.URL_SAFE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
 
 }
