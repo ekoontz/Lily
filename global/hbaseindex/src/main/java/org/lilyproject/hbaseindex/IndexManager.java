@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.regionserver.StoreFile;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
@@ -79,7 +80,9 @@ public class IndexManager {
         byte[] jsonData = serialize(indexDef);
 
         HTableDescriptor table = new HTableDescriptor(indexDef.getName());
-        HColumnDescriptor family = new HColumnDescriptor(Index.DATA_FAMILY);
+        HColumnDescriptor family = new HColumnDescriptor(Index.DATA_FAMILY, 1, HColumnDescriptor.DEFAULT_COMPRESSION,
+                HColumnDescriptor.DEFAULT_IN_MEMORY, HColumnDescriptor.DEFAULT_BLOCKCACHE, HColumnDescriptor.DEFAULT_BLOCKSIZE,
+                HColumnDescriptor.DEFAULT_TTL, HColumnDescriptor.DEFAULT_BLOOMFILTER, HColumnDescriptor.DEFAULT_REPLICATION_SCOPE);
         table.addFamily(family);
         hbaseAdmin.createTable(table);
 
