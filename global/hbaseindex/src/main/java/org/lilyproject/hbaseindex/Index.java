@@ -372,6 +372,8 @@ public class Index {
             scan.setFilter(new WhileMatchFilter(toFilter));
         }
 
+        scan.setCaching(30);
+
         return new ScannerQueryResult(htable.getScanner(scan), definition.getIdentifierOrder() == Order.DESCENDING);
     }
 
