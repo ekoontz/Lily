@@ -15,6 +15,7 @@
  */
 package org.lilyproject.linkindex;
 
+import org.apache.hadoop.hbase.util.Bytes;
 import org.lilyproject.hbaseindex.*;
 import org.lilyproject.linkindex.LinkIndexMetrics.Action;
 import org.lilyproject.repository.api.IdGenerator;
@@ -37,6 +38,9 @@ public class LinkIndex {
     private LinkIndexMetrics metrics;
     private static ThreadLocal<Index> FORWARD_INDEX;
     private static ThreadLocal<Index> BACKWARD_INDEX;
+
+    private static final byte[] SOURCE_FIELD_KEY = Bytes.toBytes("sf");
+    private static final byte[] VTAG_KEY = Bytes.toBytes("vt");
 
     public LinkIndex(final IndexManager indexManager, Repository repository) throws IndexNotFoundException, IOException {
         metrics = new LinkIndexMetrics("linkIndex");
@@ -198,12 +202,13 @@ public class LinkIndex {
     private IndexEntry createBackwardIndexEntry(String vtag, RecordId target, String sourceField) {
         IndexEntry entry = new IndexEntry();
 
-        entry.addField("vtag", vtag);
-        entry.addField("target", target.getMaster().toString());
-        entry.addField("targetvariant", formatVariantProps(target.getVariantProperties()));
-        entry.addField("sourcefield", sourceField);
+        byte[] sourceFieldBytes = idToBytes(sourceField);
 
-        entry.addData("sourcefield", sourceField);
+        entry.addField("vtag", vtag);
+        entry.addField("target", target.toBytes());
+        entry.addField("sourcefield", sourceFieldBytes);
+
+        entry.addData(SOURCE_FIELD_KEY, sourceFieldBytes);
 
         return entry;
     }
@@ -211,13 +216,14 @@ public class LinkIndex {
     private IndexEntry createForwardIndexEntry(String vtag, RecordId source, String sourceField) {
         IndexEntry entry = new IndexEntry();
 
-        entry.addField("vtag", vtag);
-        entry.addField("source", source.getMaster().toString());
-        entry.addField("sourcevariant", formatVariantProps(source.getVariantProperties()));
-        entry.addField("sourcefield", sourceField);
+        byte[] sourceFieldBytes = idToBytes(sourceField);
 
-        entry.addData("sourcefield", sourceField);
-        entry.addData("vtag", vtag);
+        entry.addField("vtag", vtag);
+        entry.addField("source", source.toBytes());
+        entry.addField("sourcefield", sourceFieldBytes);
+
+        entry.addData(SOURCE_FIELD_KEY, sourceFieldBytes);
+        entry.addData(VTAG_KEY, Bytes.toBytes(vtag));
 
         return entry;
     }
@@ -231,10 +237,9 @@ public class LinkIndex {
         try {
             Query query = new Query();
             query.addEqualsCondition("vtag", vtag);
-            query.addEqualsCondition("target", record.getMaster().toString());
-            query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
+            query.addEqualsCondition("target", record.toBytes());
             if (sourceField != null) {
-                query.addEqualsCondition("sourcefield", sourceField);
+                query.addEqualsCondition("sourcefield", idToBytes(sourceField));
             }
     
             Set<RecordId> result = new HashSet<RecordId>();
@@ -256,8 +261,7 @@ public class LinkIndex {
         long before = System.currentTimeMillis();
         try {
             Query query = new Query();
-            query.addEqualsCondition("target", record.getMaster().toString());
-            query.addEqualsCondition("targetvariant", formatVariantProps(record.getVariantProperties()));
+            query.addEqualsCondition("target", record.toBytes());
             query.addEqualsCondition("vtag", vtag);
     
             Set<FieldedLink> result = new HashSet<FieldedLink>();
@@ -265,7 +269,7 @@ public class LinkIndex {
             QueryResult qr = BACKWARD_INDEX.get().performQuery(query);
             byte[] id;
             while ((id = qr.next()) != null) {
-                String sourceField = qr.getDataAsString("sourcefield");
+                String sourceField = idFromBytes(qr.getData(SOURCE_FIELD_KEY));
                 result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
             }
             Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
@@ -280,16 +284,15 @@ public class LinkIndex {
         long before = System.currentTimeMillis();
         try {
             Query query = new Query();
-            query.addEqualsCondition("source", record.getMaster().toString());
-            query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
-    
+            query.addEqualsCondition("source", record.toBytes());
+
             Set<Pair<FieldedLink, String>> result = new HashSet<Pair<FieldedLink, String>>();
     
             QueryResult qr = FORWARD_INDEX.get().performQuery(query);
             byte[] id;
             while ((id = qr.next()) != null) {
-                String sourceField = qr.getDataAsString("sourcefield");
-                String vtag = qr.getDataAsString("vtag");
+                String sourceField = idFromBytes(qr.getData(SOURCE_FIELD_KEY));
+                String vtag = Bytes.toString(qr.getData(VTAG_KEY));
                 result.add(new Pair<FieldedLink, String>(new FieldedLink(idGenerator.fromBytes(id), sourceField), vtag));
             }
             Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
@@ -304,8 +307,7 @@ public class LinkIndex {
         long before = System.currentTimeMillis();
         try {
             Query query = new Query();
-            query.addEqualsCondition("source", record.getMaster().toString());
-            query.addEqualsCondition("sourcevariant", formatVariantProps(record.getVariantProperties()));
+            query.addEqualsCondition("source", record.toBytes());
             query.addEqualsCondition("vtag", vtag);
     
             Set<FieldedLink> result = new HashSet<FieldedLink>();
@@ -313,7 +315,7 @@ public class LinkIndex {
             QueryResult qr = FORWARD_INDEX.get().performQuery(query);
             byte[] id;
             while ((id = qr.next()) != null) {
-                String sourceField = qr.getDataAsString("sourcefield");
+                String sourceField = idFromBytes(qr.getData(SOURCE_FIELD_KEY));
                 result.add(new FieldedLink(idGenerator.fromBytes(id), sourceField));
             }
             Closer.close(qr); // Not closed in finally block: avoid HBase contact when there could be connection problems.
@@ -351,25 +353,35 @@ public class LinkIndex {
         //  - the vtag comes after the recordid because this way we can delete all
         //    entries for a record without having to know the vtags under which they occur
         //  - the sourcefield will often by optional in queries, that's why it comes last
-        //  - the recordid is stored as master record id and variant, in two fields, for
-        //    no particular reason
 
         {
             IndexDefinition indexDef = new IndexDefinition("links-backward");
-            indexDef.addStringField("target");
-            indexDef.addStringField("targetvariant");
+            indexDef.addByteField("target");
             indexDef.addStringField("vtag");
-            indexDef.addStringField("sourcefield");
+            indexDef.addByteField("sourcefield");
             indexManager.createIndexIfNotExists(indexDef);
         }
 
         {
             IndexDefinition indexDef = new IndexDefinition("links-forward");
-            indexDef.addStringField("source");
-            indexDef.addStringField("sourcevariant");
+            indexDef.addByteField("source");
             indexDef.addStringField("vtag");
-            indexDef.addStringField("sourcefield");
+            indexDef.addByteField("sourcefield");
             indexManager.createIndexIfNotExists(indexDef);
         }
+    }
+
+    private byte[] idToBytes(String id) {
+        UUID uuid = UUID.fromString(id);
+        byte[] rowId;
+        rowId = new byte[16];
+        Bytes.putLong(rowId, 0, uuid.getMostSignificantBits());
+        Bytes.putLong(rowId, 8, uuid.getLeastSignificantBits());
+        return rowId;
+    }
+
+    private String idFromBytes(byte[] bytes) {
+        UUID uuid = new UUID(Bytes.toLong(bytes, 0, 8), Bytes.toLong(bytes, 8, 8));
+        return uuid.toString();
     }
 }

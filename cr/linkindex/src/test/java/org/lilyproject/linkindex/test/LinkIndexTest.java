@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -75,6 +76,8 @@ public class LinkIndexTest {
     private static LinkIndex linkIndex;
     private static HBaseTableFactory hbaseTableFactory;
 
+    private String field1 = UUID.randomUUID().toString();
+
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging("org.lilyproject.linkindex");
@@ -122,12 +125,12 @@ public class LinkIndexTest {
     @Test
     public void testLinkIndex() throws Exception {
         Set<FieldedLink> links1 = new HashSet<FieldedLink>();
-        links1.add(new FieldedLink(ids.newRecordId("id1"), "field1"));
-        links1.add(new FieldedLink(ids.newRecordId("id2"), "field1"));
+        links1.add(new FieldedLink(ids.newRecordId("id1"), field1));
+        links1.add(new FieldedLink(ids.newRecordId("id2"), field1));
 
         Set<FieldedLink> links2 = new HashSet<FieldedLink>();
-        links2.add(new FieldedLink(ids.newRecordId("id3"), "field1"));
-        links2.add(new FieldedLink(ids.newRecordId("id4"), "field1"));
+        links2.add(new FieldedLink(ids.newRecordId("id3"), field1));
+        links2.add(new FieldedLink(ids.newRecordId("id4"), field1));
 
         linkIndex.updateLinks(ids.newRecordId("idA"), "live", links1);
         linkIndex.updateLinks(ids.newRecordId("idB"), "live", links1);
@@ -135,8 +138,8 @@ public class LinkIndexTest {
 
         // Test forward link retrieval
         Set<FieldedLink> links = linkIndex.getForwardLinks(ids.newRecordId("idA"), "live");
-        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id1"), "field1")));
-        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2"), "field1")));
+        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id1"), field1)));
+        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2"), field1)));
         assertEquals(2, links.size());
 
         // Test backward link retrieval
@@ -146,13 +149,13 @@ public class LinkIndexTest {
         assertEquals(2, referrers.size());
 
         // Update the links for record idA and re-check
-        links1.add(new FieldedLink(ids.newRecordId("id2a"), "field1"));
+        links1.add(new FieldedLink(ids.newRecordId("id2a"), field1));
         linkIndex.updateLinks(ids.newRecordId("idA"), "live", links1);
 
         links = linkIndex.getForwardLinks(ids.newRecordId("idA"), "live");
-        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id1"), "field1")));
-        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2"), "field1")));
-        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2a"), "field1")));
+        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id1"), field1)));
+        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2"), field1)));
+        assertTrue(links.contains(new FieldedLink(ids.newRecordId("id2a"), field1)));
         assertEquals(3, links.size());
 
         referrers = linkIndex.getReferrers(ids.newRecordId("id1"), "live");
