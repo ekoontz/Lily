@@ -1,6 +1,5 @@
 package org.lilyproject.clientmetrics;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -13,9 +12,9 @@ public class HBaseMetricsPlugin implements MetricsPlugin {
     private HBaseAdmin hbaseAdmin;
     private boolean useJmx;
 
-    public HBaseMetricsPlugin(Configuration hbaseConf, boolean useJmx) throws MasterNotRunningException {
-        this.hbaseAdmin = new HBaseAdmin(hbaseConf);
-        this.hbaseMetrics = new HBaseMetrics(hbaseAdmin);
+    public HBaseMetricsPlugin(HBaseMetrics hbaseMetrics, HBaseAdmin hbaseAdmin, boolean useJmx) throws MasterNotRunningException {
+        this.hbaseAdmin = hbaseAdmin;
+        this.hbaseMetrics = hbaseMetrics;
         this.useJmx = useJmx;
     }
 

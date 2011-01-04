@@ -33,7 +33,10 @@ public class Metrics {
     public void finish() {
         // print one last report
         printReport();
-        reportStream.close();
+    }
+
+    public int getIntervalDuration() {
+        return intervalDuration;
     }
 
     public synchronized void increment(String name, int duration) {

@@ -105,7 +105,7 @@ public class HbaseIndexPerfTest extends BaseTestTool {
 
         doUsage();
 
-        metrics.finish();
+        finishMetrics();
 
         return 0;
     }

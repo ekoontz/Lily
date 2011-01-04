@@ -5,14 +5,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.lilyproject.cli.BaseZkCliTool;
+import org.lilyproject.clientmetrics.HBaseMetrics;
 import org.lilyproject.clientmetrics.Metrics;
 import org.lilyproject.clientmetrics.HBaseMetricsPlugin;
-import org.lilyproject.clientmetrics.MetricsPlugin;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -31,7 +34,11 @@ public abstract class BaseTestTool extends BaseZkCliTool {
 
     protected boolean verbose;
 
-    protected boolean hbaseMetrics;
+    protected boolean useHbaseMetrics;
+
+    protected HBaseMetrics hbaseMetrics;
+
+    protected PrintStream metricsStream;
 
     protected ThreadPoolExecutor executor;
 
@@ -79,7 +86,7 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         }
 
         if (cmd.hasOption(hbaseMetricsOption.getOpt())) {
-            hbaseMetrics = true;
+            useHbaseMetrics = true;
         }
 
         return 0;
@@ -88,13 +95,32 @@ public abstract class BaseTestTool extends BaseZkCliTool {
 
     public void setupMetrics() throws IOException {
         String metricsFileName = getClass().getSimpleName() + "-metrics";
+
+        System.out.println();
+        System.out.println("Setting up metrics to file " + metricsFileName);
+
         File metricsFile = Util.getOutputFileRollOldOne(metricsFileName);
 
-        MetricsPlugin metricsPlugin = new HBaseMetricsPlugin(getHBaseConf(), hbaseMetrics);
+        HBaseAdmin hbaseAdmin = new HBaseAdmin(getHBaseConf());
 
-        metrics = new Metrics(metricsFile, metricsPlugin);
+        hbaseMetrics = new HBaseMetrics(hbaseAdmin);
 
-        System.out.println("Metrics are written to " + metricsFileName);
+        HBaseMetricsPlugin metricsPlugin = new HBaseMetricsPlugin(hbaseMetrics, hbaseAdmin, useHbaseMetrics);
+
+        metricsStream = new PrintStream(new FileOutputStream(metricsFile));
+
+        hbaseMetrics.printFormattedHBaseState(metricsStream);
+
+        metrics = new Metrics(metricsStream, metricsPlugin);
+
+        System.out.println("Metrics ready, summary will be outputted every " + (metrics.getIntervalDuration() / 1000) + "s");
+        System.out.println("Follow them using tail -f " + metricsFileName);
+        System.out.println();
+    }
+
+    public void finishMetrics() throws IOException {
+        metrics.finish();
+        hbaseMetrics.printFormattedHBaseState(metricsStream);
     }
 
     public void startExecutor() {
