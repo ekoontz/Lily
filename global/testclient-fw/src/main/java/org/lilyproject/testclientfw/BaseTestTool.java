@@ -6,6 +6,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.joda.time.DateTime;
 import org.lilyproject.cli.BaseZkCliTool;
 import org.lilyproject.clientmetrics.HBaseMetrics;
 import org.lilyproject.clientmetrics.Metrics;
@@ -109,6 +110,20 @@ public abstract class BaseTestTool extends BaseZkCliTool {
 
         metricsStream = new PrintStream(new FileOutputStream(metricsFile));
 
+        metricsStream.println("Now: " + new DateTime());
+        metricsStream.println("Number of threads used: " + workers);
+        metricsStream.println("More threads might increase number of ops/sec, but typically also increases time spent");
+        metricsStream.println("in each individual operation.");
+        metricsStream.println();
+        metricsStream.println("About the ops/sec (if present):");
+        metricsStream.println("  - real ops/sec = number of ops by the time they took");
+        metricsStream.println("  - interval ops/sec = number of ops by the complete time of the interval");
+        metricsStream.println("Usually real is always higher (better) than interval, the difference is the time taken");
+        metricsStream.println("by the test tool itself and taken by the other tests (if any).");
+        metricsStream.println("If real is lower than interval, then it is because the measured operations take so");
+        metricsStream.println("short that we cannot accurately measure their time, and because of rounding errors.");
+        metricsStream.println();
+
         hbaseMetrics.printFormattedHBaseState(metricsStream);
 
         metrics = new Metrics(metricsStream, metricsPlugin);
@@ -124,8 +139,6 @@ public abstract class BaseTestTool extends BaseZkCliTool {
     }
 
     public void startExecutor() {
-        System.out.println("Tasks will run on " + workers + " threads");
-
         executor = new ThreadPoolExecutor(workers, workers, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         executor.setRejectedExecutionHandler(new WaitPolicy());
     }

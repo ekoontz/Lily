@@ -12,7 +12,7 @@ public class Words {
 
     static {
         try {
-            InputStream is = Words.class.getResourceAsStream("american-words.95");
+            InputStream is = Words.class.getResourceAsStream("wordlist-50.txt");
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             String word;
             while ((word = reader.readLine()) != null) {

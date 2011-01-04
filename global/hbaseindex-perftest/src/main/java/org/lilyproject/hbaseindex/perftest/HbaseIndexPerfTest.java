@@ -156,10 +156,10 @@ public class HbaseIndexPerfTest extends BaseTestTool {
                     entries.add(entry);
                 }
 
-                long before = System.currentTimeMillis();
+                long before = System.nanoTime();
                 index.addEntries(entries);
-                int duration = (int)(System.currentTimeMillis() - before);
-                metrics.increment("Bulk insert - amount " + amount, duration);
+                double duration = System.nanoTime() - before;
+                metrics.increment("Index insert in batch of " + amount, "I", amount, duration / 1e6d);
             } catch (Throwable t) {
                 t.printStackTrace();
             }
@@ -174,13 +174,13 @@ public class HbaseIndexPerfTest extends BaseTestTool {
 
                 int resultCount = 0;
 
-                long before = System.currentTimeMillis();
+                long before = System.nanoTime();
                 QueryResult result = index.performQuery(query);
                 while (result.next() != null && resultCount < maxResults) {
                     resultCount++;
                 }
-                int duration = (int)(System.currentTimeMillis() - before);
-                metrics.increment("Single field query duration", duration);
+                double duration = System.nanoTime() - before;
+                metrics.increment("Single field query duration", "Q", duration / 1e6d);
                 metrics.increment("Single field query # of results", resultCount);
                 result.close();
             } catch (Throwable t) {
@@ -203,13 +203,13 @@ public class HbaseIndexPerfTest extends BaseTestTool {
 
                 int resultCount = 0;
 
-                long before = System.currentTimeMillis();
+                long before = System.nanoTime();
                 QueryResult result = index.performQuery(query);
                 while (result.next() != null && resultCount < maxResults) {
                     resultCount++;
                 }
-                int duration = (int)(System.currentTimeMillis() - before);
-                metrics.increment("Str rng query duration", duration);
+                double duration = System.nanoTime() - before;
+                metrics.increment("Str rng query duration", "Q", duration / 1e6d);
                 metrics.increment("Str rng query # of results", resultCount);
                 result.close();
             } catch (Throwable t) {

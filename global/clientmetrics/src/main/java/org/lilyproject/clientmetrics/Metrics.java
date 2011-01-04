@@ -39,7 +39,20 @@ public class Metrics {
         return intervalDuration;
     }
 
-    public synchronized void increment(String name, int duration) {
+    public synchronized void increment(String name, double value) {
+        increment(name, null, 1, value);
+    }
+
+    public synchronized void increment(String name, String type, double value) {
+        increment(name, type, 1, value);
+    }
+
+    /**
+     *
+     * @param type optional, can be null. If specified, number of operations per second will be summarized
+     *             for all metrics of the same type. The value must represent a timing in milliseconds.
+     */
+    public synchronized void increment(String name, String type, int operations, double value) {
         if (intervalStartedAt == null) {
             // it's our very first value
             intervalStartedAt = new DateTime();
@@ -57,10 +70,11 @@ public class Metrics {
         Metric metric = metrics.get(name);
         if (metric == null) {
             metric = new Metric();
+            metric.type = type;
             metrics.put(name, metric);
         }
 
-        metric.add(duration);
+        metric.add(operations, value);
     }
 
     public void printReport() {
@@ -84,21 +98,61 @@ public class Metrics {
             reportStream.println("| " + line);
         }
 
-        reportStream.println("+------------------------------+----------+----------+----------+----------+----------+--------------+------------------+");
-        reportStream.println("| Name                         | Op count | Average  | Median   | Minimum  | Maximum  | All time ops | All time average |");
-        reportStream.println("+------------------------------+----------+----------+----------+----------+----------+--------------+------------------+");
+        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
+        reportStream.println("| Name                               | Op count | Average  | Median   | Minimum  | Maximum  | Alltime ops | Alltime avg |");
+        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
+
+        Map<String, CountAndValue> statByType = new TreeMap<String, CountAndValue>();
 
         for (Map.Entry<String, Metric> entry : metrics.entrySet()) {
             String name = entry.getKey();
             Metric metric = entry.getValue();
 
-            reportStream.printf ("|%1$-30.30s|%2$10d|%3$10.2f|%4$10.2f|%5$10d|%6$10d|%7$14d|%8$18.2f|\n",
+            if (metric.type != null) {
+                name = metric.type + ":" + name;
+                CountAndValue stat = statByType.get(metric.type);
+                if (stat == null) {
+                    stat = new CountAndValue();
+                    statByType.put(metric.type, stat);
+                }
+
+                stat.count += metric.getIntervalCount();
+                stat.value += metric.getIntervalValue();
+            }
+
+            reportStream.printf ("|%1$-36.36s|%2$10d|%3$10.2f|%4$10.2f|%5$10.2f|%6$10.2f|%7$13d|%8$13.2f|\n",
                     name, metric.getIntervalCount(), metric.getIntervalAverage(), metric.getIntervalMedian(),
                     metric.getIntervalMin(), metric.getIntervalMax(), metric.getAllTimeCount(),
                     metric.getAllTimeAverage());
         }
 
-        reportStream.println("+------------------------------+----------+----------+----------+----------+----------+--------------+------------------+");
+        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
+
+        if (statByType.size() > 0) {
+            int i = 0;
+            for (Map.Entry<String, CountAndValue> entry : statByType.entrySet()) {
+                if (entry.getValue().count == 0)
+                    continue;
+
+                i++;
+
+                double opsPerSec = (((double)entry.getValue().count) / (entry.getValue().value)) * 1000d;
+                double opsPerSec2 = (((double)entry.getValue().count) / ((double)actualIntervalDuration)) * 1000d;
+
+                if (i == 1) {
+                    reportStream.print("| ");
+                } else {
+                    reportStream.print(", ");
+                }
+
+                reportStream.printf("%1$s ops/sec: %2$.2f real (%3$.2f interval)", entry.getKey(), opsPerSec, opsPerSec2);
+            }
+            if (i > 0) {
+                reportStream.print("\n");
+                reportStream.println("+-----------------------------------------------------------------------------------------------------------------------+");
+            }
+        }
+
         reportStream.flush();
 
         inReport = false;
@@ -119,45 +173,60 @@ public class Metrics {
     }
 
     private static class Metric {
-        private List<Integer> durations = new ArrayList<Integer>(1000);
+        private List<Double> values = new ArrayList<Double>(1000);
 
+        String type;
+        
         int intervalCount;
-        long intervalDuration;
-        int intervalMin;
-        int intervalMax;
+        double intervalValue;
+        double intervalMin;
+        double intervalMax;
 
         int allTimeCount;
-        int allTimeDuration;
+        double allTimeValue;
 
         public Metric() {
             rollInterval();
         }
 
-        public void add(int duration) {
-            intervalCount++;
-            intervalDuration += duration;
-            allTimeCount++;
-            allTimeDuration += duration;
+        /**
+         *
+         * @param value will most often be a duration in ms, but could be other kinds of values as well.
+         */
+        public void add(int operations, double value) {
+            if (operations == 0)
+                return;
 
-            if (duration < intervalMin)
-                intervalMin = duration;
+            intervalCount += operations;
+            intervalValue += value;
+            allTimeCount += operations;
+            allTimeValue += value;
 
-            if (duration > intervalMax)
-                intervalMax = duration;
+            double valuePerOp = value / (double)operations;
 
-            durations.add(duration);
+            if (valuePerOp < intervalMin)
+                intervalMin = valuePerOp;
+
+            if (valuePerOp > intervalMax)
+                intervalMax = valuePerOp;
+
+            values.add(valuePerOp);
         }
 
         public void rollInterval() {
             intervalCount = 0;
-            intervalDuration = 0;
+            intervalValue = 0;
             intervalMin = Integer.MAX_VALUE;
             intervalMax = 0;
-            durations.clear();
+            values.clear();
         }
 
         public int getIntervalCount() {
             return intervalCount;
+        }
+
+        public double getIntervalValue() {
+            return intervalValue;
         }
 
         public int getAllTimeCount() {
@@ -165,33 +234,38 @@ public class Metrics {
         }
 
         public double getIntervalAverage() {
-            return intervalCount == 0 ? 0 : (double)intervalDuration / (double)intervalCount;
+            return intervalCount == 0 ? 0 : intervalValue / (double)intervalCount;
         }
 
         public double getAllTimeAverage() {
-            return allTimeCount == 0 ? 0 : (double)allTimeDuration / (double)allTimeCount;
+            return allTimeCount == 0 ? 0 : allTimeValue / (double)allTimeCount;
         }
 
-        public int getIntervalMin() {
+        public double getIntervalMin() {
             return intervalCount == 0 ? 0 : intervalMin;
         }
 
-        public int getIntervalMax() {
+        public double getIntervalMax() {
             return intervalMax;
         }
 
         public double getIntervalMedian() {
-            if (durations.size() == 0)
+            if (values.size() == 0)
                 return 0;
 
-            Collections.sort(durations);
-            int middle = durations.size() / 2;
+            Collections.sort(values);
+            int middle = values.size() / 2;
 
-            if (durations.size() % 2 == 1) {
-                return durations.get(middle);
+            if (values.size() % 2 == 1) {
+                return values.get(middle);
             } else {
-                return (durations.get(middle - 1) + durations.get(middle)) / 2d;
+                return (values.get(middle - 1) + values.get(middle)) / 2d;
             }
         }
+    }
+
+    private static class CountAndValue {
+        int count;
+        double value;
     }
 }

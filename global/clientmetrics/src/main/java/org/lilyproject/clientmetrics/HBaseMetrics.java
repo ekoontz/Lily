@@ -110,7 +110,7 @@ public class HBaseMetrics {
         stream.println("+--------------------------------------------------------------------------------------------------+");
         stream.println("| HBase version: " + clusterStatus.getHBaseVersion());
         stream.println("| # regions in transation: " + clusterStatus.getRegionsInTransition().size());
-        stream.println("| The information below is from summarizing HBaseAdmin.CusterStatus (= only online regions)");
+        stream.println("| The information below is from summarizing HBaseAdmin.ClusterStatus (= only online regions)");
         stream.println("+--------------------+----------+-----------+--------------+---------------+-------------+---------+");
         stream.println("| Table name         | # stores | # regions | # storefiles | storefiles MB | memstore MB | # rows  |");
         stream.println("+--------------------+----------+-----------+--------------+---------------+-------------+---------+");
