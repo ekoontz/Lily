@@ -36,6 +36,11 @@
     </dependency>
     
     <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro-ipc</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.lilyproject</groupId>
       <artifactId>lily-hbase-client</artifactId>
     </dependency>
@@ -112,7 +117,8 @@
           <execution>
             <phase>generate-sources</phase>
             <goals>
-              <goal>compile</goal>
+              <goal>schema</goal>
+              <goal>protocol</goal>
             </goals>
           </execution>
         </executions>

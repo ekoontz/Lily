@@ -116,7 +116,7 @@
           <execution>
             <phase>generate-sources</phase>
             <goals>
-              <goal>compile</goal>
+              <goal>schema</goal>
             </goals>
           </execution>
         </executions>

@@ -28,6 +28,8 @@
     <version.maven>2.0.9</version.maven>
     <version.solr>1.4.1</version.solr>
 
+    <version.avro>1.5.0-r1055034-708</version.avro>
+
     <!-- The following properties are all Kauri-related, and should be brought in sync with
          Kauri when moving to a new Kauri version. -->
     <version.kauri>0.4-r1771</version.kauri>
@@ -308,8 +310,12 @@
       <dependency>
         <groupId>org.apache.avro</groupId>
         <artifactId>avro</artifactId>
-        <!-- This specific Avro version is basically 1.4.0 with some fixes, notably AVRO-667 -->
-        <version>1.4.1-r1004928</version>
+        <version>${version.avro}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-ipc</artifactId>
+        <version>${version.avro}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -550,7 +556,7 @@
         <plugin>
           <groupId>org.apache.avro</groupId>
           <artifactId>avro-maven-plugin</artifactId>
-          <version>1.4.0-20101005</version>
+          <version>${version.avro}</version>
         </plugin>
       </plugins>
     </pluginManagement>
