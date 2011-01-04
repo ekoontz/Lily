@@ -146,7 +146,7 @@ public class BalancingAndRetryingRepository {
                 throwable = ((InvocationTargetException)throwable).getTargetException();
 
             if (throwable instanceof IORecordException || throwable instanceof IOBlobException ||
-                    throwable instanceof IOTypeException) {
+                    throwable instanceof IOTypeException || throwable instanceof RecordLockedException) {
 
                 boolean callInitiated = true;
                 if (throwable.getCause() instanceof NoServersException) {

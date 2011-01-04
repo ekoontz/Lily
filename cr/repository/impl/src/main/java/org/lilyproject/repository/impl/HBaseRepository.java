@@ -129,13 +129,13 @@ public class HBaseRepository implements Repository {
 
     public Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
             RecordTypeNotFoundException, InvalidRecordException, TypeException,
-            VersionNotFoundException {
+            VersionNotFoundException, RecordLockedException {
         return createOrUpdate(record, true);
     }
 
     public Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
             RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
-            VersionNotFoundException {
+            VersionNotFoundException, RecordLockedException {
 
         if (record.getId() == null) {
             // While we could generate an ID ourselves in this case, this would defeat partly the purpose of
@@ -183,7 +183,9 @@ public class HBaseRepository implements Repository {
     }
 
     public Record create(Record record) throws RecordExistsException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException,
+            RecordLockedException {
+
         long before = System.currentTimeMillis();
         try {
             checkCreatePreconditions(record);
@@ -295,7 +297,11 @@ public class HBaseRepository implements Repository {
         }
     }
 
-    public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+    public Record update(Record record, boolean updateVersion, boolean useLatestRecordType)
+            throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException,
+            FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
+            RecordLockedException {
+
         long before = System.currentTimeMillis();
         try {
             if (record.getId() == null) {
@@ -321,12 +327,15 @@ public class HBaseRepository implements Repository {
         }
     }
     
-    public Record update(Record record) throws InvalidRecordException, RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+    public Record update(Record record) throws InvalidRecordException, RecordNotFoundException,
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException,
+            TypeException, RecordLockedException {
         return update(record, false, true);
     }
     
-    private Record updateRecord(Record record, boolean useLatestRecordType) throws RecordNotFoundException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+    private Record updateRecord(Record record, boolean useLatestRecordType) throws RecordNotFoundException,
+            InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
+            VersionNotFoundException, TypeException, RecordLockedException {
         Record newRecord = record.clone();
 
         RecordId recordId = record.getId();
@@ -567,8 +576,9 @@ public class HBaseRepository implements Repository {
         return (fieldValue instanceof byte[]) && Arrays.equals(DELETE_MARKER, (byte[])fieldValue);
     }
 
-    private Record updateMutableFields(Record record, boolean latestRecordType) throws InvalidRecordException, RecordNotFoundException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException {
+    private Record updateMutableFields(Record record, boolean latestRecordType) throws InvalidRecordException,
+            RecordNotFoundException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
+            VersionNotFoundException, TypeException, RecordLockedException {
 
         Record newRecord = record.clone();
 
@@ -993,7 +1003,7 @@ public class HBaseRepository implements Repository {
         return true;
     }
 
-    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException {
+    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException, RecordLockedException {
         ArgumentValidator.notNull(recordId, "recordId");
         long before = System.currentTimeMillis();
         org.lilyproject.repository.impl.lock.RowLock rowLock = null;
@@ -1052,16 +1062,16 @@ public class HBaseRepository implements Repository {
     }
 
     private org.lilyproject.repository.impl.lock.RowLock lockRow(RecordId recordId) throws IOException,
-            RecordException {
+            RecordLockedException {
         return lockRow(recordId, null);
     }
     
-    private org.lilyproject.repository.impl.lock.RowLock lockRow(RecordId recordId, RowLock hbaseRowLock) throws IOException,
-            RecordException {
+    private org.lilyproject.repository.impl.lock.RowLock lockRow(RecordId recordId, RowLock hbaseRowLock)
+            throws IOException, RecordLockedException {
         org.lilyproject.repository.impl.lock.RowLock rowLock;
         rowLock = rowLocker.lockRow(recordId.toBytes(), hbaseRowLock);
         if (rowLock == null)
-            throw new RecordException("Failed to lock row for record <" + recordId + ">", null);
+            throw new RecordLockedException(recordId);
         return rowLock;
     }
 

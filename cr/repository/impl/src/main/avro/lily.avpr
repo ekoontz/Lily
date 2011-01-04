@@ -123,6 +123,15 @@
     },
 
     {
+      "name": "AvroRecordLockedException",
+      "type": "error",
+      "fields": [
+        {"name": "recordId", "type": "string"},
+        {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
+      ]
+    },
+
+    {
       "name": "AvroInvalidRecordException",
       "type": "error",
       "fields": [
@@ -290,7 +299,7 @@
       "response": "AvroRecord",
       "errors": ["AvroRecordExistsException", "AvroInvalidRecordException",
       "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException", "AvroInterruptedException"]
+      "AvroRecordLockedException", "AvroGenericException", "AvroInterruptedException"]
     },
      
     "update": {
@@ -301,7 +310,7 @@
       "response": "AvroRecord",
       "errors": ["AvroRecordNotFoundException", "AvroInvalidRecordException", "AvroRecordTypeNotFoundException",
       "AvroVersionNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException", "AvroInterruptedException"]
+      "AvroRecordLockedException", "AvroGenericException", "AvroInterruptedException"]
     },
 
     "createOrUpdate": {
@@ -312,7 +321,7 @@
       "response": "AvroRecord",
       "errors": ["AvroInvalidRecordException",
       "AvroRecordTypeNotFoundException", "AvroFieldTypeNotFoundException", "AvroRecordException", "AvroTypeException",
-      "AvroGenericException", "AvroInterruptedException"]
+      "AvroRecordLockedException", "AvroGenericException", "AvroInterruptedException"]
     },
 
     "read": {
@@ -343,8 +352,8 @@
     "delete": {
       "request": [{"name": "recordId", "type": "string"}],
       "response": "null",
-      "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroGenericException",
-      "AvroInterruptedException"]
+      "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroRecordLockedException",
+      "AvroGenericException", "AvroInterruptedException"]
     },
     
     "deleteBlob": {

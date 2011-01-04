@@ -18,23 +18,7 @@ package org.lilyproject.repository.avro;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lilyproject.repository.api.BlobException;
-import org.lilyproject.repository.api.BlobNotFoundException;
-import org.lilyproject.repository.api.FieldTypeExistsException;
-import org.lilyproject.repository.api.FieldTypeNotFoundException;
-import org.lilyproject.repository.api.FieldTypeUpdateException;
-import org.lilyproject.repository.api.InvalidRecordException;
-import org.lilyproject.repository.api.QName;
-import org.lilyproject.repository.api.RecordException;
-import org.lilyproject.repository.api.RecordExistsException;
-import org.lilyproject.repository.api.RecordNotFoundException;
-import org.lilyproject.repository.api.RecordTypeExistsException;
-import org.lilyproject.repository.api.RecordTypeNotFoundException;
-import org.lilyproject.repository.api.Repository;
-import org.lilyproject.repository.api.RepositoryException;
-import org.lilyproject.repository.api.TypeException;
-import org.lilyproject.repository.api.TypeManager;
-import org.lilyproject.repository.api.VersionNotFoundException;
+import org.lilyproject.repository.api.*;
 
 public class AvroLilyImpl implements AvroLily {
 
@@ -50,7 +34,7 @@ public class AvroLilyImpl implements AvroLily {
 
     public AvroRecord create(AvroRecord record) throws AvroRecordExistsException,
             AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
-            AvroRecordException, AvroTypeException, AvroInterruptedException {
+            AvroRecordException, AvroTypeException, AvroRecordLockedException, AvroInterruptedException {
         try {
             return converter.convert(repository.create(converter.convert(record)));
         } catch (RecordExistsException e) {
@@ -60,6 +44,8 @@ public class AvroLilyImpl implements AvroLily {
         } catch (RecordTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (FieldTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (RecordLockedException e) {
             throw converter.convert(e);
         } catch (RecordException e) {
             throw converter.convert(e);
@@ -72,7 +58,7 @@ public class AvroLilyImpl implements AvroLily {
 
     public AvroRecord createOrUpdate(AvroRecord record, boolean useLatestRecordType) throws AvroInvalidRecordException,
             AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordException, AvroTypeException,
-            AvroGenericException, AvroInterruptedException, AvroVersionNotFoundException {
+            AvroRecordLockedException, AvroVersionNotFoundException, AvroGenericException, AvroInterruptedException {
         try {
             return converter.convert(repository.createOrUpdate(converter.convert(record), useLatestRecordType));
         } catch (VersionNotFoundException e) {
@@ -83,6 +69,8 @@ public class AvroLilyImpl implements AvroLily {
             throw converter.convert(e);
         } catch (FieldTypeNotFoundException e) {
             throw converter.convert(e);
+        } catch (RecordLockedException e) {
+            throw converter.convert(e);
         } catch (RecordException e) {
             throw converter.convert(e);
         } catch (TypeException e) {
@@ -92,13 +80,16 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public Void delete(CharSequence recordId) throws AvroRecordException, AvroTypeException, AvroFieldTypeNotFoundException,
-            AvroRecordNotFoundException, AvroInterruptedException {
+    public Void delete(CharSequence recordId) throws AvroRecordException, AvroTypeException,
+            AvroFieldTypeNotFoundException, AvroRecordLockedException, AvroRecordNotFoundException,
+            AvroInterruptedException {
         try {
             repository.delete(converter.convertAvroRecordId(recordId));
-        } catch (RecordException e) {
+        } catch (RecordLockedException e) {
             throw converter.convert(e);
         } catch (RecordNotFoundException e) {
+            throw converter.convert(e);
+        } catch (RecordException e) {
             throw converter.convert(e);
         } catch (InterruptedException e) {
             throw converter.convert(e);
@@ -167,9 +158,10 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroRecord update(AvroRecord record, boolean updateVersion, boolean useLatestRecordType) throws AvroRecordNotFoundException,
-            AvroInvalidRecordException, AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException,
-            AvroVersionNotFoundException, AvroRecordException, AvroTypeException, AvroInterruptedException {
+    public AvroRecord update(AvroRecord record, boolean updateVersion, boolean useLatestRecordType) throws
+            AvroRecordNotFoundException, AvroInvalidRecordException, AvroRecordTypeNotFoundException,
+            AvroFieldTypeNotFoundException, AvroVersionNotFoundException, AvroRecordLockedException,
+            AvroRecordException, AvroTypeException, AvroInterruptedException {
         try {
             return converter.convert(repository.update(converter.convert(record), updateVersion, useLatestRecordType));
         } catch (RecordNotFoundException e) {
@@ -181,6 +173,8 @@ public class AvroLilyImpl implements AvroLily {
         } catch (FieldTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (VersionNotFoundException e) {
+            throw converter.convert(e);
+        } catch (RecordLockedException e) {
             throw converter.convert(e);
         } catch (RecordException e) {
             throw converter.convert(e);

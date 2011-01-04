@@ -559,6 +559,13 @@ public class AvroConverter {
         return avroException;
     }
 
+    public AvroRecordLockedException convert(RecordLockedException exception) {
+        AvroRecordLockedException avroException = new AvroRecordLockedException();
+        avroException.recordId = exception.getRecordId().toString();
+        avroException.remoteCauses = buildCauses(exception);
+        return avroException;
+    }
+
     public RecordExistsException convert(AvroRecordExistsException avroException) {
         try {
             RecordExistsException exception = new RecordExistsException(convert(avroException.record));
@@ -603,6 +610,12 @@ public class AvroConverter {
         }
     }
     
+    public RecordLockedException convert(AvroRecordLockedException avroException) {
+        RecordLockedException exception = new RecordLockedException(convertAvroRecordId(avroException.recordId));
+        restoreCauses(avroException.remoteCauses, exception);
+        return exception;
+    }
+
     public BlobNotFoundException convert(AvroBlobNotFoundException avroException) {
         BlobNotFoundException exception = new BlobNotFoundException(convert(avroException.blob));
         return exception;

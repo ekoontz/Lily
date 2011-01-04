@@ -30,21 +30,7 @@ import org.apache.avro.ipc.HttpTransceiver;
 import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.lilyproject.repository.api.*;
-import org.lilyproject.repository.avro.AvroBlobException;
-import org.lilyproject.repository.avro.AvroBlobNotFoundException;
-import org.lilyproject.repository.avro.AvroConverter;
-import org.lilyproject.repository.avro.AvroFieldTypeNotFoundException;
-import org.lilyproject.repository.avro.AvroGenericException;
-import org.lilyproject.repository.avro.AvroInvalidRecordException;
-import org.lilyproject.repository.avro.AvroLily;
-import org.lilyproject.repository.avro.AvroQName;
-import org.lilyproject.repository.avro.AvroRecordException;
-import org.lilyproject.repository.avro.AvroRecordExistsException;
-import org.lilyproject.repository.avro.AvroRecordNotFoundException;
-import org.lilyproject.repository.avro.AvroRecordTypeNotFoundException;
-import org.lilyproject.repository.avro.AvroRepositoryException;
-import org.lilyproject.repository.avro.AvroTypeException;
-import org.lilyproject.repository.avro.AvroVersionNotFoundException;
+import org.lilyproject.repository.avro.*;
 import org.lilyproject.util.ArgumentValidator;
 import org.lilyproject.util.io.Closer;
 
@@ -60,8 +46,8 @@ public class RemoteRepository implements Repository {
     private BlobStoreAccessRegistry blobStoreAccessRegistry;
     private Transceiver client;
 
-    public RemoteRepository(InetSocketAddress address, AvroConverter converter, RemoteTypeManager typeManager, IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory)
-            throws IOException {
+    public RemoteRepository(InetSocketAddress address, AvroConverter converter, RemoteTypeManager typeManager,
+            IdGenerator idGenerator, BlobStoreAccessFactory blobStoreAccessFactory) throws IOException {        
         this.converter = converter;
         this.typeManager = typeManager;
         this.idGenerator = idGenerator;
@@ -96,7 +82,8 @@ public class RemoteRepository implements Repository {
     }
     
     public Record create(Record record) throws RecordExistsException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordLockedException, RecordException,
+            TypeException {
         try {
             return converter.convert(lilyProxy.create(converter.convert(record)));
         } catch (AvroRecordExistsException e) {
@@ -106,6 +93,8 @@ public class RemoteRepository implements Repository {
         } catch (AvroRecordTypeNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroFieldTypeNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordLockedException e) {
             throw converter.convert(e);
         } catch (AvroRecordException e) {
             throw converter.convert(e);
@@ -120,10 +109,12 @@ public class RemoteRepository implements Repository {
         }
     }
 
-    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException {
+    public void delete(RecordId recordId) throws RecordException, RecordNotFoundException, RecordLockedException {
         try {
             lilyProxy.delete(converter.convert(recordId));
         } catch (AvroRecordNotFoundException e) {
+            throw converter.convert(e);
+        } catch (AvroRecordLockedException e) {
             throw converter.convert(e);
         } catch (AvroRecordException e) {
             throw converter.convert(e);
@@ -219,14 +210,14 @@ public class RemoteRepository implements Repository {
     }
     
     public Record update(Record record) throws RecordNotFoundException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException,
-            VersionNotFoundException {
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordLockedException, RecordException,
+            TypeException, VersionNotFoundException {
         return update(record, false, true);
     }
 
     public Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws
             RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException,
-            RecordException, TypeException, VersionNotFoundException {
+            RecordLockedException, VersionNotFoundException, RecordException, TypeException {
         try {
             return converter.convert(lilyProxy.update(converter.convert(record), updateVersion, useLatestRecordType));
         } catch (AvroRecordNotFoundException e) {
@@ -237,11 +228,13 @@ public class RemoteRepository implements Repository {
             throw converter.convert(e);
         } catch (AvroFieldTypeNotFoundException e) {
             throw converter.convert(e);
+        } catch (AvroRecordLockedException e) {
+            throw converter.convert(e);
+        } catch (AvroVersionNotFoundException e) {
+            throw converter.convert(e);
         } catch (AvroRecordException e) {
             throw converter.convert(e);
         } catch (AvroTypeException e) {
-            throw converter.convert(e);
-        } catch (AvroVersionNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroGenericException e) {
             throw converter.convert(e);
@@ -253,13 +246,13 @@ public class RemoteRepository implements Repository {
     }
 
     public Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
-            RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            RecordTypeNotFoundException, RecordLockedException, InvalidRecordException, TypeException,
             VersionNotFoundException {
         return createOrUpdate(record, true);
     }
 
     public Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
-            RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
+            RecordException, RecordTypeNotFoundException, RecordLockedException, InvalidRecordException, TypeException,
             VersionNotFoundException {
         try {
             return converter.convert(lilyProxy.createOrUpdate(converter.convert(record), useLatestRecordType));
@@ -269,11 +262,13 @@ public class RemoteRepository implements Repository {
             throw converter.convert(e);
         } catch (AvroFieldTypeNotFoundException e) {
             throw converter.convert(e);
+        } catch (AvroRecordLockedException e) {
+            throw converter.convert(e);
+        } catch (AvroVersionNotFoundException e) {
+            throw converter.convert(e);
         } catch (AvroRecordException e) {
             throw converter.convert(e);
         } catch (AvroTypeException e) {
-            throw converter.convert(e);
-        } catch (AvroVersionNotFoundException e) {
             throw converter.convert(e);
         } catch (AvroGenericException e) {
             throw converter.convert(e);

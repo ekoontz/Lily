@@ -67,8 +67,8 @@ public interface Repository extends Closeable {
      * @throws RecordTypeNotFoundException
      */
     Record create(Record record) throws RecordExistsException, InvalidRecordException,
-            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException, TypeException,
-            InterruptedException;
+            RecordTypeNotFoundException, FieldTypeNotFoundException, RecordLockedException, RecordException,
+            TypeException, InterruptedException;
 
     /**
      * Updates an existing record in the repository.
@@ -101,14 +101,14 @@ public interface Repository extends Closeable {
      */
     Record update(Record record, boolean updateVersion, boolean useLatestRecordType) throws RecordNotFoundException,
             InvalidRecordException, RecordTypeNotFoundException, FieldTypeNotFoundException, RecordException,
-            VersionNotFoundException, TypeException, InterruptedException;
+            VersionNotFoundException, RecordLockedException, TypeException, InterruptedException;
     
     /**
      * Shortcut for update(record, false, true)
      */
     Record update(Record record) throws RecordNotFoundException, InvalidRecordException, RecordTypeNotFoundException,
             FieldTypeNotFoundException, RecordException, VersionNotFoundException, TypeException,
-            InterruptedException;
+            RecordLockedException, InterruptedException;
 
     /**
      * Creates or updates a record, depending on whether the record already exists.
@@ -117,7 +117,7 @@ public interface Repository extends Closeable {
      */
     Record createOrUpdate(Record record) throws FieldTypeNotFoundException, RecordException,
             RecordTypeNotFoundException, InvalidRecordException, TypeException,
-            VersionNotFoundException;
+            VersionNotFoundException, RecordLockedException, InterruptedException;
 
     /**
      * Creates or updates a record, depending on whether the record already exists.
@@ -132,7 +132,7 @@ public interface Repository extends Closeable {
      */
     Record createOrUpdate(Record record, boolean useLatestRecordType) throws FieldTypeNotFoundException,
             RecordException, RecordTypeNotFoundException, InvalidRecordException, TypeException,
-            VersionNotFoundException, InterruptedException;
+            VersionNotFoundException, RecordLockedException, InterruptedException;
 
     /**
      * Reads a record fully. All the fields of the record will be read.
@@ -199,7 +199,8 @@ public interface Repository extends Closeable {
      * @param recordId
      *            id of the record to delete
      */
-    void delete(RecordId recordId) throws RecordException, RecordNotFoundException, InterruptedException;
+    void delete(RecordId recordId) throws RecordException, RecordNotFoundException, RecordLockedException,
+            InterruptedException;
 
     /**
      * Returns the IdGenerator service.
