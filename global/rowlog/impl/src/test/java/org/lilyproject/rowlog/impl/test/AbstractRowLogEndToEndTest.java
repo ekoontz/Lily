@@ -17,6 +17,7 @@ package org.lilyproject.rowlog.impl.test;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -52,13 +53,14 @@ public abstract class AbstractRowLogEndToEndTest {
     protected static ZooKeeperItf zooKeeper;
 
     @Rule public TestName name = new TestName();
+    private static HTableInterface rowTable;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         TestHelper.setupLogging();
         HBASE_PROXY.start();
         configuration = HBASE_PROXY.getConf();
-        HTableInterface rowTable = RowLogTableUtil.getRowTable(configuration);
+        rowTable = RowLogTableUtil.getRowTable(configuration);
         // Using a large ZooKeeper timeout, seems to help the build to succeed on Hudson (not sure if this is
         // the problem or the sympton, but HBase's Sleeper thread also reports it slept to long, so it appears
         // to be JVM-level).
@@ -83,6 +85,40 @@ public abstract class AbstractRowLogEndToEndTest {
     public void testSingleMessage() throws Exception {
         RowLogMessage message = rowLog.putMessage(Bytes.toBytes("row1"), null, null, null);
         validationListener.expectMessage(message);
+        validationListener.expectMessages(1);
+        processor.start();
+        validationListener.waitUntilMessagesConsumed(120000);
+        processor.stop();
+        validationListener.validate();
+    }
+    
+    @Test(timeout=150000)
+    public void testAtomicMessage() throws Exception {
+        byte[] rowKey = Bytes.toBytes("row1");
+        Put put = new Put(rowKey);
+        put.add(RowLogTableUtil.DATA_COLUMN_FAMILY, Bytes.toBytes("column1"), Bytes.toBytes("aValue"));
+        RowLogMessage message = rowLog.putMessage(rowKey, Bytes.toBytes("data"), Bytes.toBytes("payLoad"), put);
+        rowTable.put(put);
+        validationListener.expectMessage(message);
+        validationListener.expectMessages(1);
+        processor.start();
+        validationListener.waitUntilMessagesConsumed(120000);
+        processor.stop();
+        validationListener.validate();
+    }
+    
+    @Test(timeout=150000)
+    public void testAtomicMessageFailingPut() throws Exception {
+        byte[] rowKey = Bytes.toBytes("row1");
+        Put put = new Put(rowKey);
+        put.add(RowLogTableUtil.DATA_COLUMN_FAMILY, Bytes.toBytes("column1"), Bytes.toBytes("aValue"));
+        RowLogMessage message1 = rowLog.putMessage(rowKey, Bytes.toBytes("data"), Bytes.toBytes("payLoad"), put);
+        // Don't perform rowTable.put(put) to simulate a failing put
+        Put put2 = new Put(rowKey);
+        put2.add(RowLogTableUtil.DATA_COLUMN_FAMILY, Bytes.toBytes("column1"), Bytes.toBytes("aValue2"));
+        RowLogMessage message2 = rowLog.putMessage(rowKey, Bytes.toBytes("data2"), Bytes.toBytes("payLoad2"), put2);
+        rowTable.put(put2);
+        validationListener.expectMessage(message2); // We expect message1 to be discarded
         validationListener.expectMessages(1);
         processor.start();
         validationListener.waitUntilMessagesConsumed(120000);
@@ -119,7 +155,7 @@ public abstract class AbstractRowLogEndToEndTest {
         processor.stop();
         validationListener.validate();
     }
-
+    
     @Test(timeout=150000)
     public void testMultipleMessagesMultipleRows() throws Exception {
         RowLogMessage message;

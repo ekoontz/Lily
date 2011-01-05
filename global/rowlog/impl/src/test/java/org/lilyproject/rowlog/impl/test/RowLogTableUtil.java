@@ -29,7 +29,7 @@ import org.lilyproject.util.hbase.LocalHTable;
 public class RowLogTableUtil {
     
     private static final byte[] ROW_TABLE = Bytes.toBytes("rowTable");
-    
+    public static final byte[] DATA_COLUMN_FAMILY = Bytes.toBytes("DATACF");
     public static final byte[] PAYLOAD_COLUMN_FAMILY = Bytes.toBytes("PAYLOADCF");
     public static final byte[] EXECUTIONSTATE_COLUMN_FAMILY = Bytes.toBytes("ESLOGCF");
 
@@ -39,6 +39,7 @@ public class RowLogTableUtil {
             admin.getTableDescriptor(ROW_TABLE);
         } catch (TableNotFoundException e) {
             HTableDescriptor tableDescriptor = new HTableDescriptor(ROW_TABLE);
+            tableDescriptor.addFamily(new HColumnDescriptor(DATA_COLUMN_FAMILY));
             tableDescriptor.addFamily(new HColumnDescriptor(PAYLOAD_COLUMN_FAMILY));
             tableDescriptor.addFamily(new HColumnDescriptor(EXECUTIONSTATE_COLUMN_FAMILY));
             admin.createTable(tableDescriptor);

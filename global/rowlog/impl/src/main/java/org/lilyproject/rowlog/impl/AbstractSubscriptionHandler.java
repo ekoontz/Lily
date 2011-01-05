@@ -83,7 +83,7 @@ public abstract class AbstractSubscriptionHandler implements SubscriptionHandler
                                         rowLog.unlockMessage(message, subscriptionId, true, lock);
                                     }
                                 }
-                            }
+                            } 
                         } catch (InterruptedException e) {
                             break;                            
                         } catch (Throwable e) {

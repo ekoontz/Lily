@@ -28,6 +28,10 @@ public class MessagesWorkQueue {
     private Set<RowLogMessage> messagesWorkingOn = Collections.synchronizedSet(new HashSet<RowLogMessage>());
     
     public void offer(RowLogMessage message) throws InterruptedException {
+        if (messagesWorkingOn.contains(message)) {
+            // Message is already being worked on
+            return;
+        }
         if (!messageQueue.contains(message)) {
             messageQueue.put(message);
         }
