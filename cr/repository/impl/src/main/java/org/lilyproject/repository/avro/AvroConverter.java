@@ -121,7 +121,7 @@ public class AvroConverter {
         // Id
         RecordId id = record.getId();
         if (id != null) {
-            avroRecord.id = id.toString();
+            avroRecord.id = convert(id);
         }
         if (record.getVersion() != null) {
             avroRecord.version = record.getVersion();
@@ -561,7 +561,7 @@ public class AvroConverter {
 
     public AvroRecordLockedException convert(RecordLockedException exception) {
         AvroRecordLockedException avroException = new AvroRecordLockedException();
-        avroException.recordId = exception.getRecordId().toString();
+        avroException.recordId = convert(exception.getRecordId());
         avroException.remoteCauses = buildCauses(exception);
         return avroException;
     }
@@ -621,13 +621,15 @@ public class AvroConverter {
         return exception;
     }
 
-    public RecordId convertAvroRecordId(CharSequence recordId) {
-        return repository.getIdGenerator().fromString(convert(recordId));
+    public RecordId convertAvroRecordId(ByteBuffer recordId) {
+        byte[] bytes = new byte[recordId.remaining()];
+        recordId.get(bytes);
+        return repository.getIdGenerator().fromBytes(bytes);
     }
 
-    public String convert(RecordId recordId) {
+    public ByteBuffer convert(RecordId recordId) {
         if (recordId == null) return null;
-        return recordId.toString();
+        return ByteBuffer.wrap(recordId.toBytes());
     }
 
     public String convert(CharSequence charSeq) {

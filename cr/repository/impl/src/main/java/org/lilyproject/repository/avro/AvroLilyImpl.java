@@ -15,6 +15,7 @@
  */
 package org.lilyproject.repository.avro;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,7 +81,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public Void delete(CharSequence recordId) throws AvroRecordException, AvroTypeException,
+    public Void delete(ByteBuffer recordId) throws AvroRecordException, AvroTypeException,
             AvroFieldTypeNotFoundException, AvroRecordLockedException, AvroRecordNotFoundException,
             AvroInterruptedException {
         try {
@@ -97,7 +98,7 @@ public class AvroLilyImpl implements AvroLily {
         return null;
     }
 
-    public AvroRecord read(CharSequence recordId, long avroVersion, List<AvroQName> avroFieldNames)
+    public AvroRecord read(ByteBuffer recordId, long avroVersion, List<AvroQName> avroFieldNames)
             throws AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordNotFoundException,
             AvroVersionNotFoundException, AvroRecordException, AvroTypeException, AvroInterruptedException {
         List<QName> fieldNames = null;
@@ -127,7 +128,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public List<AvroRecord> readVersions(CharSequence recordId, long avroFromVersion, long avroToVersion,
+    public List<AvroRecord> readVersions(ByteBuffer recordId, long avroFromVersion, long avroToVersion,
             List<AvroQName> avroFieldNames) throws AvroRecordTypeNotFoundException,
             AvroFieldTypeNotFoundException, AvroRecordNotFoundException, AvroVersionNotFoundException,
             AvroRecordException, AvroTypeException, AvroInterruptedException {
@@ -322,7 +323,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public List<CharSequence> getVariants(CharSequence recordId) throws AvroRepositoryException,
+    public List<CharSequence> getVariants(ByteBuffer recordId) throws AvroRepositoryException,
             AvroInterruptedException {
         try {
             return converter.convert(repository.getVariants(converter.convertAvroRecordId(recordId)));
@@ -333,7 +334,7 @@ public class AvroLilyImpl implements AvroLily {
         }
     }
 
-    public AvroIdRecord readWithIds(CharSequence recordId, long avroVersion, List<CharSequence> avroFieldIds)
+    public AvroIdRecord readWithIds(ByteBuffer recordId, long avroVersion, List<CharSequence> avroFieldIds)
             throws AvroRecordNotFoundException, AvroVersionNotFoundException,
             AvroRecordTypeNotFoundException, AvroFieldTypeNotFoundException, AvroRecordException, AvroTypeException,
             AvroGenericException, AvroInterruptedException {

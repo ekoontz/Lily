@@ -28,7 +28,7 @@
       "name": "AvroRecord",
       "type": "record",
       "fields": [
-        {"name": "id", "type": ["string", "null"]},
+        {"name": "id", "type": ["bytes", "null"]},
         {"name": "version", "type": ["long", "null"]},
         {"name": "recordTypeName", "type": ["AvroQName", "null"]},
         {"name": "recordTypeVersion", "type": ["long", "null"]},
@@ -126,7 +126,7 @@
       "name": "AvroRecordLockedException",
       "type": "error",
       "fields": [
-        {"name": "recordId", "type": "string"},
+        {"name": "recordId", "type": "bytes"},
         {"name": "remoteCauses", "type": ["null", {"type": "array", "items": "AvroExceptionCause"}]}
       ]
     },
@@ -326,7 +326,7 @@
 
     "read": {
       "request": [
-        {"name": "recordId", "type": "string"},
+        {"name": "recordId", "type": "bytes"},
         {"name": "version", "type": "long"},
         {"name": "fieldNames", "type": ["null", {"type": "array", "items": "AvroQName"}]}
       ],
@@ -338,7 +338,7 @@
      
     "readVersions": {
       "request": [
-        {"name": "recordId", "type": "string"},
+        {"name": "recordId", "type": "bytes"},
         {"name": "fromVersion", "type": "long"},
         {"name": "toVersion", "type": "long"},
         {"name": "fieldNames", "type": ["null", {"type": "array", "items": "AvroQName"}]}
@@ -350,7 +350,7 @@
      },
 
     "delete": {
-      "request": [{"name": "recordId", "type": "string"}],
+      "request": [{"name": "recordId", "type": "bytes"}],
       "response": "null",
       "errors": ["AvroRecordException", "AvroRecordNotFoundException", "AvroRecordLockedException",
       "AvroGenericException", "AvroInterruptedException"]
@@ -363,14 +363,14 @@
     },
     
     "getVariants": {
-      "request": [{"name": "recordId", "type": "string"}],
+      "request": [{"name": "recordId", "type": "bytes"}],
       "response": {"type": "array", "items": "string"},
       "errors": ["AvroRepositoryException", "AvroGenericException", "AvroInterruptedException"]
     },
     
     "readWithIds": {
       "request": [
-        {"name": "recordId", "type": "string"},
+        {"name": "recordId", "type": "bytes"},
         {"name": "version", "type": "long"},
         {"name": "fieldIds", "type": ["null", {"type": "array", "items": "string"}]}
       ],
