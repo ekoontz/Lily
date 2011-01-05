@@ -192,6 +192,8 @@ public class MboxImport extends BaseZkCliTool {
             }
         }
 
+        lilyClient.close();
+
         return 0;
     }
 

@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
+import org.apache.avro.ipc.NettyTransceiver;
 import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.lilyproject.repository.api.*;
@@ -54,9 +55,10 @@ public class RemoteRepository implements Repository {
         blobStoreAccessRegistry = new BlobStoreAccessRegistry();
         blobStoreAccessRegistry.setBlobStoreAccessFactory(blobStoreAccessFactory);
 
-        client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        //client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        client = new NettyTransceiver(address);
 
-        lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
+        lilyProxy = SpecificRequestor.getClient(AvroLily.class, client);
     }
 
     public void close() throws IOException {

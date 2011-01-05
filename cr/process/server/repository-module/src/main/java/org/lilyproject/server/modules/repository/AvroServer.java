@@ -16,21 +16,23 @@
 package org.lilyproject.server.modules.repository;
 
 import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Responder;
+import org.apache.avro.ipc.Server;
 import org.lilyproject.repository.api.Repository;
 import org.lilyproject.repository.avro.*;
-import org.lilyproject.util.Logs;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 public class AvroServer {
     private String bindAddress;
     private Repository repository;
     private int port;
 
-    private HttpServer server;
+    private Server server;
 
     public AvroServer(String bindAddress, Repository repository, int port) {
         this.bindAddress = bindAddress;
@@ -45,7 +47,8 @@ public class AvroServer {
 
         AvroLilyImpl avroLily = new AvroLilyImpl(repository, avroConverter);
         Responder responder = new LilySpecificResponder(AvroLily.class, avroLily, avroConverter);
-        server = new HttpServer(responder, port);
+        //server = new HttpServer(responder, port);
+        server = new NettyServer(responder, new InetSocketAddress(port));
         server.start();
     }
     

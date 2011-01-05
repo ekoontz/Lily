@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.apache.avro.ipc.AvroRemoteException;
 import org.apache.avro.ipc.HttpTransceiver;
+import org.apache.avro.ipc.NettyTransceiver;
+import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.specific.SpecificRequestor;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
@@ -48,7 +50,7 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
 
     private AvroLily lilyProxy;
     private AvroConverter converter;
-    private HttpTransceiver client;
+    private Transceiver client;
 
     public RemoteTypeManager(InetSocketAddress address, AvroConverter converter, IdGenerator idGenerator, ZooKeeperItf zooKeeper)
             throws IOException {
@@ -57,9 +59,10 @@ public class RemoteTypeManager extends AbstractTypeManager implements TypeManage
         this.converter = converter;
         //TODO idGenerator should not be available or used in the remote implementation
         this.idGenerator = idGenerator;
-        client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        //client = new HttpTransceiver(new URL("http://" + address.getHostName() + ":" + address.getPort() + "/"));
+        client = new NettyTransceiver(address);
 
-        lilyProxy = (AvroLily) SpecificRequestor.getClient(AvroLily.class, client);
+        lilyProxy = SpecificRequestor.getClient(AvroLily.class, client);
         registerDefaultValueTypes();
     }
     
