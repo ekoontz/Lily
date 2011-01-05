@@ -17,10 +17,9 @@ package org.lilyproject.repository.impl.test;
 
 
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Server;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -45,7 +44,6 @@ import org.lilyproject.repository.impl.SizeBasedBlobStoreAccessFactory;
 import org.lilyproject.rowlog.api.RowLog;
 import org.lilyproject.rowlog.api.RowLogConfig;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
-import org.lilyproject.rowlog.api.RowLogException;
 import org.lilyproject.rowlog.api.RowLogShard;
 import org.lilyproject.rowlog.impl.RowLogConfigurationManagerImpl;
 import org.lilyproject.rowlog.impl.RowLogImpl;
@@ -88,9 +86,9 @@ public class AvroTypeManagerFieldTypeTest extends AbstractTypeManagerFieldTypeTe
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        lilyServer = new HttpServer(
+        lilyServer = new NettyServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
-                        serverConverter), 0);
+                        serverConverter), new InetSocketAddress(0));
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),

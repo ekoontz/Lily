@@ -16,10 +16,9 @@
 package org.lilyproject.repository.impl.test;
 
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Server;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -100,9 +99,9 @@ public class AvroTypeManagerRecordTypeTest extends AbstractTypeManagerRecordType
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        lilyServer = new HttpServer(
+        lilyServer = new NettyServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
-                        serverConverter), 0);
+                        serverConverter), new InetSocketAddress(0));
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         zooKeeper = new StateWatchingZooKeeper(HBASE_PROXY.getZkConnectString(), 10000);

@@ -18,7 +18,7 @@ package org.lilyproject.repository.impl.test;
 
 import java.net.InetSocketAddress;
 
-import org.apache.avro.ipc.HttpServer;
+import org.apache.avro.ipc.NettyServer;
 import org.apache.avro.ipc.Server;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -74,9 +74,9 @@ public class RemoteBlobStoreTest extends AbstractBlobStoreTest {
         
         AvroConverter serverConverter = new AvroConverter();
         serverConverter.setRepository(serverRepository);
-        lilyServer = new HttpServer(
+        lilyServer = new NettyServer(
                 new LilySpecificResponder(AvroLily.class, new AvroLilyImpl(serverRepository, serverConverter),
-                        serverConverter), 0);
+                        serverConverter), new InetSocketAddress(0));
         lilyServer.start();
         AvroConverter remoteConverter = new AvroConverter();
         typeManager = new RemoteTypeManager(new InetSocketAddress(lilyServer.getPort()),
