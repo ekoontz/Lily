@@ -136,8 +136,12 @@ public class Metrics {
 
                 i++;
 
+                // The real time spent in the operations is the time counted together from multiple threads,
+                // hence more than the actual elapsed time. E.g. in an interval of 30s, each thread runs 30s,
+                // hence with 3 threads there are 90 seconds spent. So usually the interval ops/sec will give
+                // a better picture.
                 double opsPerSec = (((double)entry.getValue().count) / (entry.getValue().value)) * 1000d;
-                double opsPerSec2 = (((double)entry.getValue().count) / ((double)actualIntervalDuration)) * 1000d;
+                double opsPerSecInt = (((double)entry.getValue().count) / ((double)actualIntervalDuration)) * 1000d;
 
                 if (i == 1) {
                     reportStream.print("| ");
@@ -145,7 +149,7 @@ public class Metrics {
                     reportStream.print(", ");
                 }
 
-                reportStream.printf("%1$s ops/sec: %2$.2f real (%3$.2f interval)", entry.getKey(), opsPerSec, opsPerSec2);
+                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2f real)", entry.getKey(), opsPerSecInt, opsPerSec);
             }
             if (i > 0) {
                 reportStream.print("\n");

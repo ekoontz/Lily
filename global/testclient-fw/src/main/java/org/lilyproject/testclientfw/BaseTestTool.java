@@ -116,12 +116,16 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         metricsStream.println("in each individual operation.");
         metricsStream.println();
         metricsStream.println("About the ops/sec (if present):");
-        metricsStream.println("  - real ops/sec = number of ops by the time they took");
         metricsStream.println("  - interval ops/sec = number of ops by the complete time of the interval");
-        metricsStream.println("Usually real is always higher (better) than interval, the difference is the time taken");
-        metricsStream.println("by the test tool itself and taken by the other tests (if any).");
-        metricsStream.println("If real is lower than interval, then it is because the measured operations take so");
-        metricsStream.println("short that we cannot accurately measure their time, and because of rounding errors.");
+        metricsStream.println("  - real ops/sec = number of ops by the time they took");
+        metricsStream.println("The interval ops/sec looks at how many of the operations have been done in");
+        metricsStream.println("the interval, but includes thus the time spent doing other kinds of operations");
+        metricsStream.println("or the overhead of the test tool itself. Therefore, you would expect the");
+        metricsStream.println("real ops/sec to be better (higher) than the interval ops/sec. But when using");
+        metricsStream.println("multiple threads, this is not always the case, since each thread runs for the");
+        metricsStream.println("duration of the interval, e.g. 3 threads running for 30s makes 90s time passed");
+        metricsStream.println("by the threads together. Another issue is that sometimes operations are very");
+        metricsStream.println("quick but that their time is measured with a too low granularity.");
         metricsStream.println();
 
         hbaseMetrics.printFormattedHBaseState(metricsStream);
