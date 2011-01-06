@@ -50,7 +50,8 @@
   IndexEntry entry = new IndexEntry();
   entry.addField("myStringField", "foobar");
   entry.addField("myIntField", 55);
-  index.addEntry(entry, Bytes.toBytes("identifier"));
+  entry.setIdentifier(Bytes.toBytes("identifier"));
+  index.addEntry(entry);
 
   // The 'identifier' above is whatever you like as identifier for the
   // indexed object -- usually a row key in some other HBase table.
