@@ -130,8 +130,9 @@ public class HbaseIndexPerfTest extends BaseTestTool {
 
         for (int i = 0; i < loops; i++) {
             executor.submit(new SingleFieldEqualsQuery());
+            executor.submit(new BulkInserter(1));
             executor.submit(new StringRangeQuery());
-            //executor.submit(new BulkInserter(10));
+            executor.submit(new BulkInserter(5));
         }
 
         stopExecutor();
