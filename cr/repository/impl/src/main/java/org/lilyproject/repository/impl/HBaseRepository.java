@@ -269,7 +269,8 @@ public class HBaseRepository implements Repository {
     
             if (customRowLock != null) {
                 try {
-                    wal.processMessage(walMessage);
+                    if (walMessage != null) 
+                        wal.processMessage(walMessage);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     log.warn("Processing message <"+walMessage+"> by the WAL got interrupted. It will be retried later.", e);

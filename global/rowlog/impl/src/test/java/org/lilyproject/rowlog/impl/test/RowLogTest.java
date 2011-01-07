@@ -71,8 +71,8 @@ public class RowLogTest {
         HBASE_PROXY.start();
         zooKeeper = ZkUtil.connect(HBASE_PROXY.getZkConnectString(), 10000);
         configurationManager = new RowLogConfigurationManagerImpl(zooKeeper);
-        configurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         configurationManager.addRowLog(rowLogId, new RowLogConfig(60000L, true, true, 100L, 500L));
+        configurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1);
         control = createControl();
         rowTable = RowLogTableUtil.getRowTable(HBASE_PROXY.getConf());
     }
@@ -108,6 +108,25 @@ public class RowLogTest {
         assertEquals(1, messages.size());
         assertEquals(message, messages.get(0));
         control.verify();
+    }
+    
+    @Test
+    public void testPutMessageNoSubscriptions() throws Exception {
+        configurationManager.removeSubscription(rowLogId, subscriptionId1);
+        // Wait until rowlog notices the subscription has been removed
+        long timeout = System.currentTimeMillis() + 10000;
+        while(!rowLog.getSubscriptions().isEmpty()) {
+            Thread.sleep(10);
+            if (System.currentTimeMillis() > timeout)
+                break;
+        }
+        control.replay();
+        rowLog.registerShard(shard);
+        byte[] rowKey = Bytes.toBytes("row1B");
+        assertNull(rowLog.putMessage(rowKey, null, null, null));
+        assertTrue(rowLog.getMessages(rowKey).isEmpty());
+        control.verify();
+        configurationManager.addSubscription(rowLogId, subscriptionId1, Type.VM, 3, 1); // Put subscription back for the other tests
     }
     
     @Test

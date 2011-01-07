@@ -167,14 +167,17 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver, RowLogObserver
         RowLogShard shard = getShard(); // Fail fast if no shards are registered
         
         try {
+            // Take current snapshot of the subscriptions so that shard.putMessage and initializeSubscriptions
+            // use the exact same set of subscriptions.
+            List<RowLogSubscription> subscriptions = getSubscriptions();
+            if (subscriptions.isEmpty()) 
+                return null;
+            
             long now = System.currentTimeMillis();
             long seqnr = putPayload(rowKey, payload, now, put);
                     
             RowLogMessage message = new RowLogMessageImpl(now, rowKey, seqnr, data, this);
 
-            // Take current snapshot of the subscriptions so that shard.putMessage and initializeSubscriptions
-            // use the exact same set of subscriptions.
-            List<RowLogSubscription> subscriptions = getSubscriptions();
             shard.putMessage(message, subscriptions);
             initializeSubscriptions(message, put, subscriptions);
 
@@ -205,31 +208,33 @@ public class RowLogImpl implements RowLog, SubscriptionsObserver, RowLogObserver
     }
 
     public boolean processMessage(RowLogMessage message) throws RowLogException, InterruptedException {
+        if (message == null)
+            return true;
         byte[] rowKey = message.getRowKey();
         byte[] qualifier = rowLocalMessageQualifier(message.getSeqNr(), message.getTimestamp());
-            Get get = new Get(rowKey);
-            get.addColumn(executionStateColumnFamily, qualifier);
-            try {
-                Result result = rowTable.get(get);
-                if (result.isEmpty()) {
-                    // No execution state was found indicating an orphan message on the global queue table
-                    // Treat this message as if it was processed
-                    return true;
-                }
-                byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
-                SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
-
-                boolean allDone = processMessage(message, executionState);
-                
-                if (allDone) {
-                    return removeExecutionStateAndPayload(rowKey, qualifier, previousValue);
-                } else {
-                    updateExecutionState(rowKey, qualifier, executionState, previousValue);
-                    return false;
-                }
-            } catch (IOException e) {
-                throw new RowLogException("Failed to process message", e);
+        Get get = new Get(rowKey);
+        get.addColumn(executionStateColumnFamily, qualifier);
+        try {
+            Result result = rowTable.get(get);
+            if (result.isEmpty()) {
+                // No execution state was found indicating an orphan message on the global queue table
+                // Treat this message as if it was processed
+                return true;
             }
+            byte[] previousValue = result.getValue(executionStateColumnFamily, qualifier);
+            SubscriptionExecutionState executionState = SubscriptionExecutionState.fromBytes(previousValue);
+
+            boolean allDone = processMessage(message, executionState);
+            
+            if (allDone) {
+                return removeExecutionStateAndPayload(rowKey, qualifier, previousValue);
+            } else {
+                updateExecutionState(rowKey, qualifier, executionState, previousValue);
+                return false;
+            }
+        } catch (IOException e) {
+            throw new RowLogException("Failed to process message", e);
+        }
     }
 
     private boolean processMessage(RowLogMessage message, SubscriptionExecutionState executionState) throws RowLogException, InterruptedException {

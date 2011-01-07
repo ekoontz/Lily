@@ -177,7 +177,7 @@ public interface RowLog {
     boolean isMessageDone(RowLogMessage message, String subscriptionId) throws RowLogException;
     
     /**
-     * Return all messages that are still exist for the row, or if one or more subscriptions is given, 
+     * Return all messages that still exist for the row, or if one or more subscriptions is given, 
      * only the messages that are still open for one or more of those subscriptions.
      * <p>This call ignores if messages have been marked as problematic.
      * @param rowKey the row for which to return the messages
