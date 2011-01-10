@@ -17,7 +17,6 @@ package org.lilyproject.tools.mboximport;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.metrics.ContextFactory;
 import org.apache.james.mime4j.codec.Base64InputStream;
 import org.apache.james.mime4j.codec.QuotedPrintableInputStream;
 import org.apache.james.mime4j.field.*;
@@ -30,9 +29,8 @@ import org.apache.james.mime4j.parser.Field;
 import org.apache.james.mime4j.parser.MimeEntityConfig;
 import org.apache.james.mime4j.parser.MimeTokenStream;
 import org.apache.james.mime4j.util.MimeUtil;
-import org.lilyproject.cli.BaseZkCliTool;
-import org.lilyproject.client.LilyClient;
 import org.lilyproject.repository.api.*;
+import org.lilyproject.testclientfw.BaseRepositoryTestTool;
 import org.lilyproject.tools.import_.cli.JsonImport;
 import org.lilyproject.util.io.Closer;
 
@@ -40,29 +38,13 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-public class MboxImport extends BaseZkCliTool {
+public class MboxImport extends BaseRepositoryTestTool {
 
     private Option fileOption;
 
-    private Option metricsOption;
-
     private Option schemaOption;
 
-    private LilyClient lilyClient;
-
-    private Repository repository;
-
-    private IdGenerator idGenerator;
-
-    private int messageCount;
-
-    private int partCount;
-
-    private int invalidMessageCount;
-
     private Map<String, Integer> partsByMediaType = new HashMap<String, Integer>();
-
-    private MboxMetrics metrics;
 
     private static final String NS = "org.lilyproject.mail";
 
@@ -95,14 +77,6 @@ public class MboxImport extends BaseZkCliTool {
                 .create("s");
         options.add(schemaOption);
 
-        metricsOption = OptionBuilder
-                .withArgName("metrics.properties")
-                .hasArg()
-                .withDescription("Metrics configuration")
-                .withLongOpt("metrics")
-                .create("m");
-        options.add(metricsOption);
-
         return options;
     }
 
@@ -112,84 +86,52 @@ public class MboxImport extends BaseZkCliTool {
         if (result != 0)
             return result;
 
-        if (cmd.hasOption(metricsOption.getOpt())) {
-            result = initMetrics(cmd.getOptionValue(metricsOption.getOpt()));
-            if (result != 0)
-                return result;
-        } else {
-            ContextFactory contextFactory = ContextFactory.getFactory();
-            contextFactory.setAttribute("mbox.class", "org.apache.hadoop.metrics.spi.NullContextWithUpdateThread");
-            contextFactory.setAttribute("mbox.period", "15");
-            metrics = new MboxMetrics("metrics");
-        }
-
         if (!cmd.hasOption(schemaOption.getOpt()) && !cmd.hasOption(fileOption.getOpt())) {
             printHelp();
             return 1;
         }
 
-        lilyClient = new LilyClient(zkConnectionString, 10000);
-        repository = lilyClient.getRepository();
-        idGenerator = repository.getIdGenerator();
+        setupLily();
 
         if (cmd.hasOption(schemaOption.getOpt()) || cmd.hasOption(fileOption.getOpt())) {
             loadSchema();
         }
 
-        long startTime = System.currentTimeMillis();
-
         if (cmd.hasOption(fileOption.getOpt())) {
-            try {
-                String fileName = cmd.getOptionValue(fileOption.getOpt());
-                File file = new File(fileName);
+            String fileName = cmd.getOptionValue(fileOption.getOpt());
+            File file = new File(fileName);
 
-                if (!file.exists()) {
-                    System.out.println("File does not exist: " + file.getAbsolutePath());
-                    return 1;
-                }
-
-                if (file.isDirectory()) {
-                    File[] files = file.listFiles();
-                    Arrays.sort(files);
-                    for (File item : files) {
-                        if (!item.isDirectory()) {
-                            importFile(item);
-                        }
-                    }
-                } else {
-                    importFile(file);
-                }
-
-            } finally {
-                long stopTime = System.currentTimeMillis();
-
-                System.out.println();
-                System.out.println("Number of created messages: " + messageCount);
-                System.out.println("Number of created parts: " + partCount);
-                System.out.println("Number of invalid messages (msg without headers or parts): " + invalidMessageCount);
-                System.out.println();
-                System.out.println("Number of created parts per media type:");
-                for (Map.Entry<String, Integer> entry : partsByMediaType.entrySet()) {
-                    System.out.println("  " + entry.getKey() + " : " + entry.getValue());
-                }
-                System.out.println();
-
-                long millis = stopTime - startTime;
-                double seconds = millis / 1000;
-                if (seconds > 0) {
-                    double perSecond = (messageCount + partCount) / seconds;
-                    double perSecondIncludingBlobs = (messageCount + (partCount * 2)) / seconds;
-                    double perOperation = millis / (messageCount + partCount);
-
-                    System.out.printf("Import took: %1$.2f seconds\n", seconds);
-                    System.out.printf("Average number of records created per second: %1$.2f\n", perSecond);
-                    System.out.printf("Average milliseconds to create a record: %1$.2f\n", perOperation);
-                    System.out.printf("Taking blob creation into account, average number of operations per second: %1$.2f\n", perSecondIncludingBlobs);
-                    System.out.println();
-                    System.out.println("These timings are not a performance measurement of Lily but of this import as");
-                    System.out.println("a whole.");
-                }
+            if (!file.exists()) {
+                System.out.println("File does not exist: " + file.getAbsolutePath());
+                return 1;
             }
+
+            setupMetrics();
+
+            startExecutor();
+
+            if (file.isDirectory()) {
+                File[] files = file.listFiles();
+                Arrays.sort(files);
+                for (File item : files) {
+                    if (!item.isDirectory()) {
+                        executor.submit(new ImportMboxFileTask(item));
+                    }
+                }
+            } else {
+                executor.submit(new ImportMboxFileTask(file));
+            }
+
+            stopExecutor();
+
+            finishMetrics();
+
+            System.out.println();
+            System.out.println("Number of created parts per media type:");
+            for (Map.Entry<String, Integer> entry : partsByMediaType.entrySet()) {
+                System.out.println("  " + entry.getKey() + " : " + entry.getValue());
+            }
+            System.out.println();
         }
 
         lilyClient.close();
@@ -205,39 +147,20 @@ public class MboxImport extends BaseZkCliTool {
         System.out.println();
     }
 
-    private int initMetrics(String fileName) throws IOException {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            System.out.println("Specified metrics configuration file does not exist:");
-            System.out.println(file.getAbsolutePath());
-            return -1;
+    private class ImportMboxFileTask implements Runnable {
+        private File file;
+
+        private ImportMboxFileTask(File file) {
+            this.file = file;
         }
 
-        Properties props = new Properties();
-        InputStream is = new FileInputStream(file);
-        try {
-            props.load(is);
-        } finally {
-            Closer.close(is);
-        }
-
-        ContextFactory contextFactory = ContextFactory.getFactory();
-        for (Map.Entry entry : props.entrySet()) {
-            String name = entry.getKey().toString();
-            if (name.startsWith("mbox.")) {
-                contextFactory.setAttribute(name, entry.getValue().toString());
-                System.out.println("Setting property " + name);
+        public void run() {
+            try {
+                importFile(file);
+            } catch (Exception e) {
+                metrics.increment("Exceptions", 1);
             }
         }
-
-        String recordName = props.getProperty("recordName");
-        if (recordName == null) {
-            System.out.println("The metrics property file does not contain a recordName property.");
-            return -1;
-        }
-        metrics = new MboxMetrics(recordName);
-
-        return 0;
     }
 
     private void importFile(File file) throws Exception {
@@ -302,7 +225,7 @@ public class MboxImport extends BaseZkCliTool {
                     byte[] data = IOUtils.toByteArray(bodyDataStream);
 
                     // TODO could fill in filename
-                    long startTime = System.currentTimeMillis();
+                    long startTime = System.nanoTime();
                     Blob blob = new Blob(mediaType, (long)data.length, null);
                     OutputStream os = repository.getOutputStream(blob);
                     try {
@@ -310,7 +233,8 @@ public class MboxImport extends BaseZkCliTool {
                     } finally {
                         os.close();
                     }
-                    metrics.blobs.inc(System.currentTimeMillis() - startTime);
+                    double duration = System.nanoTime() - startTime;
+                    metrics.increment("Blob creation", "B", duration / 1e6d);
 
                     Part part = message.addPart(blob);
                     part.baseMediaType = stream.getBodyDescriptor().getMimeType();
@@ -374,7 +298,7 @@ public class MboxImport extends BaseZkCliTool {
 
         if (messageRecord.getFields().size() == 0 || message.parts.size() == 0) {
             // Message has no useful headers, do not create it.
-            invalidMessageCount++;
+            metrics.increment("Invalid messages", 1);
             return;
         }
 
@@ -383,9 +307,11 @@ public class MboxImport extends BaseZkCliTool {
             partLinks.add(new Link(recordId));
         }
         messageRecord.setField(new QName(NS, "parts"), partLinks);
-        long startTime = System.currentTimeMillis();
+
+        long startTime = System.nanoTime();
         messageRecord = repository.createOrUpdate(messageRecord);
-        metrics.messages.inc(System.currentTimeMillis() - startTime);
+        double duration = System.nanoTime() - startTime;
+        metrics.increment("Message record", "C", duration / 1e6d);
 
         for (int i = 0; i < message.parts.size(); i++) {
             Part part = message.parts.get(i);
@@ -394,18 +320,23 @@ public class MboxImport extends BaseZkCliTool {
             partRecord.setField(new QName(NS, "mediaType"), part.blob.getMediaType());
             partRecord.setField(new QName(NS, "content"), part.blob);
             partRecord.setField(new QName(NS, "message"), new Link(messageRecord.getId()));
-            startTime = System.currentTimeMillis();
+
+            startTime = System.nanoTime();
             partRecord = repository.createOrUpdate(partRecord);
-            metrics.parts.inc(System.currentTimeMillis() - startTime);
+            duration = System.nanoTime() - startTime;
+            metrics.increment("Part record", "C", duration / 1e6d);
+
             part.recordId = partRecord.getId();
             increment(part.baseMediaType);
-            partCount++;
 
-            System.out.println("Created part record: " + partRecord.getId());
+            if (verbose) {
+                System.out.println("Created part record: " + partRecord.getId());
+            }
         }
 
-        messageCount++;
-        System.out.println("Created message record " + messageRecord.getId());
+        if (verbose) {
+            System.out.println("Created message record " + messageRecord.getId());
+        }
     }
 
     public void increment(String mediaType) {

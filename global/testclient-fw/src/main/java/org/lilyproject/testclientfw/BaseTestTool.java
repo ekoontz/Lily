@@ -131,6 +131,7 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         hbaseMetrics.printFormattedHBaseState(metricsStream);
 
         metrics = new Metrics(metricsStream, metricsPlugin);
+        metrics.setThreadCount(workers);
 
         System.out.println("Metrics ready, summary will be outputted every " + (metrics.getIntervalDuration() / 1000) + "s");
         System.out.println("Follow them using tail -f " + metricsFileName);

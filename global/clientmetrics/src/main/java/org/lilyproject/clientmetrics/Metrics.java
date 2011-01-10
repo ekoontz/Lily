@@ -16,6 +16,7 @@ public class Metrics {
     private PrintStream reportStream;
     private MetricsPlugin plugin;
     private boolean inReport;
+    private int threadCount = 1;
 
     public Metrics(File file, MetricsPlugin plugin) throws FileNotFoundException {
         this(new PrintStream(new FileOutputStream(file)), plugin);
@@ -28,6 +29,10 @@ public class Metrics {
 
     public Metrics() {
         this(System.out, null);
+    }
+
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
     }
 
     public void finish() {
@@ -149,7 +154,8 @@ public class Metrics {
                     reportStream.print(", ");
                 }
 
-                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2f real)", entry.getKey(), opsPerSecInt, opsPerSec);
+                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2fx%4$d=%5$.2f real)", entry.getKey(),
+                        opsPerSecInt, opsPerSec, threadCount, opsPerSec * ((double)threadCount));
             }
             if (i > 0) {
                 reportStream.print("\n");
