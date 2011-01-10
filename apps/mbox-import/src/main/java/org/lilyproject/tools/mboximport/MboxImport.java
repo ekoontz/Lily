@@ -81,6 +81,11 @@ public class MboxImport extends BaseRepositoryTestTool {
     }
 
     @Override
+    protected int getDefaultWorkers() {
+        return 1;
+    }
+
+    @Override
     public int run(CommandLine cmd) throws Exception {
         int result = super.run(cmd);
         if (result != 0)

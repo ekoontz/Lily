@@ -23,8 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public abstract class BaseTestTool extends BaseZkCliTool {
-    private static final int DEFAULT_WORKERS = 2;
-
     private Option workersOption;
 
     private Option verboseOption;
@@ -46,6 +44,10 @@ public abstract class BaseTestTool extends BaseZkCliTool {
     protected Metrics metrics;
 
     protected ZooKeeperItf zk;
+
+    protected int getDefaultWorkers() {
+        return 2;
+    }
 
     @Override
     public List<Option> getOptions() {
@@ -80,7 +82,7 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         if (result != 0)
             return result;
 
-        workers = Util.getIntOption(cmd, workersOption, DEFAULT_WORKERS);
+        workers = Util.getIntOption(cmd, workersOption, getDefaultWorkers());
 
         if (cmd.hasOption(verboseOption.getOpt())) {
             verbose = true;
