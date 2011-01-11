@@ -1,7 +1,6 @@
 package org.lilyproject.testclientfw;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -16,7 +15,9 @@ public class Words {
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             String word;
             while ((word = reader.readLine()) != null) {
-                words.add(word);
+                // The lowerCase is a simple trick to avoid that words like OR, AND, NOT cause
+                // the SOLR query parser to fail.
+                words.add(word.toLowerCase());
             }
             is.close();
         } catch (Exception e) {
