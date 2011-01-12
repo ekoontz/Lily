@@ -48,11 +48,13 @@ public class Words {
 
 
     public static String get(WordList list) {
-        return WORDS.get(list).get((int)(Math.floor(Math.random() * WORDS.size())));
+        List<String> words = WORDS.get(list);
+        return words.get((int)(Math.floor(Math.random() * words.size())));
     }
 
     public static String get() {
-        return WORDS.get(WordList.BIG_LIST).get((int)(Math.floor(Math.random() * WORDS.size())));
+        List<String> words = WORDS.get(WordList.BIG_LIST);
+        return words.get((int)(Math.floor(Math.random() * words.size())));
     }
 
     /**
@@ -61,7 +63,9 @@ public class Words {
     public static String get(WordList list, int amount) {
         StringBuffer buffer = new StringBuffer(20 * amount);
         for (int i = 0; i < amount; i++) {
-            buffer.append(get());
+            if (i > 0)
+                buffer.append(' ');
+            buffer.append(get(list));
         }
         return buffer.toString();
     }
