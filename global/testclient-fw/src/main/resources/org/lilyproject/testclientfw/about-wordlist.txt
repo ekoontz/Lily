@@ -5,3 +5,5 @@ http://wordlist.sourceforge.net/
 and produced using
 
 ./mk-list american 50
+
+./mk-list american 10
