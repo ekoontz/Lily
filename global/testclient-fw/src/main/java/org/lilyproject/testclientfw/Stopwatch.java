@@ -32,7 +32,7 @@ public class Stopwatch {
             LogFactory.getLog(Stopwatch.class).error("Stopwatch.stop() called but it was not started.");
         }
 
-        double duration = (System.nanoTime() - ((double)data.startedAt)) / 1e6;
+        double duration = (((double)System.nanoTime()) - ((double)data.startedAt)) / 1e6;
         data.started = false;
         return duration;
     }
