@@ -38,6 +38,37 @@ public class Metrics {
     public void finish() {
         // print one last report
         printReport();
+        printGlobalOpsPerSec();
+    }
+
+    /**
+     * Does an in-between reset of the metrics. This is useful if your test consists of multiple phases
+     * which each have different metrics.
+     */
+    public synchronized void restart() {
+        printReport();
+        printGlobalOpsPerSec();
+        metrics.clear();
+        intervalStartedAt = null;
+        startedAt = null;
+
+        reportStream.println("");
+        reportStream.println("Metrics have been reset");
+        reportStream.println("");
+    }
+
+    public void printPhaseTitle(String title) {
+        reportStream.print("+");
+        for (int i = 0; i < title.length() + 2; i++) {
+            reportStream.print("-");
+        }
+        reportStream.println("+");
+        reportStream.println("| " + title + " |");
+        reportStream.print("+");
+        for (int i = 0; i < title.length() + 2; i++) {
+            reportStream.print("-");
+        }
+        reportStream.println("+");
     }
 
     public int getIntervalDuration() {
@@ -168,6 +199,43 @@ public class Metrics {
         inReport = false;
     }
 
+    private void printGlobalOpsPerSec() {
+        double testDuration = System.currentTimeMillis() - startedAt.getMillis();
+
+        Map<String, CountAndValue> statByType = new TreeMap<String, CountAndValue>();
+
+        for (Map.Entry<String, Metric> entry : metrics.entrySet()) {
+            Metric metric = entry.getValue();
+
+            if (metric.type != null) {
+                CountAndValue stat = statByType.get(metric.type);
+                if (stat == null) {
+                    stat = new CountAndValue();
+                    statByType.put(metric.type, stat);
+                }
+
+                stat.count += metric.getAllTimeCount();
+                stat.value += metric.getAllTimeValue();
+            }
+        }
+
+        if (statByType.size() > 0) {
+            reportStream.println();
+            reportStream.println("Global ops/sec of the test:");
+            for (Map.Entry<String, CountAndValue> entry : statByType.entrySet()) {
+                if (entry.getValue().count == 0)
+                    continue;
+
+                double opsPerSec = (((double)entry.getValue().count) / (entry.getValue().value)) * 1000d;
+                double opsPerSecInt = (((double)entry.getValue().count) / (testDuration)) * 1000d;
+
+                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2fx%4$d=%5$.2f real)\n", entry.getKey(),
+                        opsPerSecInt, opsPerSec, threadCount, opsPerSec * ((double)threadCount));
+            }
+            reportStream.println();
+        }
+    }
+
     private String formatDuration(long millis) {
         long seconds = millis / 1000;
 
@@ -249,6 +317,10 @@ public class Metrics {
 
         public double getAllTimeAverage() {
             return allTimeCount == 0 ? 0 : allTimeValue / (double)allTimeCount;
+        }
+
+        public double getAllTimeValue() {
+            return allTimeValue;
         }
 
         public double getIntervalMin() {
