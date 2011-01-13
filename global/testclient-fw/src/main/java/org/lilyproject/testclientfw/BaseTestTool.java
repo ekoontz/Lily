@@ -9,8 +9,10 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.joda.time.DateTime;
 import org.lilyproject.cli.BaseZkCliTool;
 import org.lilyproject.clientmetrics.HBaseMetrics;
+import org.lilyproject.clientmetrics.LilyMetrics;
 import org.lilyproject.clientmetrics.Metrics;
 import org.lilyproject.clientmetrics.HBaseMetricsPlugin;
+import org.lilyproject.util.zookeeper.StateWatchingZooKeeper;
 import org.lilyproject.util.zookeeper.ZooKeeperItf;
 
 import java.io.File;
@@ -29,13 +31,19 @@ public abstract class BaseTestTool extends BaseZkCliTool {
 
     private Option hbaseMetricsOption;
 
+    private Option lilyMetricsOption;
+
     protected int workers;
 
     protected boolean verbose;
 
     protected boolean useHbaseMetrics;
 
+    protected boolean useLilyMetrics;
+
     protected HBaseMetrics hbaseMetrics;
+
+    private LilyMetrics lilyMetrics;
 
     protected PrintStream metricsStream;
 
@@ -70,8 +78,14 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         hbaseMetricsOption = OptionBuilder
                 .withDescription("Enable HBase metrics options (requires JMX on default port 10102)")
                 .withLongOpt("hbase-metrics")
-                .create("m");
+                .create("hm");
         options.add(hbaseMetricsOption);
+
+        lilyMetricsOption = OptionBuilder
+                .withDescription("Enable Lily metrics options (requires JMX on default port 10202)")
+                .withLongOpt("lily-metrics")
+                .create("lm");
+        options.add(lilyMetricsOption);
 
         return options;
     }
@@ -92,11 +106,15 @@ public abstract class BaseTestTool extends BaseZkCliTool {
             useHbaseMetrics = true;
         }
 
+        if (cmd.hasOption(lilyMetricsOption.getOpt())) {
+            useLilyMetrics = true;
+        }
+
         return 0;
     }
 
 
-    public void setupMetrics() throws IOException {
+    public void setupMetrics() throws Exception {
         String metricsFileName = getClass().getSimpleName() + "-metrics";
 
         System.out.println();
@@ -107,6 +125,7 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         HBaseAdmin hbaseAdmin = new HBaseAdmin(getHBaseConf());
 
         hbaseMetrics = new HBaseMetrics(hbaseAdmin);
+        lilyMetrics = new LilyMetrics(getZooKeeper());
 
         HBaseMetricsPlugin metricsPlugin = new HBaseMetricsPlugin(hbaseMetrics, hbaseAdmin, useHbaseMetrics);
 
@@ -130,7 +149,7 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         metricsStream.println("quick but that their time is measured with a too low granularity.");
         metricsStream.println();
 
-        hbaseMetrics.printFormattedHBaseState(metricsStream);
+        outputGeneralMetricReports();
 
         metrics = new Metrics(metricsStream, metricsPlugin);
         metrics.setThreadCount(workers);
@@ -140,9 +159,22 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         System.out.println();
     }
 
-    public void finishMetrics() throws IOException {
+    public void finishMetrics() throws Exception {
         metrics.finish();
-        hbaseMetrics.printFormattedHBaseState(metricsStream);
+        outputGeneralMetricReports();
+    }
+
+    private void outputGeneralMetricReports() throws Exception {
+        hbaseMetrics.outputHBaseState(metricsStream);
+        hbaseMetrics.outputRegionCountByServer(metricsStream);
+
+        if (useHbaseMetrics) {
+            hbaseMetrics.outputRegionServersInfo(metricsStream);
+        }
+
+        if (useLilyMetrics) {
+            lilyMetrics.outputLilyServerInfo(metricsStream);
+        }
     }
 
     public void startExecutor() {
@@ -170,5 +202,12 @@ public abstract class BaseTestTool extends BaseZkCliTool {
         hbaseConf.set("hbase.zookeeper.quorum", zkConnectionString);
 
         return hbaseConf;
+    }
+
+    protected ZooKeeperItf getZooKeeper() throws IOException {
+        if (zk == null) {
+            zk = new StateWatchingZooKeeper(zkConnectionString, 10000);
+        }
+        return zk;
     }
 }

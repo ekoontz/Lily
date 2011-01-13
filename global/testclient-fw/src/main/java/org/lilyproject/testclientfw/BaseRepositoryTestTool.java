@@ -71,8 +71,7 @@ public abstract class BaseRepositoryTestTool extends BaseTestTool {
     }
 
     public void setupLily() throws IOException, ZkConnectException, NoServersException, InterruptedException, KeeperException {
-        zk = new StateWatchingZooKeeper(zkConnectionString, 10000);
-        lilyClient = new LilyClient(zk);
+        lilyClient = new LilyClient(getZooKeeper());
         repository = lilyClient.getRepository();
         idGenerator = repository.getIdGenerator();
         typeManager = repository.getTypeManager();

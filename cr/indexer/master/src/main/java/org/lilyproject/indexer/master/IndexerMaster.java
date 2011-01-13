@@ -25,6 +25,7 @@ import org.lilyproject.indexer.batchbuild.IndexBatchBuildCounters;
 import org.lilyproject.indexer.model.api.*;
 import org.lilyproject.rowlog.api.RowLogConfigurationManager;
 import org.lilyproject.rowlog.api.RowLogSubscription;
+import org.lilyproject.util.LilyInfo;
 import org.lilyproject.util.Logs;
 import org.lilyproject.util.io.Closer;
 import org.lilyproject.util.zookeeper.*;
@@ -72,11 +73,13 @@ public class IndexerMaster {
 
     private JobClient jobClient;
 
+    private LilyInfo lilyInfo;
+
     private final Log log = LogFactory.getLog(getClass());
 
     public IndexerMaster(ZooKeeperItf zk , WriteableIndexerModel indexerModel, Configuration mapReduceConf,
             Configuration mapReduceJobConf, Configuration hbaseConf, String zkConnectString, int zkSessionTimeout,
-            RowLogConfigurationManager rowLogConfMgr) {
+            RowLogConfigurationManager rowLogConfMgr, LilyInfo lilyInfo) {
         this.zk = zk;
         this.indexerModel = indexerModel;
         this.mapReduceConf = mapReduceConf;
@@ -85,6 +88,7 @@ public class IndexerMaster {
         this.zkConnectString = zkConnectString;
         this.zkSessionTimeout = zkSessionTimeout;
         this.rowLogConfMgr = rowLogConfMgr;
+        this.lilyInfo = lilyInfo;
     }
 
     @PostConstruct
@@ -130,6 +134,7 @@ public class IndexerMaster {
             }
 
             log.info("Startup as indexer master successful.");
+            lilyInfo.setIndexerMaster(true);
         }
 
         public void deactivateAsLeader() throws Exception {
@@ -144,6 +149,7 @@ public class IndexerMaster {
             jobStatusWatcher.shutdown(false);
 
             log.info("Shutdown as indexer master successful.");
+            lilyInfo.setIndexerMaster(false);
         }
     }
 

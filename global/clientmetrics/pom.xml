@@ -45,6 +45,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.lilyproject</groupId>
+      <artifactId>lily-zk-util</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
     </dependency>

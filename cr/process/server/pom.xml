@@ -105,6 +105,17 @@
               <value>-Dkauri.launcher.repository="%M2_REPO%" -Dlily.logdir="%LILY_HOME%\logs"</value>
             </parameter>
           </defaultJvmArgs>
+          <beforeJavaHook>
+            <parameter>
+              <platform>unix</platform>
+              <mode>dev</mode>
+              <value>
+#Uncommented the next lines to enable JMX access
+#LILY_JMX_OPTIONS="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=10202"
+#LILY_JAVA_OPTIONS="$LILY_JAVA_OPTIONS $LILY_JMX_OPTIONS"
+              </value>
+            </parameter>
+          </beforeJavaHook>
         </configuration>
         <executions>
           <execution>

@@ -23,7 +23,7 @@ public class HBaseMetricsPlugin implements MetricsPlugin {
             return;
 
         try {
-            hbaseMetrics.reportBlockCacheHitRatio(metrics);
+            hbaseMetrics.reportMetrics(metrics);
         } catch (Throwable t) {
             t.printStackTrace();
         }

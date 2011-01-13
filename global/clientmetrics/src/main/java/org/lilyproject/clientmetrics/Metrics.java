@@ -17,6 +17,11 @@ public class Metrics {
     private MetricsPlugin plugin;
     private boolean inReport;
     private int threadCount = 1;
+    private Table table;
+
+    public Metrics() {
+        this(System.out, null);
+    }
 
     public Metrics(File file, MetricsPlugin plugin) throws FileNotFoundException {
         this(new PrintStream(new FileOutputStream(file)), plugin);
@@ -25,10 +30,17 @@ public class Metrics {
     public Metrics(PrintStream reportStream, MetricsPlugin plugin) {
         this.reportStream = reportStream;
         this.plugin = plugin == null ? new NullPlugin() : plugin;
-    }
 
-    public Metrics() {
-        this(System.out, null);
+        table = new Table(reportStream);
+        table.addColumn(40, "Name", "s");
+        table.addColumn(-1, "Op count", "d");
+        table.addColumn(-1, "Average", "f");
+        table.addColumn(-1, "Median", "f");
+        table.addColumn(-1, "Minimum", "f");
+        table.addColumn(-1, "Maximum", "f");
+        table.addColumn(-1, "Alltime ops", "d");
+        table.addColumn(-1, "Alltime avg", "f");
+        table.finishDefinition();
     }
 
     public void setThreadCount(int threadCount) {
@@ -125,18 +137,19 @@ public class Metrics {
         long now = System.currentTimeMillis();
         long actualIntervalDuration = now - intervalStartedAt.getMillis();
 
-        reportStream.println("+-----------------------------------------------------------------------------------------------------------------------+");
-        reportStream.println("| Interval started at: " + intervalStartedAt + " (duration: " + (actualIntervalDuration / 1000) + "s).");
-        reportStream.println("| Measurements started at: " + startedAt + " (duration: " + formatDuration(now - startedAt.getMillis()) + ")");
+        table.fullSepLine();
+        table.crossColumn("Interval started at: " + intervalStartedAt + " (duration: " + (actualIntervalDuration / 1000) + "s).");
+        table.crossColumn("Measurements started at: " + startedAt + " (duration: " + formatDuration(now - startedAt.getMillis()) + ")");
+
 
         List<String> extra = plugin.getExtraInfoLines();
         for (String line : extra) {
-            reportStream.println("| " + line);
+            table.crossColumn(line);
         }
 
-        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
-        reportStream.println("| Name                               | Op count | Average  | Median   | Minimum  | Maximum  | Alltime ops | Alltime avg |");
-        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
+        table.columnSepLine();
+        table.titles();
+        table.columnSepLine();
 
         Map<String, CountAndValue> statByType = new TreeMap<String, CountAndValue>();
 
@@ -156,13 +169,12 @@ public class Metrics {
                 stat.value += metric.getIntervalValue();
             }
 
-            reportStream.printf ("|%1$-36.36s|%2$10d|%3$10.2f|%4$10.2f|%5$10.2f|%6$10.2f|%7$13d|%8$13.2f|\n",
-                    name, metric.getIntervalCount(), metric.getIntervalAverage(), metric.getIntervalMedian(),
+            table.columns(name, metric.getIntervalCount(), metric.getIntervalAverage(), metric.getIntervalMedian(),
                     metric.getIntervalMin(), metric.getIntervalMax(), metric.getAllTimeCount(),
                     metric.getAllTimeAverage());
         }
+        table.columnSepLine();
 
-        reportStream.println("+------------------------------------+----------+----------+----------+----------+----------+-------------+-------------+");
 
         if (statByType.size() > 0) {
             int i = 0;
@@ -179,18 +191,11 @@ public class Metrics {
                 double opsPerSec = (((double)entry.getValue().count) / (entry.getValue().value)) * 1000d;
                 double opsPerSecInt = (((double)entry.getValue().count) / ((double)actualIntervalDuration)) * 1000d;
 
-                if (i == 1) {
-                    reportStream.print("| ");
-                } else {
-                    reportStream.print(", ");
-                }
-
-                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2fx%4$d=%5$.2f real)", entry.getKey(),
-                        opsPerSecInt, opsPerSec, threadCount, opsPerSec * ((double)threadCount));
+                table.crossColumn(String.format("%1$s ops/sec: %5$.2f real (=%3$.2fx%4$d), %2$.2f interval",
+                        entry.getKey(), opsPerSecInt, opsPerSec, threadCount, opsPerSec * ((double)threadCount)));
             }
             if (i > 0) {
-                reportStream.print("\n");
-                reportStream.println("+-----------------------------------------------------------------------------------------------------------------------+");
+                table.fullSepLine();
             }
         }
 
@@ -200,6 +205,9 @@ public class Metrics {
     }
 
     private void printGlobalOpsPerSec() {
+        if (startedAt == null)
+            return;
+
         double testDuration = System.currentTimeMillis() - startedAt.getMillis();
 
         Map<String, CountAndValue> statByType = new TreeMap<String, CountAndValue>();
@@ -229,7 +237,7 @@ public class Metrics {
                 double opsPerSec = (((double)entry.getValue().count) / (entry.getValue().value)) * 1000d;
                 double opsPerSecInt = (((double)entry.getValue().count) / (testDuration)) * 1000d;
 
-                reportStream.printf("%1$s ops/sec: %2$.2f interval (%3$.2fx%4$d=%5$.2f real)\n", entry.getKey(),
+                reportStream.printf("%1$s ops/sec: %5$.2f real (=%3$.2fx%4$d), %2$.2f interval\n", entry.getKey(),
                         opsPerSecInt, opsPerSec, threadCount, opsPerSec * ((double)threadCount));
             }
             reportStream.println();

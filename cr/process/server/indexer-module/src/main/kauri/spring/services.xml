@@ -59,6 +59,10 @@
       id="rowLogConfigurationMgr"
       service="org.lilyproject.rowlog.api.RowLogConfigurationManager"/>
 
+  <kauri:import-service
+      id="lilyInfo"
+      service="org.lilyproject.util.LilyInfo"/>
+
   <bean id="hbaseConf"
       factory-bean="hadoopConfFactory"
       factory-method="getHBaseConf"/>
@@ -76,6 +80,7 @@
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperConnectString"/></constructor-arg>
     <constructor-arg><bean factory-bean="hadoopConfFactory" factory-method="getZooKeeperSessionTimeout"/></constructor-arg>
     <constructor-arg ref="rowLogConfigurationMgr"/>
+    <constructor-arg ref="lilyInfo"/>
   </bean>
   
   <bean id="indexerWorker" class="org.lilyproject.indexer.worker.IndexerWorker">

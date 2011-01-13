@@ -37,6 +37,8 @@ import org.lilyproject.rowlog.impl.RowLogImpl;
 import org.lilyproject.rowlog.impl.RowLogProcessorElection;
 import org.lilyproject.rowlog.impl.RowLogProcessorImpl;
 import org.lilyproject.rowlog.impl.RowLogShardImpl;
+import org.lilyproject.util.LilyInfo;
+import org.lilyproject.util.LilyInfoMBean;
 import org.lilyproject.util.hbase.HBaseTableFactory;
 import org.lilyproject.util.hbase.LilyHBaseSchema.RecordCf;
 import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
@@ -52,15 +54,17 @@ public class RowLogSetup {
     private RowLogProcessorElection writeAheadLogProcessorLeader;
     private final HBaseTableFactory hbaseTableFactory;
     private final Conf rowLogConf;
+    private final LilyInfo lilyInfo;
     private final Log log = LogFactory.getLog(getClass());
 
     public RowLogSetup(RowLogConfigurationManager confMgr, ZooKeeperItf zk, Configuration hbaseConf,
-            HBaseTableFactory hbaseTableFactory, Conf rowLogConf) {
+            HBaseTableFactory hbaseTableFactory, Conf rowLogConf, LilyInfo lilyInfo) {
         this.confMgr = confMgr;
         this.zk = zk;
         this.hbaseConf = hbaseConf;
         this.hbaseTableFactory = hbaseTableFactory;
         this.rowLogConf = rowLogConf;
+        this.lilyInfo = lilyInfo;
     }
 
     @PostConstruct
@@ -112,7 +116,7 @@ public class RowLogSetup {
         // Start the message queue processor
         boolean mqProcEnabled = rowLogConf.getChild("mqProcessor").getAttributeAsBoolean("enabled", true);
         if (mqProcEnabled) {
-            messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, confMgr));
+            messageQueueProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(messageQueue, confMgr), lilyInfo);
             messageQueueProcessorLeader.start();
         } else {
             log.info("Not participating in MQ processor election.");
@@ -121,7 +125,7 @@ public class RowLogSetup {
         // Start the wal processor
         boolean walProcEnabled = rowLogConf.getChild("walProcessor").getAttributeAsBoolean("enabled", true);
         if (walProcEnabled) {
-            writeAheadLogProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(writeAheadLog, confMgr));
+            writeAheadLogProcessorLeader = new RowLogProcessorElection(zk, new RowLogProcessorImpl(writeAheadLog, confMgr), lilyInfo);
             writeAheadLogProcessorLeader.start();
         } else {
             log.info("Not participating in WAL processor election.");

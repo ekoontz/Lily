@@ -41,6 +41,8 @@
 
   <kauri:export-service ref="hbaseTableFactory" service="org.lilyproject.util.hbase.HBaseTableFactory"/>
   
+  <kauri:export-service ref="lilyInfo" service="org.lilyproject.util.LilyInfo"/>
+
   <bean id="hbaseConfiguration"
       class="org.lilyproject.server.modules.general.HadoopConfigurationFactoryImpl">
     <constructor-arg><kauri:conf path="hbase"/></constructor-arg>
@@ -86,10 +88,13 @@
     <constructor-arg ref="zooKeeper"/>
   </bean>
 
+  <bean id="lilyInfo" class="org.lilyproject.server.modules.general.LilyInfoImpl"/>
+
   <bean id="mbeanExporter" class="org.springframework.jmx.export.MBeanExporter">
     <property name="beans">
       <map>
         <entry key="Lily:name=ZooKeeper" value-ref="zooKeeperMXBean"/>
+        <entry key="Lily:name=Info" value-ref="lilyInfo"/>
       </map>
     </property>
     <property name="server">

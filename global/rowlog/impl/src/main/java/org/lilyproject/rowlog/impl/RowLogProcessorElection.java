@@ -19,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
 import org.lilyproject.rowlog.api.RowLogProcessor;
+import org.lilyproject.util.LilyInfo;
 import org.lilyproject.util.zookeeper.LeaderElection;
 import org.lilyproject.util.zookeeper.LeaderElectionCallback;
 import org.lilyproject.util.zookeeper.LeaderElectionSetupException;
@@ -38,11 +39,14 @@ public class RowLogProcessorElection {
 
     private RowLogProcessor rowLogProcessor;
 
+    private LilyInfo lilyInfo;
+
     private final Log log = LogFactory.getLog(getClass());
 
-    public RowLogProcessorElection(ZooKeeperItf zk, RowLogProcessor rowLogProcessor) {
+    public RowLogProcessorElection(ZooKeeperItf zk, RowLogProcessor rowLogProcessor, LilyInfo lilyInfo) {
         this.zk = zk;
         this.rowLogProcessor = rowLogProcessor;
+        this.lilyInfo = lilyInfo;
     }
 
     @PostConstruct
@@ -66,15 +70,29 @@ public class RowLogProcessorElection {
 
     private class MyLeaderElectionCallback implements LeaderElectionCallback {
         public void activateAsLeader() throws Exception {
-            log.info("Starting row log processor for " + rowLogProcessor.getRowLog().getId());
+            String rowLogId = rowLogProcessor.getRowLog().getId();
+            log.info("Starting row log processor for " + rowLogId);
             rowLogProcessor.start();
-            log.info("Startup of row log processor successful for " + rowLogProcessor.getRowLog().getId());
+            log.info("Startup of row log processor successful for " + rowLogId);
+
+            if (rowLogId.equals("mq")) {
+                lilyInfo.setRowLogProcessorMQ(true);
+            } else if (rowLogId.equals("wal")) {
+                lilyInfo.setRowLogProcessorWAL(true);
+            }
         }
 
         public void deactivateAsLeader() throws Exception {
-            log.info("Shutting down row log processor for " + rowLogProcessor.getRowLog().getId());
+            String rowLogId = rowLogProcessor.getRowLog().getId();
+            log.info("Shutting down row log processor for " + rowLogId);
             rowLogProcessor.stop();
-            log.info("Shutdown of row log processor sucessful for " + rowLogProcessor.getRowLog().getId());
+            log.info("Shutdown of row log processor sucessful for " + rowLogId);
+
+            if (rowLogId.equals("mq")) {
+                lilyInfo.setRowLogProcessorMQ(true);
+            } else if (rowLogId.equals("wal")) {
+                lilyInfo.setRowLogProcessorWAL(true);
+            }
         }
     }
 }
