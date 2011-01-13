@@ -47,8 +47,9 @@ public class RowLogProcessorElection {
 
     @PostConstruct
     public void start() throws LeaderElectionSetupException, IOException, InterruptedException, KeeperException {
+        String electionPath = "/lily/rowlog/" + rowLogProcessor.getRowLog().getId() + "/masters";
         leaderElection = new LeaderElection(zk, "RowLog Processor " + rowLogProcessor.getRowLog().getId(),
-                "/lily/indexer/masters", new MyLeaderElectionCallback());
+                electionPath, new MyLeaderElectionCallback());
     }
 
     @PreDestroy
