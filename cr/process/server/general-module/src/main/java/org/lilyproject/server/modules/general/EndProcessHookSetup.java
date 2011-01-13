@@ -31,7 +31,9 @@ public class EndProcessHookSetup {
     public void start() {
         zk.setEndProcessHook(new Runnable() {
             public void run() {
-                HConnectionManager.hardStopRequested = true;
+                // TODO to be determined if we still need this after move to HBase 0.90
+                //      If not, we can remove this class altogether
+                // HConnectionManager.hardStopRequested = true;
             }
         });
     }

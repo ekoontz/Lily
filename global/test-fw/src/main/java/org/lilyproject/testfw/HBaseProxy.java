@@ -137,8 +137,8 @@ public class HBaseProxy {
 
     public void stop() throws Exception {
         // Close connections with HBase and HBase's ZooKeeper handles
-        HConnectionManager.deleteConnectionInfo(CONF, true);
-        //HConnectionManager.deleteAllConnections(true);
+        //HConnectionManager.deleteConnectionInfo(CONF, true);
+        HConnectionManager.deleteAllConnections(true);
 
         if (MODE == Mode.EMBED) {
             // Since HBase mini cluster shutdown has a tendency of sometimes failing (hanging waiting on master

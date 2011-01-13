@@ -118,7 +118,7 @@ public class LocalHTable extends ThreadLocal<HTable> implements HTableInterface 
         } finally {
             // if an exception occurs, we do not expect our put to be left
             // behind in the write buffer
-            table.clearWriteBuffer();
+            table.getWriteBuffer().clear();
         }
     }
 
@@ -168,5 +168,21 @@ public class LocalHTable extends ThreadLocal<HTable> implements HTableInterface 
 
     public void unlockRow(RowLock rl) throws IOException {
         get().unlockRow(rl);
+    }
+
+    public void batch(List<Row> actions, Object[] results) throws IOException, InterruptedException {
+        get().batch(actions, results);
+    }
+
+    public Object[] batch(List<Row> actions) throws IOException, InterruptedException {
+        return get().batch(actions);
+    }
+
+    public Result[] get(List<Get> gets) throws IOException {
+        return get().get(gets);
+    }
+
+    public Result increment(Increment increment) throws IOException {
+        return get().increment(increment);
     }
 }

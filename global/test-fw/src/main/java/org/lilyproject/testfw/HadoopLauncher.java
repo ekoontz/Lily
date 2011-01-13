@@ -16,6 +16,7 @@
 package org.lilyproject.testfw;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -24,7 +25,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.FSUtils;
-import org.apache.hadoop.hbase.MiniZooKeeperCluster;
+import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.MiniMRCluster;
 import org.lilyproject.cli.BaseCliTool;
@@ -45,12 +46,12 @@ public class HadoopLauncher extends BaseCliTool {
     private MiniDFSCluster dfsCluster = null;
     private MiniHBaseCluster hbaseCluster = null;
     private MiniMRCluster mrCluster = null;
+    private File baseTempDir;
     private File clusterTestBuildDir = null;
     private Configuration conf;
     private int zkPort = 2181;
 
     public static final String TEST_DIRECTORY_KEY = "test.build.data";
-    public static final String DEFAULT_TEST_DIRECTORY = "target/build/data";
 
     @Override
     protected String getCmdName() {
@@ -75,6 +76,8 @@ public class HadoopLauncher extends BaseCliTool {
 
         conf.set("hbase.master.info.port", "60010");
         conf.set("hbase.regionserver.info.port", "60030");
+
+        setupTempDir();
 
         startMiniCluster(1);
 
@@ -149,30 +152,24 @@ public class HadoopLauncher extends BaseCliTool {
         this.conf.set(HConstants.HBASE_DIR, hbaseRootdir.toString());
         fs.mkdirs(hbaseRootdir);
         FSUtils.setVersion(fs, hbaseRootdir);
-        this.hbaseCluster = new MiniHBaseCluster(this.conf, servers);
+        Configuration c = new Configuration(this.conf);
+        this.hbaseCluster = new MiniHBaseCluster(c, servers);
         // Don't leave here till we've done a successful scan of the .META.
-        HTable t = new HTable(this.conf, HConstants.META_TABLE_NAME);
+        HTable t = new HTable(c, HConstants.META_TABLE_NAME);
         ResultScanner s = t.getScanner(new Scan());
         while (s.next() != null) continue;
 
         return this.hbaseCluster;
     }
 
-    private static File setupClusterTestBuildDir() {
-        String randomStr = UUID.randomUUID().toString();
-        String dirStr = getTestDir(randomStr).toString();
+    private File setupClusterTestBuildDir() {
+        String dirStr = getTestDir("data").toString();
         File dir = new File(dirStr).getAbsoluteFile();
-        // Have it cleaned up on exit
-        dir.deleteOnExit();
         return dir;
     }
 
-    public static Path getTestDir(final String subdirName) {
-        return new Path(getTestDir(), subdirName);
-    }
-
-    public static Path getTestDir() {
-        return new Path(System.getProperty(TEST_DIRECTORY_KEY, DEFAULT_TEST_DIRECTORY));
+    public Path getTestDir(final String subdirName) {
+        return new Path(baseTempDir.getAbsolutePath(), subdirName);
     }
 
     public void shutdownMiniCluster() throws IOException {
@@ -236,8 +233,8 @@ public class HadoopLauncher extends BaseCliTool {
     public void startMiniMapReduceCluster() throws IOException {
         System.out.println("Starting mini mapreduce cluster...");
         // These are needed for the new and improved Map/Reduce framework
-        System.setProperty("hadoop.log.dir", conf.get("hadoop.log.dir"));
-        conf.set("mapred.output.dir", conf.get("hadoop.tmp.dir"));
+        System.setProperty("hadoop.log.dir", new File(baseTempDir, "hadooplogs").getAbsolutePath());
+        conf.set("mapred.output.dir", new File(baseTempDir, "mapred").getAbsolutePath());
         mrCluster = new MiniMRCluster(9001, 0, 1,
                 FileSystem.get(conf).getUri().toString(), 1, null, new String[] {"localhost"});
         System.out.println("Mini mapreduce cluster started");
@@ -253,5 +250,12 @@ public class HadoopLauncher extends BaseCliTool {
         // Restore configuration to point to local jobtracker
         conf.set("mapred.job.tracker", "local");
         System.out.println("Mini mapreduce cluster stopped");
+    }
+
+    public void setupTempDir() throws IOException {
+        String randomStr = UUID.randomUUID().toString();
+        String tmpdir = System.getProperty("java.io.tmpdir");
+        baseTempDir = new File(tmpdir, "launch-hadoop-" + randomStr);
+        FileUtils.forceMkdir(baseTempDir);
     }
 }
